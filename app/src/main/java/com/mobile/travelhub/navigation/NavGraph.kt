@@ -11,6 +11,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.mobile.travelhub.ui.screens.HomeScreen
+import com.mobile.travelhub.ui.screens.ItineraryBotScreen
 import com.mobile.travelhub.ui.screens.ProfileScreen
 import com.mobile.travelhub.ui.screens.TripsScreen
 
@@ -18,6 +19,8 @@ sealed class Screen(val route: String, val index: Int) {
     data object Home : Screen("home", 0)
     data object Trips : Screen("trips", 1)
     data object Profile : Screen("profile", 2)
+
+    data object Chat : Screen("chat", 3)
 
     companion object {
         fun fromRoute(route: String?): Screen? {
@@ -69,6 +72,9 @@ fun NavGraph(navController: NavHostController, innerPadding: PaddingValues) {
         }
         composable(Screen.Profile.route) {
             ProfileScreen()
+        }
+        composable(Screen.Chat.route) {
+            ItineraryBotScreen()
         }
     }
 }

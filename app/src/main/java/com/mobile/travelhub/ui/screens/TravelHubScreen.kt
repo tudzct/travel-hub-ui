@@ -27,7 +27,8 @@ fun TravelHubScreen() {
     val navItems = listOf(
         Screen.Home to "Home",
         Screen.Trips to "Trips",
-        Screen.Profile to "Profile"
+        Screen.Profile to "Profile",
+        Screen.Chat to "Chat"
     )
 
     Scaffold(
