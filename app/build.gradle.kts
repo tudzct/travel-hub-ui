@@ -1,15 +1,14 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
+    id("com.google.devtools.ksp")
+    id("com.google.dagger.hilt.android")
+    alias(libs.plugins.kotlin.android)
 }
 
 android {
     namespace = "com.mobile.travelhub"
-    compileSdk {
-        version = release(36) {
-            minorApiLevel = 1
-        }
-    }
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.mobile.travelhub"
@@ -37,6 +36,17 @@ android {
     buildFeatures {
         compose = true
     }
+    kotlin {
+        jvmToolchain(11)
+    }
+    packaging {
+        resources {
+            // Ignore the duplicate META-INF file
+            excludes += setOf(
+                "META-INF/versions/9/OSGI-INF/MANIFEST.MF"
+            )
+        }
+    }
 }
 
 dependencies {
@@ -57,4 +67,12 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     implementation("androidx.navigation:navigation-compose:2.7.0+")
+    implementation("com.squareup.okhttp3:okhttp:5.3.2")
+    implementation("com.squareup.okhttp3:okhttp-sse:5.3.2")
+    implementation("com.github.jeziellago:compose-markdown:0.6.0")
+
+    implementation("com.google.dagger:hilt-android:2.57.1")
+    ksp("com.google.dagger:hilt-android-compiler:2.57.1")
+    implementation("androidx.hilt:hilt-navigation-compose:1.3.0")
+
 }
