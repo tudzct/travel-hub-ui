@@ -14,6 +14,7 @@ import okhttp3.sse.EventSourceListener
 import okhttp3.sse.EventSources
 
 import org.json.JSONObject
+import java.io.EOFException
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
@@ -25,7 +26,7 @@ class ItineraryBotRepo @Inject constructor() {
             .build()
 
         val request = Request.Builder()
-            .url("http://localhost:8000/chat")
+            .url("http://10.11.157.95:8888/chat")
             .build()
 
         val eventSource = EventSources.createFactory(client)
@@ -38,8 +39,17 @@ class ItineraryBotRepo @Inject constructor() {
                     data: String
                 ) {
                     when (type) {
-                        "thinking" -> trySend(StreamEvent.Thinking(parse(data)))
-                        "message" -> trySend(StreamEvent.Message(parse(data)))
+                        "thinking" -> parsePayload(data)?.let { payload ->
+                            parseText(
+                                payload,
+                                "reasoning"
+                            )?.let { trySend(StreamEvent.Thinking(it)) }
+                        }
+
+                        "message" -> parsePayload(data)?.let { payload ->
+                            parseText(payload, "text")?.let { trySend(StreamEvent.Message(it)) }
+                        }
+
                         "done" -> {
                             trySend(StreamEvent.Done)
                             close()
@@ -52,15 +62,28 @@ class ItineraryBotRepo @Inject constructor() {
                     t: Throwable?,
                     response: Response?
                 ) {
-                    close(t)
+                    val isNormalEnd = t is EOFException
+                    if (isNormalEnd) {
+                        trySend(StreamEvent.Done)
+                        close()
+                        return
+                    }
+
+                    val message = t?.message ?: "Unknown stream error"
+                    trySend(StreamEvent.Error(message))
+                    trySend(StreamEvent.Done)
+                    close()
                 }
             })
 
         awaitClose { eventSource.cancel() }
     }
 
-    private fun parse(data: String): String {
-        return JSONObject(data).optString("text")
-            .ifEmpty { JSONObject(data).optString("reasoning") }
+    private fun parsePayload(data: String): JSONObject? {
+        return runCatching { JSONObject(data) }.getOrNull()
+    }
+
+    private fun parseText(payload: JSONObject, key: String): String? {
+        return payload.optString(key).takeIf { it.isNotEmpty() }
     }
 }

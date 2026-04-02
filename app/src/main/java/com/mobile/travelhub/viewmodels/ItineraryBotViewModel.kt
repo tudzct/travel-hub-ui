@@ -34,8 +34,18 @@ class ItineraryBotViewModel @Inject constructor(
                     }
 
                     is StreamEvent.Message -> {
+                        println(event.text)
                         answerBuffer.append(event.text)
                         emitState()
+                    }
+
+                    is StreamEvent.Error -> {
+                        _state.update {
+                            it.copy(
+                                error = event.message,
+                                isStreaming = false
+                            )
+                        }
                     }
 
                     StreamEvent.Done -> {

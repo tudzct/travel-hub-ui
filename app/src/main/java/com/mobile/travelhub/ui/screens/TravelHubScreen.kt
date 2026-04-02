@@ -24,6 +24,13 @@ import com.mobile.travelhub.navigation.Screen
 @Composable
 fun TravelHubScreen() {
     val navController = rememberNavController()
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route
+    val onboardingRoutes = setOf(
+        Screen.OnboardingIntro.route,
+        Screen.OnboardingVibe.route,
+        Screen.OnboardingFinish.route
+    )
     val navItems = listOf(
         Screen.Home to "Home",
         Screen.Trips to "Trips",
@@ -34,10 +41,12 @@ fun TravelHubScreen() {
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         bottomBar = {
-            RoundedTopNavigationBar(
-                items = navItems,
-                navController = navController
-            )
+            if (currentRoute !in onboardingRoutes) {
+                RoundedTopNavigationBar(
+                    items = navItems,
+                    navController = navController
+                )
+            }
         }
     ) { innerPadding ->
         NavGraph(navController = navController, innerPadding)
