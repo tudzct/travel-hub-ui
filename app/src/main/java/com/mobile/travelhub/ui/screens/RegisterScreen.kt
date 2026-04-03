@@ -25,13 +25,14 @@ import androidx.compose.ui.unit.dp
 import com.mobile.travelhub.viewmodels.AuthUiState
 
 @Composable
-fun LoginScreen(
+fun RegisterScreen(
     uiState: AuthUiState,
-    onLogin: (String, String) -> Unit,
-    onNavigateToRegister: () -> Unit,
+    onRegister: (String, String, String) -> Unit,
+    onNavigateToLogin: () -> Unit,
     onDismissError: () -> Unit
 ) {
     var email by remember { mutableStateOf("") }
+    var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
 
     Column(
@@ -41,9 +42,9 @@ fun LoginScreen(
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(text = "Welcome back", style = MaterialTheme.typography.headlineMedium)
+        Text(text = "Create account", style = MaterialTheme.typography.headlineMedium)
         Text(
-            text = "Login to continue your trip planning",
+            text = "Register and start planning your next journey",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -57,6 +58,19 @@ fun LoginScreen(
                 if (uiState.errorMessage != null) onDismissError()
             },
             label = { Text("Email") },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        OutlinedTextField(
+            value = username,
+            onValueChange = {
+                username = it
+                if (uiState.errorMessage != null) onDismissError()
+            },
+            label = { Text("Username") },
             singleLine = true,
             modifier = Modifier.fillMaxWidth()
         )
@@ -88,7 +102,7 @@ fun LoginScreen(
         Spacer(modifier = Modifier.height(20.dp))
 
         Button(
-            onClick = { onLogin(email, password) },
+            onClick = { onRegister(email, username, password) },
             enabled = !uiState.isLoading,
             modifier = Modifier.fillMaxWidth()
         ) {
@@ -98,17 +112,18 @@ fun LoginScreen(
                     strokeWidth = 2.dp
                 )
             } else {
-                Text("Login")
+                Text("Register")
             }
         }
 
         Spacer(modifier = Modifier.height(8.dp))
 
         TextButton(
-            onClick = onNavigateToRegister,
+            onClick = onNavigateToLogin,
             enabled = !uiState.isLoading
         ) {
-            Text("No account yet? Register")
+            Text("Already have an account? Login")
         }
     }
 }
+

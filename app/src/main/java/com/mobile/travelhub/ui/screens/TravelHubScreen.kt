@@ -9,9 +9,12 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
@@ -19,11 +22,15 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.mobile.travelhub.navigation.NavGraph
 import com.mobile.travelhub.navigation.Screen
-
+import com.mobile.travelhub.viewmodels.AuthViewModel
 
 @Composable
-fun TravelHubScreen() {
+fun TravelHubScreen(authViewModel: AuthViewModel = hiltViewModel()) {
     val navController = rememberNavController()
+    val authUiState by authViewModel.uiState.collectAsState()
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route
+
     val navItems = listOf(
         Screen.Home to "Home",
         Screen.Trips to "Trips",
@@ -31,16 +38,31 @@ fun TravelHubScreen() {
         Screen.Chat to "Chat"
     )
 
+    val startDestination = remember(authUiState.isAuthenticated) {
+        if (authUiState.isAuthenticated) Screen.Home.route else Screen.Login.route
+    }
+
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         bottomBar = {
-            RoundedTopNavigationBar(
-                items = navItems,
-                navController = navController
-            )
+            val currentScreen = Screen.fromRoute(currentRoute)
+            if (currentScreen?.showBottomBar == true) {
+                RoundedTopNavigationBar(
+                    items = navItems,
+                    navController = navController
+                )
+            }
         }
     ) { innerPadding ->
-        NavGraph(navController = navController, innerPadding)
+        NavGraph(
+            navController = navController,
+            innerPadding = innerPadding,
+            startDestination = startDestination,
+            authUiState = authUiState,
+            onLogin = authViewModel::login,
+            onRegister = authViewModel::register,
+            onClearAuthError = authViewModel::clearError
+        )
     }
 }
 
