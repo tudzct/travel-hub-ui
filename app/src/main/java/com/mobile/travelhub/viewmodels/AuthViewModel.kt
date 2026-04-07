@@ -1,7 +1,5 @@
 package com.mobile.travelhub.viewmodels
 
-<<<<<<< HEAD
-=======
 import android.util.Patterns
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -155,4 +153,3 @@ class AuthViewModel @Inject constructor(
         return null
     }
 }
->>>>>>> main

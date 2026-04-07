@@ -1,25 +1,14 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
-<<<<<<< HEAD
-=======
     id("com.google.devtools.ksp")
     id("com.google.dagger.hilt.android")
     alias(libs.plugins.kotlin.android)
->>>>>>> main
 }
 
 android {
     namespace = "com.mobile.travelhub"
-<<<<<<< HEAD
-    compileSdk {
-        version = release(36) {
-            minorApiLevel = 1
-        }
-    }
-=======
     compileSdk = 36
->>>>>>> main
 
     defaultConfig {
         applicationId = "com.mobile.travelhub"
@@ -47,8 +36,6 @@ android {
     buildFeatures {
         compose = true
     }
-<<<<<<< HEAD
-=======
     kotlin {
         jvmToolchain(11)
     }
@@ -60,7 +47,6 @@ android {
             )
         }
     }
->>>>>>> main
 }
 
 dependencies {
@@ -72,10 +58,7 @@ dependencies {
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
-<<<<<<< HEAD
-=======
     implementation(libs.androidx.navigation.compose)
->>>>>>> main
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -83,16 +66,14 @@ dependencies {
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
-<<<<<<< HEAD
-=======
     implementation("androidx.navigation:navigation-compose:2.7.0+")
     implementation("com.squareup.okhttp3:okhttp:5.3.2")
     implementation("com.squareup.okhttp3:okhttp-sse:5.3.2")
     implementation("com.github.jeziellago:compose-markdown:0.6.0")
+    implementation("io.coil-kt:coil-compose:2.7.0")
 
     implementation("com.google.dagger:hilt-android:2.57.1")
     ksp("com.google.dagger:hilt-android-compiler:2.57.1")
     implementation("androidx.hilt:hilt-navigation-compose:1.3.0")
 
->>>>>>> main
 }

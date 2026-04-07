@@ -1,7 +1,5 @@
 package com.mobile.travelhub.models
 
-<<<<<<< HEAD
-=======
 import org.json.JSONObject
 
 data class RegisterRequest(
@@ -49,4 +47,3 @@ fun authResponseFromJson(raw: String): AuthResponse {
         userId = json.optInt("userId", -1)
     )
 }
->>>>>>> main

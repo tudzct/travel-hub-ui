@@ -1,6 +1,4 @@
 package com.mobile.travelhub.ui.screens
-<<<<<<< HEAD
-=======
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -114,4 +112,3 @@ fun LoginScreen(
         }
     }
 }
->>>>>>> main

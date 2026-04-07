@@ -11,12 +11,14 @@ import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import com.mobile.travelhub.ui.screens.HomeScreen
+import com.mobile.travelhub.ui.screens.EditPlaceScreen
 import com.mobile.travelhub.ui.screens.ItineraryBotScreen
 import com.mobile.travelhub.ui.screens.OnboardingFinishScreen
 import com.mobile.travelhub.ui.screens.OnboardingIntroScreen
 import com.mobile.travelhub.ui.screens.OnboardingVibeScreen
 import com.mobile.travelhub.ui.screens.LoginScreen
+import com.mobile.travelhub.ui.screens.PlaceDetailScreen
+import com.mobile.travelhub.ui.screens.PlaceListScreen
 
 import com.mobile.travelhub.ui.screens.ProfileScreen
 import com.mobile.travelhub.ui.screens.RegisterScreen
@@ -35,6 +37,12 @@ sealed class Screen(
     data object Trips : Screen("trips", 1, true)
     data object Profile : Screen("profile", 2, true)
     data object Chat : Screen("chat", 3, true)
+    data object PlaceDetail : Screen("place/{placeId}", 10) {
+        fun createRoute(placeId: String): String = "place/$placeId"
+    }
+    data object EditPlace : Screen("place/{placeId}/edit", 11) {
+        fun createRoute(placeId: String): String = "place/$placeId/edit"
+    }
 
 
     data object Login : Screen("login")
@@ -50,6 +58,8 @@ sealed class Screen(
                 Trips.route -> Trips
                 Profile.route -> Profile
                 Chat.route -> Chat
+                PlaceDetail.route -> PlaceDetail
+                EditPlace.route -> EditPlace
                 Login.route -> Login
                 Register.route -> Register
                 else -> null
@@ -176,7 +186,11 @@ fun NavGraph(
             )
         }
         composable(Screen.Home.route) {
-            HomeScreen()
+            PlaceListScreen(
+                onPlaceClick = { placeId ->
+                    navController.navigate(Screen.PlaceDetail.createRoute(placeId))
+                }
+            )
         }
         composable(Screen.Trips.route) {
             TripsScreen()
@@ -186,6 +200,24 @@ fun NavGraph(
         }
         composable(Screen.Chat.route) {
             ItineraryBotScreen()
+        }
+        composable(Screen.PlaceDetail.route) { backStackEntry ->
+            val placeId = backStackEntry.arguments?.getString("placeId").orEmpty()
+            PlaceDetailScreen(
+                placeId = placeId,
+                onBack = { navController.navigateUp() },
+                onEdit = { id ->
+                    navController.navigate(Screen.EditPlace.createRoute(id))
+                }
+            )
+        }
+        composable(Screen.EditPlace.route) { backStackEntry ->
+            val placeId = backStackEntry.arguments?.getString("placeId").orEmpty()
+            EditPlaceScreen(
+                placeId = placeId,
+                onBack = { navController.navigateUp() },
+                onSaved = { navController.navigateUp() }
+            )
         }
     }
 }
