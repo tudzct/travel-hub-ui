@@ -1,0 +1,89 @@
+[
+  {
+    "id": "ha-noi-bat-trang",
+    "title": "Bảo tàng gốm Bát Tràng",
+    "description": "Bảo tàng gốm Bát Tràng là điểm đến nổi bật của Hà Nội với kiến trúc xoáy gốm độc đáo, không gian trưng bày nghề thủ công truyền thống và nhiều góc check-in mang đậm dấu ấn làng nghề.",
+    "provinceName": "Hà Nội",
+    "bestTime": "Từ tháng 01 đến tháng 12",
+    "mainImageUrl": "https://picsum.photos/seed/bat-trang/1200/800",
+    "galleryUrls": [
+      "https://picsum.photos/seed/bat-trang-1/1200/800",
+      "https://picsum.photos/seed/bat-trang-2/1200/800",
+      "https://picsum.photos/seed/bat-trang-3/1200/800"
+    ],
+    "viewCountLabel": "5116 lượt xem",
+    "sourceUrl": "https://travelviet.net.vn/vn/travel/ha-noi"
+  },
+  {
+    "id": "ha-noi-ho-tay",
+    "title": "Hồ Tây",
+    "description": "Hồ Tây là một trong những biểu tượng du lịch của Hà Nội, phù hợp cho dạo chơi, ngắm hoàng hôn, cà phê ven hồ và khám phá các quán ăn, không gian văn hóa quanh khu vực Tây Hồ.",
+    "provinceName": "Hà Nội",
+    "bestTime": "Từ tháng 09 đến tháng 04",
+    "mainImageUrl": "https://picsum.photos/seed/ho-tay/1200/800",
+    "galleryUrls": [
+      "https://picsum.photos/seed/ho-tay-1/1200/800",
+      "https://picsum.photos/seed/ho-tay-2/1200/800"
+    ],
+    "viewCountLabel": "4380 lượt xem",
+    "sourceUrl": "https://travelviet.net.vn/vn/travel/ha-noi"
+  },
+  {
+    "id": "ha-noi-van-mieu",
+    "title": "Văn Miếu - Quốc Tử Giám",
+    "description": "Văn Miếu - Quốc Tử Giám là quần thể di tích nổi tiếng gắn với lịch sử giáo dục Việt Nam, phù hợp cho hành trình khám phá văn hóa, kiến trúc cổ và chụp ảnh trong không gian truyền thống.",
+    "provinceName": "Hà Nội",
+    "bestTime": "Từ tháng 10 đến tháng 04",
+    "mainImageUrl": "https://picsum.photos/seed/van-mieu/1200/800",
+    "galleryUrls": [
+      "https://picsum.photos/seed/van-mieu-1/1200/800",
+      "https://picsum.photos/seed/van-mieu-2/1200/800"
+    ],
+    "viewCountLabel": "3921 lượt xem",
+    "sourceUrl": "https://travelviet.net.vn/vn/travel/ha-noi"
+  },
+  {
+    "id": "da-nang-ba-na",
+    "title": "Bà Nà Hills",
+    "description": "Bà Nà Hills nổi tiếng với khí hậu mát mẻ, các công trình kiến trúc châu Âu, cáp treo và Cầu Vàng. Đây là lựa chọn phổ biến cho chuyến đi kết hợp vui chơi, nghỉ dưỡng và chụp ảnh.",
+    "provinceName": "Đà Nẵng",
+    "bestTime": "Từ tháng 03 đến tháng 08",
+    "mainImageUrl": "https://picsum.photos/seed/ba-na/1200/800",
+    "galleryUrls": [
+      "https://picsum.photos/seed/ba-na-1/1200/800",
+      "https://picsum.photos/seed/ba-na-2/1200/800",
+      "https://picsum.photos/seed/ba-na-3/1200/800"
+    ],
+    "viewCountLabel": "6250 lượt xem",
+    "sourceUrl": "https://travelviet.net.vn/vn/travel/da-nang"
+  },
+  {
+    "id": "quang-nam-hoi-an",
+    "title": "Phố cổ Hội An",
+    "description": "Phố cổ Hội An hấp dẫn bởi những dãy nhà vàng cổ kính, đèn lồng rực rỡ, ẩm thực địa phương và nhịp sống chậm. Đây là điểm đến phù hợp cho cặp đôi, nhóm bạn và du lịch gia đình.",
+    "provinceName": "Quảng Nam",
+    "bestTime": "Từ tháng 02 đến tháng 08",
+    "mainImageUrl": "https://picsum.photos/seed/hoi-an/1200/800",
+    "galleryUrls": [
+      "https://picsum.photos/seed/hoi-an-1/1200/800",
+      "https://picsum.photos/seed/hoi-an-2/1200/800"
+    ],
+    "viewCountLabel": "7104 lượt xem",
+    "sourceUrl": "https://travelviet.net.vn/vn/travel/quang-nam"
+  },
+  {
+    "id": "quang-ninh-ha-long",
+    "title": "Vịnh Hạ Long",
+    "description": "Vịnh Hạ Long là di sản thiên nhiên nổi tiếng với hàng nghìn đảo đá, tour du thuyền, hoạt động chèo kayak và nghỉ dưỡng trên vịnh. Đây là điểm đến tiêu biểu cho hành trình khám phá miền Bắc.",
+    "provinceName": "Quảng Ninh",
+    "bestTime": "Từ tháng 10 đến tháng 04",
+    "mainImageUrl": "https://picsum.photos/seed/ha-long/1200/800",
+    "galleryUrls": [
+      "https://picsum.photos/seed/ha-long-1/1200/800",
+      "https://picsum.photos/seed/ha-long-2/1200/800",
+      "https://picsum.photos/seed/ha-long-3/1200/800"
+    ],
+    "viewCountLabel": "8450 lượt xem",
+    "sourceUrl": "https://travelviet.net.vn/vn/travel/quang-ninh"
+  }
+]
