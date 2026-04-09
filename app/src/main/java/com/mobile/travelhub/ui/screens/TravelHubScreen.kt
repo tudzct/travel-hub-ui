@@ -1,5 +1,6 @@
 package com.mobile.travelhub.ui.screens
 
+import androidx.activity.compose.LocalOnBackPressedDispatcherOwner
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -77,6 +78,14 @@ private fun RoundedTopNavigationBar(
 ) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
+    val backPressedDispatcher = LocalOnBackPressedDispatcherOwner.current?.onBackPressedDispatcher
+
+    fun isProfileRoute(route: String?): Boolean {
+        return route?.startsWith(Screen.Profile.route) == true ||
+               route?.startsWith("edit_profile") == true ||
+               route?.startsWith("followers_following") == true ||
+               route?.startsWith("post_detail") == true
+    }
 
     Surface(
         modifier = Modifier.fillMaxWidth(),
@@ -85,15 +94,27 @@ private fun RoundedTopNavigationBar(
     ) {
         NavigationBar {
             items.forEach { (screen, label) ->
+                val isSelected = if (screen == Screen.Profile) {
+                    isProfileRoute(currentDestination?.route)
+                } else {
+                    currentDestination?.hierarchy?.any { it.route == screen.route } == true
+                }
+
                 NavigationBarItem(
-                    selected = currentDestination?.hierarchy?.any { it.route == screen.route } == true,
+                    selected = isSelected,
                     onClick = {
-                        navController.navigate(screen.route) {
-                            popUpTo(navController.graph.findStartDestination().id) {
-                                saveState = true
+                        if (screen == Screen.Profile && isProfileRoute(currentDestination?.route) && currentDestination?.route != Screen.Profile.route) {
+                            // Khi đang ở các trang con của Profile (như edit_profile), bấm lại vào tab Profile sẽ kích hoạt phím Back
+                            // Điều này cho phép BackHandler bên trong EditProfileScreen bắt sự kiện và hiển thị Dialog cảnh báo
+                            backPressedDispatcher?.onBackPressed()
+                        } else if (currentDestination?.route != screen.route) {
+                            navController.navigate(screen.route) {
+                                popUpTo(navController.graph.findStartDestination().id) {
+                                    saveState = true
+                                }
+                                launchSingleTop = true
+                                restoreState = true
                             }
-                            launchSingleTop = true
-                            restoreState = true
                         }
                     },
                     icon = { Text(text = label.first().toString()) },

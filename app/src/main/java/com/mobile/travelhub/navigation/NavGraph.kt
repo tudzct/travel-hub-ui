@@ -9,10 +9,12 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import com.mobile.travelhub.ui.screens.EditPlaceScreen
 import com.mobile.travelhub.ui.screens.ItineraryBotScreen
+import com.mobile.travelhub.ui.screens.ProfileScreen
+import com.mobile.travelhub.ui.screens.EditPlaceScreen
 import com.mobile.travelhub.ui.screens.OnboardingFinishScreen
 import com.mobile.travelhub.ui.screens.OnboardingIntroScreen
 import com.mobile.travelhub.ui.screens.OnboardingVibeScreen
@@ -20,10 +22,18 @@ import com.mobile.travelhub.ui.screens.LoginScreen
 import com.mobile.travelhub.ui.screens.PlaceDetailScreen
 import com.mobile.travelhub.ui.screens.PlaceListScreen
 
-import com.mobile.travelhub.ui.screens.ProfileScreen
 import com.mobile.travelhub.ui.screens.RegisterScreen
-import com.mobile.travelhub.ui.screens.TripsScreen
 import com.mobile.travelhub.viewmodels.AuthUiState
+import androidx.navigation.navArgument
+import com.mobile.travelhub.ui.screens.CostEstimateScreen
+import com.mobile.travelhub.ui.screens.CreateGroupScreen
+import com.mobile.travelhub.ui.screens.EditProfileScreen
+import com.mobile.travelhub.ui.screens.FollowersFollowingScreen
+import com.mobile.travelhub.ui.screens.GroupChatScreen
+import com.mobile.travelhub.ui.screens.GroupDetailScreen
+import com.mobile.travelhub.ui.screens.GroupDiscoveryScreen
+import com.mobile.travelhub.ui.screens.ItineraryScreen
+import com.mobile.travelhub.ui.screens.PostDetailScreen
 
 sealed class Screen(
     val route: String,
@@ -44,13 +54,31 @@ sealed class Screen(
         fun createRoute(placeId: String): String = "place/$placeId/edit"
     }
 
-
     data object Login : Screen("login")
     data object Register : Screen("register")
+    //merge from truong
+    data object EditProfile : Screen("edit_profile", 3)
+    data object FollowersFollowing : Screen("followers_following/{tabIndex}", 5) {
+        fun createRoute(tabIndex: Int) = "followers_following/$tabIndex"
+    }
+    data object PostDetail : Screen("post_detail", 6)
 
+    data object CreateGroup : Screen("create_group", 7)
+    data object GroupDetail : Screen("group_detail/{groupName}", 8) {
+        fun createRoute(groupName: String) = "group_detail/$groupName"
+    }
+    data object GroupChat : Screen("group_chat/{groupName}", 9) {
+        fun createRoute(groupName: String) = "group_chat/$groupName"
+    }
+    data object Itinerary : Screen("itinerary/{groupName}", 10) {
+        fun createRoute(groupName: String) = "itinerary/$groupName"
+    }
+    data object CostEstimate : Screen("cost_estimate/{groupName}", 11) {
+        fun createRoute(groupName: String) = "cost_estimate/$groupName"
+    }
     companion object {
         fun fromRoute(route: String?): Screen? {
-            return when (route) {
+            return when (route?.substringBefore("/")) {
                 OnboardingIntro.route -> OnboardingIntro
                 OnboardingVibe.route -> OnboardingVibe
                 OnboardingFinish.route -> OnboardingFinish
@@ -62,6 +90,18 @@ sealed class Screen(
                 EditPlace.route -> EditPlace
                 Login.route -> Login
                 Register.route -> Register
+                //mẻge from trường
+                "home" -> Home
+                "trips" -> Trips
+                "profile" -> Profile
+                "edit_profile" -> EditProfile
+                "followers_following" -> FollowersFollowing
+                "post_detail" -> PostDetail
+                "create_group" -> CreateGroup
+                "group_detail" -> GroupDetail
+                "group_chat" -> GroupChat
+                "itinerary" -> Itinerary
+                "cost_estimate" -> CostEstimate
                 else -> null
             }
         }
@@ -193,10 +233,95 @@ fun NavGraph(
             )
         }
         composable(Screen.Trips.route) {
-            TripsScreen()
+            GroupDiscoveryScreen(
+                onNavigateToCreateGroup = { navController.navigate(Screen.CreateGroup.route) { launchSingleTop = true } },
+                onNavigateToGroupDetail = { groupName ->
+                    navController.navigate(Screen.GroupDetail.createRoute(groupName)) { launchSingleTop = true }
+                }
+            )
         }
         composable(Screen.Profile.route) {
-            ProfileScreen()
+            ProfileScreen(
+                onNavigateToEditProfile = { navController.navigate(Screen.EditProfile.route) { launchSingleTop = true } },
+                onNavigateToFollowers = { navController.navigate(Screen.FollowersFollowing.createRoute(0)) { launchSingleTop = true } },
+                onNavigateToFollowing = { navController.navigate(Screen.FollowersFollowing.createRoute(1)) { launchSingleTop = true } },
+                onNavigateToPostDetail = { navController.navigate(Screen.PostDetail.route) { launchSingleTop = true } }
+            )
+        }
+        composable(Screen.EditProfile.route) {
+            EditProfileScreen(
+                onBack = { navController.popBackStack() },
+                onSaveSuccess = { navController.popBackStack() }
+            )
+        }
+        composable(
+            route = Screen.FollowersFollowing.route,
+            arguments = listOf(navArgument("tabIndex") { type = NavType.IntType })
+        ) { backStackEntry ->
+            val tabIndex = backStackEntry.arguments?.getInt("tabIndex") ?: 0
+            FollowersFollowingScreen(
+                initialTabIndex = tabIndex,
+                onBack = { navController.popBackStack() }
+            )
+        }
+        composable(Screen.PostDetail.route) {
+            PostDetailScreen(
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(Screen.CreateGroup.route) {
+            CreateGroupScreen(
+                onBack = { navController.popBackStack() },
+                onCreate = { navController.popBackStack() }
+            )
+        }
+
+        composable(
+            route = Screen.GroupDetail.route,
+            arguments = listOf(navArgument("groupName") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val groupName = backStackEntry.arguments?.getString("groupName") ?: "Group"
+            GroupDetailScreen(
+                groupName = groupName,
+                onBack = { navController.popBackStack() },
+                onNavigateToChat = { navController.navigate(Screen.GroupChat.createRoute(groupName)) { launchSingleTop = true } },
+                onNavigateToItinerary = { navController.navigate(Screen.Itinerary.createRoute(groupName)) { launchSingleTop = true } },
+                onNavigateToCost = { navController.navigate(Screen.CostEstimate.createRoute(groupName)) { launchSingleTop = true } }
+            )
+        }
+
+        composable(
+            route = Screen.GroupChat.route,
+            arguments = listOf(navArgument("groupName") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val groupName = backStackEntry.arguments?.getString("groupName") ?: "Chat"
+            GroupChatScreen(
+                groupName = groupName,
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(
+            route = Screen.Itinerary.route,
+            arguments = listOf(navArgument("groupName") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val groupName = backStackEntry.arguments?.getString("groupName") ?: "Itinerary"
+            ItineraryScreen(
+                groupName = groupName,
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(
+            route = Screen.CostEstimate.route,
+            arguments = listOf(navArgument("groupName") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val groupName = backStackEntry.arguments?.getString("groupName") ?: "Cost Estimate"
+            CostEstimateScreen(
+                groupName = groupName,
+                onBack = { navController.popBackStack() }
+            )
         }
         composable(Screen.Chat.route) {
             ItineraryBotScreen()
