@@ -2,19 +2,14 @@ package com.mobile.travelhub.ui.components
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -28,25 +23,20 @@ import androidx.compose.ui.unit.dp
 import com.mobile.travelhub.R
 
 @Composable
-fun UserListItem(
+fun CommentItem(
     name: String,
-    handle: String,
-    avatarRes: Int,
-    isFollowing: Boolean,
-    showFollowButton: Boolean = true,
-    onClick: () -> Unit,
-    onFollowToggle: () -> Unit
+    comment: String,
+    time: String,
+    avatarRes: Int
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(vertical = 12.dp, horizontal = 24.dp),
-        verticalAlignment = Alignment.CenterVertically
+            .padding(vertical = 12.dp, horizontal = 24.dp)
     ) {
         Box(
             modifier = Modifier
-                .size(48.dp)
+                .size(32.dp)
                 .clip(CircleShape)
                 .background(MaterialTheme.colorScheme.surfaceVariant)
         ) {
@@ -61,36 +51,26 @@ fun UserListItem(
         Column(
             modifier = Modifier
                 .weight(1f)
-                .padding(horizontal = 16.dp)
+                .padding(horizontal = 12.dp)
         ) {
-            Text(
-                text = name,
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.Bold
-            )
-            Text(
-                text = handle,
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-
-        if (showFollowButton) {
-            Button(
-                onClick = onFollowToggle,
-                shape = RoundedCornerShape(20.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = if (isFollowing) MaterialTheme.colorScheme.surfaceVariant else MaterialTheme.colorScheme.primary,
-                    contentColor = if (isFollowing) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onPrimary
-                ),
-                modifier = Modifier.height(32.dp)
-            ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    text = if (isFollowing) "Following" else "Follow",
-                    style = MaterialTheme.typography.labelSmall,
+                    text = name,
+                    style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.Bold
                 )
+                Text(
+                    text = " • $time",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
+            Text(
+                text = comment,
+                style = MaterialTheme.typography.bodyLarge,
+                modifier = Modifier.padding(top = 4.dp),
+                color = MaterialTheme.colorScheme.onSurface
+            )
         }
     }
 }

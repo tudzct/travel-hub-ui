@@ -2,25 +2,27 @@ package com.mobile.travelhub.ui.screens
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.TabRowDefaults
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -40,24 +42,36 @@ import com.mobile.travelhub.ui.components.UserListItem
 import com.mobile.travelhub.ui.viewmodels.ProfileViewModel
 import com.mobile.travelhub.ui.viewmodels.UiState
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FollowersFollowingScreen(
     initialTabIndex: Int = 0,
+    viewingUserId: Long? = null,
     onBack: () -> Unit,
+    onNavigateToUserProfile: (Long?) -> Unit,
     viewModel: ProfileViewModel = viewModel()
 ) {
     var selectedTabIndex by remember { mutableIntStateOf(initialTabIndex) }
     val tabs = listOf("Followers", "Following")
+    val isViewingOwnProfile = viewingUserId == null
+    val currentUserId = viewModel.getCurrentUserId()
+    val viewedUserId = viewingUserId ?: viewModel.getCurrentUserId()
 
-    val profileState by viewModel.profileState.collectAsState()
+    val profileState by if (isViewingOwnProfile) {
+        viewModel.profileState.collectAsState()
+    } else {
+        viewModel.otherUserProfileState.collectAsState()
+    }
     val followersState by viewModel.followersState.collectAsState()
     val followingState by viewModel.followingState.collectAsState()
 
-    LaunchedEffect(Unit) {
-        viewModel.loadUserProfile()
-        viewModel.loadFollowers()
-        viewModel.loadFollowing()
+    LaunchedEffect(viewedUserId) {
+        if (isViewingOwnProfile) {
+            viewModel.loadUserProfile()
+        } else {
+            viewModel.loadOtherUserProfile(viewedUserId)
+        }
+        viewModel.loadFollowers(viewedUserId)
+        viewModel.loadFollowing(viewedUserId)
     }
 
     val titleName = if (profileState is UiState.Success) {
@@ -68,24 +82,28 @@ fun FollowersFollowingScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { 
-                    Text(
-                        titleName, 
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = 1.sp
-                    ) 
-                },
-                navigationIcon = {
+            Surface(
+                color = MaterialTheme.colorScheme.background
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp)
+                        .padding(horizontal = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Start
+                ) {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background
-                )
-            )
+                    Text(
+                        text = titleName,
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 1.sp
+                    )
+                }
+            }
         }
     ) { innerPadding ->
         Column(
@@ -144,7 +162,17 @@ fun FollowersFollowingScreen(
                                     handle = user.username,
                                     avatarRes = R.drawable.ic_launcher_foreground,
                                     isFollowing = user.isFollowing,
-                                    onFollowToggle = { /* Toggle follow in Viewmodel */ }
+                                    showFollowButton = user.id != currentUserId,
+                                    onClick = {
+                                        onNavigateToUserProfile(user.id.takeIf { it != currentUserId })
+                                    },
+                                    onFollowToggle = {
+                                        viewModel.toggleFollow(
+                                            targetUserId = user.id,
+                                            isCurrentlyFollowing = user.isFollowing,
+                                            connectionsOwnerUserId = viewedUserId
+                                        )
+                                    }
                                 )
                             }
                         }

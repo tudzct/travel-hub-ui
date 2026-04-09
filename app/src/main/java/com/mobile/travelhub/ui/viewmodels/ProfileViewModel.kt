@@ -20,6 +20,9 @@ class ProfileViewModel : ViewModel() {
     private val _profileState = MutableStateFlow<UiState<UserProfileResponse>>(UiState.Loading)
     val profileState: StateFlow<UiState<UserProfileResponse>> = _profileState.asStateFlow()
 
+    private val _otherUserProfileState = MutableStateFlow<UiState<UserProfileResponse>>(UiState.Idle)
+    val otherUserProfileState: StateFlow<UiState<UserProfileResponse>> = _otherUserProfileState.asStateFlow()
+
     private val _followersState = MutableStateFlow<UiState<List<UserSummaryResponse>>>(UiState.Loading)
     val followersState: StateFlow<UiState<List<UserSummaryResponse>>> = _followersState.asStateFlow()
 
@@ -32,6 +35,8 @@ class ProfileViewModel : ViewModel() {
     init {
         loadUserProfile()
     }
+
+    fun getCurrentUserId(): Long = currentUserId
 
     fun loadUserProfile() {
         viewModelScope.launch {
@@ -48,11 +53,26 @@ class ProfileViewModel : ViewModel() {
         }
     }
 
-    fun loadFollowers() {
+    fun loadOtherUserProfile(userId: Long) {
+        viewModelScope.launch {
+            _otherUserProfileState.value = UiState.Loading
+            try {
+                val response = api.getUserProfile(userId)
+                _otherUserProfileState.value = UiState.Success(response)
+                Log.d("API_SUCCESS", "Tải Other Profile thành công: $response")
+            } catch (e: Exception) {
+                val errorMsg = "Lỗi gọi API Other Profile (/api/users/$userId): ${e.localizedMessage}"
+                Log.e("API_ERROR", errorMsg, e)
+                _otherUserProfileState.value = UiState.Error(errorMsg)
+            }
+        }
+    }
+
+    fun loadFollowers(userId: Long = currentUserId) {
         viewModelScope.launch {
             _followersState.value = UiState.Loading
             try {
-                val response = api.getFollowers(currentUserId)
+                val response = api.getFollowers(userId)
                 _followersState.value = UiState.Success(response.content)
             } catch (e: Exception) {
                 val errorMsg = "Lỗi gọi API Followers: ${e.localizedMessage}"
@@ -62,11 +82,11 @@ class ProfileViewModel : ViewModel() {
         }
     }
 
-    fun loadFollowing() {
+    fun loadFollowing(userId: Long = currentUserId) {
         viewModelScope.launch {
             _followingState.value = UiState.Loading
             try {
-                val response = api.getFollowing(currentUserId)
+                val response = api.getFollowing(userId)
                 _followingState.value = UiState.Success(response.content)
             } catch (e: Exception) {
                 val errorMsg = "Lỗi gọi API Following: ${e.localizedMessage}"
@@ -110,24 +130,51 @@ class ProfileViewModel : ViewModel() {
         }
     }
     
-    fun toggleFollow(targetUserId: Long) {
+    fun toggleFollow(
+        targetUserId: Long,
+        isCurrentlyFollowing: Boolean,
+        connectionsOwnerUserId: Long = currentUserId
+    ) {
         viewModelScope.launch {
             try {
-                val currentProfile = (_profileState.value as? UiState.Success)?.data
-                if (currentProfile != null && currentProfile.id != targetUserId) {
-                    val isCurrentlyFollowing = currentProfile.isFollowing
-                    
-                    if (isCurrentlyFollowing) {
-                        api.unfollowUser(targetUserId)
-                    } else {
-                        api.followUser(targetUserId)
-                    }
-                    
-                    // Reload profile to get updated following count
-                    loadUserProfile()
+                if (targetUserId == currentUserId) return@launch
+
+                if (isCurrentlyFollowing) {
+                    api.unfollowUser(targetUserId)
+                } else {
+                    api.followUser(targetUserId)
                 }
+
+                // Refresh all related states after follow/unfollow.
+                loadUserProfile()
+                if (connectionsOwnerUserId != currentUserId) {
+                    loadOtherUserProfile(connectionsOwnerUserId)
+                }
+                loadFollowers(connectionsOwnerUserId)
+                loadFollowing(connectionsOwnerUserId)
             } catch (e: Exception) {
                 Log.e("API_ERROR", "Lỗi follow/unfollow: ${e.localizedMessage}", e)
+            }
+        }
+    }
+
+    fun toggleFollowOtherUser(targetUserId: Long, isCurrentlyFollowing: Boolean) {
+        viewModelScope.launch {
+            try {
+                if (targetUserId == currentUserId) return@launch
+
+                if (isCurrentlyFollowing) {
+                    api.unfollowUser(targetUserId)
+                } else {
+                    api.followUser(targetUserId)
+                }
+
+                loadOtherUserProfile(targetUserId)
+                loadUserProfile()
+                loadFollowers()
+                loadFollowing()
+            } catch (e: Exception) {
+                Log.e("API_ERROR", "Lỗi follow/unfollow other profile: ${e.localizedMessage}", e)
             }
         }
     }

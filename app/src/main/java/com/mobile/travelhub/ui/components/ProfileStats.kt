@@ -20,6 +20,7 @@ fun ProfileStats(
     postsCount: Int,
     followersCount: Int,
     followingCount: Int,
+    onPostsClick: () -> Unit,
     onFollowersClick: () -> Unit,
     onFollowingClick: () -> Unit
 ) {
@@ -29,7 +30,7 @@ fun ProfileStats(
             .padding(horizontal = 32.dp, vertical = 24.dp),
         horizontalArrangement = Arrangement.SpaceAround
     ) {
-        StatItem(label = "POSTS", value = postsCount.toString(), onClick = {})
+        StatItem(label = "POSTS", value = postsCount.toString(), onClick = onPostsClick)
         StatItem(label = "FOLLOWERS", value = followersCount.toString(), onClick = onFollowersClick)
         StatItem(label = "FOLLOWING", value = followingCount.toString(), onClick = onFollowingClick)
     }
