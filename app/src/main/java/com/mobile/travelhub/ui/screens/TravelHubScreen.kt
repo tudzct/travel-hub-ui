@@ -1,28 +1,51 @@
 package com.mobile.travelhub.ui.screens
 
 import androidx.activity.compose.LocalOnBackPressedDispatcherOwner
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.DirectionsWalk
+import androidx.compose.material.icons.outlined.AccountCircle
+import androidx.compose.material.icons.outlined.ChatBubble
+import androidx.compose.material.icons.outlined.DirectionsWalk
+import androidx.compose.material.icons.outlined.FavoriteBorder
+import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.Menu
+import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material.icons.outlined.ShoppingBag
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.mobile.travelhub.navigation.NavGraph
 import com.mobile.travelhub.navigation.Screen
+import com.mobile.travelhub.ui.components.layout.BottomNavItem
+import com.mobile.travelhub.ui.components.layout.RoundedTopNavigationBar
 import com.mobile.travelhub.viewmodels.AuthViewModel
 
 @Composable
@@ -31,94 +54,44 @@ fun TravelHubScreen(authViewModel: AuthViewModel = hiltViewModel()) {
     val authUiState by authViewModel.uiState.collectAsState()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
-    val onboardingRoutes = setOf(
-        Screen.OnboardingIntro.route,
-        Screen.OnboardingVibe.route,
-        Screen.OnboardingFinish.route
-    )
     val navItems = listOf(
-        Screen.Home to "Home",
-        Screen.Trips to "Trips",
-        Screen.Profile to "Profile",
-        Screen.Chat to "Chat"
+        BottomNavItem(screen = Screen.Home, icon = Icons.Outlined.Home, contentDescription = "Home"),
+        BottomNavItem(
+            screen = Screen.Trips,
+            icon = Icons.AutoMirrored.Outlined.DirectionsWalk,
+            contentDescription = "Trips"
+        ),
+        BottomNavItem(screen = Screen.Chat, icon = Icons.Outlined.ChatBubble, contentDescription = "Chat AI", badgeCount = 3),
+        BottomNavItem(screen = Screen.Profile, icon = Icons.Outlined.AccountCircle, contentDescription = "Profile")
     )
 
     val startDestination = remember(authUiState.isAuthenticated) {
         if (authUiState.isAuthenticated) Screen.Home.route else Screen.Login.route
     }
+    val showBottomBar = Screen.fromRoute(currentRoute)?.showBottomBar == true
 
-    Scaffold(
-        modifier = Modifier.fillMaxSize(),
-        bottomBar = {
-            val currentScreen = Screen.fromRoute(currentRoute)
-            if (currentScreen?.showBottomBar == true) {
+    Box(modifier = Modifier.fillMaxSize()) {
+        Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
+            NavGraph(
+                navController = navController,
+                innerPadding = innerPadding,
+                startDestination = startDestination,
+                authUiState = authUiState,
+                onLogin = authViewModel::login,
+                onRegister = authViewModel::register,
+                onClearAuthError = authViewModel::clearError
+            )
+        }
+
+        if (showBottomBar) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .navigationBarsPadding()
+            ) {
                 RoundedTopNavigationBar(
                     items = navItems,
                     navController = navController
-                )
-            }
-        }
-    ) { innerPadding ->
-        NavGraph(
-            navController = navController,
-            innerPadding = innerPadding,
-            startDestination = startDestination,
-            authUiState = authUiState,
-            onLogin = authViewModel::login,
-            onRegister = authViewModel::register,
-            onClearAuthError = authViewModel::clearError
-        )
-    }
-}
-
-@Composable
-private fun RoundedTopNavigationBar(
-    items: List<Pair<Screen, String>>,
-    navController: NavHostController
-) {
-    val navBackStackEntry by navController.currentBackStackEntryAsState()
-    val currentDestination = navBackStackEntry?.destination
-    val backPressedDispatcher = LocalOnBackPressedDispatcherOwner.current?.onBackPressedDispatcher
-
-    fun isProfileRoute(route: String?): Boolean {
-        return route?.startsWith(Screen.Profile.route) == true ||
-               route?.startsWith("profile_user") == true ||
-               route?.startsWith("edit_profile") == true ||
-               route?.startsWith("followers_following") == true
-    }
-
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
-        tonalElevation = 8.dp
-    ) {
-        NavigationBar {
-            items.forEach { (screen, label) ->
-                val isSelected = if (screen == Screen.Profile) {
-                    isProfileRoute(currentDestination?.route)
-                } else {
-                    currentDestination?.hierarchy?.any { it.route == screen.route } == true
-                }
-
-                NavigationBarItem(
-                    selected = isSelected,
-                    onClick = {
-                        if (screen == Screen.Profile && isProfileRoute(currentDestination?.route) && currentDestination?.route != Screen.Profile.route) {
-                            // Khi đang ở các trang con của Profile (như edit_profile), bấm lại vào tab Profile sẽ kích hoạt phím Back
-                            // Điều này cho phép BackHandler bên trong EditProfileScreen bắt sự kiện và hiển thị Dialog cảnh báo
-                            backPressedDispatcher?.onBackPressed()
-                        } else if (currentDestination?.route != screen.route) {
-                            navController.navigate(screen.route) {
-                                popUpTo(navController.graph.findStartDestination().id) {
-                                    saveState = true
-                                }
-                                launchSingleTop = true
-                                restoreState = true
-                            }
-                        }
-                    },
-                    icon = { Text(text = label.first().toString()) },
-                    label = { Text(text = label) }
                 )
             }
         }
