@@ -82,9 +82,9 @@ private fun RoundedTopNavigationBar(
 
     fun isProfileRoute(route: String?): Boolean {
         return route?.startsWith(Screen.Profile.route) == true ||
+               route?.startsWith("profile_user") == true ||
                route?.startsWith("edit_profile") == true ||
-               route?.startsWith("followers_following") == true ||
-               route?.startsWith("post_detail") == true
+               route?.startsWith("followers_following") == true
     }
 
     Surface(

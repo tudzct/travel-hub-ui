@@ -32,8 +32,12 @@ import com.mobile.travelhub.ui.screens.FollowersFollowingScreen
 import com.mobile.travelhub.ui.screens.GroupChatScreen
 import com.mobile.travelhub.ui.screens.GroupDetailScreen
 import com.mobile.travelhub.ui.screens.GroupDiscoveryScreen
+import com.mobile.travelhub.ui.screens.HomeScreen
+import com.mobile.travelhub.ui.screens.ItineraryBotScreen
+import com.mobile.travelhub.ui.screens.TripsScreen
 import com.mobile.travelhub.ui.screens.ItineraryScreen
-import com.mobile.travelhub.ui.screens.PostDetailScreen
+//import com.mobile.travelhub.ui.screens.PostDetailScreen
+import com.mobile.travelhub.ui.screens.ProfileScreen
 
 sealed class Screen(
     val route: String,
@@ -57,9 +61,15 @@ sealed class Screen(
     data object Login : Screen("login")
     data object Register : Screen("register")
     //merge from truong
+    data object OtherProfile : Screen("profile_user/{userId}", 2) {
+        fun createRoute(userId: Long) = "profile_user/$userId"
+    }
     data object EditProfile : Screen("edit_profile", 3)
-    data object FollowersFollowing : Screen("followers_following/{tabIndex}", 5) {
-        fun createRoute(tabIndex: Int) = "followers_following/$tabIndex"
+    data object FollowersFollowing : Screen("followers_following/{tabIndex}/{userId}", 5) {
+        fun createRoute(tabIndex: Int, userId: Long? = null): String {
+            val normalizedUserId = userId ?: -1L
+            return "followers_following/$tabIndex/$normalizedUserId"
+        }
     }
     data object PostDetail : Screen("post_detail", 6)
 
@@ -76,6 +86,7 @@ sealed class Screen(
     data object CostEstimate : Screen("cost_estimate/{groupName}", 11) {
         fun createRoute(groupName: String) = "cost_estimate/$groupName"
     }
+
     companion object {
         fun fromRoute(route: String?): Screen? {
             return when (route?.substringBefore("/")) {
@@ -94,6 +105,7 @@ sealed class Screen(
                 "home" -> Home
                 "trips" -> Trips
                 "profile" -> Profile
+                "profile_user" -> Profile
                 "edit_profile" -> EditProfile
                 "followers_following" -> FollowersFollowing
                 "post_detail" -> PostDetail
@@ -243,9 +255,32 @@ fun NavGraph(
         composable(Screen.Profile.route) {
             ProfileScreen(
                 onNavigateToEditProfile = { navController.navigate(Screen.EditProfile.route) { launchSingleTop = true } },
-                onNavigateToFollowers = { navController.navigate(Screen.FollowersFollowing.createRoute(0)) { launchSingleTop = true } },
-                onNavigateToFollowing = { navController.navigate(Screen.FollowersFollowing.createRoute(1)) { launchSingleTop = true } },
-                onNavigateToPostDetail = { navController.navigate(Screen.PostDetail.route) { launchSingleTop = true } }
+                onNavigateToFollowers = { navController.navigate(Screen.FollowersFollowing.createRoute(0, null)) { launchSingleTop = true } },
+                onNavigateToFollowing = { navController.navigate(Screen.FollowersFollowing.createRoute(1, null)) { launchSingleTop = true } },
+                onNavigateToChat = { navController.navigate(Screen.Chat.route) { launchSingleTop = true } }
+            )
+        }
+        composable(
+            route = Screen.OtherProfile.route,
+            arguments = listOf(navArgument("userId") { type = NavType.LongType })
+        ) { backStackEntry ->
+            val userId = backStackEntry.arguments?.getLong("userId") ?: return@composable
+            ProfileScreen(
+                onNavigateToEditProfile = {},
+                onNavigateToFollowers = { navController.navigate(Screen.FollowersFollowing.createRoute(0, userId)) { launchSingleTop = true } },
+                onNavigateToFollowing = { navController.navigate(Screen.FollowersFollowing.createRoute(1, userId)) { launchSingleTop = true } },
+                viewingUserId = userId,
+                onNavigateToChat = {
+                    navController.navigate(Screen.Chat.route) {
+                        launchSingleTop = true
+                    }
+                },
+                onBack = {
+                    val poppedToOwnProfile = navController.popBackStack(Screen.Profile.route, false)
+                    if (!poppedToOwnProfile) {
+                        navController.popBackStack()
+                    }
+                }
             )
         }
         composable(Screen.EditProfile.route) {
@@ -256,18 +291,33 @@ fun NavGraph(
         }
         composable(
             route = Screen.FollowersFollowing.route,
-            arguments = listOf(navArgument("tabIndex") { type = NavType.IntType })
+            arguments = listOf(
+                navArgument("tabIndex") { type = NavType.IntType },
+                navArgument("userId") { type = NavType.LongType }
+            )
         ) { backStackEntry ->
             val tabIndex = backStackEntry.arguments?.getInt("tabIndex") ?: 0
+            val targetUserId = backStackEntry.arguments?.getLong("userId")?.takeIf { it > 0L }
             FollowersFollowingScreen(
                 initialTabIndex = tabIndex,
-                onBack = { navController.popBackStack() }
+                viewingUserId = targetUserId,
+                onBack = { navController.popBackStack() },
+                onNavigateToUserProfile = { userId ->
+                    if (userId == null) {
+                        val poppedToOwnProfile = navController.popBackStack(Screen.Profile.route, false)
+                        if (!poppedToOwnProfile) {
+                            navController.navigate(Screen.Profile.route) { launchSingleTop = true }
+                        }
+                    } else {
+                        navController.navigate(Screen.OtherProfile.createRoute(userId)) { launchSingleTop = true }
+                    }
+                }
             )
         }
         composable(Screen.PostDetail.route) {
-            PostDetailScreen(
-                onBack = { navController.popBackStack() }
-            )
+//            PostDetailScreen(
+//                onBack = { navController.popBackStack() }
+//            )
         }
 
         composable(Screen.CreateGroup.route) {

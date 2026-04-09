@@ -112,7 +112,7 @@ fun EditProfileScreen(
             is UiState.Success -> {
                 viewModel.resetUpdateStatus()
                 Toast.makeText(context, "Cập nhật thành công!", Toast.LENGTH_SHORT).show()
-                viewModel.loadUserProfile() 
+                viewModel.loadUserProfile()
                 onSaveSuccess()
             }
             is UiState.Error -> {
@@ -276,7 +276,7 @@ fun EditProfileScreen(
                 label = "Gender",
                 value = gender,
                 onValueChange = { gender = it },
-                enabled = true
+                enabled = false
             )
 
             Spacer(modifier = Modifier.height(40.dp))

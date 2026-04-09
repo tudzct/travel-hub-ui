@@ -41,7 +41,6 @@ android {
     }
     packaging {
         resources {
-            // Ignore the duplicate META-INF file
             excludes += setOf(
                 "META-INF/versions/9/OSGI-INF/MANIFEST.MF"
             )
@@ -71,6 +70,7 @@ dependencies {
     // Coil for images
     implementation("io.coil-kt.coil3:coil-compose:3.0.4")
     implementation("io.coil-kt.coil3:coil-network-okhttp:3.0.4")
+    implementation(libs.androidx.compose.foundation)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
