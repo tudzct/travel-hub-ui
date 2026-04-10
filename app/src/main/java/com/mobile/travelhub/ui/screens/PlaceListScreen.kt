@@ -34,6 +34,7 @@ fun PlaceListScreen(
     placeViewModel: PlaceViewModel = hiltViewModel()
 ) {
     val places by placeViewModel.places.collectAsState()
+    val hasPersonalSignals by placeViewModel.hasPersonalSignals.collectAsState()
 
     if (places.isEmpty()) {
         Column(
@@ -68,7 +69,11 @@ fun PlaceListScreen(
                     fontWeight = FontWeight.SemiBold
                 )
                 Text(
-                    text = "Explore places from the local Travel Hub dataset. Tap a destination to view details or edit it.",
+                    text = if (hasPersonalSignals) {
+                        "Ordered for you based on what you explore in app."
+                    } else {
+                        "Explore places from the local Travel Hub dataset. Tap a destination to view details or edit it."
+                    },
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -78,7 +83,10 @@ fun PlaceListScreen(
         items(places, key = { it.id }) { place ->
             PlaceSummaryCard(
                 place = place,
-                onClick = { onPlaceClick(place.id) }
+                onClick = {
+                    placeViewModel.recordPlaceOpened(place)
+                    onPlaceClick(place.id)
+                }
             )
         }
     }

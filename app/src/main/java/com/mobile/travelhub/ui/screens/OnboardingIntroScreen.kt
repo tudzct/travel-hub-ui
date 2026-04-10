@@ -139,81 +139,6 @@ fun OnboardingIntroScreen(
 
             Spacer(modifier = Modifier.height(40.dp))
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "Which do you\nprefer?",
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    text = "Editorial\nPick",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = Color(0xFF0A4F69),
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(22.dp))
-                        .background(Color(0xFFC7E4F8))
-                        .padding(horizontal = 14.dp, vertical = 10.dp)
-                )
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-                TallChoiceCard(
-                    title = "Beach",
-                    subtitle = "STAY NEAR",
-                    gradient = listOf(Color(0xFF2E8BC2), Color(0xFF27445D)),
-                    modifier = Modifier.weight(1f)
-                )
-                TallChoiceCard(
-                    title = "Mountain",
-                    subtitle = "STAY HIGH",
-                    gradient = listOf(Color(0xFF5B91BD), Color(0xFF283A59)),
-                    modifier = Modifier.weight(1f)
-                )
-            }
-
-            Spacer(modifier = Modifier.height(18.dp))
-
-            ChoiceDetailCard(
-                title = "Slow Relax",
-                subtitle = "Spas, private villas, and sunset meditations.",
-                iconText = "*",
-                iconBackground = Color(0xFFF2F4F7),
-                iconColor = Color(0xFF0E5B76)
-            )
-
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 10.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = "VS",
-                    style = MaterialTheme.typography.titleSmall,
-                    color = Color(0xFF707784),
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(14.dp))
-                        .background(Color(0xFFEDEFF3))
-                        .padding(horizontal = 16.dp, vertical = 4.dp)
-                )
-            }
-
-            ChoiceDetailCard(
-                title = "Wild Adventure",
-                subtitle = "Off-road expeditions, diving, and trekking.",
-                iconText = "W",
-                iconBackground = Color(0xFF0A5C77),
-                iconColor = Color.White
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
             IntroBottomActions(
                 onPrevious = onPrevious,
                 onContinue = onContinue
@@ -240,7 +165,7 @@ private fun IntroHeader(onBack: () -> Unit, onSkip: () -> Unit) {
         )
         Spacer(modifier = Modifier.width(8.dp))
         Text(
-            text = "Step 1 of 3",
+            text = "Step 1 of 4",
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.SemiBold
         )

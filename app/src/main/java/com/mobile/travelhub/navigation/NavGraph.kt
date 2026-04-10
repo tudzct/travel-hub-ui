@@ -6,18 +6,22 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.mobile.travelhub.ui.screens.OnboardingDetailsScreen
+import com.mobile.travelhub.ui.screens.OnboardingDestinationScreen
 import com.mobile.travelhub.ui.screens.ItineraryBotScreen
+import com.mobile.travelhub.ui.screens.OnboardingInterestsScreen
 import com.mobile.travelhub.ui.screens.ProfileScreen
 import com.mobile.travelhub.ui.screens.EditPlaceScreen
 import com.mobile.travelhub.ui.screens.OnboardingFinishScreen
-import com.mobile.travelhub.ui.screens.OnboardingIntroScreen
-import com.mobile.travelhub.ui.screens.OnboardingVibeScreen
+import com.mobile.travelhub.ui.screens.OnboardingTripTypeScreen
 import com.mobile.travelhub.ui.screens.LoginScreen
 import com.mobile.travelhub.ui.screens.PlaceDetailScreen
 import com.mobile.travelhub.ui.screens.PlaceListScreen
@@ -33,19 +37,20 @@ import com.mobile.travelhub.ui.screens.GroupChatScreen
 import com.mobile.travelhub.ui.screens.GroupDetailScreen
 import com.mobile.travelhub.ui.screens.GroupDiscoveryScreen
 import com.mobile.travelhub.ui.screens.HomeScreen
-import com.mobile.travelhub.ui.screens.ItineraryBotScreen
 import com.mobile.travelhub.ui.screens.TripsScreen
 import com.mobile.travelhub.ui.screens.ItineraryScreen
 //import com.mobile.travelhub.ui.screens.PostDetailScreen
-import com.mobile.travelhub.ui.screens.ProfileScreen
+import com.mobile.travelhub.viewmodels.OnboardingViewModel
 
 sealed class Screen(
     val route: String,
     val index: Int = -1,
     val showBottomBar: Boolean = false
 ) {
-    data object OnboardingIntro : Screen("onboarding-intro", -3)
-    data object OnboardingVibe : Screen("onboarding-vibe", -2)
+    data object OnboardingTripType : Screen("onboarding-trip-type", -5)
+    data object OnboardingIntro : Screen("onboarding-intro", -4)
+    data object OnboardingDestination : Screen("onboarding-destination", -3)
+    data object OnboardingDetails : Screen("onboarding-details", -2)
     data object OnboardingFinish : Screen("onboarding-finish", -1)
     data object Home : Screen("home", 0, true)
     data object Trips : Screen("trips", 1, true)
@@ -91,7 +96,9 @@ sealed class Screen(
         fun fromRoute(route: String?): Screen? {
             return when (route?.substringBefore("/")) {
                 OnboardingIntro.route -> OnboardingIntro
-                OnboardingVibe.route -> OnboardingVibe
+                OnboardingTripType.route -> OnboardingTripType
+                OnboardingDestination.route -> OnboardingDestination
+                OnboardingDetails.route -> OnboardingDetails
                 OnboardingFinish.route -> OnboardingFinish
                 Home.route -> Home
                 Trips.route -> Trips
@@ -140,10 +147,15 @@ fun NavGraph(
     authUiState: AuthUiState,
     onLogin: (String, String) -> Unit,
     onRegister: (String, String, String) -> Unit,
-    onClearAuthError: () -> Unit
+    onClearAuthError: () -> Unit,
+    onboardingViewModel: OnboardingViewModel
 ) {
-    LaunchedEffect(authUiState.isAuthenticated) {
-        if (authUiState.isAuthenticated) {
+    val onboardingUiState by onboardingViewModel.uiState.collectAsState()
+    val currentRoute = navController.currentBackStackEntry?.destination?.route?.substringBefore("/")
+
+    LaunchedEffect(authUiState.isAuthenticated, currentRoute) {
+        val isAuthRoute = currentRoute == Screen.Login.route || currentRoute == Screen.Register.route
+        if (authUiState.isAuthenticated && isAuthRoute) {
             navController.navigate(Screen.Home.route) {
                 popUpTo(Screen.Login.route) { inclusive = true }
                 launchSingleTop = true
@@ -185,29 +197,75 @@ fun NavGraph(
                 onDismissError = onClearAuthError
             )
         }
-        composable(Screen.OnboardingIntro.route) {
-            OnboardingIntroScreen(
+        composable(Screen.OnboardingTripType.route) {
+            OnboardingTripTypeScreen(
                 onSkip = {
-                    navController.navigate(Screen.Home.route) {
+                    val destination = if (authUiState.isAuthenticated) Screen.Home.route else Screen.Login.route
+                    navController.navigate(destination) {
                         popUpTo(Screen.OnboardingIntro.route) { inclusive = true }
                     }
                 },
-                onContinue = { navController.navigate(Screen.OnboardingVibe.route) },
+                onContinue = { selectedTripType ->
+                    onboardingViewModel.updateTripType(selectedTripType)
+                    navController.navigate(Screen.OnboardingIntro.route)
+                },
                 onPrevious = { navController.popBackStack() },
                 onBack = { navController.popBackStack() }
             )
         }
-        composable(Screen.OnboardingVibe.route) {
-            OnboardingVibeScreen(
+        composable(Screen.OnboardingIntro.route) {
+            OnboardingInterestsScreen(
+                initialSelected = onboardingUiState.interests,
                 onSkip = {
-                    navController.navigate(Screen.Home.route) {
+                    val destination = if (authUiState.isAuthenticated) Screen.Home.route else Screen.Login.route
+                    navController.navigate(destination) {
                         popUpTo(Screen.OnboardingIntro.route) { inclusive = true }
                     }
                 },
-                onContinue = { selectedVibes ->
-                    navController.currentBackStackEntry
-                        ?.savedStateHandle
-                        ?.set("selected_vibes", ArrayList(selectedVibes))
+                onContinue = { selectedInterests ->
+                    onboardingViewModel.updateInterests(selectedInterests)
+                    navController.navigate(Screen.OnboardingDestination.route)
+                },
+                onPrevious = { navController.navigateUp() },
+                onBack = { navController.popBackStack() }
+            )
+        }
+        composable(Screen.OnboardingDestination.route) {
+            OnboardingDestinationScreen(
+                initialDestination = onboardingUiState.destination,
+                onSkip = {
+                    val destination = if (authUiState.isAuthenticated) Screen.Home.route else Screen.Login.route
+                    navController.navigate(destination) {
+                        popUpTo(Screen.OnboardingIntro.route) { inclusive = true }
+                    }
+                },
+                onContinue = { selectedDestination ->
+                    onboardingViewModel.updateDestination(selectedDestination)
+                    navController.navigate(Screen.OnboardingDetails.route)
+                },
+                onPrevious = { navController.navigateUp() },
+                onBack = { navController.popBackStack() }
+            )
+        }
+        composable(Screen.OnboardingDetails.route) {
+            OnboardingDetailsScreen(
+                initialStartDate = onboardingUiState.startDate,
+                initialEndDate = onboardingUiState.endDate,
+                initialTravelers = onboardingUiState.travelers,
+                initialBudgetLevel = onboardingUiState.budgetLevel,
+                onSkip = {
+                    val destination = if (authUiState.isAuthenticated) Screen.Home.route else Screen.Login.route
+                    navController.navigate(destination) {
+                        popUpTo(Screen.OnboardingIntro.route) { inclusive = true }
+                    }
+                },
+                onContinue = { startDate, endDate, travelers, budgetLevel ->
+                    onboardingViewModel.updateDetails(
+                        startDate = startDate,
+                        endDate = endDate,
+                        travelers = travelers,
+                        budgetLevel = budgetLevel
+                    )
                     navController.navigate(Screen.OnboardingFinish.route)
                 },
                 onPrevious = { navController.navigateUp() },
@@ -215,21 +273,24 @@ fun NavGraph(
             )
         }
         composable(Screen.OnboardingFinish.route) {
-            val selectedVibes = navController.previousBackStackEntry
-                ?.savedStateHandle
-                ?.get<ArrayList<String>>("selected_vibes")
-                ?.toList()
-                .orEmpty()
 
             OnboardingFinishScreen(
-                selectedVibes = selectedVibes,
+                selectedInterests = onboardingUiState.interests,
+                selectedTripType = onboardingUiState.tripType,
+                selectedDestination = onboardingUiState.destination,
+                startDate = onboardingUiState.startDate,
+                endDate = onboardingUiState.endDate,
+                travelers = onboardingUiState.travelers,
+                budgetLevel = onboardingUiState.budgetLevel,
                 onSkip = {
-                    navController.navigate(Screen.Home.route) {
+                    val destination = if (authUiState.isAuthenticated) Screen.Home.route else Screen.Login.route
+                    navController.navigate(destination) {
                         popUpTo(Screen.OnboardingIntro.route) { inclusive = true }
                     }
                 },
                 onContinue = {
-                    navController.navigate(Screen.Home.route) {
+                    val destination = if (authUiState.isAuthenticated) Screen.Home.route else Screen.Login.route
+                    navController.navigate(destination) {
                         popUpTo(Screen.OnboardingIntro.route) { inclusive = true }
                     }
                 },

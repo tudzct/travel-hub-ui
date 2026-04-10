@@ -30,11 +30,18 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.mobile.travelhub.ui.components.OnboardingStepProgress
 import com.mobile.travelhub.ui.theme.TravelHubTheme
 
 @Composable
 fun OnboardingFinishScreen(
-    selectedVibes: List<String>,
+    selectedInterests: List<String>,
+    selectedTripType: String? = null,
+    selectedDestination: String? = null,
+    startDate: String = "",
+    endDate: String = "",
+    travelers: Int = 1,
+    budgetLevel: String = "",
     onBack: () -> Unit = {},
     onSkip: () -> Unit = {},
     onPrevious: () -> Unit = {},
@@ -51,6 +58,8 @@ fun OnboardingFinishScreen(
                 .padding(horizontal = 20.dp, vertical = 12.dp)
         ) {
             FinishHeader(onBack = onBack, onSkip = onSkip)
+            Spacer(modifier = Modifier.height(10.dp))
+            OnboardingStepProgress(currentStep = 5, totalSteps = 5)
             Spacer(modifier = Modifier.height(26.dp))
 
             Text(
@@ -60,7 +69,7 @@ fun OnboardingFinishScreen(
             )
             Spacer(modifier = Modifier.height(10.dp))
             Text(
-                text = "Step 3 helps us finalize your feed with travel styles you picked.",
+                text = "Final step helps us finalize your feed with travel styles you picked.",
                 style = MaterialTheme.typography.bodyLarge,
                 color = Color(0xFF383D47)
             )
@@ -77,20 +86,81 @@ fun OnboardingFinishScreen(
                         .fillMaxWidth()
                         .padding(20.dp)
                 ) {
+                    if (!selectedTripType.isNullOrBlank()) {
+                        Text(
+                            text = "Trip type",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = selectedTripType,
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = Color(0xFF0A4F69),
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(20.dp))
+                                .background(Color(0xFFD2E9F8))
+                                .border(1.dp, Color(0xFFB4D7EC), RoundedCornerShape(20.dp))
+                                .padding(horizontal = 12.dp, vertical = 8.dp)
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                    }
+
+                    if (!selectedDestination.isNullOrBlank()) {
+                        Text(
+                            text = "Destination",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = selectedDestination,
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = Color(0xFF0A4F69),
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(20.dp))
+                                .background(Color(0xFFD2E9F8))
+                                .border(1.dp, Color(0xFFB4D7EC), RoundedCornerShape(20.dp))
+                                .padding(horizontal = 12.dp, vertical = 8.dp)
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                    }
+
+                    if (startDate.isNotBlank() || endDate.isNotBlank()) {
+                        Text(
+                            text = "Timeline",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "$startDate - $endDate",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = Color(0xFF383D47)
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "Travelers: $travelers · Budget: $budgetLevel",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Color(0xFF5E6470)
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                    }
+
                     Text(
-                        text = "Selected vibes",
+                        text = "Selected interests",
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.SemiBold
                     )
                     Spacer(modifier = Modifier.height(14.dp))
-                    if (selectedVibes.isEmpty()) {
+                    if (selectedInterests.isEmpty()) {
                         Text(
-                            text = "No vibe selected yet. You can still continue.",
+                            text = "No interest selected yet. You can still continue.",
                             style = MaterialTheme.typography.bodyLarge,
                             color = Color(0xFF616874)
                         )
                     } else {
-                        VibeWrap(selectedVibes)
+                        VibeWrap(selectedInterests)
                     }
                 }
             }
@@ -153,7 +223,7 @@ private fun FinishHeader(onBack: () -> Unit, onSkip: () -> Unit) {
         )
         Spacer(modifier = Modifier.padding(4.dp))
         Text(
-            text = "Step 3 of 3",
+            text = "Step 5 of 5",
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.SemiBold
         )
@@ -242,7 +312,12 @@ private fun FinishActions(onPrevious: () -> Unit, onContinue: () -> Unit) {
 private fun OnboardingFinishScreenPreview() {
     TravelHubTheme {
         OnboardingFinishScreen(
-            selectedVibes = listOf("Alpine Serenity", "Crystal Shores", "Eco Escapes")
+            selectedInterests = listOf("Great Food", "Hidden Gems", "Museums"),
+            selectedDestination = "Hanoi",
+            startDate = "Oct 12, 2024",
+            endDate = "Oct 24, 2024",
+            travelers = 2,
+            budgetLevel = "Mid-Range"
         )
     }
 }

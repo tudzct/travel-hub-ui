@@ -165,7 +165,7 @@ private fun HeaderRow(onBack: () -> Unit, onSkip: () -> Unit) {
         )
         Spacer(modifier = Modifier.width(8.dp))
         Text(
-            text = "Step 2 of 3",
+            text = "Step 3 of 4",
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold
         )

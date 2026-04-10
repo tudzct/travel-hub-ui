@@ -29,7 +29,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -42,20 +41,30 @@ import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.composables.explorenavigationicon
 import com.mobile.travelhub.navigation.NavGraph
 import com.mobile.travelhub.navigation.Screen
 import com.mobile.travelhub.ui.components.layout.BottomNavItem
 import com.mobile.travelhub.ui.components.layout.RoundedTopNavigationBar
 import com.mobile.travelhub.viewmodels.AuthViewModel
+import com.mobile.travelhub.viewmodels.OnboardingViewModel
 
 @Composable
-fun TravelHubScreen(authViewModel: AuthViewModel = hiltViewModel()) {
+fun TravelHubScreen(
+    authViewModel: AuthViewModel = hiltViewModel(),
+    onboardingViewModel: OnboardingViewModel = hiltViewModel()
+) {
     val navController = rememberNavController()
     val authUiState by authViewModel.uiState.collectAsState()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
     val navItems = listOf(
         BottomNavItem(screen = Screen.Home, icon = Icons.Outlined.Home, contentDescription = "Home"),
+        BottomNavItem(
+            screen = Screen.Trips,
+            icon = explorenavigationicon,
+            contentDescription = "Explore"
+        ),
         BottomNavItem(
             screen = Screen.Trips,
             icon = Icons.AutoMirrored.Outlined.DirectionsWalk,
@@ -65,9 +74,7 @@ fun TravelHubScreen(authViewModel: AuthViewModel = hiltViewModel()) {
         BottomNavItem(screen = Screen.Profile, icon = Icons.Outlined.AccountCircle, contentDescription = "Profile")
     )
 
-    val startDestination = remember(authUiState.isAuthenticated) {
-        if (authUiState.isAuthenticated) Screen.Home.route else Screen.Login.route
-    }
+    val startDestination = Screen.OnboardingTripType.route
     val showBottomBar = Screen.fromRoute(currentRoute)?.showBottomBar == true
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -79,7 +86,8 @@ fun TravelHubScreen(authViewModel: AuthViewModel = hiltViewModel()) {
                 authUiState = authUiState,
                 onLogin = authViewModel::login,
                 onRegister = authViewModel::register,
-                onClearAuthError = authViewModel::clearError
+                onClearAuthError = authViewModel::clearError,
+                onboardingViewModel = onboardingViewModel
             )
         }
 
