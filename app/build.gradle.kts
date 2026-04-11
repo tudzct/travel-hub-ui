@@ -4,6 +4,8 @@ plugins {
     id("com.google.devtools.ksp")
     id("com.google.dagger.hilt.android")
     alias(libs.plugins.kotlin.android)
+    id("com.google.gms.google-services")
+
 }
 
 android {
@@ -88,5 +90,20 @@ dependencies {
     implementation("com.google.dagger:hilt-android:2.57.1")
     ksp("com.google.dagger:hilt-android-compiler:2.57.1")
     implementation("androidx.hilt:hilt-navigation-compose:1.3.0")
+    // Import the Firebase BoM
+    implementation(platform("com.google.firebase:firebase-bom:34.12.0"))
+
+    // When using the BoM, you don't specify versions in Firebase library dependencies
+
+    // Add the dependency for the Firebase SDK for Google Analytics
+    implementation("com.google.firebase:firebase-analytics")
+
+    // TODO: Add the dependencies for any other Firebase products you want to use
+    // See https://firebase.google.com/docs/android/setup#available-libraries
+    // For example, add the dependencies for Firebase Authentication and Cloud Firestore
+    implementation("com.google.firebase:firebase-messaging")
+    implementation("com.google.firebase:firebase-auth")
+    implementation("com.google.firebase:firebase-firestore")
+    implementation("androidx.work:work-runtime-ktx:2.9.0")
 
 }
