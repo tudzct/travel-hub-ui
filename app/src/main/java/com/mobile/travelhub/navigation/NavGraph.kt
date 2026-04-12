@@ -14,8 +14,6 @@ import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import com.mobile.travelhub.ui.screens.OnboardingDetailsScreen
-import com.mobile.travelhub.ui.screens.OnboardingDestinationScreen
 import com.mobile.travelhub.ui.screens.ItineraryBotScreen
 import com.mobile.travelhub.ui.screens.OnboardingInterestsScreen
 import com.mobile.travelhub.ui.screens.ProfileScreen
@@ -225,48 +223,6 @@ fun NavGraph(
                 onContinue = { selectedInterests ->
                     onboardingViewModel.updateInterests(selectedInterests)
                     navController.navigate(Screen.OnboardingDestination.route)
-                },
-                onPrevious = { navController.navigateUp() },
-                onBack = { navController.popBackStack() }
-            )
-        }
-        composable(Screen.OnboardingDestination.route) {
-            OnboardingDestinationScreen(
-                initialDestination = onboardingUiState.destination,
-                onSkip = {
-                    val destination = if (authUiState.isAuthenticated) Screen.Home.route else Screen.Login.route
-                    navController.navigate(destination) {
-                        popUpTo(Screen.OnboardingIntro.route) { inclusive = true }
-                    }
-                },
-                onContinue = { selectedDestination ->
-                    onboardingViewModel.updateDestination(selectedDestination)
-                    navController.navigate(Screen.OnboardingDetails.route)
-                },
-                onPrevious = { navController.navigateUp() },
-                onBack = { navController.popBackStack() }
-            )
-        }
-        composable(Screen.OnboardingDetails.route) {
-            OnboardingDetailsScreen(
-                initialStartDate = onboardingUiState.startDate,
-                initialEndDate = onboardingUiState.endDate,
-                initialTravelers = onboardingUiState.travelers,
-                initialBudgetLevel = onboardingUiState.budgetLevel,
-                onSkip = {
-                    val destination = if (authUiState.isAuthenticated) Screen.Home.route else Screen.Login.route
-                    navController.navigate(destination) {
-                        popUpTo(Screen.OnboardingIntro.route) { inclusive = true }
-                    }
-                },
-                onContinue = { startDate, endDate, travelers, budgetLevel ->
-                    onboardingViewModel.updateDetails(
-                        startDate = startDate,
-                        endDate = endDate,
-                        travelers = travelers,
-                        budgetLevel = budgetLevel
-                    )
-                    navController.navigate(Screen.OnboardingFinish.route)
                 },
                 onPrevious = { navController.navigateUp() },
                 onBack = { navController.popBackStack() }

@@ -125,7 +125,7 @@ private fun TripTypeHeader(onBack: () -> Unit, onSkip: () -> Unit) {
         )
         Spacer(modifier = Modifier.width(8.dp))
         Text(
-            text = "Step 1 of 5",
+            text = "Step 1 of ",
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.SemiBold
         )
