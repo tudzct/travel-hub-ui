@@ -26,7 +26,7 @@ class ItineraryBotRepo @Inject constructor() {
             .build()
 
         val request = Request.Builder()
-            .url("http://10.11.157.95:8888/chat")
+            .url("http://192.168.1.105:8888/chat")
             .build()
 
         val eventSource = EventSources.createFactory(client)

@@ -1,6 +1,8 @@
 package com.mobile.travelhub.data
 
 import android.content.Context
+import com.mobile.travelhub.data.api.AIClient
+import com.mobile.travelhub.data.model.PreferenceUpdateRequest
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -8,12 +10,15 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import org.json.JSONObject
+import androidx.core.content.edit
 
 @Singleton
 class RecommendationRepository @Inject constructor(
-    @param:ApplicationContext private val context: Context
+    @param:ApplicationContext private val context: Context,
+    private val authRepository: AuthRepository
 ) {
     private val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+    private val api = AIClient.apiService
 
     private val _placeClicks = MutableStateFlow(loadMap(KEY_PLACE_CLICKS))
     private val _provinceClicks = MutableStateFlow(loadMap(KEY_PROVINCE_CLICKS))
@@ -34,10 +39,37 @@ class RecommendationRepository @Inject constructor(
         _placeClicks.value = placeMap
         _provinceClicks.value = provinceMap
 
-        prefs.edit()
-            .putString(KEY_PLACE_CLICKS, mapToJson(placeMap).toString())
-            .putString(KEY_PROVINCE_CLICKS, mapToJson(provinceMap).toString())
-            .apply()
+        prefs.edit {
+            putString(KEY_PLACE_CLICKS, mapToJson(placeMap).toString())
+                .putString(KEY_PROVINCE_CLICKS, mapToJson(provinceMap).toString())
+        }
+    }
+
+    suspend fun syncPreferencesToServer(
+        tripType: String?,
+        interests: List<String>,
+        destination: String?
+    ): Result<Unit> {
+        val normalizedTripType = tripType?.trim()?.takeIf { it.isNotEmpty() }
+        val normalizedInterests = interests
+            .map { it.trim() }
+            .filter { it.isNotEmpty() }
+            .distinct()
+        val normalizedDestination = destination?.trim()?.takeIf { it.isNotEmpty() }
+
+        val session = authRepository.getSavedSession()
+            ?: return Result.failure(IllegalStateException("Cannot sync preferences before login"))
+
+        return runCatching {
+            api.updatePreferences(
+                id = session.userId.toLong(),
+                request = PreferenceUpdateRequest(
+                    tripType = normalizedTripType,
+                    interests = normalizedInterests,
+                    destination = normalizedDestination
+                )
+            )
+        }
     }
 
     companion object {

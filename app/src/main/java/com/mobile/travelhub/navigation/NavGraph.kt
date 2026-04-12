@@ -16,6 +16,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.mobile.travelhub.ui.screens.ItineraryBotScreen
 import com.mobile.travelhub.ui.screens.OnboardingInterestsScreen
+import com.mobile.travelhub.ui.screens.OnboardingIntroScreen
 import com.mobile.travelhub.ui.screens.ProfileScreen
 import com.mobile.travelhub.ui.screens.EditPlaceScreen
 import com.mobile.travelhub.ui.screens.OnboardingFinishScreen
@@ -48,8 +49,7 @@ sealed class Screen(
     data object OnboardingTripType : Screen("onboarding-trip-type", -5)
     data object OnboardingIntro : Screen("onboarding-intro", -4)
     data object OnboardingDestination : Screen("onboarding-destination", -3)
-    data object OnboardingDetails : Screen("onboarding-details", -2)
-    data object OnboardingFinish : Screen("onboarding-finish", -1)
+    data object OnboardingFinish : Screen("onboarding-finish", -2)
     data object Home : Screen("home", 0, true)
     data object Trips : Screen("trips", 1, true)
     data object Profile : Screen("profile", 2, true)
@@ -96,7 +96,6 @@ sealed class Screen(
                 OnboardingIntro.route -> OnboardingIntro
                 OnboardingTripType.route -> OnboardingTripType
                 OnboardingDestination.route -> OnboardingDestination
-                OnboardingDetails.route -> OnboardingDetails
                 OnboardingFinish.route -> OnboardingFinish
                 Home.route -> Home
                 Trips.route -> Trips
@@ -214,6 +213,7 @@ fun NavGraph(
         composable(Screen.OnboardingIntro.route) {
             OnboardingInterestsScreen(
                 initialSelected = onboardingUiState.interests,
+                syncErrorMessage = onboardingUiState.preferenceSyncErrorMessage,
                 onSkip = {
                     val destination = if (authUiState.isAuthenticated) Screen.Home.route else Screen.Login.route
                     navController.navigate(destination) {
@@ -223,6 +223,21 @@ fun NavGraph(
                 onContinue = { selectedInterests ->
                     onboardingViewModel.updateInterests(selectedInterests)
                     navController.navigate(Screen.OnboardingDestination.route)
+                },
+                onPrevious = { navController.navigateUp() },
+                onBack = { navController.popBackStack() }
+            )
+        }
+        composable(Screen.OnboardingDestination.route) {
+            OnboardingIntroScreen(
+                onSkip = {
+                    val destination = if (authUiState.isAuthenticated) Screen.Home.route else Screen.Login.route
+                    navController.navigate(destination) {
+                        popUpTo(Screen.OnboardingIntro.route) { inclusive = true }
+                    }
+                },
+                onContinue = {
+                    navController.navigate(Screen.OnboardingFinish.route)
                 },
                 onPrevious = { navController.navigateUp() },
                 onBack = { navController.popBackStack() }

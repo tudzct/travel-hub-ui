@@ -3,7 +3,7 @@ package com.mobile.travelhub.ui.viewmodels
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.mobile.travelhub.data.api.ApiClient
+import com.mobile.travelhub.data.api.BusinessClient
 import com.mobile.travelhub.data.model.ProfileUpdateRequest
 import com.mobile.travelhub.data.model.UserProfileResponse
 import com.mobile.travelhub.data.model.UserSummaryResponse
@@ -13,7 +13,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 class ProfileViewModel : ViewModel() {
-    private val api = ApiClient.apiService
+    private val api = BusinessClient.apiService
 
     private val currentUserId: Long = 1L
 

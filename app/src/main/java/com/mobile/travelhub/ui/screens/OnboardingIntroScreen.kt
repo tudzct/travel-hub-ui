@@ -36,6 +36,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.mobile.travelhub.ui.components.OnboardingDotsIndicator
 import com.mobile.travelhub.ui.theme.TravelHubTheme
 
 private data class InterestTag(
@@ -138,6 +139,13 @@ fun OnboardingIntroScreen(
             }
 
             Spacer(modifier = Modifier.height(40.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center
+            ) {
+                OnboardingDotsIndicator(currentStep = 3, totalSteps = 4)
+            }
+            Spacer(modifier = Modifier.height(14.dp))
 
             IntroBottomActions(
                 onPrevious = onPrevious,
@@ -162,12 +170,6 @@ private fun IntroHeader(onBack: () -> Unit, onSkip: () -> Unit) {
                 .clip(CircleShape)
                 .clickable(onClick = onBack)
                 .padding(horizontal = 10.dp, vertical = 6.dp)
-        )
-        Spacer(modifier = Modifier.width(8.dp))
-        Text(
-            text = "Step 1 of 4",
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.SemiBold
         )
         Spacer(modifier = Modifier.weight(1f))
         Text(

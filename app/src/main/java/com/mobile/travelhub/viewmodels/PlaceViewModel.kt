@@ -41,12 +41,17 @@ class PlaceViewModel @Inject constructor(
         )
     )
 
-    val hasPersonalSignals: StateFlow<Boolean> = recommendationRepository.placeClicks
-        .map { it.isNotEmpty() }
+    val hasPersonalSignals: StateFlow<Boolean> = combine(
+        recommendationRepository.placeClicks,
+        recommendationRepository.provinceClicks
+    ) { placeClicks, provinceClicks ->
+        placeClicks.isNotEmpty() || provinceClicks.isNotEmpty()
+    }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5_000),
-            initialValue = recommendationRepository.placeClicks.value.isNotEmpty()
+            initialValue = recommendationRepository.placeClicks.value.isNotEmpty() ||
+                recommendationRepository.provinceClicks.value.isNotEmpty()
         )
 
     fun observePlace(placeId: String): Flow<PlaceDetail?> {
@@ -72,12 +77,15 @@ class PlaceViewModel @Inject constructor(
             return places
         }
 
-        return places.sortedWith(
-            compareByDescending<PlaceSummary> { place ->
-                val clickScore = ln((placeClicks[place.id] ?: 0) + 1.0)
-                val provinceScore = ln((provinceClicks[place.provinceName.trim().lowercase()] ?: 0) + 1.0)
-                (clickScore * 0.7) + (provinceScore * 0.3)
-            }.thenBy { it.title }
-        )
+        return places.withIndex()
+            .sortedWith(
+                compareByDescending<IndexedValue<PlaceSummary>> { indexedPlace ->
+                    val place = indexedPlace.value
+                    val clickScore = ln((placeClicks[place.id] ?: 0) + 1.0)
+                    val provinceScore = ln((provinceClicks[place.provinceName.trim().lowercase()] ?: 0) + 1.0)
+                    (clickScore * 0.7) + (provinceScore * 0.3)
+                }.thenBy { it.index }
+            )
+            .map { it.value }
     }
 }

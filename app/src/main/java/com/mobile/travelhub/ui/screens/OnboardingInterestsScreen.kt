@@ -31,7 +31,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.mobile.travelhub.ui.components.OnboardingStepProgress
+import com.mobile.travelhub.ui.components.OnboardingDotsIndicator
 import com.mobile.travelhub.ui.theme.TravelHubTheme
 
 private val interestOptions = listOf(
@@ -49,6 +49,7 @@ private val interestOptions = listOf(
 @Composable
 fun OnboardingInterestsScreen(
     initialSelected: List<String> = emptyList(),
+    syncErrorMessage: String? = null,
     onBack: () -> Unit = {},
     onSkip: () -> Unit = {},
     onPrevious: () -> Unit = {},
@@ -67,8 +68,6 @@ fun OnboardingInterestsScreen(
                 .padding(horizontal = 20.dp, vertical = 12.dp)
         ) {
             InterestsHeader(onBack = onBack, onSkip = onSkip)
-            Spacer(modifier = Modifier.height(10.dp))
-            OnboardingStepProgress(currentStep = 2, totalSteps = 5)
             Spacer(modifier = Modifier.height(24.dp))
 
             Text(
@@ -82,6 +81,14 @@ fun OnboardingInterestsScreen(
                 style = MaterialTheme.typography.bodyLarge,
                 color = Color(0xFF4B4F59)
             )
+            syncErrorMessage?.let { error ->
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = error,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.error
+                )
+            }
             Spacer(modifier = Modifier.height(18.dp))
 
             FlowRow(
@@ -110,6 +117,13 @@ fun OnboardingInterestsScreen(
             }
 
             Spacer(modifier = Modifier.height(28.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center
+            ) {
+                OnboardingDotsIndicator(currentStep = 2, totalSteps = 4)
+            }
+            Spacer(modifier = Modifier.height(14.dp))
 
             InterestsBottomActions(
                 canContinue = selected.isNotEmpty(),
@@ -134,12 +148,6 @@ private fun InterestsHeader(onBack: () -> Unit, onSkip: () -> Unit) {
                 .clip(CircleShape)
                 .clickable(onClick = onBack)
                 .padding(horizontal = 10.dp, vertical = 6.dp)
-        )
-        Spacer(modifier = Modifier.width(8.dp))
-        Text(
-            text = "Step 2 of 5",
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.SemiBold
         )
         Spacer(modifier = Modifier.weight(1f))
         Text(

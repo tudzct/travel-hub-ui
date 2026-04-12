@@ -31,7 +31,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.mobile.travelhub.ui.components.OnboardingStepProgress
+import com.mobile.travelhub.ui.components.OnboardingDotsIndicator
 import com.mobile.travelhub.ui.theme.TravelHubTheme
 
 private data class TripTypeOption(
@@ -68,8 +68,6 @@ fun OnboardingTripTypeScreen(
                 .padding(horizontal = 20.dp, vertical = 12.dp)
         ) {
             TripTypeHeader(onBack = onBack, onSkip = onSkip)
-            Spacer(modifier = Modifier.height(10.dp))
-            OnboardingStepProgress(currentStep = 1, totalSteps = 5)
             Spacer(modifier = Modifier.height(24.dp))
 
             Text(
@@ -97,6 +95,13 @@ fun OnboardingTripTypeScreen(
             }
 
             Spacer(modifier = Modifier.height(26.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center
+            ) {
+                OnboardingDotsIndicator(currentStep = 1, totalSteps = 4)
+            }
+            Spacer(modifier = Modifier.height(14.dp))
 
             TripTypeBottomActions(
                 canContinue = selectedType != null,
@@ -122,12 +127,6 @@ private fun TripTypeHeader(onBack: () -> Unit, onSkip: () -> Unit) {
                 .clip(CircleShape)
                 .clickable(onClick = onBack)
                 .padding(horizontal = 10.dp, vertical = 6.dp)
-        )
-        Spacer(modifier = Modifier.width(8.dp))
-        Text(
-            text = "Step 1 of ",
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.SemiBold
         )
         Spacer(modifier = Modifier.weight(1f))
         Text(
