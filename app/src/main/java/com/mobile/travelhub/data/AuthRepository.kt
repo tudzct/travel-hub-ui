@@ -6,8 +6,10 @@ import com.mobile.travelhub.models.AuthSession
 import com.mobile.travelhub.models.LoginRequest
 import com.mobile.travelhub.models.RegisterRequest
 import com.mobile.travelhub.models.authResponseFromJson
+import com.mobile.travelhub.models.isAdmin
 import com.mobile.travelhub.models.toJson
 import com.mobile.travelhub.models.toSession
+import com.mobile.travelhub.data.api.ApiConfig
 import dagger.hilt.android.qualifiers.ApplicationContext
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -58,10 +60,14 @@ class AuthRepository @Inject constructor(
         prefs.edit().remove(KEY_SESSION).apply()
     }
 
+    fun getAccessToken(): String? = getSavedSession()?.accessToken?.takeIf { it.isNotBlank() }
+
+    fun isAdmin(): Boolean = getSavedSession()?.isAdmin == true
+
     private fun postJson(path: String, payload: String): Result<AuthResponse> {
         return runCatching {
             val request = Request.Builder()
-                .url("$BASE_URL$path")
+                .url("${ApiConfig.BASE_URL.removeSuffix("/")}$path")
                 .post(payload.toRequestBody(JSON_MEDIA_TYPE))
                 .build()
 
@@ -78,7 +84,6 @@ class AuthRepository @Inject constructor(
     }
 
     companion object {
-        private const val BASE_URL = "http://10.0.2.2:8080"
         private const val REGISTER_PATH = "/api/auth/register"
         private const val LOGIN_PATH = "/api/auth/login"
 

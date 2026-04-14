@@ -1,106 +1,68 @@
 package com.mobile.travelhub.data
 
-import android.content.Context
-import com.mobile.travelhub.models.EditablePlaceDraft
-import com.mobile.travelhub.models.PlaceDetail
-import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import org.json.JSONArray
-import org.json.JSONObject
-import java.io.IOException
+import com.mobile.travelhub.data.api.PlaceApiFactory
+import com.mobile.travelhub.data.api.PlaceApiService
+import com.mobile.travelhub.data.model.PaginationResponse
+import com.mobile.travelhub.data.model.TravelPlaceDetailResponse
+import com.mobile.travelhub.data.model.TravelPlaceListItemResponse
+import com.mobile.travelhub.data.model.TravelPlaceReviewResponse
+import com.mobile.travelhub.data.model.TravelPlaceViewHistoryResponse
+import com.mobile.travelhub.data.model.UpsertTravelPlaceRequest
+import com.mobile.travelhub.data.model.UpsertTravelPlaceReviewRequest
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 class PlaceRepository @Inject constructor(
-    @param:ApplicationContext private val context: Context
+    private val authRepository: AuthRepository
 ) {
-    private val basePlaces: List<PlaceDetail> = loadPlacesFromAssets()
-    private val overrides = linkedMapOf<String, PlaceDetail>()
-    private val _places = MutableStateFlow(basePlaces)
-
-    fun observePlaces(): StateFlow<List<PlaceDetail>> = _places.asStateFlow()
-
-    fun getPlaces(): List<PlaceDetail> = _places.value
-
-    fun getPlaceDetail(id: String): PlaceDetail? = _places.value.firstOrNull { it.id == id }
-
-    fun updatePlace(id: String, draft: EditablePlaceDraft): Result<PlaceDetail> {
-        val existing = getPlaceDetail(id)
-            ?: return Result.failure(IllegalArgumentException("Place not found"))
-
-        val title = draft.title.trim()
-        val description = draft.description.trim()
-        val provinceName = draft.provinceName.trim()
-        val mainImageUrl = draft.mainImageUrl.trim()
-        val bestTime = draft.bestTime.trim().ifBlank { null }
-        val galleryUrls = draft.galleryUrls
-            .map { it.trim() }
-            .filter { it.isNotEmpty() }
-
-        when {
-            title.isEmpty() -> return Result.failure(IllegalArgumentException("Title is required"))
-            description.isEmpty() -> return Result.failure(IllegalArgumentException("Description is required"))
-            provinceName.isEmpty() -> return Result.failure(IllegalArgumentException("Province is required"))
-            mainImageUrl.isEmpty() -> return Result.failure(IllegalArgumentException("Main image URL is required"))
-        }
-
-        val updated = existing.copy(
-            title = title,
-            description = description,
-            provinceName = provinceName,
-            bestTime = bestTime,
-            mainImageUrl = mainImageUrl,
-            galleryUrls = galleryUrls
-        )
-
-        overrides[id] = updated
-        _places.value = basePlaces.map { place -> overrides[place.id] ?: place }
-        return Result.success(updated)
+    private val api: PlaceApiService by lazy {
+        PlaceApiFactory.create(accessTokenProvider = authRepository::getAccessToken)
     }
 
-    private fun loadPlacesFromAssets(): List<PlaceDetail> {
-        return runCatching {
-            val raw = context.assets.open("places.json")
-                .bufferedReader()
-                .use { it.readText() }
-            val array = JSONArray(raw)
-            buildList {
-                for (index in 0 until array.length()) {
-                    val item = array.getJSONObject(index)
-                    add(item.toPlaceDetail())
-                }
-            }
-        }.getOrElse { throwable ->
-            throw IOException("Failed to load local places data", throwable)
-        }
+    suspend fun getPlaces(
+        page: Int = 0,
+        pageSize: Int = 10,
+        provinceId: Long? = null,
+        keyword: String? = null
+    ): PaginationResponse<TravelPlaceListItemResponse> {
+        return api.getPlaces(page = page, pageSize = pageSize, provinceId = provinceId, keyword = keyword)
     }
 
-    private fun JSONObject.toPlaceDetail(): PlaceDetail {
-        return PlaceDetail(
-            id = optString("id"),
-            title = optString("title"),
-            description = optString("description"),
-            provinceName = optString("provinceName"),
-            bestTime = optString("bestTime").ifBlank { null },
-            mainImageUrl = optString("mainImageUrl"),
-            galleryUrls = optJsonArray("galleryUrls").toStringList(),
-            viewCountLabel = optString("viewCountLabel").ifBlank { null },
-            sourceUrl = optString("sourceUrl").ifBlank { null }
-        )
+    suspend fun getPlaceDetail(placeId: Long): TravelPlaceDetailResponse {
+        return api.getPlaceDetail(placeId)
     }
 
-    private fun JSONObject.optJsonArray(key: String): JSONArray {
-        return optJSONArray(key) ?: JSONArray()
+    suspend fun getReviews(
+        placeId: Long,
+        page: Int = 0,
+        pageSize: Int = 10
+    ): PaginationResponse<TravelPlaceReviewResponse> {
+        return api.getReviews(placeId = placeId, page = page, pageSize = pageSize)
     }
 
-    private fun JSONArray.toStringList(): List<String> {
-        return buildList {
-            for (index in 0 until length()) {
-                add(optString(index))
-            }
-        }.filter { it.isNotBlank() }
+    suspend fun upsertReview(
+        placeId: Long,
+        body: UpsertTravelPlaceReviewRequest
+    ): TravelPlaceReviewResponse {
+        return api.upsertReview(placeId = placeId, body = body)
+    }
+
+    suspend fun getViewHistory(
+        page: Int = 0,
+        pageSize: Int = 10
+    ): PaginationResponse<TravelPlaceViewHistoryResponse> {
+        return api.getViewHistory(page = page, pageSize = pageSize)
+    }
+
+    suspend fun createPlace(body: UpsertTravelPlaceRequest): TravelPlaceDetailResponse {
+        return api.createPlace(body)
+    }
+
+    suspend fun updatePlace(
+        placeId: Long,
+        body: UpsertTravelPlaceRequest
+    ): TravelPlaceDetailResponse {
+        return api.updatePlace(placeId = placeId, body = body)
     }
 }

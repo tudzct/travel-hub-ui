@@ -39,6 +39,7 @@ import com.mobile.travelhub.ui.components.PostGrid
 import com.mobile.travelhub.ui.components.PrimaryProfileButton
 import com.mobile.travelhub.ui.components.ProfileHeader
 import com.mobile.travelhub.ui.components.ProfileStats
+import com.mobile.travelhub.ui.components.SecondaryProfileButton
 import com.mobile.travelhub.ui.viewmodels.ProfileViewModel
 import com.mobile.travelhub.ui.viewmodels.UiState
 
@@ -47,6 +48,7 @@ fun ProfileScreen(
     onNavigateToEditProfile: () -> Unit,
     onNavigateToFollowers: () -> Unit,
     onNavigateToFollowing: () -> Unit,
+    onNavigateToHistory: (() -> Unit)? = null,
     viewingUserId: Long? = null,
     onNavigateToChat: (() -> Unit)? = null,
     onBack: (() -> Unit)? = null,
@@ -159,11 +161,23 @@ fun ProfileScreen(
                                     .fillMaxWidth()
                                     .padding(horizontal = 24.dp)
                             ) {
-                                PrimaryProfileButton(
-                                    text = "Edit Profile",
-                                    onClick = onNavigateToEditProfile,
-                                    modifier = Modifier.fillMaxWidth()
-                                )
+                                Column(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                                ) {
+                                    PrimaryProfileButton(
+                                        text = "Edit Profile",
+                                        onClick = onNavigateToEditProfile,
+                                        modifier = Modifier.fillMaxWidth()
+                                    )
+                                    onNavigateToHistory?.let { navigate ->
+                                        SecondaryProfileButton(
+                                            text = "View Place History",
+                                            onClick = navigate,
+                                            modifier = Modifier.fillMaxWidth()
+                                        )
+                                    }
+                                }
                             }
                         } else {
                             Row(

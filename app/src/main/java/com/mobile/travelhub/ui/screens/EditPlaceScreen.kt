@@ -18,27 +18,34 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import com.mobile.travelhub.models.EditablePlaceDraft
-import com.mobile.travelhub.viewmodels.PlaceViewModel
+import com.mobile.travelhub.viewmodels.AdminPlaceEditorViewModel
 
 @Composable
 fun EditPlaceScreen(
-    placeId: String,
+    placeId: Long?,
     onBack: () -> Unit,
-    onSaved: () -> Unit,
-    placeViewModel: PlaceViewModel = hiltViewModel()
+    onSaved: (Long) -> Unit,
+    viewModel: AdminPlaceEditorViewModel = hiltViewModel()
 ) {
-    val place by placeViewModel.observePlace(placeId).collectAsState(initial = null)
+    val uiState by viewModel.uiState.collectAsState()
 
-    if (place == null) {
+    LaunchedEffect(placeId) {
+        if (placeId != null) {
+            viewModel.loadForEdit(placeId)
+        }
+    }
+
+    LaunchedEffect(uiState.savedPlaceId) {
+        val savedPlaceId = uiState.savedPlaceId ?: return@LaunchedEffect
+        viewModel.consumeSavedPlaceId()
+        onSaved(savedPlaceId)
+    }
+
+    if (!uiState.isAdmin) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -49,29 +56,11 @@ fun EditPlaceScreen(
                 Text("Back")
             }
             Text(
-                text = "Place not found",
+                text = "Bạn không có quyền quản trị địa điểm",
                 style = MaterialTheme.typography.headlineSmall
             )
         }
         return
-    }
-
-    val detail = place ?: return
-    var title by remember(detail.id) { mutableStateOf(detail.title) }
-    var provinceName by remember(detail.id) { mutableStateOf(detail.provinceName) }
-    var bestTime by remember(detail.id) { mutableStateOf(detail.bestTime.orEmpty()) }
-    var mainImageUrl by remember(detail.id) { mutableStateOf(detail.mainImageUrl) }
-    var description by remember(detail.id) { mutableStateOf(detail.description) }
-    var errorMessage by remember(detail.id) { mutableStateOf<String?>(null) }
-    val galleryUrls = remember(detail.id) { mutableStateListOf<String>() }
-
-    LaunchedEffect(detail.id) {
-        galleryUrls.clear()
-        if (detail.galleryUrls.isEmpty()) {
-            galleryUrls.add("")
-        } else {
-            galleryUrls.addAll(detail.galleryUrls)
-        }
     }
 
     Column(
@@ -89,37 +78,19 @@ fun EditPlaceScreen(
                 Text("Cancel")
             }
             Button(
-                onClick = {
-                    val result = placeViewModel.updatePlace(
-                        placeId = detail.id,
-                        draft = EditablePlaceDraft(
-                            title = title,
-                            description = description,
-                            provinceName = provinceName,
-                            bestTime = bestTime,
-                            mainImageUrl = mainImageUrl,
-                            galleryUrls = galleryUrls.toList()
-                        )
-                    )
-
-                    result.onSuccess {
-                        errorMessage = null
-                        onSaved()
-                    }.onFailure { throwable ->
-                        errorMessage = throwable.message ?: "Unable to save changes"
-                    }
-                }
+                onClick = { viewModel.submit(placeId) },
+                enabled = !uiState.isSaving && !uiState.isLoading
             ) {
-                Text("Save")
+                Text(if (uiState.isSaving) "Saving..." else "Save")
             }
         }
 
         Text(
-            text = "Edit destination",
+            text = if (placeId == null) "Thêm địa điểm" else "Sửa địa điểm",
             style = MaterialTheme.typography.headlineMedium
         )
 
-        errorMessage?.let { error ->
+        uiState.errorMessage?.let { error ->
             Text(
                 text = error,
                 color = MaterialTheme.colorScheme.error,
@@ -128,73 +99,76 @@ fun EditPlaceScreen(
         }
 
         OutlinedTextField(
-            value = title,
-            onValueChange = { title = it },
+            value = uiState.provinceId,
+            onValueChange = viewModel::updateProvinceId,
             modifier = Modifier.fillMaxWidth(),
-            label = { Text("Title") },
+            label = { Text("Province ID") },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             singleLine = true
         )
 
         OutlinedTextField(
-            value = provinceName,
-            onValueChange = { provinceName = it },
+            value = uiState.name,
+            onValueChange = viewModel::updateName,
             modifier = Modifier.fillMaxWidth(),
-            label = { Text("Province / City") },
+            label = { Text("Tên địa điểm") },
             singleLine = true
         )
 
         OutlinedTextField(
-            value = bestTime,
-            onValueChange = { bestTime = it },
+            value = uiState.description,
+            onValueChange = viewModel::updateDescription,
             modifier = Modifier.fillMaxWidth(),
-            label = { Text("Best time") },
-            singleLine = true
-        )
-
-        OutlinedTextField(
-            value = mainImageUrl,
-            onValueChange = { mainImageUrl = it },
-            modifier = Modifier.fillMaxWidth(),
-            label = { Text("Main image URL") },
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri)
-        )
-
-        OutlinedTextField(
-            value = description,
-            onValueChange = { description = it },
-            modifier = Modifier.fillMaxWidth(),
-            label = { Text("Description") },
+            label = { Text("Mô tả") },
             minLines = 5
+        )
+
+        OutlinedTextField(
+            value = uiState.lat,
+            onValueChange = viewModel::updateLat,
+            modifier = Modifier.fillMaxWidth(),
+            label = { Text("Latitude") },
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
+        )
+
+        OutlinedTextField(
+            value = uiState.lon,
+            onValueChange = viewModel::updateLon,
+            modifier = Modifier.fillMaxWidth(),
+            label = { Text("Longitude") },
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
+        )
+
+        OutlinedTextField(
+            value = uiState.openingTime,
+            onValueChange = viewModel::updateOpeningTime,
+            modifier = Modifier.fillMaxWidth(),
+            label = { Text("Giờ mở cửa") },
+            singleLine = true
         )
 
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text(
-                text = "Gallery image URLs",
+                text = "Image URLs",
                 style = MaterialTheme.typography.titleMedium
             )
-
-            galleryUrls.forEachIndexed { index, url ->
+            uiState.imageUrls.forEachIndexed { index, url ->
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     OutlinedTextField(
                         value = url,
-                        onValueChange = { newValue -> galleryUrls[index] = newValue },
+                        onValueChange = { viewModel.updateImageUrl(index, it) },
                         modifier = Modifier.weight(1f),
                         label = { Text("Image ${index + 1}") },
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri)
                     )
                     OutlinedButton(
-                        onClick = {
-                            if (galleryUrls.size > 1) {
-                                galleryUrls.removeAt(index)
-                            } else {
-                                galleryUrls[index] = ""
-                            }
-                        },
+                        onClick = { viewModel.removeImageField(index) },
                         modifier = Modifier.padding(top = 8.dp)
                     ) {
                         Text("Remove")
@@ -202,7 +176,7 @@ fun EditPlaceScreen(
                 }
             }
 
-            OutlinedButton(onClick = { galleryUrls.add("") }) {
+            OutlinedButton(onClick = viewModel::addImageField) {
                 Text("Add image")
             }
         }
