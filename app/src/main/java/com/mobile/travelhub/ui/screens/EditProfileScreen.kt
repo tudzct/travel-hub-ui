@@ -46,7 +46,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.mobile.travelhub.R
 import com.mobile.travelhub.ui.components.EditProfileField
 import com.mobile.travelhub.ui.viewmodels.ProfileViewModel
@@ -57,7 +57,7 @@ import com.mobile.travelhub.ui.viewmodels.UiState
 fun EditProfileScreen(
     onBack: () -> Unit,
     onSaveSuccess: () -> Unit,
-    viewModel: ProfileViewModel = viewModel()
+    viewModel: ProfileViewModel = hiltViewModel()
 ) {
     val profileState by viewModel.profileState.collectAsState()
     val updateStatus by viewModel.updateStatus.collectAsState()

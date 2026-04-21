@@ -33,7 +33,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.mobile.travelhub.R
 import com.mobile.travelhub.ui.components.PostGrid
 import com.mobile.travelhub.ui.components.PrimaryProfileButton
@@ -49,10 +49,12 @@ fun ProfileScreen(
     onNavigateToFollowers: () -> Unit,
     onNavigateToFollowing: () -> Unit,
     onNavigateToHistory: (() -> Unit)? = null,
+    onLogout: (() -> Unit)? = null,
+    onRequireLogin: (() -> Unit)? = null,
     viewingUserId: Long? = null,
     onNavigateToChat: (() -> Unit)? = null,
     onBack: (() -> Unit)? = null,
-    viewModel: ProfileViewModel = viewModel()
+    viewModel: ProfileViewModel = hiltViewModel()
 ) {
     val isViewingOwnProfile = viewingUserId == null
     
@@ -61,6 +63,7 @@ fun ProfileScreen(
     } else {
         viewModel.otherUserProfileState.collectAsState()
     }
+    val unauthorized by viewModel.unauthorized.collectAsState()
     
     val scrollState = rememberScrollState()
 
@@ -69,6 +72,13 @@ fun ProfileScreen(
             viewModel.loadUserProfile()
         } else {
             viewingUserId?.let { viewModel.loadOtherUserProfile(it) }
+        }
+    }
+
+    LaunchedEffect(unauthorized) {
+        if (unauthorized && isViewingOwnProfile) {
+            viewModel.clearUnauthorized()
+            onRequireLogin?.invoke()
         }
     }
 
@@ -174,6 +184,13 @@ fun ProfileScreen(
                                         SecondaryProfileButton(
                                             text = "View Place History",
                                             onClick = navigate,
+                                            modifier = Modifier.fillMaxWidth()
+                                        )
+                                    }
+                                    onLogout?.let { logout ->
+                                        SecondaryProfileButton(
+                                            text = "Đăng xuất",
+                                            onClick = logout,
                                             modifier = Modifier.fillMaxWidth()
                                         )
                                     }

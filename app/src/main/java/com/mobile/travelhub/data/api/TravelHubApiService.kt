@@ -13,6 +13,8 @@ import retrofit2.http.Path
 import retrofit2.http.Query
 
 interface TravelHubApiService {
+    @GET("api/users/me")
+    suspend fun getMyProfile(): UserProfileResponse
 
     @GET("api/users/{id}")
     suspend fun getUserProfile(@Path("id") id: Long): UserProfileResponse
@@ -30,6 +32,11 @@ interface TravelHubApiService {
         @Query("page") page: Int = 0,
         @Query("size") size: Int = 30
     ): PageResponse<UserSummaryResponse>
+
+    @PUT("api/users/me")
+    suspend fun updateMyProfile(
+        @Body request: ProfileUpdateRequest
+    ): UserProfileResponse
 
     @PUT("api/users/{id}")
     suspend fun updateProfile(

@@ -36,7 +36,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.mobile.travelhub.R
 import com.mobile.travelhub.ui.components.UserListItem
 import com.mobile.travelhub.ui.viewmodels.ProfileViewModel
@@ -48,7 +48,7 @@ fun FollowersFollowingScreen(
     viewingUserId: Long? = null,
     onBack: () -> Unit,
     onNavigateToUserProfile: (Long?) -> Unit,
-    viewModel: ProfileViewModel = viewModel()
+    viewModel: ProfileViewModel = hiltViewModel()
 ) {
     var selectedTabIndex by remember { mutableIntStateOf(initialTabIndex) }
     val tabs = listOf("Followers", "Following")

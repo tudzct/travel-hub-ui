@@ -16,8 +16,12 @@ import javax.inject.Singleton
 class PlaceRepository @Inject constructor(
     private val authRepository: AuthRepository
 ) {
-    private val api: PlaceApiService by lazy {
+    private val authenticatedApi: PlaceApiService by lazy {
         PlaceApiFactory.create(accessTokenProvider = authRepository::getAccessToken)
+    }
+
+    private val publicApi: PlaceApiService by lazy {
+        PlaceApiFactory.create(accessTokenProvider = { null })
     }
 
     suspend fun getPlaces(
@@ -26,11 +30,11 @@ class PlaceRepository @Inject constructor(
         provinceId: Long? = null,
         keyword: String? = null
     ): PaginationResponse<TravelPlaceListItemResponse> {
-        return api.getPlaces(page = page, pageSize = pageSize, provinceId = provinceId, keyword = keyword)
+        return publicApi.getPlaces(page = page, pageSize = pageSize, provinceId = provinceId, keyword = keyword)
     }
 
     suspend fun getPlaceDetail(placeId: Long): TravelPlaceDetailResponse {
-        return api.getPlaceDetail(placeId)
+        return authenticatedApi.getPlaceDetail(placeId)
     }
 
     suspend fun getReviews(
@@ -38,31 +42,31 @@ class PlaceRepository @Inject constructor(
         page: Int = 0,
         pageSize: Int = 10
     ): PaginationResponse<TravelPlaceReviewResponse> {
-        return api.getReviews(placeId = placeId, page = page, pageSize = pageSize)
+        return publicApi.getReviews(placeId = placeId, page = page, pageSize = pageSize)
     }
 
     suspend fun upsertReview(
         placeId: Long,
         body: UpsertTravelPlaceReviewRequest
     ): TravelPlaceReviewResponse {
-        return api.upsertReview(placeId = placeId, body = body)
+        return authenticatedApi.upsertReview(placeId = placeId, body = body)
     }
 
     suspend fun getViewHistory(
         page: Int = 0,
         pageSize: Int = 10
     ): PaginationResponse<TravelPlaceViewHistoryResponse> {
-        return api.getViewHistory(page = page, pageSize = pageSize)
+        return authenticatedApi.getViewHistory(page = page, pageSize = pageSize)
     }
 
     suspend fun createPlace(body: UpsertTravelPlaceRequest): TravelPlaceDetailResponse {
-        return api.createPlace(body)
+        return authenticatedApi.createPlace(body)
     }
 
     suspend fun updatePlace(
         placeId: Long,
         body: UpsertTravelPlaceRequest
     ): TravelPlaceDetailResponse {
-        return api.updatePlace(placeId = placeId, body = body)
+        return authenticatedApi.updatePlace(placeId = placeId, body = body)
     }
 }

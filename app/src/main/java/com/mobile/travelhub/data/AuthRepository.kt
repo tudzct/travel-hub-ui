@@ -7,6 +7,7 @@ import com.mobile.travelhub.models.LoginRequest
 import com.mobile.travelhub.models.RegisterRequest
 import com.mobile.travelhub.models.authResponseFromJson
 import com.mobile.travelhub.models.isAdmin
+import com.mobile.travelhub.models.isExpired
 import com.mobile.travelhub.models.toJson
 import com.mobile.travelhub.models.toSession
 import com.mobile.travelhub.data.api.ApiConfig
@@ -53,7 +54,18 @@ class AuthRepository @Inject constructor(
 
     fun getSavedSession(): AuthSession? {
         val raw = prefs.getString(KEY_SESSION, null) ?: return null
-        return runCatching { authResponseFromJson(raw).toSession() }.getOrNull()
+        val session = runCatching { authResponseFromJson(raw).toSession() }.getOrNull()
+            ?: run {
+                clearSession()
+                return null
+            }
+
+        if (session.isExpired) {
+            clearSession()
+            return null
+        }
+
+        return session
     }
 
     fun clearSession() {

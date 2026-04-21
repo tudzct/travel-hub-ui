@@ -9,6 +9,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -158,6 +159,7 @@ fun NavGraph(
     onLogin: (String, String) -> Unit,
     onRegister: (String, String, String) -> Unit,
     onClearAuthError: () -> Unit,
+    onLogout: () -> Unit,
     onboardingViewModel: OnboardingViewModel
 ) {
     val onboardingUiState by onboardingViewModel.uiState.collectAsState()
@@ -301,12 +303,35 @@ fun NavGraph(
             )
         }
         composable(Screen.Profile.route) {
+            if (!authUiState.isAuthenticated) {
+                LaunchedEffect(Unit) {
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(navController.graph.findStartDestination().id) { inclusive = false }
+                        launchSingleTop = true
+                    }
+                }
+                return@composable
+            }
             ProfileScreen(
                 onNavigateToEditProfile = { navController.navigate(Screen.EditProfile.route) { launchSingleTop = true } },
                 onNavigateToFollowers = { navController.navigate(Screen.FollowersFollowing.createRoute(0, null)) { launchSingleTop = true } },
                 onNavigateToFollowing = { navController.navigate(Screen.FollowersFollowing.createRoute(1, null)) { launchSingleTop = true } },
                 onNavigateToHistory = { navController.navigate(Screen.ViewHistory.route) { launchSingleTop = true } },
-                onNavigateToChat = { navController.navigate(Screen.Chat.route) { launchSingleTop = true } }
+                onNavigateToChat = { navController.navigate(Screen.Chat.route) { launchSingleTop = true } },
+                onLogout = {
+                    onLogout()
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(navController.graph.findStartDestination().id) { inclusive = false }
+                        launchSingleTop = true
+                    }
+                },
+                onRequireLogin = {
+                    onLogout()
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(navController.graph.findStartDestination().id) { inclusive = false }
+                        launchSingleTop = true
+                    }
+                }
             )
         }
         composable(
@@ -319,6 +344,7 @@ fun NavGraph(
                 onNavigateToFollowers = { navController.navigate(Screen.FollowersFollowing.createRoute(0, userId)) { launchSingleTop = true } },
                 onNavigateToFollowing = { navController.navigate(Screen.FollowersFollowing.createRoute(1, userId)) { launchSingleTop = true } },
                 onNavigateToHistory = null,
+                onRequireLogin = null,
                 viewingUserId = userId,
                 onNavigateToChat = {
                     navController.navigate(Screen.Chat.route) {
@@ -436,7 +462,13 @@ fun NavGraph(
                 onBack = { navController.navigateUp() },
                 onEdit = { id -> navController.navigate(Screen.EditPlace.createRoute(id)) },
                 onShowAllReviews = { id -> navController.navigate(Screen.PlaceReviews.createRoute(id)) },
-                onRequireLogin = { navController.navigate(Screen.Login.route) { launchSingleTop = true } }
+                onRequireLogin = {
+                    onLogout()
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(navController.graph.findStartDestination().id) { inclusive = false }
+                        launchSingleTop = true
+                    }
+                }
             )
         }
 
@@ -481,9 +513,24 @@ fun NavGraph(
         }
 
         composable(Screen.ViewHistory.route) {
+            if (!authUiState.isAuthenticated) {
+                LaunchedEffect(Unit) {
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(navController.graph.findStartDestination().id) { inclusive = false }
+                        launchSingleTop = true
+                    }
+                }
+                return@composable
+            }
             ViewHistoryScreen(
                 onBack = { navController.navigateUp() },
-                onRequireLogin = { navController.navigate(Screen.Login.route) { launchSingleTop = true } }
+                onRequireLogin = {
+                    onLogout()
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(navController.graph.findStartDestination().id) { inclusive = false }
+                        launchSingleTop = true
+                    }
+                }
             )
         }
     }

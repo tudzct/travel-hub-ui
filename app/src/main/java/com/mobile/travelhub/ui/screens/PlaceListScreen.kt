@@ -103,8 +103,16 @@ fun PlaceListScreen(
                 uiState.items.isEmpty() -> {
                     item {
                         FeedEmptyState(
-                            title = "Không có địa điểm phù hợp",
-                            message = "Thử từ khóa khác để hiện lại danh sách địa điểm.",
+                            title = if (uiState.keyword.isBlank()) {
+                                "Chưa có địa điểm nào"
+                            } else {
+                                "Không có địa điểm phù hợp"
+                            },
+                            message = if (uiState.keyword.isBlank()) {
+                                "Dữ liệu địa điểm vẫn chưa được thêm vào hệ thống."
+                            } else {
+                                "Thử từ khóa khác để hiện lại danh sách địa điểm."
+                            },
                             fullScreen = false
                         )
                     }

@@ -27,7 +27,8 @@ data class AuthSession(
 )
 
 data class JwtClaims(
-    val authorities: List<String> = emptyList()
+    val authorities: List<String> = emptyList(),
+    val expiresAtEpochSeconds: Long? = null
 )
 
 fun AuthResponse.toSession(): AuthSession = AuthSession(
@@ -62,7 +63,7 @@ fun decodeJwtClaims(token: String): JwtClaims {
         val payloadSegment = segments[1]
         val padded = payloadSegment.padEnd(((payloadSegment.length + 3) / 4) * 4, '=')
         val decoded = Base64.decode(padded, Base64.URL_SAFE or Base64.NO_WRAP or Base64.NO_PADDING)
-        val json = JSONObject(String(decoded))
+        val json = JSONObject(String(decoded, Charsets.UTF_8))
         val authoritiesJson = json.optJSONArray("authorities")
         val authorities = buildList {
             if (authoritiesJson != null) {
@@ -71,7 +72,12 @@ fun decodeJwtClaims(token: String): JwtClaims {
                 }
             }
         }
-        JwtClaims(authorities = authorities.filter { it.isNotBlank() })
+        val expiresAtEpochSeconds = json.optLong("exp")
+            .takeIf { it > 0L }
+        JwtClaims(
+            authorities = authorities.filter { it.isNotBlank() },
+            expiresAtEpochSeconds = expiresAtEpochSeconds
+        )
     }.getOrDefault(JwtClaims())
 }
 
@@ -80,3 +86,10 @@ val AuthSession.jwtClaims: JwtClaims
 
 val AuthSession.isAdmin: Boolean
     get() = jwtClaims.authorities.contains("ROLE_ADMIN")
+
+val AuthSession.isExpired: Boolean
+    get() {
+        val expiresAtEpochSeconds = jwtClaims.expiresAtEpochSeconds ?: return false
+        val nowEpochSeconds = System.currentTimeMillis() / 1000
+        return nowEpochSeconds >= expiresAtEpochSeconds
+    }
