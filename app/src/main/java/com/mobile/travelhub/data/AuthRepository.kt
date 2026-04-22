@@ -45,6 +45,30 @@ class AuthRepository @Inject constructor(
         return postJson(path = LOGIN_PATH, payload = payload)
     }
 
+    fun refreshSession(): Result<AuthSession> {
+        val currentSession = getSavedSession()
+            ?: return Result.failure(IllegalStateException("No active session. Please login again."))
+
+        val refreshToken = currentSession.refreshToken.trim()
+        if (refreshToken.isEmpty()) {
+            return Result.failure(IllegalStateException("Refresh token is missing. Please login again."))
+        }
+
+        val payload = JSONObject()
+            .put("refreshToken", refreshToken)
+            .toString()
+
+        return postJson(path = REFRESH_PATH, payload = payload)
+            .mapCatching { response ->
+                val normalizedResponse = response.copy(
+                    refreshToken = response.refreshToken.takeIf { it.isNotBlank() } ?: currentSession.refreshToken,
+                    userId = if (response.userId > 0) response.userId else currentSession.userId
+                )
+                saveSession(normalizedResponse)
+                normalizedResponse.toSession()
+            }
+    }
+
     fun saveSession(response: AuthResponse) {
         prefs.edit().putString(KEY_SESSION, response.toJson()).apply()
     }
@@ -81,6 +105,7 @@ class AuthRepository @Inject constructor(
         private const val BASE_URL = "http://10.0.2.2:8080"
         private const val REGISTER_PATH = "/api/auth/register"
         private const val LOGIN_PATH = "/api/auth/login"
+        private const val REFRESH_PATH = "/api/auth/refresh"
 
         private const val PREFS_NAME = "travel_hub_auth"
         private const val KEY_SESSION = "auth_session"
