@@ -30,11 +30,12 @@ class PostRepository @Inject constructor(
     private val uploadClient = OkHttpClient()
     private val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
-    suspend fun createPost(description: String, imageUris: List<Uri>): Result<Unit> {
+    suspend fun createPost(description: String, imageUris: List<Uri>, travelPlaceId: Long): Result<Unit> {
         return withContext(Dispatchers.IO) {
             runCatching {
                 require(description.isNotBlank()) { "Description is required" }
                 require(imageUris.isNotEmpty()) { "Please select at least one image" }
+                require(travelPlaceId > 0) { "Please select a place" }
 
                 val uploadResponse = try {
                     api.requestUploadUrls(
@@ -67,7 +68,7 @@ class PostRepository @Inject constructor(
                         request = PostCreateRequest(
                             description = description.trim(),
                             imageUrls = objectNames,
-                            location = "Unknown" // Location added as default
+                            travelPlaceId = travelPlaceId
                         )
                     )
                     android.util.Log.d("PostRepository", "createPost returned success")

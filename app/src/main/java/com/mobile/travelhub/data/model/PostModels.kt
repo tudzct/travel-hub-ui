@@ -19,7 +19,7 @@ data class UploadItem(
 data class PostCreateRequest(
     val description: String,
     val imageUrls: List<String>,
-    val location: String? = null
+    val travelPlaceId: Long? = null
 )
 
 data class PostResponse(
@@ -27,6 +27,8 @@ data class PostResponse(
     val description: String,
     val imageUrls: List<String>,
     val owner: PostOwner,
+    val travelPlaceId: Long? = null,
+    val location: String? = null,
     val likeCount: Int? = null,
     val commentCount: Int? = null
 )
@@ -48,6 +50,7 @@ data class FeedPostResponse(
     val createdAt: String? = null,
     @SerializedName(value = "updatedAt", alternate = ["updated_at", "updatedDate"]) 
     val updatedAt: String? = null,
+    val travelPlaceId: Long? = null,
     val location: String? = null,
     @SerializedName(value = "likedByCurrentUser", alternate = ["liked", "isLiked"]) 
     val likedByCurrentUser: Boolean? = null,

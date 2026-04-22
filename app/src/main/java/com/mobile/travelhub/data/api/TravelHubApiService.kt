@@ -4,6 +4,9 @@ import com.mobile.travelhub.data.model.PageResponse
 import com.mobile.travelhub.data.model.GetPostsResponse
 import com.mobile.travelhub.data.model.LikePostResponse
 import com.mobile.travelhub.data.model.CreateCommentRequest
+import com.mobile.travelhub.data.model.AdminDistrictResponse
+import com.mobile.travelhub.data.model.AdminProvinceResponse
+import com.mobile.travelhub.data.model.AdminWardResponse
 import com.mobile.travelhub.data.model.PostCreateRequest
 import com.mobile.travelhub.data.model.PostCommentsPageResponse
 import com.mobile.travelhub.data.model.PostCommentResponse
@@ -21,6 +24,19 @@ import retrofit2.http.Path
 import retrofit2.http.Query
 
 interface TravelHubApiService {
+    @GET("api/locations/provinces")
+    suspend fun getProvinces(): List<AdminProvinceResponse>
+
+    @GET("api/locations/provinces/{provinceId}/districts")
+    suspend fun getDistricts(
+        @Path("provinceId") provinceId: Long
+    ): List<AdminDistrictResponse>
+
+    @GET("api/locations/districts/{districtId}/wards")
+    suspend fun getWards(
+        @Path("districtId") districtId: Long
+    ): List<AdminWardResponse>
+
     @GET("api/users/me")
     suspend fun getMyProfile(): UserProfileResponse
 

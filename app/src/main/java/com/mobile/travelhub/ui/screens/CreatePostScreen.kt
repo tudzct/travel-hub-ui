@@ -9,9 +9,10 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -22,13 +23,22 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -94,6 +104,62 @@ fun CreatePostScreen(
         )
 
         Spacer(modifier = Modifier.height(16.dp))
+
+        Text(
+            text = "Travel Place",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        SelectionDropdown(
+            label = "Province",
+            value = uiState.selectedProvince?.name.orEmpty(),
+            placeholder = "Select province",
+            options = uiState.provinces,
+            optionLabel = { it.name },
+            onOptionSelected = { viewModel.selectProvince(it.id) },
+            enabled = !uiState.isSubmitting && uiState.provinces.isNotEmpty()
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        SelectionDropdown(
+            label = "Place",
+            value = uiState.selectedPlace?.name.orEmpty(),
+            placeholder = if (uiState.selectedProvinceId == null) {
+                "Select province first"
+            } else {
+                "Select place"
+            },
+            options = uiState.places,
+            optionLabel = { "${it.name} • ${it.province.name}" },
+            onOptionSelected = { viewModel.selectPlace(it.id) },
+            enabled = !uiState.isSubmitting && uiState.selectedProvinceId != null && uiState.places.isNotEmpty(),
+            allowClear = uiState.selectedPlaceId != null,
+            onClear = { viewModel.selectPlace(null) }
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        if (uiState.isLoadingLocations) {
+            Text(
+                text = "Loading places...",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+        }
+
+        if (uiState.resolvedLocation.isNotBlank()) {
+            Text(
+                text = "Selected place: ${uiState.resolvedLocation}",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+        }
 
         PrimaryProfileButton(
             text = if (uiState.selectedImages.isEmpty()) "Select Images" else "Change Images",
@@ -192,5 +258,70 @@ fun CreatePostScreen(
         }
 
         Spacer(modifier = Modifier.height(12.dp))
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun <T> SelectionDropdown(
+    label: String,
+    value: String,
+    placeholder: String,
+    options: List<T>,
+    optionLabel: (T) -> String,
+    onOptionSelected: (T) -> Unit,
+    enabled: Boolean,
+    allowClear: Boolean = false,
+    onClear: (() -> Unit)? = null
+) {
+    var expanded by remember { mutableStateOf(false) }
+
+    ExposedDropdownMenuBox(
+        expanded = expanded,
+        onExpandedChange = { if (enabled) expanded = !expanded }
+    ) {
+        OutlinedTextField(
+            value = value,
+            onValueChange = {},
+            readOnly = true,
+            enabled = enabled,
+            label = { Text(label) },
+            placeholder = { Text(placeholder) },
+            modifier = Modifier
+                .fillMaxWidth()
+                .menuAnchor(),
+            trailingIcon = {
+                ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
+            },
+            colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors()
+        )
+
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+            modifier = Modifier
+                .fillMaxWidth(0.95f)
+                .heightIn(max = 320.dp)
+        ) {
+            if (allowClear && onClear != null) {
+                DropdownMenuItem(
+                    text = { Text("Clear selection") },
+                    onClick = {
+                        expanded = false
+                        onClear()
+                    }
+                )
+            }
+
+            options.forEach { option ->
+                DropdownMenuItem(
+                    text = { Text(optionLabel(option)) },
+                    onClick = {
+                        expanded = false
+                        onOptionSelected(option)
+                    }
+                )
+            }
+        }
     }
 }

@@ -8,8 +8,12 @@ import javax.inject.Inject
 class CreatePostUseCase @Inject constructor(
     private val postRepository: PostRepository
 ) {
-    suspend operator fun invoke(description: String, imageUris: List<Uri>): Result<Unit> {
-        val result = postRepository.createPost(description = description, imageUris = imageUris)
+    suspend operator fun invoke(description: String, imageUris: List<Uri>, travelPlaceId: Long): Result<Unit> {
+        val result = postRepository.createPost(
+            description = description,
+            imageUris = imageUris,
+            travelPlaceId = travelPlaceId
+        )
         result.onFailure {
             Log.e("CreatePostUseCase", "Post creation failed fully", it)
         }
