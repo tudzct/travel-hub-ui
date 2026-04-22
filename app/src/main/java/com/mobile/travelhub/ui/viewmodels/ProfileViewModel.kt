@@ -3,19 +3,27 @@ package com.mobile.travelhub.ui.viewmodels
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.mobile.travelhub.data.AuthRepository
 import com.mobile.travelhub.data.api.BusinessClient
+import com.mobile.travelhub.data.httpStatusCode
 import com.mobile.travelhub.data.model.ProfileUpdateRequest
 import com.mobile.travelhub.data.model.UserProfileResponse
 import com.mobile.travelhub.data.model.UserSummaryResponse
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-class ProfileViewModel : ViewModel() {
-    private val api = BusinessClient.apiService
+@HiltViewModel
+class ProfileViewModel @Inject constructor(
+    private val authRepository: AuthRepository
+) : ViewModel() {
+    private val api = BusinessClient.create(accessTokenProvider = authRepository::getAccessToken)
 
-    private val currentUserId: Long = 1L
+    private val sessionUserId: Long
+        get() = authRepository.getSavedSession()?.userId?.toLong() ?: -1L
 
     private val _profileState = MutableStateFlow<UiState<UserProfileResponse>>(UiState.Loading)
     val profileState: StateFlow<UiState<UserProfileResponse>> = _profileState.asStateFlow()
@@ -32,21 +40,31 @@ class ProfileViewModel : ViewModel() {
     private val _updateStatus = MutableStateFlow<UiState<Boolean>>(UiState.Idle)
     val updateStatus: StateFlow<UiState<Boolean>> = _updateStatus.asStateFlow()
 
+    private val _unauthorized = MutableStateFlow(false)
+    val unauthorized: StateFlow<Boolean> = _unauthorized.asStateFlow()
+
     init {
         loadUserProfile()
     }
 
-    fun getCurrentUserId(): Long = currentUserId
+    fun getCurrentUserId(): Long = sessionUserId
 
     fun loadUserProfile() {
         viewModelScope.launch {
             _profileState.value = UiState.Loading
             try {
-                val response = api.getUserProfile(currentUserId)
+                _unauthorized.value = false
+                if (sessionUserId <= 0L) {
+                    error("Bạn cần đăng nhập để xem hồ sơ")
+                }
+                val response = api.getMyProfile()
                 _profileState.value = UiState.Success(response)
                 Log.d("API_SUCCESS", "Tải Profile thành công: $response")
             } catch (e: Exception) {
-                val errorMsg = "Lỗi gọi API Profile (/api/users/$currentUserId): ${e.localizedMessage}"
+                if (e.httpStatusCode() == 401) {
+                    _unauthorized.value = true
+                }
+                val errorMsg = "Lỗi gọi API Profile (/api/users/me): ${e.localizedMessage}"
                 Log.e("API_ERROR", errorMsg, e)
                 _profileState.value = UiState.Error(errorMsg)
             }
@@ -68,10 +86,13 @@ class ProfileViewModel : ViewModel() {
         }
     }
 
-    fun loadFollowers(userId: Long = currentUserId) {
+    fun loadFollowers(userId: Long = sessionUserId) {
         viewModelScope.launch {
             _followersState.value = UiState.Loading
             try {
+                if (userId <= 0L) {
+                    error("Bạn cần đăng nhập để xem followers")
+                }
                 val response = api.getFollowers(userId)
                 _followersState.value = UiState.Success(response.content)
             } catch (e: Exception) {
@@ -82,10 +103,13 @@ class ProfileViewModel : ViewModel() {
         }
     }
 
-    fun loadFollowing(userId: Long = currentUserId) {
+    fun loadFollowing(userId: Long = sessionUserId) {
         viewModelScope.launch {
             _followingState.value = UiState.Loading
             try {
+                if (userId <= 0L) {
+                    error("Bạn cần đăng nhập để xem following")
+                }
                 val response = api.getFollowing(userId)
                 _followingState.value = UiState.Success(response.content)
             } catch (e: Exception) {
@@ -100,10 +124,13 @@ class ProfileViewModel : ViewModel() {
         viewModelScope.launch {
             _updateStatus.value = UiState.Loading
             try {
+                if (sessionUserId <= 0L) {
+                    error("Bạn cần đăng nhập để cập nhật hồ sơ")
+                }
                 val currentProfile = (_profileState.value as? UiState.Success)?.data
                 
                 val request = ProfileUpdateRequest(
-                    id = currentUserId,
+                    id = sessionUserId,
                     username = username,
                     name = name,
                     bio = bio,
@@ -118,7 +145,7 @@ class ProfileViewModel : ViewModel() {
                     followersCount = currentProfile?.followersCount ?: 0,
                     followingCount = currentProfile?.followingCount ?: 0
                 )
-                val response = api.updateProfile(currentUserId, request)
+                val response = api.updateMyProfile(request)
                 _profileState.value = UiState.Success(response)
                 _updateStatus.value = UiState.Success(true)
                 Log.d("API_SUCCESS", "Cập nhật Profile thành công!")
@@ -133,11 +160,11 @@ class ProfileViewModel : ViewModel() {
     fun toggleFollow(
         targetUserId: Long,
         isCurrentlyFollowing: Boolean,
-        connectionsOwnerUserId: Long = currentUserId
+        connectionsOwnerUserId: Long = sessionUserId
     ) {
         viewModelScope.launch {
             try {
-                if (targetUserId == currentUserId) return@launch
+                if (targetUserId == sessionUserId) return@launch
 
                 if (isCurrentlyFollowing) {
                     api.unfollowUser(targetUserId)
@@ -147,7 +174,7 @@ class ProfileViewModel : ViewModel() {
 
                 // Refresh all related states after follow/unfollow.
                 loadUserProfile()
-                if (connectionsOwnerUserId != currentUserId) {
+                if (connectionsOwnerUserId != sessionUserId) {
                     loadOtherUserProfile(connectionsOwnerUserId)
                 }
                 loadFollowers(connectionsOwnerUserId)
@@ -161,7 +188,7 @@ class ProfileViewModel : ViewModel() {
     fun toggleFollowOtherUser(targetUserId: Long, isCurrentlyFollowing: Boolean) {
         viewModelScope.launch {
             try {
-                if (targetUserId == currentUserId) return@launch
+                if (targetUserId == sessionUserId) return@launch
 
                 if (isCurrentlyFollowing) {
                     api.unfollowUser(targetUserId)
@@ -181,6 +208,10 @@ class ProfileViewModel : ViewModel() {
     
     fun resetUpdateStatus() {
         _updateStatus.value = UiState.Idle
+    }
+
+    fun clearUnauthorized() {
+        _unauthorized.value = false
     }
 }
 

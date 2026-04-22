@@ -87,6 +87,7 @@ fun TravelHubScreen(
                 onLogin = authViewModel::login,
                 onRegister = authViewModel::register,
                 onClearAuthError = authViewModel::clearError,
+                onLogout = authViewModel::logout,
                 onboardingViewModel = onboardingViewModel
             )
         }

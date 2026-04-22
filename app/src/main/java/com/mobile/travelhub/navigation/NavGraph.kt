@@ -9,6 +9,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -24,8 +25,10 @@ import com.mobile.travelhub.ui.screens.OnboardingTripTypeScreen
 import com.mobile.travelhub.ui.screens.LoginScreen
 import com.mobile.travelhub.ui.screens.PlaceDetailScreen
 import com.mobile.travelhub.ui.screens.PlaceListScreen
+import com.mobile.travelhub.ui.screens.ReviewListScreen
 
 import com.mobile.travelhub.ui.screens.RegisterScreen
+import com.mobile.travelhub.ui.screens.ViewHistoryScreen
 import com.mobile.travelhub.viewmodels.AuthUiState
 import androidx.navigation.navArgument
 import com.mobile.travelhub.ui.screens.CostEstimateScreen
@@ -55,11 +58,16 @@ sealed class Screen(
     data object Profile : Screen("profile", 2, true)
     data object Chat : Screen("chat", 3, true)
     data object PlaceDetail : Screen("place/{placeId}", 10) {
-        fun createRoute(placeId: String): String = "place/$placeId"
+        fun createRoute(placeId: Long): String = "place/$placeId"
     }
-    data object EditPlace : Screen("place/{placeId}/edit", 11) {
-        fun createRoute(placeId: String): String = "place/$placeId/edit"
+    data object PlaceReviews : Screen("place/{placeId}/reviews", 11) {
+        fun createRoute(placeId: Long): String = "place/$placeId/reviews"
     }
+    data object EditPlace : Screen("admin/places/{placeId}/edit", 12) {
+        fun createRoute(placeId: Long): String = "admin/places/$placeId/edit"
+    }
+    data object CreatePlace : Screen("admin/places/new", 13)
+    data object ViewHistory : Screen("history/places", 14)
 
     data object Login : Screen("login")
     data object Register : Screen("register")
@@ -102,13 +110,19 @@ sealed class Screen(
                 Profile.route -> Profile
                 Chat.route -> Chat
                 PlaceDetail.route -> PlaceDetail
+                PlaceReviews.route -> PlaceReviews
                 EditPlace.route -> EditPlace
+                CreatePlace.route -> CreatePlace
+                ViewHistory.route -> ViewHistory
                 Login.route -> Login
                 Register.route -> Register
                 //mẻge from trường
                 "home" -> Home
                 "trips" -> Trips
                 "profile" -> Profile
+                "place" -> PlaceDetail
+                "admin" -> EditPlace
+                "history" -> ViewHistory
                 "profile_user" -> Profile
                 "edit_profile" -> EditProfile
                 "followers_following" -> FollowersFollowing
@@ -145,6 +159,7 @@ fun NavGraph(
     onLogin: (String, String) -> Unit,
     onRegister: (String, String, String) -> Unit,
     onClearAuthError: () -> Unit,
+    onLogout: () -> Unit,
     onboardingViewModel: OnboardingViewModel
 ) {
     val onboardingUiState by onboardingViewModel.uiState.collectAsState()
@@ -273,6 +288,9 @@ fun NavGraph(
             PlaceListScreen(
                 onPlaceClick = { placeId ->
                     navController.navigate(Screen.PlaceDetail.createRoute(placeId))
+                },
+                onCreatePlace = {
+                    navController.navigate(Screen.CreatePlace.route) { launchSingleTop = true }
                 }
             )
         }
@@ -285,11 +303,35 @@ fun NavGraph(
             )
         }
         composable(Screen.Profile.route) {
+            if (!authUiState.isAuthenticated) {
+                LaunchedEffect(Unit) {
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(navController.graph.findStartDestination().id) { inclusive = false }
+                        launchSingleTop = true
+                    }
+                }
+                return@composable
+            }
             ProfileScreen(
                 onNavigateToEditProfile = { navController.navigate(Screen.EditProfile.route) { launchSingleTop = true } },
                 onNavigateToFollowers = { navController.navigate(Screen.FollowersFollowing.createRoute(0, null)) { launchSingleTop = true } },
                 onNavigateToFollowing = { navController.navigate(Screen.FollowersFollowing.createRoute(1, null)) { launchSingleTop = true } },
-                onNavigateToChat = { navController.navigate(Screen.Chat.route) { launchSingleTop = true } }
+                onNavigateToHistory = { navController.navigate(Screen.ViewHistory.route) { launchSingleTop = true } },
+                onNavigateToChat = { navController.navigate(Screen.Chat.route) { launchSingleTop = true } },
+                onLogout = {
+                    onLogout()
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(navController.graph.findStartDestination().id) { inclusive = false }
+                        launchSingleTop = true
+                    }
+                },
+                onRequireLogin = {
+                    onLogout()
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(navController.graph.findStartDestination().id) { inclusive = false }
+                        launchSingleTop = true
+                    }
+                }
             )
         }
         composable(
@@ -301,6 +343,8 @@ fun NavGraph(
                 onNavigateToEditProfile = {},
                 onNavigateToFollowers = { navController.navigate(Screen.FollowersFollowing.createRoute(0, userId)) { launchSingleTop = true } },
                 onNavigateToFollowing = { navController.navigate(Screen.FollowersFollowing.createRoute(1, userId)) { launchSingleTop = true } },
+                onNavigateToHistory = null,
+                onRequireLogin = null,
                 viewingUserId = userId,
                 onNavigateToChat = {
                     navController.navigate(Screen.Chat.route) {
@@ -408,22 +452,85 @@ fun NavGraph(
         composable(Screen.Chat.route) {
             ItineraryBotScreen()
         }
-        composable(Screen.PlaceDetail.route) { backStackEntry ->
-            val placeId = backStackEntry.arguments?.getString("placeId").orEmpty()
+        composable(
+            route = Screen.PlaceDetail.route,
+            arguments = listOf(navArgument("placeId") { type = NavType.LongType })
+        ) { backStackEntry ->
+            val placeId = backStackEntry.arguments?.getLong("placeId") ?: return@composable
             PlaceDetailScreen(
                 placeId = placeId,
                 onBack = { navController.navigateUp() },
-                onEdit = { id ->
-                    navController.navigate(Screen.EditPlace.createRoute(id))
+                onEdit = { id -> navController.navigate(Screen.EditPlace.createRoute(id)) },
+                onShowAllReviews = { id -> navController.navigate(Screen.PlaceReviews.createRoute(id)) },
+                onRequireLogin = {
+                    onLogout()
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(navController.graph.findStartDestination().id) { inclusive = false }
+                        launchSingleTop = true
+                    }
                 }
             )
         }
-        composable(Screen.EditPlace.route) { backStackEntry ->
-            val placeId = backStackEntry.arguments?.getString("placeId").orEmpty()
+
+        composable(
+            route = Screen.PlaceReviews.route,
+            arguments = listOf(navArgument("placeId") { type = NavType.LongType })
+        ) { backStackEntry ->
+            val placeId = backStackEntry.arguments?.getLong("placeId") ?: return@composable
+            ReviewListScreen(
+                placeId = placeId,
+                onBack = { navController.navigateUp() }
+            )
+        }
+
+        composable(Screen.CreatePlace.route) {
+            EditPlaceScreen(
+                placeId = null,
+                onBack = { navController.navigateUp() },
+                onSaved = { savedPlaceId ->
+                    navController.navigate(Screen.PlaceDetail.createRoute(savedPlaceId)) {
+                        popUpTo(Screen.CreatePlace.route) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                }
+            )
+        }
+
+        composable(
+            route = Screen.EditPlace.route,
+            arguments = listOf(navArgument("placeId") { type = NavType.LongType })
+        ) { backStackEntry ->
+            val placeId = backStackEntry.arguments?.getLong("placeId") ?: return@composable
             EditPlaceScreen(
                 placeId = placeId,
                 onBack = { navController.navigateUp() },
-                onSaved = { navController.navigateUp() }
+                onSaved = { savedPlaceId ->
+                    navController.navigate(Screen.PlaceDetail.createRoute(savedPlaceId)) {
+                        popUpTo(Screen.PlaceDetail.route) { inclusive = true }
+                    }
+                }
+            )
+        }
+
+        composable(Screen.ViewHistory.route) {
+            if (!authUiState.isAuthenticated) {
+                LaunchedEffect(Unit) {
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(navController.graph.findStartDestination().id) { inclusive = false }
+                        launchSingleTop = true
+                    }
+                }
+                return@composable
+            }
+            ViewHistoryScreen(
+                onBack = { navController.navigateUp() },
+                onRequireLogin = {
+                    onLogout()
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(navController.graph.findStartDestination().id) { inclusive = false }
+                        launchSingleTop = true
+                    }
+                }
             )
         }
     }
