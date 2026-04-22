@@ -1,7 +1,15 @@
 package com.mobile.travelhub.data.api
 
 import com.mobile.travelhub.data.model.PageResponse
+import com.mobile.travelhub.data.model.GetPostsResponse
+import com.mobile.travelhub.data.model.LikePostResponse
+import com.mobile.travelhub.data.model.CreateCommentRequest
+import com.mobile.travelhub.data.model.PostCreateRequest
+import com.mobile.travelhub.data.model.PostCommentsPageResponse
+import com.mobile.travelhub.data.model.PostCommentResponse
 import com.mobile.travelhub.data.model.ProfileUpdateRequest
+import com.mobile.travelhub.data.model.UploadRequest
+import com.mobile.travelhub.data.model.UploadResponse
 import com.mobile.travelhub.data.model.UserProfileResponse
 import com.mobile.travelhub.data.model.UserSummaryResponse
 import retrofit2.http.Body
@@ -15,6 +23,12 @@ import retrofit2.http.Query
 interface TravelHubApiService {
     @GET("api/users/me")
     suspend fun getMyProfile(): UserProfileResponse
+
+    @GET("api/posts")
+    suspend fun getAllPosts(
+        @Query("page") page: Int = 0,
+        @Query("pageSize") pageSize: Int = 10
+    ): GetPostsResponse
 
     @GET("api/users/{id}")
     suspend fun getUserProfile(@Path("id") id: Long): UserProfileResponse
@@ -53,4 +67,37 @@ interface TravelHubApiService {
     suspend fun unfollowUser(
         @Path("targetUserId") targetUserId: Long
     )
+
+    @POST("api/upload")
+    suspend fun requestUploadUrls(
+        @Body request: UploadRequest
+    ): UploadResponse
+
+    @POST("api/posts")
+    suspend fun createPost(
+        @Body request: PostCreateRequest
+    ): com.mobile.travelhub.data.model.PostResponse
+
+    @POST("api/posts/{postId}/like")
+    suspend fun likePost(
+        @Path("postId") postId: Long
+    ): LikePostResponse
+
+    @DELETE("api/posts/{postId}/unlike")
+    suspend fun unlikePost(
+        @Path("postId") postId: Long
+    ): LikePostResponse
+
+    @POST("api/posts/{postId}/comments")
+    suspend fun addComment(
+        @Path("postId") postId: Long,
+        @Body request: CreateCommentRequest
+    ): PostCommentResponse
+
+    @GET("api/posts/{postId}/comments")
+    suspend fun getPostComments(
+        @Path("postId") postId: Long,
+        @Query("page") page: Int = 0,
+        @Query("pageSize") pageSize: Int = 20
+    ): PostCommentsPageResponse
 }

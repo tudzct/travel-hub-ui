@@ -36,6 +36,7 @@ import com.mobile.travelhub.ui.screens.CreateGroupScreen
 import com.mobile.travelhub.ui.screens.EditProfileScreen
 import com.mobile.travelhub.ui.screens.FollowersFollowingScreen
 import com.mobile.travelhub.ui.screens.GroupChatScreen
+import com.mobile.travelhub.ui.screens.CreatePostScreen
 import com.mobile.travelhub.ui.screens.GroupDetailScreen
 import com.mobile.travelhub.ui.screens.GroupDiscoveryScreen
 import com.mobile.travelhub.ui.screens.HomeScreen
@@ -55,6 +56,7 @@ sealed class Screen(
     data object OnboardingFinish : Screen("onboarding-finish", -2)
     data object Home : Screen("home", 0, true)
     data object Trips : Screen("trips", 1, true)
+    data object CreatePost : Screen("create_post", showBottomBar = true)
     data object Profile : Screen("profile", 2, true)
     data object Chat : Screen("chat", 3, true)
     data object PlaceDetail : Screen("place/{placeId}", 10) {
@@ -107,6 +109,7 @@ sealed class Screen(
                 OnboardingFinish.route -> OnboardingFinish
                 Home.route -> Home
                 Trips.route -> Trips
+                CreatePost.route -> CreatePost
                 Profile.route -> Profile
                 Chat.route -> Chat
                 PlaceDetail.route -> PlaceDetail
@@ -119,6 +122,7 @@ sealed class Screen(
                 //mẻge from trường
                 "home" -> Home
                 "trips" -> Trips
+                "create_post" -> CreatePost
                 "profile" -> Profile
                 "place" -> PlaceDetail
                 "admin" -> EditPlace
@@ -285,6 +289,7 @@ fun NavGraph(
             )
         }
         composable(Screen.Home.route) {
+            //            HomeScreen()
             PlaceListScreen(
                 onPlaceClick = { placeId ->
                     navController.navigate(Screen.PlaceDetail.createRoute(placeId))
@@ -302,6 +307,9 @@ fun NavGraph(
                 }
             )
         }
+        composable(Screen.CreatePost.route) {
+            CreatePostScreen()
+        }
         composable(Screen.Profile.route) {
             if (!authUiState.isAuthenticated) {
                 LaunchedEffect(Unit) {
@@ -312,6 +320,7 @@ fun NavGraph(
                 }
                 return@composable
             }
+            //^^^^ tu^^^^
             ProfileScreen(
                 onNavigateToEditProfile = { navController.navigate(Screen.EditProfile.route) { launchSingleTop = true } },
                 onNavigateToFollowers = { navController.navigate(Screen.FollowersFollowing.createRoute(0, null)) { launchSingleTop = true } },

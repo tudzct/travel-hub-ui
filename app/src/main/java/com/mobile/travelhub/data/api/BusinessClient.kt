@@ -30,4 +30,16 @@ object BusinessClient {
             .build()
             .create(TravelHubApiService::class.java)
     }
+    private const val BASE_URL = ApiConfig.BASE_URL
+
+    private val retrofit: Retrofit by lazy {
+        Retrofit.Builder()
+            .baseUrl(BASE_URL)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+    }
+
+    val apiService: TravelHubApiService by lazy {
+        retrofit.create(TravelHubApiService::class.java)
+    }
 }

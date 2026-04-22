@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.DirectionsWalk
+import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.AccountCircle
 import androidx.compose.material.icons.outlined.ChatBubble
 import androidx.compose.material.icons.outlined.DirectionsWalk
@@ -66,9 +67,9 @@ fun TravelHubScreen(
             contentDescription = "Explore"
         ),
         BottomNavItem(
-            screen = Screen.Trips,
-            icon = Icons.AutoMirrored.Outlined.DirectionsWalk,
-            contentDescription = "Trips"
+            screen = Screen.CreatePost,
+            icon = Icons.Outlined.Add,
+            contentDescription = "Create Post"
         ),
         BottomNavItem(screen = Screen.Chat, icon = Icons.Outlined.ChatBubble, contentDescription = "Chat AI", badgeCount = 3),
         BottomNavItem(screen = Screen.Profile, icon = Icons.Outlined.AccountCircle, contentDescription = "Profile")
