@@ -2,7 +2,10 @@ package com.mobile.travelhub.data.api
 
 import com.mobile.travelhub.data.model.PageResponse
 import com.mobile.travelhub.data.model.GetPostsResponse
+import com.mobile.travelhub.data.model.LikePostResponse
+import com.mobile.travelhub.data.model.CreateCommentRequest
 import com.mobile.travelhub.data.model.PostCreateRequest
+import com.mobile.travelhub.data.model.PostCommentResponse
 import com.mobile.travelhub.data.model.ProfileUpdateRequest
 import com.mobile.travelhub.data.model.UploadRequest
 import com.mobile.travelhub.data.model.UploadResponse
@@ -66,4 +69,20 @@ interface TravelHubApiService {
     suspend fun createPost(
         @Body request: PostCreateRequest
     ): com.mobile.travelhub.data.model.PostResponse
+
+    @POST("api/posts/{postId}/like")
+    suspend fun likePost(
+        @Path("postId") postId: Long
+    ): LikePostResponse
+
+    @DELETE("api/posts/{postId}/unlike")
+    suspend fun unlikePost(
+        @Path("postId") postId: Long
+    ): LikePostResponse
+
+    @POST("api/posts/{postId}/comments")
+    suspend fun addComment(
+        @Path("postId") postId: Long,
+        @Body request: CreateCommentRequest
+    ): PostCommentResponse
 }

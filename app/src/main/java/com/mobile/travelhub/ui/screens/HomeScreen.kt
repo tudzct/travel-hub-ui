@@ -12,23 +12,30 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material.icons.outlined.ChatBubbleOutline
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.Send
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
@@ -57,6 +64,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.mobile.travelhub.R
+import com.mobile.travelhub.ui.components.CommentItem
 import com.mobile.travelhub.viewmodels.HomePostUiModel
 import com.mobile.travelhub.viewmodels.HomeUiState
 import com.mobile.travelhub.viewmodels.HomeViewModel
@@ -68,15 +76,30 @@ fun HomeScreen(viewModel: HomeViewModel = hiltViewModel()) {
 
     HomeScreenContent(
         uiState = uiState,
-        onRetry = viewModel::refreshPosts
+        onRetry = viewModel::refreshPosts,
+        onLikeClick = viewModel::onLikeClicked,
+        onCommentClick = viewModel::onCommentClicked,
+        onDismissCommentSheet = viewModel::onCommentDismissed,
+        onCommentInputChanged = viewModel::onCommentInputChanged,
+        onCommentSubmit = viewModel::submitComment
     )
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun HomeScreenContent(
     uiState: HomeUiState,
-    onRetry: () -> Unit
+    onRetry: () -> Unit,
+    onLikeClick: (Long) -> Unit,
+    onCommentClick: (Long) -> Unit,
+    onDismissCommentSheet: () -> Unit,
+    onCommentInputChanged: (String) -> Unit,
+    onCommentSubmit: () -> Unit
 ) {
+    val activeCommentPost = uiState.posts.firstOrNull { it.id == uiState.activeCommentPostId }
+    val activeComments = uiState.activeCommentPostId
+        ?.let { uiState.commentsByPostId[it] }
+        .orEmpty()
 
     Scaffold(
         topBar = {
@@ -130,10 +153,95 @@ private fun HomeScreenContent(
                     ) { _, post ->
                         PostItem(
                             post = post,
+                            onLikeClick = { onLikeClick(post.id) },
+                            onCommentClick = { onCommentClick(post.id) },
                             modifier = Modifier.fillMaxWidth()
                         )
                     }
                 }
+            }
+        }
+
+        if (activeCommentPost != null) {
+            ModalBottomSheet(
+                onDismissRequest = onDismissCommentSheet
+            ) {
+                Text(
+                    text = "Comments",
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.padding(horizontal = 24.dp)
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+
+                if (activeComments.isEmpty()) {
+                    Text(
+                        text = "No comments yet",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 24.dp)
+                    )
+                } else {
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 320.dp)
+                    ) {
+                        items(
+                            items = activeComments,
+                            key = { it.id }
+                        ) { comment ->
+                            CommentItem(
+                                name = comment.username,
+                                comment = comment.content,
+                                time = comment.timeAgoLabel,
+                                avatarRes = R.drawable.female_avatar_maker
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    OutlinedTextField(
+                        value = uiState.commentInput,
+                        onValueChange = onCommentInputChanged,
+                        placeholder = { Text("Add a comment") },
+                        modifier = Modifier.weight(1f),
+                        enabled = !uiState.isCommentSubmitting,
+                        maxLines = 3
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Button(
+                        onClick = onCommentSubmit,
+                        enabled = !uiState.isCommentSubmitting && uiState.commentInput.isNotBlank()
+                    ) {
+                        if (uiState.isCommentSubmitting) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(16.dp),
+                                strokeWidth = 2.dp
+                            )
+                        } else {
+                            Text("Post")
+                        }
+                    }
+                }
+
+                if (!uiState.commentErrorMessage.isNullOrBlank()) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = uiState.commentErrorMessage,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.padding(horizontal = 16.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
             }
         }
     }
@@ -142,6 +250,8 @@ private fun HomeScreenContent(
 @Composable
 fun PostItem(
     post: HomePostUiModel,
+    onLikeClick: () -> Unit,
+    onCommentClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -275,17 +385,29 @@ fun PostItem(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Outlined.FavoriteBorder,
-                        contentDescription = "Like",
+                    IconButton(
+                        onClick = onLikeClick,
+                        enabled = !post.isLikeLoading,
                         modifier = Modifier.size(24.dp)
-                    )
+                    ) {
+                        Icon(
+                            imageVector = if (post.isLiked) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                            contentDescription = "Like",
+                            tint = if (post.isLiked) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
                     Spacer(modifier = Modifier.width(14.dp))
-                    Icon(
-                        imageVector = Icons.Outlined.ChatBubbleOutline,
-                        contentDescription = "Comment",
-                        modifier = Modifier.size(22.dp)
-                    )
+                    IconButton(
+                        onClick = onCommentClick,
+                        modifier = Modifier.size(24.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.ChatBubbleOutline,
+                            contentDescription = "Comment",
+                            modifier = Modifier.size(22.dp)
+                        )
+                    }
                     Spacer(modifier = Modifier.width(14.dp))
                     Icon(
                         imageVector = Icons.Outlined.Send,
@@ -301,7 +423,7 @@ fun PostItem(
             }
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = post.likeCountLabel,
+                text = formatLikeCountLabel(post.likeCount),
                 style = MaterialTheme.typography.labelLarge,
                 fontWeight = FontWeight.Bold
             )
@@ -320,7 +442,7 @@ fun PostItem(
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = post.commentCountLabel,
+                text = formatCommentCountLabel(post.commentCount),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -332,6 +454,18 @@ fun PostItem(
             )
         }
         Spacer(modifier = Modifier.height(20.dp))
+    }
+}
+
+private fun formatLikeCountLabel(likeCount: Int): String {
+    return "$likeCount likes"
+}
+
+private fun formatCommentCountLabel(commentCount: Int): String {
+    return if (commentCount <= 0) {
+        "View all comments"
+    } else {
+        "View all $commentCount comments"
     }
 }
 

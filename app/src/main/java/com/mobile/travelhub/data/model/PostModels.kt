@@ -1,5 +1,7 @@
 package com.mobile.travelhub.data.model
 
+import com.google.gson.annotations.SerializedName
+
 data class UploadRequest(
     val folderName: String,
     val files: Int
@@ -24,7 +26,9 @@ data class PostResponse(
     val id: Long,
     val description: String,
     val imageUrls: List<String>,
-    val owner: PostOwner
+    val owner: PostOwner,
+    val likeCount: Int? = null,
+    val commentCount: Int? = null
 )
 
 data class GetPostsResponse(
@@ -40,9 +44,40 @@ data class FeedPostResponse(
     val description: String,
     val imageUrls: List<String>,
     val owner: PostOwner,
+    @SerializedName(value = "createdAt", alternate = ["created_at", "createdDate", "postedAt"]) 
     val createdAt: String? = null,
+    @SerializedName(value = "updatedAt", alternate = ["updated_at", "updatedDate"]) 
     val updatedAt: String? = null,
-    val location: String? = null
+    val location: String? = null,
+    @SerializedName(value = "likedByCurrentUser", alternate = ["liked", "isLiked"]) 
+    val likedByCurrentUser: Boolean? = null,
+    @SerializedName(value = "likeCount", alternate = ["likesCount", "likes", "like_count"]) 
+    val likeCount: Int? = null,
+    @SerializedName(value = "commentCount", alternate = ["commentsCount", "comments", "comment_count"]) 
+    val commentCount: Int? = null
+)
+
+data class LikePostResponse(
+    val postId: Long,
+    val liked: Boolean,
+    val likeCount: Int
+)
+
+data class CreateCommentRequest(
+    val content: String
+)
+
+data class PostCommentResponse(
+    val content: String,
+    val owner: CommentOwnerResponse? = null,
+    val createdAt: String? = null,
+    val updatedAt: String? = null
+)
+
+data class CommentOwnerResponse(
+    val id: Long,
+    val username: String,
+    val avatarUrl: String? = null
 )
 
 data class PostOwner(

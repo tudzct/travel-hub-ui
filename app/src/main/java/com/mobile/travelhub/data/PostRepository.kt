@@ -5,7 +5,10 @@ import kotlinx.coroutines.withContext
 import android.content.Context
 import android.net.Uri
 import com.mobile.travelhub.data.api.TravelHubApiService
+import com.mobile.travelhub.data.model.CreateCommentRequest
 import com.mobile.travelhub.data.model.FeedPostResponse
+import com.mobile.travelhub.data.model.LikePostResponse
+import com.mobile.travelhub.data.model.PostCommentResponse
 import com.mobile.travelhub.data.model.PostCreateRequest
 import com.mobile.travelhub.data.model.UploadRequest
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -24,6 +27,7 @@ class PostRepository @Inject constructor(
     private val api: TravelHubApiService
 ) {
     private val uploadClient = OkHttpClient()
+    private val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
     suspend fun createPost(description: String, imageUris: List<Uri>): Result<Unit> {
         return withContext(Dispatchers.IO) {
@@ -83,10 +87,65 @@ class PostRepository @Inject constructor(
     suspend fun getAllPosts(page: Int = 0, pageSize: Int = 10): Result<List<FeedPostResponse>> {
         return withContext(Dispatchers.IO) {
             runCatching {
+                val likedPostIds = getLikedPostIds()
                 api.getAllPosts(
                     page = page,
                     pageSize = pageSize
-                ).data
+                ).data.map { post ->
+                    val localLiked = likedPostIds.contains(post.id.toString())
+                    val mergedLiked = (post.likedByCurrentUser == true) || localLiked
+                    post.copy(likedByCurrentUser = mergedLiked)
+                }
+            }
+        }
+    }
+
+    suspend fun likePost(postId: Long): Result<LikePostResponse> {
+        return withContext(Dispatchers.IO) {
+            runCatching {
+                val response = api.likePost(postId = postId)
+                updateLikedPost(postId = postId, liked = true)
+                response
+            }.recoverCatching { throwable ->
+                if (throwable is HttpException) {
+                    val errorBody = throwable.response()?.errorBody()?.string()
+                    throw IOException("Failed to like post. Server returned ${throwable.code()}: $errorBody", throwable)
+                }
+                throw throwable
+            }
+        }
+    }
+
+    suspend fun unlikePost(postId: Long): Result<LikePostResponse> {
+        return withContext(Dispatchers.IO) {
+            runCatching {
+                val response = api.unlikePost(postId = postId)
+                updateLikedPost(postId = postId, liked = false)
+                response
+            }.recoverCatching { throwable ->
+                if (throwable is HttpException) {
+                    val errorBody = throwable.response()?.errorBody()?.string()
+                    throw IOException("Failed to unlike post. Server returned ${throwable.code()}: $errorBody", throwable)
+                }
+                throw throwable
+            }
+        }
+    }
+
+    suspend fun addComment(postId: Long, content: String): Result<PostCommentResponse> {
+        return withContext(Dispatchers.IO) {
+            runCatching {
+                require(content.isNotBlank()) { "Comment cannot be empty" }
+                api.addComment(
+                    postId = postId,
+                    request = CreateCommentRequest(content = content.trim())
+                )
+            }.recoverCatching { throwable ->
+                if (throwable is HttpException) {
+                    val errorBody = throwable.response()?.errorBody()?.string()
+                    throw IOException("Failed to add comment. Server returned ${throwable.code()}: $errorBody", throwable)
+                }
+                throw throwable
             }
         }
     }
@@ -108,5 +167,27 @@ class PostRepository @Inject constructor(
                 throw IOException("Upload failed (${response.code}). details: $errorBody")
             }
         }
+    }
+
+    private fun getLikedPostIds(): Set<String> {
+        return prefs.getStringSet(KEY_LIKED_POST_IDS, emptySet()) ?: emptySet()
+    }
+
+    private fun updateLikedPost(postId: Long, liked: Boolean) {
+        val likedPosts = getLikedPostIds().toMutableSet()
+        val key = postId.toString()
+
+        if (liked) {
+            likedPosts.add(key)
+        } else {
+            likedPosts.remove(key)
+        }
+
+        prefs.edit().putStringSet(KEY_LIKED_POST_IDS, likedPosts).apply()
+    }
+
+    companion object {
+        private const val PREFS_NAME = "travel_hub_post"
+        private const val KEY_LIKED_POST_IDS = "liked_post_ids"
     }
 }
