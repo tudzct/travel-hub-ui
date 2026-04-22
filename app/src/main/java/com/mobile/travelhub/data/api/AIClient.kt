@@ -9,7 +9,7 @@ object AIClient {
      * Sử dụng IP 10.0.2.2 để kết nối đến localhost của máy tính.
      * Nếu dùng máy thật, hãy đổi thành IP mạng LAN (VD: 192.168.x.x)
      */
-    private const val BASE_URL = "http://10.0.2.2:8888/"
+    private const val BASE_URL = ApiConfig.BASE_URL
 
     private val retrofit: Retrofit by lazy {
         Retrofit.Builder()

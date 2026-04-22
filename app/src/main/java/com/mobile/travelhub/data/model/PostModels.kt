@@ -68,10 +68,19 @@ data class CreateCommentRequest(
 )
 
 data class PostCommentResponse(
+    val id: Long? = null,
     val content: String,
     val owner: CommentOwnerResponse? = null,
     val createdAt: String? = null,
     val updatedAt: String? = null
+)
+
+data class PostCommentsPageResponse(
+    val pageNumber: Int = 0,
+    val pageSize: Int = 0,
+    val totalPages: Int = 0,
+    val totalElements: Long = 0,
+    val data: List<PostCommentResponse> = emptyList()
 )
 
 data class CommentOwnerResponse(

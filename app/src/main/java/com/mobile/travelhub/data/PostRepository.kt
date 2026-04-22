@@ -9,6 +9,7 @@ import com.mobile.travelhub.data.model.CreateCommentRequest
 import com.mobile.travelhub.data.model.FeedPostResponse
 import com.mobile.travelhub.data.model.LikePostResponse
 import com.mobile.travelhub.data.model.PostCommentResponse
+import com.mobile.travelhub.data.model.PostCommentsPageResponse
 import com.mobile.travelhub.data.model.PostCreateRequest
 import com.mobile.travelhub.data.model.UploadRequest
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -144,6 +145,24 @@ class PostRepository @Inject constructor(
                 if (throwable is HttpException) {
                     val errorBody = throwable.response()?.errorBody()?.string()
                     throw IOException("Failed to add comment. Server returned ${throwable.code()}: $errorBody", throwable)
+                }
+                throw throwable
+            }
+        }
+    }
+
+    suspend fun getPostComments(postId: Long, page: Int = 0, pageSize: Int = 20): Result<PostCommentsPageResponse> {
+        return withContext(Dispatchers.IO) {
+            runCatching {
+                api.getPostComments(
+                    postId = postId,
+                    page = page,
+                    pageSize = pageSize
+                )
+            }.recoverCatching { throwable ->
+                if (throwable is HttpException) {
+                    val errorBody = throwable.response()?.errorBody()?.string()
+                    throw IOException("Failed to load comments. Server returned ${throwable.code()}: $errorBody", throwable)
                 }
                 throw throwable
             }

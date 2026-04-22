@@ -173,7 +173,23 @@ private fun HomeScreenContent(
                 )
                 Spacer(modifier = Modifier.height(12.dp))
 
-                if (activeComments.isEmpty()) {
+                if (uiState.isCommentsLoading) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 24.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator()
+                    }
+                } else if (!uiState.commentsErrorMessage.isNullOrBlank()) {
+                    Text(
+                        text = uiState.commentsErrorMessage,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.padding(horizontal = 24.dp)
+                    )
+                } else if (activeComments.isEmpty()) {
                     Text(
                         text = "No comments yet",
                         style = MaterialTheme.typography.bodyMedium,

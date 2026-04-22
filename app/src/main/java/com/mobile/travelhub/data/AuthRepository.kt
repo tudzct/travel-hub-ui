@@ -1,6 +1,7 @@
 package com.mobile.travelhub.data
 
 import android.content.Context
+import com.mobile.travelhub.data.api.ApiConfig
 import com.mobile.travelhub.models.AuthResponse
 import com.mobile.travelhub.models.AuthSession
 import com.mobile.travelhub.models.LoginRequest
@@ -102,7 +103,7 @@ class AuthRepository @Inject constructor(
     }
 
     companion object {
-        private const val BASE_URL = "http://10.0.2.2:8080"
+        private const val BASE_URL = ApiConfig.BASE_URL
         private const val REGISTER_PATH = "/api/auth/register"
         private const val LOGIN_PATH = "/api/auth/login"
         private const val REFRESH_PATH = "/api/auth/refresh"

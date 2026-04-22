@@ -5,6 +5,7 @@ import com.mobile.travelhub.data.model.GetPostsResponse
 import com.mobile.travelhub.data.model.LikePostResponse
 import com.mobile.travelhub.data.model.CreateCommentRequest
 import com.mobile.travelhub.data.model.PostCreateRequest
+import com.mobile.travelhub.data.model.PostCommentsPageResponse
 import com.mobile.travelhub.data.model.PostCommentResponse
 import com.mobile.travelhub.data.model.ProfileUpdateRequest
 import com.mobile.travelhub.data.model.UploadRequest
@@ -85,4 +86,11 @@ interface TravelHubApiService {
         @Path("postId") postId: Long,
         @Body request: CreateCommentRequest
     ): PostCommentResponse
+
+    @GET("api/posts/{postId}/comments")
+    suspend fun getPostComments(
+        @Path("postId") postId: Long,
+        @Query("page") page: Int = 0,
+        @Query("pageSize") pageSize: Int = 20
+    ): PostCommentsPageResponse
 }

@@ -6,6 +6,7 @@ import com.mobile.travelhub.data.model.FeedPostResponse
 import com.mobile.travelhub.data.model.PostCommentResponse
 import com.mobile.travelhub.usecase.AddCommentUseCase
 import com.mobile.travelhub.usecase.GetAllPostsUseCase
+import com.mobile.travelhub.usecase.GetPostCommentsUseCase
 import com.mobile.travelhub.usecase.LikePostUseCase
 import com.mobile.travelhub.usecase.UnlikePostUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -46,7 +47,9 @@ data class HomeUiState(
     val errorMessage: String? = null,
     val activeCommentPostId: Long? = null,
     val commentInput: String = "",
+    val isCommentsLoading: Boolean = false,
     val isCommentSubmitting: Boolean = false,
+    val commentsErrorMessage: String? = null,
     val commentErrorMessage: String? = null,
     val commentsByPostId: Map<Long, List<HomeCommentUiModel>> = emptyMap()
 )
@@ -56,7 +59,8 @@ class HomeViewModel @Inject constructor(
     private val getAllPostsUseCase: GetAllPostsUseCase,
     private val likePostUseCase: LikePostUseCase,
     private val unlikePostUseCase: UnlikePostUseCase,
-    private val addCommentUseCase: AddCommentUseCase
+    private val addCommentUseCase: AddCommentUseCase,
+    private val getPostCommentsUseCase: GetPostCommentsUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState(isLoading = true))
@@ -133,9 +137,12 @@ class HomeViewModel @Inject constructor(
             it.copy(
                 activeCommentPostId = postId,
                 commentInput = "",
+                isCommentsLoading = true,
+                commentsErrorMessage = null,
                 commentErrorMessage = null
             )
         }
+        loadComments(postId)
     }
 
     fun onCommentDismissed() {
@@ -143,7 +150,9 @@ class HomeViewModel @Inject constructor(
             it.copy(
                 activeCommentPostId = null,
                 commentInput = "",
+                isCommentsLoading = false,
                 isCommentSubmitting = false,
+                commentsErrorMessage = null,
                 commentErrorMessage = null
             )
         }
@@ -180,6 +189,7 @@ class HomeViewModel @Inject constructor(
                         state.copy(
                             isCommentSubmitting = false,
                             commentInput = "",
+                            commentsErrorMessage = null,
                             commentErrorMessage = null,
                             commentsByPostId = state.commentsByPostId + (postId to (currentComments + commentUiModel)),
                             posts = state.posts.map { post ->
@@ -197,6 +207,31 @@ class HomeViewModel @Inject constructor(
                         it.copy(
                             isCommentSubmitting = false,
                             commentErrorMessage = throwable.message ?: "Failed to add comment"
+                        )
+                    }
+                }
+        }
+    }
+
+    private fun loadComments(postId: Long) {
+        viewModelScope.launch {
+            getPostCommentsUseCase(postId = postId, page = 0, pageSize = 50)
+                .onSuccess { response ->
+                    _uiState.update { state ->
+                        state.copy(
+                            isCommentsLoading = false,
+                            commentsErrorMessage = null,
+                            commentsByPostId = state.commentsByPostId + (
+                                postId to response.data.map(::toCommentUiModel)
+                            )
+                        )
+                    }
+                }
+                .onFailure { throwable ->
+                    _uiState.update {
+                        it.copy(
+                            isCommentsLoading = false,
+                            commentsErrorMessage = throwable.message ?: "Failed to load comments"
                         )
                     }
                 }
@@ -256,7 +291,7 @@ class HomeViewModel @Inject constructor(
         val createdAt = response.createdAt ?: response.updatedAt
 
         return HomeCommentUiModel(
-            id = "${createdAt.orEmpty()}-${username}-${content.hashCode()}",
+            id = response.id?.toString() ?: "${createdAt.orEmpty()}-${username}-${content.hashCode()}",
             username = username,
             content = content,
             timeAgoLabel = formatTimeAgo(createdAt)

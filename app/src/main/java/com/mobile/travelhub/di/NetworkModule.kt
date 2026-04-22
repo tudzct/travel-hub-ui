@@ -1,5 +1,6 @@
 package com.mobile.travelhub.di
 
+import com.mobile.travelhub.data.api.ApiConfig
 import com.mobile.travelhub.data.api.AuthHeaderInterceptor
 import com.mobile.travelhub.data.api.TokenAuthenticator
 import com.mobile.travelhub.data.api.TravelHubApiService
@@ -44,5 +45,5 @@ object NetworkModule {
         return retrofit.create(TravelHubApiService::class.java)
     }
 
-    private const val BASE_URL = "http://10.0.2.2:8080/"
+    private const val BASE_URL = ApiConfig.BASE_URL
 }
