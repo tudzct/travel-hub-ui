@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mobile.travelhub.data.PlaceRepository
 import com.mobile.travelhub.data.model.TravelPlaceDetailResponse
+import com.mobile.travelhub.data.model.TravelPlaceListItemResponse
 import com.mobile.travelhub.data.model.TravelPlaceReviewResponse
 import com.mobile.travelhub.data.model.TravelPlaceReviewSummaryResponse
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -17,10 +18,13 @@ import kotlinx.coroutines.launch
 data class PlaceDetailUiState(
     val isLoading: Boolean = false,
     val detail: TravelPlaceDetailResponse? = null,
+    val relatedPlaces: List<TravelPlaceListItemResponse> = emptyList(),
+    val relatedPlacesLoading: Boolean = false,
     val reviewPreview: List<TravelPlaceReviewResponse> = emptyList(),
     val reviewPreviewLoading: Boolean = false,
     val errorMessage: String? = null,
-    val reviewErrorMessage: String? = null
+    val reviewErrorMessage: String? = null,
+    val relatedPlacesErrorMessage: String? = null
 )
 
 @HiltViewModel
@@ -43,6 +47,8 @@ class PlaceDetailViewModel @Inject constructor(
                 it.copy(
                     isLoading = true,
                     errorMessage = null,
+                    relatedPlaces = emptyList(),
+                    relatedPlacesErrorMessage = null,
                     reviewErrorMessage = null,
                     reviewPreview = emptyList()
                 )
@@ -56,6 +62,7 @@ class PlaceDetailViewModel @Inject constructor(
                             errorMessage = null
                         )
                     }
+                    loadRelatedPlaces(detail.id, detail.province.id)
                     loadReviewPreview(placeId)
                 }
                 .onFailure { throwable ->
@@ -71,6 +78,41 @@ class PlaceDetailViewModel @Inject constructor(
 
     fun refreshReviewPreview() {
         loadedPlaceId?.let(::loadReviewPreview)
+    }
+
+    private fun loadRelatedPlaces(placeId: Long, provinceId: Long) {
+        viewModelScope.launch {
+            _uiState.update {
+                it.copy(
+                    relatedPlacesLoading = true,
+                    relatedPlacesErrorMessage = null
+                )
+            }
+            runCatching {
+                placeRepository.getPlaces(
+                    page = 0,
+                    pageSize = 12,
+                    provinceId = provinceId
+                ).data
+                    .filterNot { item -> item.id == placeId }
+                    .take(6)
+            }.onSuccess { places ->
+                _uiState.update {
+                    it.copy(
+                        relatedPlaces = places,
+                        relatedPlacesLoading = false,
+                        relatedPlacesErrorMessage = null
+                    )
+                }
+            }.onFailure { throwable ->
+                _uiState.update {
+                    it.copy(
+                        relatedPlacesLoading = false,
+                        relatedPlacesErrorMessage = throwable.message ?: "Unable to load related places"
+                    )
+                }
+            }
+        }
     }
 
     fun loadReviewPreview(placeId: Long) {

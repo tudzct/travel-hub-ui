@@ -319,20 +319,24 @@ private fun PlaceListScreenContent(
                     Spacer(modifier = Modifier.width(8.dp))
                     IconButton(
                         onClick = onCommentSubmit,
-                        enabled = !homeUiState.isCommentSubmitting && homeUiState.commentInput.isNotBlank()
+                        enabled = !homeUiState.isCommentSubmitting && homeUiState.commentInput.isNotBlank(),
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clip(CircleShape)
+                            .background(VerdantPrimary)
                     ) {
                         if (homeUiState.isCommentSubmitting) {
                             CircularProgressIndicator(
                                 modifier = Modifier.size(16.dp),
                                 strokeWidth = 2.dp,
-                                color = VerdantPrimary
+                                color = Color.White
                             )
                         } else {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Outlined.Send,
                                 modifier = Modifier.size(16.dp),
                                 contentDescription = "Send comment",
-                                tint = VerdantPrimary
+                                tint = Color.White
                             )
                         }
                     }

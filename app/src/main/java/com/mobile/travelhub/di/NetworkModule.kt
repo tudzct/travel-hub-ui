@@ -1,6 +1,7 @@
 package com.mobile.travelhub.di
 
 import com.mobile.travelhub.data.api.ApiConfig
+import com.mobile.travelhub.data.api.AiRecommendationApiService
 import com.mobile.travelhub.data.api.AuthApiService
 import com.mobile.travelhub.data.api.AuthHeaderInterceptor
 import com.mobile.travelhub.data.api.FileUploadApiService
@@ -55,6 +56,13 @@ object NetworkModule {
 
     @Provides
     @Singleton
+    @Named("ai-public")
+    fun provideAiPublicRetrofit(): Retrofit {
+        return RetrofitFactory.create(baseUrl = AI_BASE_URL)
+    }
+
+    @Provides
+    @Singleton
     fun provideAuthApiService(@Named("public") publicRetrofit: Retrofit): AuthApiService {
         return publicRetrofit.create(AuthApiService::class.java)
     }
@@ -95,5 +103,12 @@ object NetworkModule {
         return retrofit.create(PlaceApiService::class.java)
     }
 
+    @Provides
+    @Singleton
+    fun provideAiRecommendationApiService(@Named("ai-public") retrofit: Retrofit): AiRecommendationApiService {
+        return retrofit.create(AiRecommendationApiService::class.java)
+    }
+
     private const val BASE_URL = ApiConfig.BASE_URL
+    private const val AI_BASE_URL = ApiConfig.AI_BASE_URL
 }

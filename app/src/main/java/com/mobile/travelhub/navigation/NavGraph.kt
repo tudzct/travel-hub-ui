@@ -465,6 +465,7 @@ fun NavGraph(
             PlaceDetailScreen(
                 placeId = placeId,
                 onBack = { navController.navigateUp() },
+                onPlaceClick = { id -> navController.navigate(Screen.PlaceDetail.createRoute(id)) },
                 onShowAllReviews = { id -> navController.navigate(Screen.PlaceReviews.createRoute(id)) },
                 onRequireLogin = {
                     onLogout()
