@@ -38,7 +38,6 @@ import com.mobile.travelhub.ui.screens.GroupChatScreen
 import com.mobile.travelhub.ui.screens.CreatePostScreen
 import com.mobile.travelhub.ui.screens.GroupDetailScreen
 import com.mobile.travelhub.ui.screens.GroupDiscoveryScreen
-import com.mobile.travelhub.ui.screens.HomeScreen
 import com.mobile.travelhub.ui.screens.TripsScreen
 import com.mobile.travelhub.ui.screens.ItineraryScreen
 //import com.mobile.travelhub.ui.screens.PostDetailScreen
@@ -300,7 +299,6 @@ fun NavGraph(
             )
         }
         composable(Screen.Home.route) {
-            //            HomeScreen()
             PlaceListScreen(
                 onPlaceClick = { placeId ->
                     navController.navigate(Screen.PlaceDetail.createRoute(placeId))

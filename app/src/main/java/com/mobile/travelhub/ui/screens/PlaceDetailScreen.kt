@@ -32,6 +32,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -222,10 +223,8 @@ fun PlaceDetailScreen(
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.SemiBold
                                 )
-                                Text(
-                                    text = detail.description.orEmpty().ifBlank { "Chưa có mô tả." },
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                ExpandableDescription(
+                                    description = detail.description.orEmpty().ifBlank { "Chưa có mô tả." }
                                 )
                             }
                         }
@@ -264,6 +263,39 @@ fun PlaceDetailScreen(
                 onContentChange = reviewViewModel::updateContent,
                 onSubmit = { reviewViewModel.submit(uiState.detail!!.id) }
             )
+        }
+    }
+}
+
+@Composable
+private fun ExpandableDescription(
+    description: String,
+    collapsedMaxLines: Int = 4
+) {
+    var expanded by remember(description) { mutableStateOf(false) }
+    var canExpand by remember(description) { mutableStateOf(false) }
+
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text(
+            text = description,
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = if (expanded) Int.MAX_VALUE else collapsedMaxLines,
+            overflow = TextOverflow.Ellipsis,
+            onTextLayout = { layoutResult ->
+                if (!expanded) {
+                    canExpand = layoutResult.hasVisualOverflow
+                }
+            }
+        )
+
+        if (canExpand || expanded) {
+            TextButton(
+                onClick = { expanded = !expanded },
+                modifier = Modifier.padding(horizontal = 0.dp)
+            ) {
+                Text(if (expanded) "Thu gọn" else "Xem thêm")
+            }
         }
     }
 }

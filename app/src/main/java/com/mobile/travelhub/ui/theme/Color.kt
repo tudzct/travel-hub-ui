@@ -14,7 +14,7 @@ val Primary = Color(0xFF0058BC)
 val PrimaryContainer = Color(0xFF0070EB)
 val OnPrimary = Color(0xFFFFFFFF)
 
-val Surface = Color(0xFFF8F9FA)
+val Surface = Color(0xFFFFFFFF)
 val SurfaceContainer = Color(0xFFEDEEEF)
 val SurfaceContainerLow = Color(0xFFF3F4F5)
 val SurfaceContainerLowest = Color(0xFFFFFFFF)

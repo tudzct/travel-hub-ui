@@ -125,7 +125,7 @@ private fun PlaceListScreenContent(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(VerdantSurface)
+            .background(Color.White)
     ) {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
@@ -417,18 +417,6 @@ private fun FeedHeader(
                 cursorColor = VerdantPrimary
             )
         )
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = if (resultCount == 1) "1 location in feed" else "$resultCount locations in feed",
-                style = MaterialTheme.typography.bodyMedium,
-                color = VerdantOnSurfaceVariant
-            )
-        }
     }
 }
 
@@ -566,30 +554,7 @@ private fun PostsSectionHeader() {
             color = VerdantOnSurface,
             fontWeight = FontWeight.Bold
         )
-        StatusPill(
-            text = "Live feed",
-            containerColor = VerdantPrimary.copy(alpha = 0.12f),
-            contentColor = VerdantPrimary
-        )
-    }
-}
 
-@Composable
-private fun StatusPill(
-    text: String,
-    containerColor: Color,
-    contentColor: Color
-) {
-    Surface(
-        shape = RoundedCornerShape(14.dp),
-        color = containerColor
-    ) {
-        Text(
-            text = text,
-            modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp),
-            style = MaterialTheme.typography.labelMedium,
-            color = contentColor
-        )
     }
 }
 
@@ -648,20 +613,11 @@ private fun PostFeedCard(
     onLikeClick: () -> Unit,
     onCommentClick: () -> Unit
 ) {
-    Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 12.dp),
-        shape = RoundedCornerShape(26.dp),
-        color = VerdantSurfaceContainerLowest,
-        shadowElevation = 10.dp
-    ) {
-        PostItemContent(
-            post = post,
-            onLikeClick = onLikeClick,
-            onCommentClick = onCommentClick
-        )
-    }
+    PostItemContent(
+        post = post,
+        onLikeClick = onLikeClick,
+        onCommentClick = onCommentClick
+    )
 }
 
 @Composable
@@ -756,9 +712,7 @@ private fun PostItemContent(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(360.dp)
-                .padding(horizontal = 16.dp)
-                .clip(RoundedCornerShape(22.dp))
-                .background(VerdantSurfaceContainer)
+                .background(Color(0xFFF5F5F5))
         ) {
             if (post.imageUrls.isNotEmpty()) {
                 HorizontalPager(
@@ -883,11 +837,18 @@ private fun PostItemContent(
                 color = VerdantOnSurfaceVariant
             )
         }
+
+        Spacer(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(10.dp)
+                .background(Color(0xFFF3F3F3))
+        )
     }
 }
 
 private val VerdantPrimary = Color(0xFF006B2C)
-private val VerdantSurface = Color(0xFFF4FCF0)
+private val VerdantSurface = Color.White
 private val VerdantSurfaceContainer = Color(0xFFEFF6EA)
 private val VerdantSurfaceContainerHighest = Color(0xFFDDE5D9)
 private val VerdantSurfaceContainerLowest = Color(0xFFFFFFFF)
