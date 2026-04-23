@@ -1,41 +1,20 @@
 package com.mobile.travelhub.ui.screens
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Place
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material.icons.filled.DirectionsTransit
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -43,190 +22,261 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-
-data class ItineraryItemData(val title: String, val time: String)
+import com.mobile.travelhub.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ItineraryScreen(
-    groupName: String,
-    onBack: () -> Unit
-) {
-    val isLeader = true // MOCK: Trong ứng dụng thực tế, lấy từ API xem User có phải là Leader hay không
+fun ItineraryScreen(onBack: () -> Unit) {
+    var selectedDay by remember { mutableIntStateOf(1) }
     
-    var itineraryItems by remember { mutableStateOf(listOf(
-        ItineraryItemData("Kansai Airport Arrival", "10:00 AM"),
-        ItineraryItemData("Check-in at Kyoto Hotel", "12:00 PM"),
-        ItineraryItemData("Nishiki Market Dinner", "18:00 PM")
-    )) }
-    
-    var showDialog by remember { mutableStateOf(false) }
-    var newTitle by remember { mutableStateOf("") }
-    var newTime by remember { mutableStateOf("") }
-
     Scaffold(
+        containerColor = SurfaceBg,
         topBar = {
             TopAppBar(
-                title = { 
+                title = {
                     Text(
-                        "ITINERARY", 
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = 1.sp
-                    ) 
+                        "Lịch trình Chi tiết",
+                        fontWeight = FontWeight.ExtraBold,
+                        fontSize = 18.sp,
+                        color = OnSurface
+                    )
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = OnSurface)
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background
-                )
+                actions = {
+                    IconButton(onClick = { }) {
+                        Icon(Icons.Default.MoreVert, contentDescription = "More", tint = OnSurface)
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = SurfaceBg)
             )
-        },
-        floatingActionButton = {
-            if (isLeader) {
-                FloatingActionButton(
-                    onClick = { showDialog = true },
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary
-                ) {
-                    Icon(Icons.Default.Add, contentDescription = "Add Location")
-                }
-            }
         }
-    ) { innerPadding ->
-        LazyColumn(
+    ) { padding ->
+        Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding)
-                .padding(horizontal = 24.dp)
+                .padding(padding)
         ) {
-            item {
-                Text(
-                    text = groupName,
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(vertical = 16.dp)
-                )
-            }
-
-            item {
-                Text(
-                    text = "DAY 1: OCT 12",
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(vertical = 12.dp)
-                )
-            }
-
-            items(itineraryItems.size) { index ->
-                val item = itineraryItems[index]
-                ItineraryItemRow(title = item.title, time = item.time)
-                Spacer(modifier = Modifier.height(16.dp))
-            }
-            
-            item {
-                Spacer(modifier = Modifier.height(80.dp))
-            }
-        }
-
-        if (showDialog) {
-            AlertDialog(
-                onDismissRequest = { showDialog = false },
-                title = { Text("Add Itinerary Item", fontWeight = FontWeight.Bold) },
-                text = {
-                    Column {
-                        TextField(
-                            value = newTitle,
-                            onValueChange = { newTitle = it },
-                            placeholder = { Text("Location / Activity") },
-                            colors = TextFieldDefaults.colors(
-                                focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-                                unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-                                focusedIndicatorColor = Color.Transparent,
-                                unfocusedIndicatorColor = Color.Transparent
-                            ),
-                            shape = RoundedCornerShape(12.dp),
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                        Spacer(modifier = Modifier.height(12.dp))
-                        TextField(
-                            value = newTime,
-                            onValueChange = { newTime = it },
-                            placeholder = { Text("Time (e.g. 10:00 AM)") },
-                            colors = TextFieldDefaults.colors(
-                                focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-                                unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-                                focusedIndicatorColor = Color.Transparent,
-                                unfocusedIndicatorColor = Color.Transparent
-                            ),
-                            shape = RoundedCornerShape(12.dp),
-                            modifier = Modifier.fillMaxWidth()
+            // Day Selector
+            LazyRow(
+                contentPadding = PaddingValues(horizontal = 20.dp, vertical = 12.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                items(5) { index ->
+                    val dayNum = index + 1
+                    val isSelected = selectedDay == dayNum
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(50))
+                            .background(if (isSelected) PrimaryBlue else SurfaceContainerLowest)
+                            .clickable { selectedDay = dayNum }
+                            .padding(horizontal = 24.dp, vertical = 10.dp)
+                    ) {
+                        Text(
+                            text = "Ngày $dayNum",
+                            color = if (isSelected) Color.White else OnSurfaceVariant,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp
                         )
                     }
-                },
-                confirmButton = {
-                    TextButton(onClick = {
-                        if (newTitle.isNotBlank()) {
-                            itineraryItems = itineraryItems + ItineraryItemData(newTitle, newTime)
-                        }
-                        showDialog = false
-                        newTitle = ""
-                        newTime = ""
-                    }) {
-                        Text("Add", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
-                    }
-                },
-                dismissButton = {
-                    TextButton(onClick = { showDialog = false }) {
-                        Text("Cancel", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                },
-                containerColor = MaterialTheme.colorScheme.surfaceContainerHighest
-            )
+                }
+            }
+
+            // Timeline
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(20.dp)
+            ) {
+                item {
+                    TimelineNode(
+                        time = "09:00 AM",
+                        title = "Senso-ji Temple",
+                        desc = "Thăm quan ngôi đền cổ nhất Tokyo",
+                        duration = "Ở lại khoảng 2.5 giờ",
+                        cost = "Free",
+                        transportToNext = "🚇 Tàu điện ngầm Ginza Line (15 phút)",
+                        isFirst = true
+                    )
+                }
+                item {
+                    TimelineNode(
+                        time = "11:45 AM",
+                        title = "Sushi Dai",
+                        desc = "Ăn trưa tại khu vực chợ cá Tsukiji. Cần lấy số trước.",
+                        duration = "Ăn trưa 1.5 giờ",
+                        cost = "Dự kiến: $45.00/người",
+                        transportToNext = "🚶 Đi bộ dọc khu phố (10 phút)",
+                        isHighlight = true
+                    )
+                }
+                item {
+                    TimelineNode(
+                        time = "01:30 PM",
+                        title = "Akihabara",
+                        desc = "Khám phá trung tâm điện tử và văn hóa anime",
+                        duration = "Tham quan tự do 3 giờ",
+                        cost = "Variable",
+                        transportToNext = "🚌 Xe buýt trung tâm (20 phút)"
+                    )
+                }
+                item {
+                    TimelineNode(
+                        time = "05:00 PM",
+                        title = "Shibuya Sky",
+                        desc = "Ngắm hoàng hôn từ đỉnh tòa nhà. Đã đặt vé trước.",
+                        duration = "Tham quan & Chụp ảnh 2 giờ",
+                        cost = "Đã thanh toán: $15.00",
+                        isLast = true
+                    )
+                }
+                item {
+                    Spacer(modifier = Modifier.height(60.dp))
+                }
+            }
         }
     }
 }
 
 @Composable
-private fun ItineraryItemRow(title: String, time: String) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
-            .background(MaterialTheme.colorScheme.surfaceVariant)
-            .padding(16.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Box(
-            modifier = Modifier
-                .size(40.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.surface),
-            contentAlignment = Alignment.Center
+fun TimelineNode(
+    time: String,
+    title: String,
+    desc: String,
+    duration: String = "",
+    cost: String = "",
+    transportToNext: String = "",
+    isFirst: Boolean = false,
+    isLast: Boolean = false,
+    isHighlight: Boolean = false
+) {
+    Row(modifier = Modifier.fillMaxWidth()) {
+        // Left Column: Time & Line
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.width(60.dp)
         ) {
-            Icon(
-                Icons.Default.Place,
-                contentDescription = "Place",
-                tint = MaterialTheme.colorScheme.primary
-            )
-        }
-        Spacer(modifier = Modifier.width(16.dp))
-        Column {
             Text(
-                text = title,
-                style = MaterialTheme.typography.bodyLarge,
+                time.split(" ")[0],
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
+                fontSize = 13.sp,
+                color = OnSurface
             )
             Text(
-                text = time,
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                time.split(" ")[1],
+                fontWeight = FontWeight.Medium,
+                fontSize = 11.sp,
+                color = OnSurfaceVariant
             )
+            
+            Spacer(modifier = Modifier.height(12.dp))
+            
+            Box(
+                modifier = Modifier
+                    .size(16.dp)
+                    .clip(CircleShape)
+                    .background(if (isHighlight) SunsetOrange else PrimaryBlue)
+            )
+            
+            if (!isLast) {
+                Box(
+                    modifier = Modifier
+                        .width(2.dp)
+                        .weight(1f) // Fill remaining height
+                        .background(
+                            brush = androidx.compose.ui.graphics.Brush.verticalGradient(
+                                colors = listOf(
+                                    if (isHighlight) SunsetOrange else PrimaryBlue,
+                                    SurfaceContainerLow
+                                )
+                            )
+                        )
+                )
+            }
+        }
+        
+        Spacer(modifier = Modifier.width(16.dp))
+        
+        // Right Column: Card & Transport
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .padding(bottom = 24.dp)
+        ) {
+            Card(
+                shape = RoundedCornerShape(24.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = if (isHighlight) PrimaryBlue.copy(alpha = 0.05f) else SurfaceContainerLowest
+                ),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                            Text(title, fontWeight = FontWeight.ExtraBold, fontSize = 16.sp, color = OnSurface)
+                            if (isHighlight) {
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Icon(Icons.Default.Star, null, modifier = Modifier.size(16.dp), tint = SunsetOrange)
+                            }
+                        }
+                        
+                        if (cost.isNotEmpty()) {
+                            Text(
+                                text = cost,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 13.sp,
+                                color = PrimaryBlue
+                            )
+                        }
+                    }
+                    
+                    Spacer(modifier = Modifier.height(8.dp))
+                    
+                    if (duration.isNotEmpty()) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.Schedule, null, modifier = Modifier.size(14.dp), tint = OnSurfaceVariant)
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(duration, fontSize = 12.sp, color = OnSurfaceVariant, fontWeight = FontWeight.Medium)
+                        }
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
+
+                    Text(desc, fontSize = 13.sp, color = OnSurface, lineHeight = 20.sp)
+                    
+                    if (isHighlight) {
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(SunsetOrange.copy(alpha = 0.1f))
+                                .padding(horizontal = 8.dp, vertical = 4.dp)
+                        ) {
+                            Text("Must Visit", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = SunsetOrange)
+                        }
+                    }
+                }
+            }
+
+            if (transportToNext.isNotEmpty() && !isLast) {
+                Spacer(modifier = Modifier.height(16.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.DirectionsTransit, null, modifier = Modifier.size(18.dp), tint = OnSurfaceVariant)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = transportToNext,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = OnSurfaceVariant
+                    )
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+            }
         }
     }
 }

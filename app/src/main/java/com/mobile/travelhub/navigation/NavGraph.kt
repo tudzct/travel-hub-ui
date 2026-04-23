@@ -12,17 +12,7 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
-import com.mobile.travelhub.ui.screens.CostEstimateScreen
-import com.mobile.travelhub.ui.screens.CreateGroupScreen
-import com.mobile.travelhub.ui.screens.EditProfileScreen
-import com.mobile.travelhub.ui.screens.FollowersFollowingScreen
-import com.mobile.travelhub.ui.screens.GroupChatScreen
-import com.mobile.travelhub.ui.screens.GroupDetailScreen
-import com.mobile.travelhub.ui.screens.GroupDiscoveryScreen
-import com.mobile.travelhub.ui.screens.HomeScreen
-import com.mobile.travelhub.ui.screens.ItineraryBotScreen
-import com.mobile.travelhub.ui.screens.ItineraryScreen
-import com.mobile.travelhub.ui.screens.ProfileScreen
+import com.mobile.travelhub.ui.screens.*
 
 sealed class Screen(val route: String, val index: Int) {
     data object Home : Screen("home", 0)
@@ -51,6 +41,8 @@ sealed class Screen(val route: String, val index: Int) {
     data object CostEstimate : Screen("cost_estimate/{groupName}", 11) {
         fun createRoute(groupName: String) = "cost_estimate/$groupName"
     }
+    data object GroupDiscovery : Screen("group_discovery", 12)
+    data object RouteMap : Screen("route_map", 13)
 
     data object Chat : Screen("chat", 3)
 
@@ -68,6 +60,8 @@ sealed class Screen(val route: String, val index: Int) {
                 "group_chat" -> GroupChat
                 "itinerary" -> Itinerary
                 "cost_estimate" -> CostEstimate
+                "group_discovery" -> GroupDiscovery
+                "route_map" -> RouteMap
                 else -> null
             }
         }
@@ -108,10 +102,12 @@ fun NavGraph(navController: NavHostController, innerPadding: PaddingValues) {
             HomeScreen()
         }
         composable(Screen.Trips.route) {
-            GroupDiscoveryScreen(
-                onNavigateToCreateGroup = { navController.navigate(Screen.CreateGroup.route) { launchSingleTop = true } },
+            TripsScreen(
                 onNavigateToGroupDetail = { groupName -> 
                     navController.navigate(Screen.GroupDetail.createRoute(groupName)) { launchSingleTop = true } 
+                },
+                onNavigateToCreateGroup = {
+                    navController.navigate(Screen.CreateGroup.route) { launchSingleTop = true }
                 }
             )
         }
@@ -201,6 +197,8 @@ fun NavGraph(navController: NavHostController, innerPadding: PaddingValues) {
                 onBack = { navController.popBackStack() },
                 onNavigateToChat = { navController.navigate(Screen.GroupChat.createRoute(groupName)) { launchSingleTop = true } },
                 onNavigateToItinerary = { navController.navigate(Screen.Itinerary.createRoute(groupName)) { launchSingleTop = true } },
+                onNavigateToDiscovery = { navController.navigate(Screen.GroupDiscovery.route) { launchSingleTop = true } },
+                onNavigateToMap = { navController.navigate(Screen.RouteMap.route) { launchSingleTop = true } },
                 onNavigateToCost = { navController.navigate(Screen.CostEstimate.createRoute(groupName)) { launchSingleTop = true } }
             )
         }
@@ -219,10 +217,8 @@ fun NavGraph(navController: NavHostController, innerPadding: PaddingValues) {
         composable(
             route = Screen.Itinerary.route,
             arguments = listOf(navArgument("groupName") { type = NavType.StringType })
-        ) { backStackEntry ->
-            val groupName = backStackEntry.arguments?.getString("groupName") ?: "Itinerary"
+        ) {
             ItineraryScreen(
-                groupName = groupName,
                 onBack = { navController.popBackStack() }
             )
         }
@@ -234,6 +230,18 @@ fun NavGraph(navController: NavHostController, innerPadding: PaddingValues) {
             val groupName = backStackEntry.arguments?.getString("groupName") ?: "Cost Estimate"
             CostEstimateScreen(
                 groupName = groupName,
+                onBack = { navController.popBackStack() }
+            )
+        }
+        
+        composable(Screen.GroupDiscovery.route) {
+            GroupDiscoveryScreen(
+                onBack = { navController.popBackStack() }
+            )
+        }
+        
+        composable(Screen.RouteMap.route) {
+            RouteMapScreen(
                 onBack = { navController.popBackStack() }
             )
         }
