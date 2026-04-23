@@ -1,266 +1,313 @@
 package com.mobile.travelhub.ui.screens
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Place
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-
-data class CostItemData(val title: String, val amount: String, val icon: ImageVector)
+import com.mobile.travelhub.R
+import com.mobile.travelhub.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CostEstimateScreen(
-    groupName: String,
+    groupName: String = "Tokyo Trip",
     onBack: () -> Unit
 ) {
-    val isLeader = true // MOCK: Lấy quyền từ Backend
-
-    var costs by remember { mutableStateOf(listOf(
-        CostItemData("Flights (Round Trip)", "$450", Icons.Default.Place),
-        CostItemData("Accommodation (8 nights)", "$400", Icons.Default.Home),
-        CostItemData("Food & Dining", "$250", Icons.AutoMirrored.Filled.List)
-    )) }
-
-    var showDialog by remember { mutableStateOf(false) }
-    var newTitle by remember { mutableStateOf("") }
-    var newAmount by remember { mutableStateOf("") }
+    var showAddExpense by remember { mutableStateOf(false) }
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     Scaffold(
+        containerColor = SurfaceBg,
         topBar = {
             TopAppBar(
-                title = { 
+                title = {
                     Text(
-                        "COST ESTIMATE", 
-                        style = MaterialTheme.typography.labelMedium,
+                        text = "Quản lý Chi phí",
                         fontWeight = FontWeight.Bold,
-                        letterSpacing = 1.sp
-                    ) 
+                        color = OnSurface,
+                        fontSize = 18.sp
+                    )
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = OnSurface)
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background
-                )
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = SurfaceBg)
             )
         },
         floatingActionButton = {
-            if (isLeader) {
-                FloatingActionButton(
-                    onClick = { showDialog = true },
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary
-                ) {
-                    Icon(Icons.Default.Add, contentDescription = "Add Cost")
-                }
+            FloatingActionButton(
+                onClick = { showAddExpense = true },
+                containerColor = PrimaryBlue,
+                contentColor = Color.White,
+                shape = CircleShape
+            ) {
+                Icon(Icons.Default.Add, contentDescription = "Add Expense")
             }
         }
-    ) { innerPadding ->
+    ) { padding ->
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding)
-                .padding(horizontal = 24.dp)
+                .padding(padding),
+            contentPadding = PaddingValues(horizontal = 20.dp, vertical = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
+            // Budget Summary Card
             item {
-                Text(
-                    text = groupName,
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(vertical = 16.dp)
-                )
-                
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(MaterialTheme.colorScheme.surfaceVariant)
-                        .padding(24.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(
-                            text = "TOTAL ESTIMATED",
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = "$1,250",
-                            style = MaterialTheme.typography.displayMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = "Per person",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-                
-                Spacer(modifier = Modifier.height(32.dp))
-                
-                Text(
-                    text = "BREAKDOWN",
-                    style = MaterialTheme.typography.labelSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(bottom = 16.dp)
+                BudgetSummaryCard(
+                    totalSpent = 850.0,
+                    budgetMax = 1500.0,
+                    budgetMin = 1200.0
                 )
             }
 
-            items(costs.size) { index ->
-                val cost = costs[index]
-                CostItem(title = cost.title, amount = cost.amount, icon = cost.icon)
-            }
-            
+            // Individual Contributions
             item {
-                Spacer(modifier = Modifier.height(80.dp))
+                Text(
+                    text = "Đã chi trả bởi",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 15.sp,
+                    color = OnSurface,
+                    modifier = Modifier.padding(bottom = 4.dp)
+                )
             }
+
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    MemberExpenseCircle(name = "Me", amount = 450.0, color = PrimaryBlue)
+                    MemberExpenseCircle(name = "Alex", amount = 200.0, color = SunsetOrange)
+                    MemberExpenseCircle(name = "Sarah", amount = 200.0, color = Color(0xFF4CAF50))
+                }
+            }
+
+            // Recent Expenses List
+            item {
+                Text(
+                    text = "Giao dịch gần đây",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 15.sp,
+                    color = OnSurface,
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+            }
+
+            val recentExpenses = listOf(
+                ExpenseItemData("Sushi Lunch", "Sarah", 120.0, "Food"),
+                ExpenseItemData("Hotel Deposit", "Me", 400.0, "Stay"),
+                ExpenseItemData("Train Tickets", "Alex", 200.0, "Transport"),
+                ExpenseItemData("Museum Entry", "Me", 50.0, "Entry")
+            )
+
+            items(recentExpenses) { expense ->
+                ExpenseRow(expense)
+            }
+
+            item { Spacer(modifier = Modifier.height(80.dp)) }
         }
 
-        if (showDialog) {
-            AlertDialog(
-                onDismissRequest = { showDialog = false },
-                title = { Text("Add Cost Item", fontWeight = FontWeight.Bold) },
-                text = {
-                    Column {
-                        TextField(
-                            value = newTitle,
-                            onValueChange = { newTitle = it },
-                            placeholder = { Text("Expense Name") },
-                            colors = TextFieldDefaults.colors(
-                                focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-                                unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-                                focusedIndicatorColor = Color.Transparent,
-                                unfocusedIndicatorColor = Color.Transparent
-                            ),
-                            shape = RoundedCornerShape(12.dp),
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                        Spacer(modifier = Modifier.height(12.dp))
-                        TextField(
-                            value = newAmount,
-                            onValueChange = { newAmount = it },
-                            placeholder = { Text("Amount (e.g. $100)") },
-                            colors = TextFieldDefaults.colors(
-                                focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-                                unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-                                focusedIndicatorColor = Color.Transparent,
-                                unfocusedIndicatorColor = Color.Transparent
-                            ),
-                            shape = RoundedCornerShape(12.dp),
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    }
-                },
-                confirmButton = {
-                    TextButton(onClick = {
-                        if (newTitle.isNotBlank()) {
-                            costs = costs + CostItemData(newTitle, newAmount, Icons.AutoMirrored.Filled.List)
-                        }
-                        showDialog = false
-                        newTitle = ""
-                        newAmount = ""
-                    }) {
-                        Text("Add", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
-                    }
-                },
-                dismissButton = {
-                    TextButton(onClick = { showDialog = false }) {
-                        Text("Cancel", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                },
-                containerColor = MaterialTheme.colorScheme.surfaceContainerHighest
+        if (showAddExpense) {
+            ModalBottomSheet(
+                onDismissRequest = { showAddExpense = false },
+                sheetState = sheetState,
+                containerColor = SurfaceContainerLowest,
+                dragHandle = { BottomSheetDefaults.DragHandle(color = SurfaceContainerLow) }
+            ) {
+                AddExpenseContent(onDismiss = { showAddExpense = false })
+            }
+        }
+    }
+}
+
+@Composable
+fun AddExpenseContent(onDismiss: () -> Unit) {
+    var expenseTitle by remember { mutableStateOf("") }
+    var expenseAmount by remember { mutableStateOf("") }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 24.dp)
+            .padding(bottom = 40.dp)
+    ) {
+        Text(
+            text = "Thêm khoản chi",
+            fontWeight = FontWeight.ExtraBold,
+            fontSize = 20.sp,
+            color = OnSurface
+        )
+        Spacer(modifier = Modifier.height(24.dp))
+        
+        OutlinedTextField(
+            value = expenseTitle,
+            onValueChange = { expenseTitle = it },
+            label = { Text("Tên khoản chi (VD: Ăn trưa, Vé tàu...)") },
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = PrimaryBlue,
+                unfocusedBorderColor = SurfaceContainerLow
+            )
+        )
+        
+        Spacer(modifier = Modifier.height(16.dp))
+
+        OutlinedTextField(
+            value = expenseAmount,
+            onValueChange = { expenseAmount = it },
+            label = { Text("Số tiền ($)") },
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = PrimaryBlue,
+                unfocusedBorderColor = SurfaceContainerLow
+            )
+        )
+
+        Spacer(modifier = Modifier.height(24.dp))
+        
+        Button(
+            onClick = onDismiss,
+            modifier = Modifier.fillMaxWidth().height(56.dp),
+            shape = RoundedCornerShape(20.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
+        ) {
+            Text("Lưu chi phí", fontWeight = FontWeight.Bold)
+        }
+    }
+}
+
+@Composable
+fun BudgetSummaryCard(totalSpent: Double, budgetMin: Double, budgetMax: Double) {
+    val progress = (totalSpent / budgetMax).toFloat()
+    
+    Card(
+        shape = RoundedCornerShape(28.dp),
+        colors = CardDefaults.cardColors(containerColor = SurfaceContainerLowest),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(modifier = Modifier.padding(24.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Text("Tổng chi tiêu", fontSize = 13.sp, color = OnSurfaceVariant)
+                    Text("$${totalSpent.toInt()}", fontWeight = FontWeight.ExtraBold, fontSize = 32.sp, color = OnSurface)
+                }
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(SunsetOrange.copy(alpha = 0.1f))
+                        .padding(horizontal = 12.dp, vertical = 6.dp)
+                ) {
+                    Text("Ngân sách: $${budgetMin.toInt()}-$${budgetMax.toInt()}", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = SunsetOrange)
+                }
+            }
+            
+            Spacer(modifier = Modifier.height(20.dp))
+            
+            LinearProgressIndicator(
+                progress = { progress },
+                modifier = Modifier.fillMaxWidth().height(8.dp).clip(CircleShape),
+                color = PrimaryBlue,
+                trackColor = SurfaceContainerLow,
+            )
+            
+            Spacer(modifier = Modifier.height(12.dp))
+            
+            Text(
+                text = "Còn lại $${(budgetMax - totalSpent).toInt()} trước khi vượt mức tối đa",
+                fontSize = 12.sp,
+                color = OnSurfaceVariant
             )
         }
     }
 }
 
 @Composable
-private fun CostItem(title: String, amount: String, icon: ImageVector) {
-    Row(
+fun MemberExpenseCircle(name: String, amount: Double, color: Color) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp)
-            .clip(RoundedCornerShape(12.dp))
-            .background(MaterialTheme.colorScheme.surface)
-            .padding(16.dp),
-        verticalAlignment = Alignment.CenterVertically
+            .width(90.dp)
+            .clip(RoundedCornerShape(20.dp))
+            .background(SurfaceContainerLowest)
+            .padding(vertical = 12.dp)
     ) {
         Box(
             modifier = Modifier
                 .size(40.dp)
                 .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.surfaceVariant),
+                .background(color.copy(alpha = 0.1f)),
             contentAlignment = Alignment.Center
         ) {
-            Icon(
-                icon,
-                contentDescription = title,
-                tint = MaterialTheme.colorScheme.primary
-            )
+            Image(painterResource(id = R.drawable.ic_launcher_foreground), null, modifier = Modifier.size(24.dp))
         }
-        Spacer(modifier = Modifier.width(16.dp))
-        Text(
-            text = title,
-            style = MaterialTheme.typography.bodyLarge,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.weight(1f)
-        )
-        Text(
-            text = amount,
-            style = MaterialTheme.typography.bodyLarge,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary
-        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(name, fontWeight = FontWeight.Bold, fontSize = 12.sp, color = OnSurface)
+        Text("$${amount.toInt()}", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = color)
     }
 }
+
+@Composable
+fun ExpenseRow(expense: ExpenseItemData) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(20.dp))
+            .background(SurfaceContainerLowest)
+            .padding(16.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(44.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .background(SurfaceContainerLow),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                when(expense.category) {
+                    "Food" -> "🍱"
+                    "Stay" -> "🏨"
+                    "Transport" -> "🚄"
+                    else -> "🎟️"
+                },
+                fontSize = 20.sp
+            )
+        }
+        
+        Spacer(modifier = Modifier.width(16.dp))
+        
+        Column(modifier = Modifier.weight(1f)) {
+            Text(expense.title, fontWeight = FontWeight.Bold, fontSize = 15.sp, color = OnSurface)
+            Text("Trả bởi ${expense.paidBy}", fontSize = 12.sp, color = OnSurfaceVariant)
+        }
+        
+        Text("$${expense.amount.toInt()}", fontWeight = FontWeight.ExtraBold, fontSize = 16.sp, color = PrimaryBlue)
+    }
+}
+
+data class ExpenseItemData(val title: String, val paidBy: String, val amount: Double, val category: String)
