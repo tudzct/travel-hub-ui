@@ -4,10 +4,10 @@ import android.util.Patterns
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mobile.travelhub.data.AuthRepository
-import com.mobile.travelhub.models.AuthSession
-import com.mobile.travelhub.models.LoginRequest
-import com.mobile.travelhub.models.RegisterRequest
-import com.mobile.travelhub.models.toSession
+import com.mobile.travelhub.data.model.AuthSession
+import com.mobile.travelhub.data.model.LoginRequest
+import com.mobile.travelhub.data.model.RegisterRequest
+import com.mobile.travelhub.data.model.toSession
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow

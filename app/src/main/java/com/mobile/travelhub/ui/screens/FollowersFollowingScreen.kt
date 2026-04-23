@@ -39,8 +39,8 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.mobile.travelhub.R
 import com.mobile.travelhub.ui.components.UserListItem
-import com.mobile.travelhub.ui.viewmodels.ProfileViewModel
-import com.mobile.travelhub.ui.viewmodels.UiState
+import com.mobile.travelhub.viewmodels.ProfileViewModel
+import com.mobile.travelhub.viewmodels.UiState
 
 @Composable
 fun FollowersFollowingScreen(

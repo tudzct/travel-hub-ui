@@ -1,6 +1,6 @@
 package com.mobile.travelhub.data
 
-import com.mobile.travelhub.models.StreamEvent
+import com.mobile.travelhub.data.model.StreamEvent
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow

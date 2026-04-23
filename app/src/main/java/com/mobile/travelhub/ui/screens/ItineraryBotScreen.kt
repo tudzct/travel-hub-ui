@@ -18,8 +18,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import com.mobile.travelhub.models.UiState
 import com.mobile.travelhub.ui.components.ChatMarkdownMessage
+import com.mobile.travelhub.viewmodels.ItineraryBotUiState
 import com.mobile.travelhub.viewmodels.ItineraryBotViewModel
 
 @Composable
@@ -34,7 +34,7 @@ fun ItineraryBotScreen(vm: ItineraryBotViewModel = hiltViewModel()) {
 }
 
 @Composable
-fun ItineraryBotContent(state: UiState) {
+fun ItineraryBotContent(state: ItineraryBotUiState) {
     val scrollState = rememberScrollState()
 
     Column(

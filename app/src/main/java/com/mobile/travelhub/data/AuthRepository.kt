@@ -2,15 +2,15 @@ package com.mobile.travelhub.data
 
 import android.content.Context
 import com.mobile.travelhub.data.api.AuthApiService
-import com.mobile.travelhub.models.AuthResponse
-import com.mobile.travelhub.models.AuthSession
-import com.mobile.travelhub.models.LoginRequest
-import com.mobile.travelhub.models.RefreshTokenRequest
-import com.mobile.travelhub.models.RegisterRequest
-import com.mobile.travelhub.models.authResponseFromJson
-import com.mobile.travelhub.models.isExpired
-import com.mobile.travelhub.models.toJson
-import com.mobile.travelhub.models.toSession
+import com.mobile.travelhub.data.model.AuthResponse
+import com.mobile.travelhub.data.model.AuthSession
+import com.mobile.travelhub.data.model.LoginRequest
+import com.mobile.travelhub.data.model.RefreshTokenRequest
+import com.mobile.travelhub.data.model.RegisterRequest
+import com.mobile.travelhub.data.model.authResponseFromJson
+import com.mobile.travelhub.data.model.isExpired
+import com.mobile.travelhub.data.model.toJson
+import com.mobile.travelhub.data.model.toSession
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.IOException
 import javax.inject.Inject

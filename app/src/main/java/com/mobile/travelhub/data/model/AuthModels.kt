@@ -1,4 +1,4 @@
-package com.mobile.travelhub.models
+package com.mobile.travelhub.data.model
 
 import android.util.Base64
 import org.json.JSONObject

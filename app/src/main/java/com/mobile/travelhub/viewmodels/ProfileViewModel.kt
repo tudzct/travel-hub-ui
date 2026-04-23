@@ -1,4 +1,4 @@
-package com.mobile.travelhub.ui.viewmodels
+package com.mobile.travelhub.viewmodels
 
 import android.util.Log
 import androidx.lifecycle.ViewModel
@@ -35,7 +35,7 @@ class ProfileViewModel @Inject constructor(
 
     private val _followingState = MutableStateFlow<UiState<List<UserSummaryResponse>>>(UiState.Loading)
     val followingState: StateFlow<UiState<List<UserSummaryResponse>>> = _followingState.asStateFlow()
-    
+
     private val _updateStatus = MutableStateFlow<UiState<Boolean>>(UiState.Idle)
     val updateStatus: StateFlow<UiState<Boolean>> = _updateStatus.asStateFlow()
 
@@ -127,7 +127,7 @@ class ProfileViewModel @Inject constructor(
                     error("Bạn cần đăng nhập để cập nhật hồ sơ")
                 }
                 val currentProfile = (_profileState.value as? UiState.Success)?.data
-                
+
                 val request = ProfileUpdateRequest(
                     id = sessionUserId,
                     username = username,
@@ -155,7 +155,7 @@ class ProfileViewModel @Inject constructor(
             }
         }
     }
-    
+
     fun toggleFollow(
         targetUserId: Long,
         isCurrentlyFollowing: Boolean,
@@ -171,7 +171,6 @@ class ProfileViewModel @Inject constructor(
                     userApiService.followUser(targetUserId)
                 }
 
-                // Refresh all related states after follow/unfollow.
                 loadUserProfile()
                 if (connectionsOwnerUserId != sessionUserId) {
                     loadOtherUserProfile(connectionsOwnerUserId)
@@ -204,7 +203,7 @@ class ProfileViewModel @Inject constructor(
             }
         }
     }
-    
+
     fun resetUpdateStatus() {
         _updateStatus.value = UiState.Idle
     }

@@ -40,8 +40,8 @@ import com.mobile.travelhub.ui.components.PrimaryProfileButton
 import com.mobile.travelhub.ui.components.ProfileHeader
 import com.mobile.travelhub.ui.components.ProfileStats
 import com.mobile.travelhub.ui.components.SecondaryProfileButton
-import com.mobile.travelhub.ui.viewmodels.ProfileViewModel
-import com.mobile.travelhub.ui.viewmodels.UiState
+import com.mobile.travelhub.viewmodels.ProfileViewModel
+import com.mobile.travelhub.viewmodels.UiState
 
 @Composable
 fun ProfileScreen(
