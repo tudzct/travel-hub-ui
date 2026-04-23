@@ -5,6 +5,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -15,6 +16,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
@@ -52,6 +55,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil.compose.AsyncImage
+import com.mobile.travelhub.data.model.TravelPlaceListItemResponse
 import com.mobile.travelhub.data.model.TravelPlaceReviewResponse
 import com.mobile.travelhub.viewmodels.PlaceDetailViewModel
 import com.mobile.travelhub.viewmodels.ReviewViewModel
@@ -64,6 +68,7 @@ import java.time.format.DateTimeFormatter
 fun PlaceDetailScreen(
     placeId: Long,
     onBack: () -> Unit,
+    onPlaceClick: (Long) -> Unit,
     onShowAllReviews: (Long) -> Unit,
     onRequireLogin: () -> Unit,
     placeDetailViewModel: PlaceDetailViewModel = hiltViewModel(),
@@ -215,6 +220,15 @@ fun PlaceDetailScreen(
                     }
 
                     item {
+                        RelatedPlacesSection(
+                            places = uiState.relatedPlaces,
+                            isLoading = uiState.relatedPlacesLoading,
+                            errorMessage = uiState.relatedPlacesErrorMessage,
+                            onPlaceClick = onPlaceClick
+                        )
+                    }
+
+                    item {
                         ReviewPreviewSection(
                             reviews = uiState.reviewPreview,
                             isLoading = uiState.reviewPreviewLoading,
@@ -311,6 +325,122 @@ private fun PlaceImageCarousel(
                                     MaterialTheme.colorScheme.surfaceContainerHighest
                                 }
                             )
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun RelatedPlacesSection(
+    places: List<TravelPlaceListItemResponse>,
+    isLoading: Boolean,
+    errorMessage: String?,
+    onPlaceClick: (Long) -> Unit
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Địa điểm liên quan",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold
+            )
+        }
+
+        when {
+            isLoading -> {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 16.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                }
+            }
+
+            !errorMessage.isNullOrBlank() -> {
+                Text(
+                    text = errorMessage,
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.error
+                )
+            }
+
+            places.isEmpty() -> Unit
+
+            else -> {
+                LazyRow(
+                    contentPadding = PaddingValues(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    items(places, key = { it.id }) { place ->
+                        RelatedPlaceCard(
+                            place = place,
+                            onClick = { onPlaceClick(place.id) }
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun RelatedPlaceCard(
+    place: TravelPlaceListItemResponse,
+    onClick: () -> Unit
+) {
+    Surface(
+        modifier = Modifier
+            .width(220.dp)
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(22.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerLow
+    ) {
+        Column {
+            AsyncImage(
+                model = place.mainImage,
+                contentDescription = place.name,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(140.dp),
+                contentScale = ContentScale.Crop
+            )
+
+            Column(
+                modifier = Modifier.padding(14.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Text(
+                    text = place.name,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    text = place.province.name,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                place.description?.takeIf { it.isNotBlank() }?.let { description ->
+                    Text(
+                        text = description,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
             }

@@ -1,14 +1,7 @@
 package com.mobile.travelhub.ui.screens
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -30,16 +23,25 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+
+import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+
 import com.mobile.travelhub.R
 import com.mobile.travelhub.ui.components.PostGrid
 import com.mobile.travelhub.ui.components.PrimaryProfileButton
 import com.mobile.travelhub.ui.components.ProfileHeader
 import com.mobile.travelhub.ui.components.ProfileStats
+import com.mobile.travelhub.ui.viewmodels.ProfileViewModel
+import com.mobile.travelhub.ui.viewmodels.UiState
+import com.mobile.travelhub.ui.theme.*
 import com.mobile.travelhub.ui.components.SecondaryProfileButton
+import com.mobile.travelhub.ui.theme.SurfaceContainerLow
 import com.mobile.travelhub.viewmodels.ProfileViewModel
 import com.mobile.travelhub.viewmodels.UiState
 
@@ -64,7 +66,7 @@ fun ProfileScreen(
         viewModel.otherUserProfileState.collectAsState()
     }
     val unauthorized by viewModel.unauthorized.collectAsState()
-    
+
     val scrollState = rememberScrollState()
 
     LaunchedEffect(Unit) {
@@ -74,16 +76,14 @@ fun ProfileScreen(
             viewingUserId?.let { viewModel.loadOtherUserProfile(it) }
         }
     }
-
     LaunchedEffect(unauthorized) {
         if (unauthorized && isViewingOwnProfile) {
             viewModel.clearUnauthorized()
             onRequireLogin?.invoke()
         }
     }
-
     val showTopBar = !isViewingOwnProfile
-    
+
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         containerColor = MaterialTheme.colorScheme.background,
@@ -97,19 +97,21 @@ fun ProfileScreen(
                             .fillMaxWidth()
                             .height(56.dp)
                             .padding(horizontal = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Start
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
                         IconButton(onClick = { onBack?.invoke() }) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = "Back"
+                                contentDescription = "Back",
+                                tint = OnSurface
                             )
                         }
                         Text(
                             text = "PROFILE",
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.ExtraBold,
+                            fontSize = 14.sp,
+                            letterSpacing = 1.sp,
+                            color = OnSurface
                         )
                     }
                 }
@@ -119,36 +121,40 @@ fun ProfileScreen(
         Box(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
             when (val state = profileState) {
                 is UiState.Loading -> {
-                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center), color = PrimaryBlue)
                 }
                 is UiState.Error -> {
-                    Column(
-                        modifier = Modifier.align(Alignment.Center).padding(32.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(
-                            text = "Lỗi kết nối API:",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.error,
-                            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
-                        )
-                        Text(
-                            text = state.message,
-                            color = MaterialTheme.colorScheme.error,
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.padding(top = 8.dp, bottom = 24.dp)
-                        )
-                        Button(onClick = { 
-                            if (isViewingOwnProfile) {
-                                viewModel.loadUserProfile()
-                            } else {
-                                viewingUserId?.let { viewModel.loadOtherUserProfile(it) }
-                            }
-                        }) {
-                            Icon(Icons.Default.Refresh, contentDescription = "Thử lại")
-                            Text(" Thử lại", modifier = Modifier.padding(start = 8.dp))
-                        }
+                    ErrorLayout(message = state.message) {
+                        if (isViewingOwnProfile) viewModel.loadUserProfile()
+                        else viewingUserId?.let { viewModel.loadOtherUserProfile(it) }
                     }
+//                    Column(
+//                        modifier = Modifier.align(Alignment.Center).padding(32.dp),
+//                        horizontalAlignment = Alignment.CenterHorizontally
+//                    ) {
+//                        Text(
+//                            text = "Lỗi kết nối API:",
+//                            style = MaterialTheme.typography.titleMedium,
+//                            color = MaterialTheme.colorScheme.error,
+//                            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
+//                        )
+//                        Text(
+//                            text = state.message,
+//                            color = MaterialTheme.colorScheme.error,
+//                            textAlign = TextAlign.Center,
+//                            modifier = Modifier.padding(top = 8.dp, bottom = 24.dp)
+//                        )
+//                        Button(onClick = {
+//                            if (isViewingOwnProfile) {
+//                                viewModel.loadUserProfile()
+//                            } else {
+//                                viewingUserId?.let { viewModel.loadOtherUserProfile(it) }
+//                            }
+//                        }) {
+//                            Icon(Icons.Default.Refresh, contentDescription = "Thử lại")
+//                            Text(" Thử lại", modifier = Modifier.padding(start = 8.dp))
+//                        }
+//                    }
                 }
                 is UiState.Success -> {
                     val profile = state.data
@@ -164,6 +170,8 @@ fun ProfileScreen(
                             bio = profile.bio ?: "Traveler & Explorer.",
                             avatarRes = R.drawable.ic_launcher_foreground
                         )
+
+                        Spacer(modifier = Modifier.height(24.dp))
 
                         if (isViewingOwnProfile) {
                             Row(
@@ -200,8 +208,8 @@ fun ProfileScreen(
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(horizontal = 24.dp, vertical = 12.dp),
-                                horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(12.dp)
+                                    .padding(horizontal = 24.dp),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
                             ) {
                                 Button(
                                     onClick = { 
@@ -211,22 +219,15 @@ fun ProfileScreen(
                                     },
                                     shape = RoundedCornerShape(8.dp),
                                     colors = ButtonDefaults.buttonColors(
-                                        containerColor = if (profile.isFollowing) 
-                                            MaterialTheme.colorScheme.surfaceVariant 
-                                        else 
-                                            MaterialTheme.colorScheme.primary,
-                                        contentColor = if (profile.isFollowing) 
-                                            MaterialTheme.colorScheme.primary 
-                                        else 
-                                            MaterialTheme.colorScheme.onPrimary
+                                        containerColor = if (profile.isFollowing) SurfaceContainerLow else PrimaryBlue,
+                                        contentColor = if (profile.isFollowing) PrimaryBlue else Color.White
                                     ),
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .fillMaxWidth()
+                                    modifier = Modifier.weight(1f).height(48.dp)
                                 ) {
                                     Text(
                                         text = if (profile.isFollowing) "Unfollow" else "Follow",
-                                        style = MaterialTheme.typography.labelMedium
+                                        style = MaterialTheme.typography.labelMedium,
+                                        fontWeight = FontWeight.Bold
                                     )
                                 }
                                 
@@ -237,18 +238,21 @@ fun ProfileScreen(
                                     },
                                     shape = RoundedCornerShape(8.dp),
                                     colors = ButtonDefaults.buttonColors(
-                                        containerColor = MaterialTheme.colorScheme.primary,
+                                        containerColor = PrimaryBlue,
                                         contentColor = MaterialTheme.colorScheme.onPrimary
                                     ),
-                                    modifier = Modifier.weight(1f)
+                                    modifier = Modifier.weight(1f).height(48.dp)
                                 ) {
                                     Text(
                                         text = "Chat",
-                                        style = MaterialTheme.typography.labelMedium
+                                        style = MaterialTheme.typography.labelMedium,
+                                        fontWeight = FontWeight.Bold
                                     )
                                 }
                             }
                         }
+
+                        Spacer(modifier = Modifier.height(32.dp))
 
                         ProfileStats(
                             postsCount = profile.postsCount,
@@ -265,15 +269,18 @@ fun ProfileScreen(
                             onFollowingClick = onNavigateToFollowing
                         )
 
+                        Spacer(modifier = Modifier.height(32.dp))
+
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
-                                .padding(top = 16.dp, bottom = 100.dp)
+                                .background(SurfaceContainerLow)
+                                .padding(top = 24.dp, bottom = 100.dp)
                         ) {
                             Text(
-                                text = "Posts",
+                                text = "GALLERY",
                                 style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.ExtraBold,
                                 modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp),
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -288,6 +295,22 @@ fun ProfileScreen(
                 }
                 else -> {}
             }
+        }
+    }
+}
+
+@Composable
+fun ErrorLayout(message: String, onRetry: () -> Unit) {
+    Column(
+        modifier = Modifier.fillMaxSize().padding(32.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Text(text = "Connection Error", fontWeight = FontWeight.Bold, color = SunsetOrange)
+        Text(text = message, textAlign = TextAlign.Center, color = OnSurfaceVariant, modifier = Modifier.padding(top = 8.dp, bottom = 24.dp))
+        Button(onClick = onRetry, colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)) {
+            Icon(Icons.Default.Refresh, contentDescription = null)
+            Text(" Try Again", modifier = Modifier.padding(start = 8.dp))
         }
     }
 }
