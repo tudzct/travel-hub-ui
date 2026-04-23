@@ -4,7 +4,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import android.content.Context
 import android.net.Uri
-import com.mobile.travelhub.data.api.TravelHubApiService
+import com.mobile.travelhub.data.api.FileUploadApiService
+import com.mobile.travelhub.data.api.PostApiService
+import com.mobile.travelhub.data.api.UploadApiService
 import com.mobile.travelhub.data.model.CreateCommentRequest
 import com.mobile.travelhub.data.model.FeedPostResponse
 import com.mobile.travelhub.data.model.LikePostResponse
@@ -14,8 +16,6 @@ import com.mobile.travelhub.data.model.PostCreateRequest
 import com.mobile.travelhub.data.model.UploadRequest
 import dagger.hilt.android.qualifiers.ApplicationContext
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
-import okhttp3.OkHttpClient
-import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.IOException
 import javax.inject.Inject
@@ -25,9 +25,10 @@ import retrofit2.HttpException
 @Singleton
 class PostRepository @Inject constructor(
     @param:ApplicationContext private val context: Context,
-    private val api: TravelHubApiService
+    private val postApiService: PostApiService,
+    private val uploadApiService: UploadApiService,
+    private val fileUploadApiService: FileUploadApiService
 ) {
-    private val uploadClient = OkHttpClient()
     private val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
     suspend fun createPost(description: String, imageUris: List<Uri>, travelPlaceId: Long): Result<Unit> {
@@ -38,7 +39,7 @@ class PostRepository @Inject constructor(
                 require(travelPlaceId > 0) { "Please select a place" }
 
                 val uploadResponse = try {
-                    api.requestUploadUrls(
+                    uploadApiService.requestUploadUrls(
                         request = UploadRequest(folderName = "posts", files = imageUris.size)
                     )
                 } catch (exception: HttpException) {
@@ -64,7 +65,7 @@ class PostRepository @Inject constructor(
 
                 try {
                     android.util.Log.d("PostRepository", "Calling createPost with: $objectNames")
-                    api.createPost(
+                    postApiService.createPost(
                         request = PostCreateRequest(
                             description = description.trim(),
                             imageUrls = objectNames,
@@ -90,7 +91,7 @@ class PostRepository @Inject constructor(
         return withContext(Dispatchers.IO) {
             runCatching {
                 val likedPostIds = getLikedPostIds()
-                api.getAllPosts(
+                postApiService.getAllPosts(
                     page = page,
                     pageSize = pageSize
                 ).data.map { post ->
@@ -105,7 +106,7 @@ class PostRepository @Inject constructor(
     suspend fun likePost(postId: Long): Result<LikePostResponse> {
         return withContext(Dispatchers.IO) {
             runCatching {
-                val response = api.likePost(postId = postId)
+                val response = postApiService.likePost(postId = postId)
                 updateLikedPost(postId = postId, liked = true)
                 response
             }.recoverCatching { throwable ->
@@ -121,7 +122,7 @@ class PostRepository @Inject constructor(
     suspend fun unlikePost(postId: Long): Result<LikePostResponse> {
         return withContext(Dispatchers.IO) {
             runCatching {
-                val response = api.unlikePost(postId = postId)
+                val response = postApiService.unlikePost(postId = postId)
                 updateLikedPost(postId = postId, liked = false)
                 response
             }.recoverCatching { throwable ->
@@ -138,7 +139,7 @@ class PostRepository @Inject constructor(
         return withContext(Dispatchers.IO) {
             runCatching {
                 require(content.isNotBlank()) { "Comment cannot be empty" }
-                api.addComment(
+                postApiService.addComment(
                     postId = postId,
                     request = CreateCommentRequest(content = content.trim())
                 )
@@ -155,7 +156,7 @@ class PostRepository @Inject constructor(
     suspend fun getPostComments(postId: Long, page: Int = 0, pageSize: Int = 20): Result<PostCommentsPageResponse> {
         return withContext(Dispatchers.IO) {
             runCatching {
-                api.getPostComments(
+                postApiService.getPostComments(
                     postId = postId,
                     page = page,
                     pageSize = pageSize
@@ -170,22 +171,24 @@ class PostRepository @Inject constructor(
         }
     }
 
-    private fun uploadToPresignedUrl(url: String, uri: Uri) {
+    private suspend fun uploadToPresignedUrl(url: String, uri: Uri) {
         val contentResolver = context.contentResolver
         val bytes = contentResolver.openInputStream(uri)?.use { it.readBytes() }
             ?: throw IOException("Unable to read selected image")
         val mimeType = contentResolver.getType(uri) ?: "image/jpeg"
 
-        val request = Request.Builder()
-            .url(url)
-            .put(bytes.toRequestBody(mimeType.toMediaTypeOrNull()))
-            .build()
+        val response = runCatching {
+            fileUploadApiService.uploadFile(
+                url = url,
+                body = bytes.toRequestBody(mimeType.toMediaTypeOrNull())
+            )
+        }.getOrElse { throwable ->
+            throw IOException("Upload failed: ${throwable.message}", throwable)
+        }
 
-        uploadClient.newCall(request).execute().use { response ->
-            if (!response.isSuccessful) {
-                val errorBody = response.body?.string()
-                throw IOException("Upload failed (${response.code}). details: $errorBody")
-            }
+        if (!response.isSuccessful) {
+            val errorBody = response.errorBody()?.string()
+            throw IOException("Upload failed (${response.code()}). details: $errorBody")
         }
     }
 

@@ -1,16 +1,23 @@
 package com.mobile.travelhub.di
 
 import com.mobile.travelhub.data.api.ApiConfig
+import com.mobile.travelhub.data.api.AuthApiService
 import com.mobile.travelhub.data.api.AuthHeaderInterceptor
+import com.mobile.travelhub.data.api.FileUploadApiService
+import com.mobile.travelhub.data.api.LocationApiService
+import com.mobile.travelhub.data.api.PlaceApiService
+import com.mobile.travelhub.data.api.PostApiService
+import com.mobile.travelhub.data.api.RetrofitFactory
 import com.mobile.travelhub.data.api.TokenAuthenticator
-import com.mobile.travelhub.data.api.TravelHubApiService
+import com.mobile.travelhub.data.api.UploadApiService
+import com.mobile.travelhub.data.api.UserApiService
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
-import retrofit2.converter.gson.GsonConverterFactory
+import javax.inject.Named
 import javax.inject.Singleton
 
 @Module
@@ -31,18 +38,61 @@ object NetworkModule {
 
     @Provides
     @Singleton
+    @Named("authenticated")
     fun provideRetrofit(okHttpClient: OkHttpClient): Retrofit {
-        return Retrofit.Builder()
-            .baseUrl(BASE_URL)
-            .client(okHttpClient)
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
+        return RetrofitFactory.create(
+            baseUrl = BASE_URL,
+            client = okHttpClient
+        )
     }
 
     @Provides
     @Singleton
-    fun provideTravelHubApiService(retrofit: Retrofit): TravelHubApiService {
-        return retrofit.create(TravelHubApiService::class.java)
+    @Named("public")
+    fun providePublicRetrofit(): Retrofit {
+        return RetrofitFactory.create(baseUrl = BASE_URL)
+    }
+
+    @Provides
+    @Singleton
+    fun provideAuthApiService(@Named("public") publicRetrofit: Retrofit): AuthApiService {
+        return publicRetrofit.create(AuthApiService::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideLocationApiService(@Named("authenticated") retrofit: Retrofit): LocationApiService {
+        return retrofit.create(LocationApiService::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideUserApiService(@Named("authenticated") retrofit: Retrofit): UserApiService {
+        return retrofit.create(UserApiService::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun providePostApiService(@Named("authenticated") retrofit: Retrofit): PostApiService {
+        return retrofit.create(PostApiService::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideUploadApiService(@Named("authenticated") retrofit: Retrofit): UploadApiService {
+        return retrofit.create(UploadApiService::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideFileUploadApiService(@Named("public") publicRetrofit: Retrofit): FileUploadApiService {
+        return publicRetrofit.create(FileUploadApiService::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun providePlaceApiService(@Named("authenticated") retrofit: Retrofit): PlaceApiService {
+        return retrofit.create(PlaceApiService::class.java)
     }
 
     private const val BASE_URL = ApiConfig.BASE_URL

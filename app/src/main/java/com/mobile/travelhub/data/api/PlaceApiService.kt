@@ -1,7 +1,6 @@
 package com.mobile.travelhub.data.api
 
 import com.mobile.travelhub.data.model.PaginationResponse
-import com.mobile.travelhub.data.model.ProvinceResponse
 import com.mobile.travelhub.data.model.TravelPlaceDetailResponse
 import com.mobile.travelhub.data.model.TravelPlaceListItemResponse
 import com.mobile.travelhub.data.model.TravelPlaceReviewResponse

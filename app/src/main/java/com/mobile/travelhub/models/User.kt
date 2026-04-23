@@ -20,6 +20,10 @@ data class AuthResponse(
     val userId: Int
 )
 
+data class RefreshTokenRequest(
+    val refreshToken: String
+)
+
 data class AuthSession(
     val accessToken: String,
     val refreshToken: String,

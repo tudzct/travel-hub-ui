@@ -4,7 +4,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mobile.travelhub.data.AuthRepository
-import com.mobile.travelhub.data.api.BusinessClient
+import com.mobile.travelhub.data.api.UserApiService
 import com.mobile.travelhub.data.httpStatusCode
 import com.mobile.travelhub.data.model.ProfileUpdateRequest
 import com.mobile.travelhub.data.model.UserProfileResponse
@@ -18,10 +18,9 @@ import kotlinx.coroutines.launch
 
 @HiltViewModel
 class ProfileViewModel @Inject constructor(
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
+    private val userApiService: UserApiService
 ) : ViewModel() {
-    private val api = BusinessClient.create(accessTokenProvider = authRepository::getAccessToken)
-
     private val sessionUserId: Long
         get() = authRepository.getSavedSession()?.userId?.toLong() ?: -1L
 
@@ -57,7 +56,7 @@ class ProfileViewModel @Inject constructor(
                 if (sessionUserId <= 0L) {
                     error("Bạn cần đăng nhập để xem hồ sơ")
                 }
-                val response = api.getMyProfile()
+                val response = userApiService.getMyProfile()
                 _profileState.value = UiState.Success(response)
                 Log.d("API_SUCCESS", "Tải Profile thành công: $response")
             } catch (e: Exception) {
@@ -75,7 +74,7 @@ class ProfileViewModel @Inject constructor(
         viewModelScope.launch {
             _otherUserProfileState.value = UiState.Loading
             try {
-                val response = api.getUserProfile(userId)
+                val response = userApiService.getUserProfile(userId)
                 _otherUserProfileState.value = UiState.Success(response)
                 Log.d("API_SUCCESS", "Tải Other Profile thành công: $response")
             } catch (e: Exception) {
@@ -93,7 +92,7 @@ class ProfileViewModel @Inject constructor(
                 if (userId <= 0L) {
                     error("Bạn cần đăng nhập để xem followers")
                 }
-                val response = api.getFollowers(userId)
+                val response = userApiService.getFollowers(userId)
                 _followersState.value = UiState.Success(response.content)
             } catch (e: Exception) {
                 val errorMsg = "Lỗi gọi API Followers: ${e.localizedMessage}"
@@ -110,7 +109,7 @@ class ProfileViewModel @Inject constructor(
                 if (userId <= 0L) {
                     error("Bạn cần đăng nhập để xem following")
                 }
-                val response = api.getFollowing(userId)
+                val response = userApiService.getFollowing(userId)
                 _followingState.value = UiState.Success(response.content)
             } catch (e: Exception) {
                 val errorMsg = "Lỗi gọi API Following: ${e.localizedMessage}"
@@ -145,7 +144,7 @@ class ProfileViewModel @Inject constructor(
                     followersCount = currentProfile?.followersCount ?: 0,
                     followingCount = currentProfile?.followingCount ?: 0
                 )
-                val response = api.updateMyProfile(request)
+                val response = userApiService.updateMyProfile(request)
                 _profileState.value = UiState.Success(response)
                 _updateStatus.value = UiState.Success(true)
                 Log.d("API_SUCCESS", "Cập nhật Profile thành công!")
@@ -167,9 +166,9 @@ class ProfileViewModel @Inject constructor(
                 if (targetUserId == sessionUserId) return@launch
 
                 if (isCurrentlyFollowing) {
-                    api.unfollowUser(targetUserId)
+                    userApiService.unfollowUser(targetUserId)
                 } else {
-                    api.followUser(targetUserId)
+                    userApiService.followUser(targetUserId)
                 }
 
                 // Refresh all related states after follow/unfollow.
@@ -191,9 +190,9 @@ class ProfileViewModel @Inject constructor(
                 if (targetUserId == sessionUserId) return@launch
 
                 if (isCurrentlyFollowing) {
-                    api.unfollowUser(targetUserId)
+                    userApiService.unfollowUser(targetUserId)
                 } else {
-                    api.followUser(targetUserId)
+                    userApiService.followUser(targetUserId)
                 }
 
                 loadOtherUserProfile(targetUserId)

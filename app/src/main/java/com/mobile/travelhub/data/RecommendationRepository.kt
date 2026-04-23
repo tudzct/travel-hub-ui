@@ -1,7 +1,7 @@
 package com.mobile.travelhub.data
 
 import android.content.Context
-import com.mobile.travelhub.data.api.AIClient
+import com.mobile.travelhub.data.api.UserApiService
 import com.mobile.travelhub.data.model.PreferenceUpdateRequest
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
@@ -15,10 +15,10 @@ import androidx.core.content.edit
 @Singleton
 class RecommendationRepository @Inject constructor(
     @param:ApplicationContext private val context: Context,
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
+    private val userApiService: UserApiService
 ) {
     private val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-    private val api = AIClient.apiService
 
     private val _placeClicks = MutableStateFlow(loadMap(KEY_PLACE_CLICKS))
     private val _provinceClicks = MutableStateFlow(loadMap(KEY_PROVINCE_CLICKS))
@@ -61,7 +61,7 @@ class RecommendationRepository @Inject constructor(
             ?: return Result.failure(IllegalStateException("Cannot sync preferences before login"))
 
         return runCatching {
-            api.updatePreferences(
+            userApiService.updatePreferences(
                 id = session.userId.toLong(),
                 request = PreferenceUpdateRequest(
                     tripType = normalizedTripType,
