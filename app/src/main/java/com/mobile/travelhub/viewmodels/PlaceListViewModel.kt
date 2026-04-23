@@ -2,6 +2,7 @@ package com.mobile.travelhub.viewmodels
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.mobile.travelhub.data.AuthRepository
 import com.mobile.travelhub.data.PlaceRepository
 import com.mobile.travelhub.data.model.TravelPlaceListItemResponse
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -23,7 +24,8 @@ data class PlaceListUiState(
 
 @HiltViewModel
 class PlaceListViewModel @Inject constructor(
-    private val placeRepository: PlaceRepository
+    private val placeRepository: PlaceRepository,
+    private val authRepository: AuthRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(PlaceListUiState(isLoading = true))
@@ -47,8 +49,20 @@ class PlaceListViewModel @Inject constructor(
     fun refresh() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+            val keyword = uiState.value.keyword.trim().ifBlank { null }
+            val session = authRepository.getSavedSession()
+            val shouldUseRecommendations = keyword == null && session?.isOnboarded == true
+
             runCatching {
-                placeRepository.getPlaces(keyword = uiState.value.keyword.trim().ifBlank { null })
+                if (shouldUseRecommendations) {
+                    runCatching {
+                        placeRepository.getRecommendedPlaces()
+                    }.getOrElse {
+                        placeRepository.getPlaces(keyword = keyword)
+                    }
+                } else {
+                    placeRepository.getPlaces(keyword = keyword)
+                }
             }.onSuccess { response ->
                 _uiState.update {
                     it.copy(

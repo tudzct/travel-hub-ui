@@ -6,7 +6,8 @@ data class PreferenceUpdateRequest(
     @SerializedName("trip_type")
     val tripType: String?,
     val interests: List<String>,
-    val destination: String?
+    val destination: String?,
+    val isOnboarded: Boolean? = null
 )
 
 data class PreferenceResponse(

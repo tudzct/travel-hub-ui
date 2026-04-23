@@ -31,10 +31,13 @@ class RecommendationRepository @Inject constructor(
                 request = PreferenceUpdateRequest(
                     tripType = normalizedTripType,
                     interests = normalizedInterests,
-                    destination = normalizedDestination
+                    destination = normalizedDestination,
+                    isOnboarded = true
                 )
             )
-        }
+        }.onSuccess {
+            authRepository.updateOnboardingStatus(isOnboarded = true)
+        }.map { Unit }
     }
 }
 

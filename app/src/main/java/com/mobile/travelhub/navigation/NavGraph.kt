@@ -156,6 +156,7 @@ fun NavGraph(
     onRegister: (String, String, String) -> Unit,
     onClearAuthError: () -> Unit,
     onLogout: () -> Unit,
+    onCompleteOnboarding: () -> Unit,
     onboardingViewModel: OnboardingViewModel
 ) {
     val onboardingUiState by onboardingViewModel.uiState.collectAsState()
@@ -164,7 +165,12 @@ fun NavGraph(
     LaunchedEffect(authUiState.isAuthenticated, currentRoute) {
         val isAuthRoute = currentRoute == Screen.Login.route || currentRoute == Screen.Register.route
         if (authUiState.isAuthenticated && isAuthRoute) {
-            navController.navigate(Screen.Home.route) {
+            val destination = if (!authUiState.isOnboarded) {
+                Screen.OnboardingTripType.route
+            } else {
+                Screen.Home.route
+            }
+            navController.navigate(destination) {
                 popUpTo(Screen.Login.route) { inclusive = true }
                 launchSingleTop = true
             }
@@ -208,6 +214,7 @@ fun NavGraph(
         composable(Screen.OnboardingTripType.route) {
             OnboardingTripTypeScreen(
                 onSkip = {
+                    onCompleteOnboarding()
                     val destination = if (authUiState.isAuthenticated) Screen.Home.route else Screen.Login.route
                     navController.navigate(destination) {
                         popUpTo(Screen.OnboardingIntro.route) { inclusive = true }
@@ -225,6 +232,7 @@ fun NavGraph(
             OnboardingInterestsScreen(
                 initialSelected = onboardingUiState.interests,
                 onSkip = {
+                    onCompleteOnboarding()
                     val destination = if (authUiState.isAuthenticated) Screen.Home.route else Screen.Login.route
                     navController.navigate(destination) {
                         popUpTo(Screen.OnboardingIntro.route) { inclusive = true }
@@ -241,6 +249,7 @@ fun NavGraph(
         composable(Screen.OnboardingDestination.route) {
             OnboardingIntroScreen(
                 onSkip = {
+                    onCompleteOnboarding()
                     val destination = if (authUiState.isAuthenticated) Screen.Home.route else Screen.Login.route
                     navController.navigate(destination) {
                         popUpTo(Screen.OnboardingIntro.route) { inclusive = true }
@@ -266,6 +275,7 @@ fun NavGraph(
                 isSyncingPreferences = onboardingUiState.isSyncingPreferences,
                 syncErrorMessage = onboardingUiState.preferenceSyncErrorMessage,
                 onSkip = {
+                    onCompleteOnboarding()
                     val destination = if (authUiState.isAuthenticated) Screen.Home.route else Screen.Login.route
                     navController.navigate(destination) {
                         popUpTo(Screen.OnboardingIntro.route) { inclusive = true }
@@ -278,6 +288,7 @@ fun NavGraph(
                         }
                     } else {
                         onboardingViewModel.syncPreferences {
+                            onCompleteOnboarding()
                             navController.navigate(Screen.Home.route) {
                                 popUpTo(Screen.OnboardingIntro.route) { inclusive = true }
                             }

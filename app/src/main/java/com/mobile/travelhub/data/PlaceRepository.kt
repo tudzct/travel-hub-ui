@@ -23,6 +23,14 @@ class PlaceRepository @Inject constructor(
         return placeApiService.getPlaces(page = page, pageSize = pageSize, provinceId = provinceId, keyword = keyword)
     }
 
+    suspend fun getRecommendedPlaces(
+        page: Int = 0,
+        pageSize: Int = 10,
+        provinceId: Long? = null
+    ): PaginationResponse<TravelPlaceListItemResponse> {
+        return placeApiService.getRecommendedPlaces(page = page, pageSize = pageSize, provinceId = provinceId)
+    }
+
     suspend fun getPlaceDetail(placeId: Long): TravelPlaceDetailResponse {
         return placeApiService.getPlaceDetail(placeId)
     }

@@ -46,7 +46,8 @@ class AuthRepository @Inject constructor(
             .mapCatching { response ->
                 val normalizedResponse = response.copy(
                     refreshToken = response.refreshToken.takeIf { it.isNotBlank() } ?: currentSession.refreshToken,
-                    userId = if (response.userId > 0) response.userId else currentSession.userId
+                    userId = if (response.userId > 0) response.userId else currentSession.userId,
+                    isOnboarded = response.isOnboarded || currentSession.isOnboarded
                 )
                 saveSession(normalizedResponse)
                 normalizedResponse.toSession()
@@ -78,6 +79,18 @@ class AuthRepository @Inject constructor(
     }
 
     fun getAccessToken(): String? = getSavedSession()?.accessToken?.takeIf { it.isNotBlank() }
+
+    fun updateOnboardingStatus(isOnboarded: Boolean) {
+        val currentSession = getSavedSession() ?: return
+        saveSession(
+            AuthResponse(
+                accessToken = currentSession.accessToken,
+                refreshToken = currentSession.refreshToken,
+                userId = currentSession.userId,
+                isOnboarded = isOnboarded
+            )
+        )
+    }
 
     private fun executeAuthCall(callFactory: () -> retrofit2.Call<AuthResponse>): Result<AuthResponse> {
         return runCatching {

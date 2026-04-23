@@ -20,6 +20,7 @@ import javax.inject.Inject
 data class AuthUiState(
     val isLoading: Boolean = false,
     val isAuthenticated: Boolean = false,
+    val isOnboarded: Boolean = false,
     val session: AuthSession? = null,
     val errorMessage: String? = null
 )
@@ -32,6 +33,7 @@ class AuthViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(
         AuthUiState(
             isAuthenticated = authRepository.getSavedSession() != null,
+            isOnboarded = authRepository.getSavedSession()?.isOnboarded == true,
             session = authRepository.getSavedSession()
         )
     )
@@ -58,6 +60,7 @@ class AuthViewModel @Inject constructor(
                     it.copy(
                         isLoading = false,
                         isAuthenticated = true,
+                        isOnboarded = response.isOnboarded,
                         session = response.toSession(),
                         errorMessage = null
                     )
@@ -99,6 +102,7 @@ class AuthViewModel @Inject constructor(
                     it.copy(
                         isLoading = false,
                         isAuthenticated = true,
+                        isOnboarded = response.isOnboarded,
                         session = response.toSession(),
                         errorMessage = null
                     )
@@ -122,6 +126,16 @@ class AuthViewModel @Inject constructor(
         authRepository.clearSession()
         _uiState.update {
             it.copy(isAuthenticated = false, session = null, errorMessage = null)
+        }
+    }
+
+    fun completeOnboarding() {
+        authRepository.updateOnboardingStatus(isOnboarded = true)
+        _uiState.update {
+            it.copy(
+                isOnboarded = true,
+                session = it.session?.copy(isOnboarded = true)
+            )
         }
     }
 

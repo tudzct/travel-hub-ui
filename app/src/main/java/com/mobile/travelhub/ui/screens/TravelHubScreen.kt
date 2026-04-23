@@ -75,7 +75,11 @@ fun TravelHubScreen(
         BottomNavItem(screen = Screen.Profile, icon = Icons.Outlined.AccountCircle, contentDescription = "Profile")
     )
 
-    val startDestination = Screen.OnboardingTripType.route
+    val startDestination = when {
+        !authUiState.isAuthenticated -> Screen.Login.route
+        !authUiState.isOnboarded -> Screen.OnboardingTripType.route
+        else -> Screen.Home.route
+    }
     val showBottomBar = Screen.fromRoute(currentRoute)?.showBottomBar == true
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -89,6 +93,7 @@ fun TravelHubScreen(
                 onRegister = authViewModel::register,
                 onClearAuthError = authViewModel::clearError,
                 onLogout = authViewModel::logout,
+                onCompleteOnboarding = authViewModel::completeOnboarding,
                 onboardingViewModel = onboardingViewModel
             )
         }

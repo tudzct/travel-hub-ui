@@ -17,7 +17,8 @@ data class LoginRequest(
 data class AuthResponse(
     val accessToken: String,
     val refreshToken: String,
-    val userId: Int
+    val userId: Int,
+    val isOnboarded: Boolean = false
 )
 
 data class RefreshTokenRequest(
@@ -27,13 +28,15 @@ data class RefreshTokenRequest(
 data class AuthSession(
     val accessToken: String,
     val refreshToken: String,
-    val userId: Int
+    val userId: Int,
+    val isOnboarded: Boolean = false
 )
 
 fun AuthResponse.toSession(): AuthSession = AuthSession(
     accessToken = accessToken,
     refreshToken = refreshToken,
-    userId = userId
+    userId = userId,
+    isOnboarded = isOnboarded
 )
 
 fun AuthResponse.toJson(): String {
@@ -41,6 +44,7 @@ fun AuthResponse.toJson(): String {
         .put("accessToken", accessToken)
         .put("refreshToken", refreshToken)
         .put("userId", userId)
+        .put("isOnboarded", isOnboarded)
         .toString()
 }
 
@@ -49,7 +53,8 @@ fun authResponseFromJson(raw: String): AuthResponse {
     return AuthResponse(
         accessToken = json.optString("accessToken"),
         refreshToken = json.optString("refreshToken"),
-        userId = json.optInt("userId", -1)
+        userId = json.optInt("userId", -1),
+        isOnboarded = json.optBoolean("isOnboarded", false)
     )
 }
 
