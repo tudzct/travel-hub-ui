@@ -8,7 +8,6 @@ import com.mobile.travelhub.models.LoginRequest
 import com.mobile.travelhub.models.RefreshTokenRequest
 import com.mobile.travelhub.models.RegisterRequest
 import com.mobile.travelhub.models.authResponseFromJson
-import com.mobile.travelhub.models.isAdmin
 import com.mobile.travelhub.models.isExpired
 import com.mobile.travelhub.models.toJson
 import com.mobile.travelhub.models.toSession
@@ -79,8 +78,6 @@ class AuthRepository @Inject constructor(
     }
 
     fun getAccessToken(): String? = getSavedSession()?.accessToken?.takeIf { it.isNotBlank() }
-
-    fun isAdmin(): Boolean = getSavedSession()?.isAdmin == true
 
     private fun executeAuthCall(callFactory: () -> retrofit2.Call<AuthResponse>): Result<AuthResponse> {
         return runCatching {
