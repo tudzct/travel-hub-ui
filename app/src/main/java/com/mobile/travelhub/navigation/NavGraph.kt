@@ -38,9 +38,7 @@ import com.mobile.travelhub.ui.screens.GroupChatScreen
 import com.mobile.travelhub.ui.screens.CreatePostScreen
 import com.mobile.travelhub.ui.screens.GroupDetailScreen
 import com.mobile.travelhub.ui.screens.GroupDiscoveryScreen
-import com.mobile.travelhub.ui.screens.TripsScreen
 import com.mobile.travelhub.ui.screens.ItineraryScreen
-//import com.mobile.travelhub.ui.screens.PostDetailScreen
 import com.mobile.travelhub.viewmodels.OnboardingViewModel
 
 sealed class Screen(
@@ -78,7 +76,6 @@ sealed class Screen(
             return "followers_following/$tabIndex/$normalizedUserId"
         }
     }
-    data object PostDetail : Screen("post_detail", 6)
 
     data object CreateGroup : Screen("create_group", 7)
     data object GroupDetail : Screen("group_detail/{groupName}", 8) {
@@ -121,7 +118,6 @@ sealed class Screen(
                 "profile_user" -> Profile
                 "edit_profile" -> EditProfile
                 "followers_following" -> FollowersFollowing
-                "post_detail" -> PostDetail
                 "create_group" -> CreateGroup
                 "group_detail" -> GroupDetail
                 "group_chat" -> GroupChat
@@ -405,12 +401,6 @@ fun NavGraph(
                 }
             )
         }
-        composable(Screen.PostDetail.route) {
-//            PostDetailScreen(
-//                onBack = { navController.popBackStack() }
-//            )
-        }
-
         composable(Screen.CreateGroup.route) {
             CreateGroupScreen(
                 onBack = { navController.popBackStack() },
