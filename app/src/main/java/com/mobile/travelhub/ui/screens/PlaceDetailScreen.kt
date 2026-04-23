@@ -61,7 +61,6 @@ import java.time.format.DateTimeFormatter
 fun PlaceDetailScreen(
     placeId: Long,
     onBack: () -> Unit,
-    onEdit: (Long) -> Unit,
     onShowAllReviews: (Long) -> Unit,
     onRequireLogin: () -> Unit,
     placeDetailViewModel: PlaceDetailViewModel = hiltViewModel(),
@@ -140,9 +139,7 @@ fun PlaceDetailScreen(
                     item {
                         DetailTopBar(
                             title = detail.name,
-                            isAdmin = uiState.isAdmin,
-                            onBack = onBack,
-                            onEdit = { onEdit(detail.id) }
+                            onBack = onBack
                         )
                     }
 
@@ -274,9 +271,7 @@ fun PlaceDetailScreen(
 @Composable
 private fun DetailTopBar(
     title: String,
-    isAdmin: Boolean,
-    onBack: () -> Unit,
-    onEdit: () -> Unit
+    onBack: () -> Unit
 ) {
     Row(
         modifier = Modifier
@@ -299,11 +294,6 @@ private fun DetailTopBar(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
-        }
-        if (isAdmin) {
-            OutlinedButton(onClick = onEdit) {
-                Text("Sửa địa điểm")
-            }
         }
     }
 }

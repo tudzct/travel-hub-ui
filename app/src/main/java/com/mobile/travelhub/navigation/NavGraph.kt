@@ -19,7 +19,6 @@ import com.mobile.travelhub.ui.screens.ItineraryBotScreen
 import com.mobile.travelhub.ui.screens.OnboardingInterestsScreen
 import com.mobile.travelhub.ui.screens.OnboardingIntroScreen
 import com.mobile.travelhub.ui.screens.ProfileScreen
-import com.mobile.travelhub.ui.screens.EditPlaceScreen
 import com.mobile.travelhub.ui.screens.OnboardingFinishScreen
 import com.mobile.travelhub.ui.screens.OnboardingTripTypeScreen
 import com.mobile.travelhub.ui.screens.LoginScreen
@@ -65,10 +64,6 @@ sealed class Screen(
     data object PlaceReviews : Screen("place/{placeId}/reviews", 11) {
         fun createRoute(placeId: Long): String = "place/$placeId/reviews"
     }
-    data object EditPlace : Screen("admin/places/{placeId}/edit", 12) {
-        fun createRoute(placeId: Long): String = "admin/places/$placeId/edit"
-    }
-    data object CreatePlace : Screen("admin/places/new", 13)
     data object ViewHistory : Screen("history/places", 14)
 
     data object Login : Screen("login")
@@ -114,8 +109,6 @@ sealed class Screen(
                 Chat.route -> Chat
                 PlaceDetail.route -> PlaceDetail
                 PlaceReviews.route -> PlaceReviews
-                EditPlace.route -> EditPlace
-                CreatePlace.route -> CreatePlace
                 ViewHistory.route -> ViewHistory
                 Login.route -> Login
                 Register.route -> Register
@@ -125,7 +118,6 @@ sealed class Screen(
                 "create_post" -> CreatePost
                 "profile" -> Profile
                 "place" -> PlaceDetail
-                "admin" -> EditPlace
                 "history" -> ViewHistory
                 "profile_user" -> Profile
                 "edit_profile" -> EditProfile
@@ -301,9 +293,6 @@ fun NavGraph(
             PlaceListScreen(
                 onPlaceClick = { placeId ->
                     navController.navigate(Screen.PlaceDetail.createRoute(placeId))
-                },
-                onCreatePlace = {
-                    navController.navigate(Screen.CreatePlace.route) { launchSingleTop = true }
                 }
             )
         }
@@ -477,7 +466,6 @@ fun NavGraph(
             PlaceDetailScreen(
                 placeId = placeId,
                 onBack = { navController.navigateUp() },
-                onEdit = { id -> navController.navigate(Screen.EditPlace.createRoute(id)) },
                 onShowAllReviews = { id -> navController.navigate(Screen.PlaceReviews.createRoute(id)) },
                 onRequireLogin = {
                     onLogout()
@@ -497,35 +485,6 @@ fun NavGraph(
             ReviewListScreen(
                 placeId = placeId,
                 onBack = { navController.navigateUp() }
-            )
-        }
-
-        composable(Screen.CreatePlace.route) {
-            EditPlaceScreen(
-                placeId = null,
-                onBack = { navController.navigateUp() },
-                onSaved = { savedPlaceId ->
-                    navController.navigate(Screen.PlaceDetail.createRoute(savedPlaceId)) {
-                        popUpTo(Screen.CreatePlace.route) { inclusive = true }
-                        launchSingleTop = true
-                    }
-                }
-            )
-        }
-
-        composable(
-            route = Screen.EditPlace.route,
-            arguments = listOf(navArgument("placeId") { type = NavType.LongType })
-        ) { backStackEntry ->
-            val placeId = backStackEntry.arguments?.getLong("placeId") ?: return@composable
-            EditPlaceScreen(
-                placeId = placeId,
-                onBack = { navController.navigateUp() },
-                onSaved = { savedPlaceId ->
-                    navController.navigate(Screen.PlaceDetail.createRoute(savedPlaceId)) {
-                        popUpTo(Screen.PlaceDetail.route) { inclusive = true }
-                    }
-                }
             )
         }
 

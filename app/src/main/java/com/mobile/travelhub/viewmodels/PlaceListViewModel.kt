@@ -2,7 +2,6 @@ package com.mobile.travelhub.viewmodels
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.mobile.travelhub.data.AuthRepository
 import com.mobile.travelhub.data.PlaceRepository
 import com.mobile.travelhub.data.model.TravelPlaceListItemResponse
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -19,19 +18,15 @@ data class PlaceListUiState(
     val isLoading: Boolean = false,
     val items: List<TravelPlaceListItemResponse> = emptyList(),
     val keyword: String = "",
-    val errorMessage: String? = null,
-    val isAdmin: Boolean = false
+    val errorMessage: String? = null
 )
 
 @HiltViewModel
 class PlaceListViewModel @Inject constructor(
-    private val placeRepository: PlaceRepository,
-    authRepository: AuthRepository
+    private val placeRepository: PlaceRepository
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(
-        PlaceListUiState(isLoading = true, isAdmin = authRepository.isAdmin())
-    )
+    private val _uiState = MutableStateFlow(PlaceListUiState(isLoading = true))
     val uiState: StateFlow<PlaceListUiState> = _uiState.asStateFlow()
 
     private var searchJob: Job? = null

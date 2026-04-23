@@ -6,7 +6,6 @@ import com.mobile.travelhub.data.model.TravelPlaceDetailResponse
 import com.mobile.travelhub.data.model.TravelPlaceListItemResponse
 import com.mobile.travelhub.data.model.TravelPlaceReviewResponse
 import com.mobile.travelhub.data.model.TravelPlaceViewHistoryResponse
-import com.mobile.travelhub.data.model.UpsertTravelPlaceRequest
 import com.mobile.travelhub.data.model.UpsertTravelPlaceReviewRequest
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -48,16 +47,5 @@ class PlaceRepository @Inject constructor(
         pageSize: Int = 10
     ): PaginationResponse<TravelPlaceViewHistoryResponse> {
         return placeApiService.getViewHistory(page = page, pageSize = pageSize)
-    }
-
-    suspend fun createPlace(body: UpsertTravelPlaceRequest): TravelPlaceDetailResponse {
-        return placeApiService.createPlace(body)
-    }
-
-    suspend fun updatePlace(
-        placeId: Long,
-        body: UpsertTravelPlaceRequest
-    ): TravelPlaceDetailResponse {
-        return placeApiService.updatePlace(placeId = placeId, body = body)
     }
 }

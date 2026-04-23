@@ -81,7 +81,6 @@ import com.mobile.travelhub.viewmodels.PlaceListViewModel
 @Composable
 fun PlaceListScreen(
     onPlaceClick: (Long) -> Unit,
-    onCreatePlace: () -> Unit,
     placeListViewModel: PlaceListViewModel = hiltViewModel(),
     homeViewModel: HomeViewModel = hiltViewModel()
 ) {
@@ -92,7 +91,6 @@ fun PlaceListScreen(
         placeUiState = placeUiState,
         homeUiState = homeUiState,
         onPlaceClick = onPlaceClick,
-        onCreatePlace = onCreatePlace,
         onKeywordChange = placeListViewModel::onKeywordChange,
         onRetryPlaces = placeListViewModel::refresh,
         onRetryPosts = homeViewModel::refreshPosts,
@@ -110,7 +108,6 @@ private fun PlaceListScreenContent(
     placeUiState: PlaceListUiState,
     homeUiState: HomeUiState,
     onPlaceClick: (Long) -> Unit,
-    onCreatePlace: () -> Unit,
     onKeywordChange: (String) -> Unit,
     onRetryPlaces: () -> Unit,
     onRetryPosts: () -> Unit,
@@ -139,9 +136,7 @@ private fun PlaceListScreenContent(
                 FeedHeader(
                     keyword = placeUiState.keyword,
                     onKeywordChange = onKeywordChange,
-                    resultCount = placeUiState.items.size,
-                    isAdmin = placeUiState.isAdmin,
-                    onCreatePlace = onCreatePlace
+                    resultCount = placeUiState.items.size
                 )
             }
 
@@ -348,9 +343,7 @@ private fun PlaceListScreenContent(
 private fun FeedHeader(
     keyword: String,
     onKeywordChange: (String) -> Unit,
-    resultCount: Int,
-    isAdmin: Boolean,
-    onCreatePlace: () -> Unit
+    resultCount: Int
 ) {
     Column(
         modifier = Modifier.padding(horizontal = 16.dp),
@@ -376,24 +369,6 @@ private fun FeedHeader(
                 )
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
-                if (isAdmin) {
-                    IconButton(onClick = onCreatePlace) {
-                        Surface(
-                            shape = CircleShape,
-                            color = VerdantPrimary,
-                            modifier = Modifier.size(40.dp)
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Icon(
-                                    imageVector = Icons.Outlined.Add,
-                                    contentDescription = "Add place",
-                                    tint = Color.White
-                                )
-                            }
-                        }
-                    }
-                    Spacer(modifier = Modifier.width(8.dp))
-                }
                 Surface(
                     shape = CircleShape,
                     color = VerdantSurfaceContainerHighest,
@@ -453,13 +428,6 @@ private fun FeedHeader(
                 style = MaterialTheme.typography.bodyMedium,
                 color = VerdantOnSurfaceVariant
             )
-            if (isAdmin) {
-                StatusPill(
-                    text = "Admin",
-                    containerColor = VerdantPrimary.copy(alpha = 0.12f),
-                    contentColor = VerdantPrimary
-                )
-            }
         }
     }
 }
