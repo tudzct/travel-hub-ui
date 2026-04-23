@@ -10,13 +10,15 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.GenericShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -145,37 +147,10 @@ fun PlaceDetailScreen(
                     }
 
                     item {
-                        LazyRow(
-                            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 16.dp),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            items(detail.images.ifEmpty { listOf() }, key = { it.id }) { image ->
-                                AsyncImage(
-                                    model = image.imageUrl,
-                                    contentDescription = detail.name,
-                                    modifier = Modifier
-                                        .width(320.dp)
-                                        .height(220.dp)
-                                        .clip(RoundedCornerShape(28.dp)),
-                                    contentScale = ContentScale.Crop
-                                )
-                            }
-                            if (detail.images.isEmpty()) {
-                                item {
-                                    Surface(
-                                        modifier = Modifier
-                                            .width(320.dp)
-                                            .height(220.dp),
-                                        shape = RoundedCornerShape(28.dp),
-                                        color = MaterialTheme.colorScheme.surfaceContainerLow
-                                    ) {
-                                        Box(contentAlignment = Alignment.Center) {
-                                            Text("No image")
-                                        }
-                                    }
-                                }
-                            }
-                        }
+                        PlaceImageCarousel(
+                            imageUrls = detail.images.map { it.imageUrl },
+                            contentDescription = detail.name
+                        )
                     }
 
                     item {
@@ -265,6 +240,97 @@ fun PlaceDetailScreen(
             )
         }
     }
+}
+
+@Composable
+private fun PlaceImageCarousel(
+    imageUrls: List<String>,
+    contentDescription: String
+) {
+    val displayUrls = remember(imageUrls) { imageUrls.map { it.trim() }.filter { it.isNotBlank() } }
+    val hasImages = displayUrls.isNotEmpty()
+    val imageCount = displayUrls.size.coerceAtLeast(1)
+    val pagerState = rememberPagerState(pageCount = { imageCount })
+
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = 240.dp, max = 320.dp),
+            shape = PlaceImageArcShape,
+            color = MaterialTheme.colorScheme.surfaceContainerLow
+        ) {
+            if (!hasImages) {
+                Box(contentAlignment = Alignment.Center) {
+                    Text(
+                        text = "No image",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            } else if (displayUrls.size == 1) {
+                AsyncImage(
+                    model = displayUrls.first(),
+                    contentDescription = contentDescription,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+            } else {
+                HorizontalPager(
+                    state = pagerState,
+                    modifier = Modifier.fillMaxSize()
+                ) { page ->
+                    AsyncImage(
+                        model = displayUrls[page],
+                        contentDescription = contentDescription,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                }
+            }
+        }
+
+        if (displayUrls.size > 1) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center
+            ) {
+                repeat(displayUrls.size) { index ->
+                    Box(
+                        modifier = Modifier
+                            .padding(horizontal = 3.dp)
+                            .size(8.dp)
+                            .clip(CircleShape)
+                            .background(
+                                if (pagerState.currentPage == index) {
+                                    MaterialTheme.colorScheme.primary
+                                } else {
+                                    MaterialTheme.colorScheme.surfaceContainerHighest
+                                }
+                            )
+                    )
+                }
+            }
+        }
+    }
+}
+
+private val PlaceImageArcShape = GenericShape { size, _ ->
+    val bottomArcDepth = size.height * 0.1f
+
+    moveTo(0f, 0f)
+    lineTo(size.width, 0f)
+    lineTo(size.width, size.height - bottomArcDepth)
+    quadraticTo(
+        size.width / 2f,
+        size.height,
+        0f,
+        size.height - bottomArcDepth
+    )
+    close()
 }
 
 @Composable

@@ -27,6 +27,7 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.Send
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.BookmarkBorder
@@ -34,8 +35,6 @@ import androidx.compose.material.icons.outlined.ChatBubbleOutline
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.MoreHoriz
 import androidx.compose.material.icons.outlined.Search
-import androidx.compose.material.icons.outlined.Send
-import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -240,7 +239,8 @@ private fun PlaceListScreenContent(
 
         if (activeCommentPost != null) {
             ModalBottomSheet(
-                onDismissRequest = onDismissCommentSheet
+                onDismissRequest = onDismissCommentSheet,
+                containerColor = Color.White
             ) {
                 Text(
                     text = "Comments",
@@ -305,20 +305,35 @@ private fun PlaceListScreenContent(
                         placeholder = { Text("Add a comment") },
                         modifier = Modifier.weight(1f),
                         enabled = !homeUiState.isCommentSubmitting,
-                        maxLines = 3
+                        maxLines = 3,
+                        shape = RoundedCornerShape(24.dp),
+                        colors = TextFieldDefaults.colors(
+                            focusedContainerColor = Color.White,
+                            unfocusedContainerColor = Color.White,
+                            disabledContainerColor = Color(0xFFF4F4F4),
+                            focusedIndicatorColor = VerdantPrimary,
+                            unfocusedIndicatorColor = Color.Transparent,
+                            disabledIndicatorColor = Color.Transparent
+                        )
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    Button(
+                    IconButton(
                         onClick = onCommentSubmit,
                         enabled = !homeUiState.isCommentSubmitting && homeUiState.commentInput.isNotBlank()
                     ) {
                         if (homeUiState.isCommentSubmitting) {
                             CircularProgressIndicator(
                                 modifier = Modifier.size(16.dp),
-                                strokeWidth = 2.dp
+                                strokeWidth = 2.dp,
+                                color = VerdantPrimary
                             )
                         } else {
-                            Text("Post")
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Outlined.Send,
+                                modifier = Modifier.size(16.dp),
+                                contentDescription = "Send comment",
+                                tint = VerdantPrimary
+                            )
                         }
                     }
                 }
@@ -790,7 +805,7 @@ private fun PostItemContent(
                     }
                     Spacer(modifier = Modifier.width(14.dp))
                     Icon(
-                        imageVector = Icons.Outlined.Send,
+                        imageVector = Icons.AutoMirrored.Outlined.Send,
                         contentDescription = "Share",
                         modifier = Modifier.size(22.dp),
                         tint = VerdantOnSurface
