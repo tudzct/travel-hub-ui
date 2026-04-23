@@ -38,6 +38,8 @@ fun OnboardingFinishScreen(
     endDate: String = "",
     travelers: Int = 1,
     budgetLevel: String = "",
+    isSyncingPreferences: Boolean = false,
+    syncErrorMessage: String? = null,
     onBack: () -> Unit = {},
     onSkip: () -> Unit = {},
     onPrevious: () -> Unit = {},
@@ -67,6 +69,14 @@ fun OnboardingFinishScreen(
                 style = MaterialTheme.typography.bodyLarge,
                 color = Color(0xFF383D47)
             )
+            syncErrorMessage?.let { error ->
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    text = error,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.error
+                )
+            }
 
             Spacer(modifier = Modifier.height(36.dp))
             Row(
@@ -78,6 +88,7 @@ fun OnboardingFinishScreen(
             Spacer(modifier = Modifier.height(14.dp))
 
             FinishActions(
+                isLoading = isSyncingPreferences,
                 onPrevious = onPrevious,
                 onContinue = onContinue
             )
@@ -113,7 +124,7 @@ private fun FinishHeader(onBack: () -> Unit, onSkip: () -> Unit) {
 }
 
 @Composable
-private fun FinishActions(onPrevious: () -> Unit, onContinue: () -> Unit) {
+private fun FinishActions(isLoading: Boolean, onPrevious: () -> Unit, onContinue: () -> Unit) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(30.dp),
@@ -139,12 +150,13 @@ private fun FinishActions(onPrevious: () -> Unit, onContinue: () -> Unit) {
             Spacer(modifier = Modifier.weight(1f))
 
             Button(
+                enabled = !isLoading,
                 onClick = onContinue,
                 shape = RoundedCornerShape(26.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0A5C77))
             ) {
                 Text(
-                    text = "Start Exploring ->",
+                    text = if (isLoading) "Saving..." else "Start Exploring ->",
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.padding(horizontal = 10.dp, vertical = 2.dp)
                 )

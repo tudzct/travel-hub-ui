@@ -232,7 +232,6 @@ fun NavGraph(
         composable(Screen.OnboardingIntro.route) {
             OnboardingInterestsScreen(
                 initialSelected = onboardingUiState.interests,
-                syncErrorMessage = onboardingUiState.preferenceSyncErrorMessage,
                 onSkip = {
                     val destination = if (authUiState.isAuthenticated) Screen.Home.route else Screen.Login.route
                     navController.navigate(destination) {
@@ -272,6 +271,8 @@ fun NavGraph(
                 endDate = onboardingUiState.endDate,
                 travelers = onboardingUiState.travelers,
                 budgetLevel = onboardingUiState.budgetLevel,
+                isSyncingPreferences = onboardingUiState.isSyncingPreferences,
+                syncErrorMessage = onboardingUiState.preferenceSyncErrorMessage,
                 onSkip = {
                     val destination = if (authUiState.isAuthenticated) Screen.Home.route else Screen.Login.route
                     navController.navigate(destination) {
@@ -279,9 +280,16 @@ fun NavGraph(
                     }
                 },
                 onContinue = {
-                    val destination = if (authUiState.isAuthenticated) Screen.Home.route else Screen.Login.route
-                    navController.navigate(destination) {
-                        popUpTo(Screen.OnboardingIntro.route) { inclusive = true }
+                    if (!authUiState.isAuthenticated) {
+                        navController.navigate(Screen.Login.route) {
+                            popUpTo(Screen.OnboardingIntro.route) { inclusive = true }
+                        }
+                    } else {
+                        onboardingViewModel.syncPreferences {
+                            navController.navigate(Screen.Home.route) {
+                                popUpTo(Screen.OnboardingIntro.route) { inclusive = true }
+                            }
+                        }
                     }
                 },
                 onPrevious = { navController.navigateUp() },

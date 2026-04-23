@@ -19,6 +19,7 @@ data class OnboardingUiState(
     val endDate: String = "Oct 24, 2024",
     val travelers: Int = 2,
     val budgetLevel: String = "Mid-Range",
+    val isSyncingPreferences: Boolean = false,
     val preferenceSyncErrorMessage: String? = null
 )
 
@@ -30,8 +31,12 @@ class OnboardingViewModel @Inject constructor(
     val uiState: StateFlow<OnboardingUiState> = _uiState.asStateFlow()
 
     fun updateTripType(tripType: String) {
-        _uiState.update { it.copy(tripType = tripType) }
-        syncPreferences()
+        _uiState.update {
+            it.copy(
+                tripType = tripType,
+                preferenceSyncErrorMessage = null
+            )
+        }
     }
 
     fun updateInterests(interests: List<String>) {
@@ -45,12 +50,15 @@ class OnboardingViewModel @Inject constructor(
                 preferenceSyncErrorMessage = null
             )
         }
-        syncPreferences()
     }
 
     fun updateDestination(destination: String) {
-        _uiState.update { it.copy(destination = destination) }
-        syncPreferences()
+        _uiState.update {
+            it.copy(
+                destination = destination,
+                preferenceSyncErrorMessage = null
+            )
+        }
     }
 
     fun updateDetails(
@@ -69,18 +77,34 @@ class OnboardingViewModel @Inject constructor(
         }
     }
 
-    private fun syncPreferences() {
+    fun syncPreferences(onSuccess: () -> Unit = {}) {
         val state = _uiState.value
         viewModelScope.launch {
+            _uiState.update {
+                it.copy(
+                    isSyncingPreferences = true,
+                    preferenceSyncErrorMessage = null
+                )
+            }
             recommendationRepository
                 .syncPreferencesToServer(
                     tripType = state.tripType,
                     interests = state.interests,
                     destination = state.destination
                 )
+                .onSuccess {
+                    _uiState.update {
+                        it.copy(
+                            isSyncingPreferences = false,
+                            preferenceSyncErrorMessage = null
+                        )
+                    }
+                    onSuccess()
+                }
                 .onFailure { throwable ->
                     _uiState.update {
                         it.copy(
+                            isSyncingPreferences = false,
                             preferenceSyncErrorMessage = throwable.message ?: "Failed to sync preferences"
                         )
                     }
