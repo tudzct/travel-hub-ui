@@ -27,18 +27,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 
 import com.mobile.travelhub.R
-import com.mobile.travelhub.ui.components.PostGrid
+import com.mobile.travelhub.ui.components.FeedPostCard
 import com.mobile.travelhub.ui.components.PrimaryProfileButton
 import com.mobile.travelhub.ui.components.ProfileHeader
 import com.mobile.travelhub.ui.components.ProfileStats
-import com.mobile.travelhub.ui.viewmodels.ProfileViewModel
-import com.mobile.travelhub.ui.viewmodels.UiState
 import com.mobile.travelhub.ui.theme.*
 import com.mobile.travelhub.ui.components.SecondaryProfileButton
 import com.mobile.travelhub.ui.theme.SurfaceContainerLow
@@ -65,6 +61,7 @@ fun ProfileScreen(
     } else {
         viewModel.otherUserProfileState.collectAsState()
     }
+    val profilePostsState by viewModel.profilePostsState.collectAsState()
     val unauthorized by viewModel.unauthorized.collectAsState()
 
     val scrollState = rememberScrollState()
@@ -72,8 +69,12 @@ fun ProfileScreen(
     LaunchedEffect(Unit) {
         if (isViewingOwnProfile) {
             viewModel.loadUserProfile()
+            viewModel.loadUserPosts()
         } else {
-            viewingUserId?.let { viewModel.loadOtherUserProfile(it) }
+            viewingUserId?.let {
+                viewModel.loadOtherUserProfile(it)
+                viewModel.loadUserPosts(it)
+            }
         }
     }
     LaunchedEffect(unauthorized) {
@@ -125,36 +126,16 @@ fun ProfileScreen(
                 }
                 is UiState.Error -> {
                     ErrorLayout(message = state.message) {
-                        if (isViewingOwnProfile) viewModel.loadUserProfile()
-                        else viewingUserId?.let { viewModel.loadOtherUserProfile(it) }
+                        if (isViewingOwnProfile) {
+                            viewModel.loadUserProfile()
+                            viewModel.loadUserPosts()
+                        } else {
+                            viewingUserId?.let {
+                                viewModel.loadOtherUserProfile(it)
+                                viewModel.loadUserPosts(it)
+                            }
+                        }
                     }
-//                    Column(
-//                        modifier = Modifier.align(Alignment.Center).padding(32.dp),
-//                        horizontalAlignment = Alignment.CenterHorizontally
-//                    ) {
-//                        Text(
-//                            text = "Lỗi kết nối API:",
-//                            style = MaterialTheme.typography.titleMedium,
-//                            color = MaterialTheme.colorScheme.error,
-//                            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
-//                        )
-//                        Text(
-//                            text = state.message,
-//                            color = MaterialTheme.colorScheme.error,
-//                            textAlign = TextAlign.Center,
-//                            modifier = Modifier.padding(top = 8.dp, bottom = 24.dp)
-//                        )
-//                        Button(onClick = {
-//                            if (isViewingOwnProfile) {
-//                                viewModel.loadUserProfile()
-//                            } else {
-//                                viewingUserId?.let { viewModel.loadOtherUserProfile(it) }
-//                            }
-//                        }) {
-//                            Icon(Icons.Default.Refresh, contentDescription = "Thử lại")
-//                            Text(" Thử lại", modifier = Modifier.padding(start = 8.dp))
-//                        }
-//                    }
                 }
                 is UiState.Success -> {
                     val profile = state.data
@@ -278,18 +259,69 @@ fun ProfileScreen(
                                 .padding(top = 24.dp, bottom = 100.dp)
                         ) {
                             Text(
-                                text = "GALLERY",
+                                text = "POSTS",
                                 style = MaterialTheme.typography.labelMedium,
                                 fontWeight = FontWeight.ExtraBold,
                                 modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp),
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
-                            
-                            val posts = List(12) { R.drawable.ic_launcher_foreground }
-                            PostGrid(
-                                posts = posts,
-                                onPostClick = { onNavigateToEditProfile() }
-                            )
+
+                            when {
+                                profilePostsState.isLoading -> {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(vertical = 24.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        CircularProgressIndicator(color = PrimaryBlue)
+                                    }
+                                }
+
+                                !profilePostsState.errorMessage.isNullOrBlank() -> {
+                                    Column(
+                                        modifier = Modifier.padding(horizontal = 24.dp),
+                                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                                    ) {
+                                        Text(
+                                            text = profilePostsState.errorMessage.orEmpty(),
+                                            color = MaterialTheme.colorScheme.error
+                                        )
+                                        Button(
+                                            onClick = {
+                                            if (isViewingOwnProfile) {
+                                                viewModel.loadUserPosts()
+                                            } else {
+                                                viewingUserId?.let(viewModel::loadUserPosts)
+                                            }
+                                        },
+                                            colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
+                                        ) {
+                                            Icon(Icons.Default.Refresh, contentDescription = null)
+                                            Text(" Try Again", modifier = Modifier.padding(start = 8.dp))
+                                        }
+                                    }
+                                }
+
+                                profilePostsState.posts.isEmpty() -> {
+                                    Text(
+                                        text = "Chưa có bài viết nào.",
+                                        modifier = Modifier.padding(horizontal = 24.dp),
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+
+                                else -> {
+                                    profilePostsState.posts.forEach { post ->
+                                        FeedPostCard(
+                                            post = post,
+                                            onLikeClick = {},
+                                            onCommentClick = {},
+                                            actionsEnabled = false
+                                        )
+                                    }
+                                }
+                            }
                         }
                     }
                 }

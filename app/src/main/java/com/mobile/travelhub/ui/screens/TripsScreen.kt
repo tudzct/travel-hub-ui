@@ -14,6 +14,7 @@ import androidx.compose.material.icons.filled.FlightTakeoff
 import androidx.compose.material.icons.filled.GroupAdd
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Map
+import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.filled.WbCloudy
 import androidx.compose.material3.*
@@ -23,6 +24,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -73,26 +75,14 @@ fun TripsScreen(
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = "Nhà thám hiểm! \uD83C\uDF0D",
+                        text = "Nhà thám hiểm!",
                         fontWeight = FontWeight.ExtraBold,
                         fontSize = 32.sp,
                         color = OnSurface,
                         letterSpacing = (-1).sp
                     )
+                    Spacer(modifier = Modifier.height(8.dp))
                 }
-            }
-
-            // Redesigned Stats Row
-            item {
-                LazyRow(
-                    contentPadding = PaddingValues(horizontal = 24.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    item { StatChip("5", "Quốc gia", "🗺️", PrimaryBlue) }
-                    item { StatChip("12", "Thành phố", "🏙️", SunsetOrange) }
-                    item { StatChip("8", "Hành trình", "✈️", Color(0xFF4CAF50)) }
-                }
-                Spacer(modifier = Modifier.height(32.dp))
             }
 
             // Current Active Trip (More immersive)
@@ -196,7 +186,7 @@ fun TripsScreen(
 }
 
 @Composable
-fun StatChip(value: String, label: String, emoji: String, color: Color) {
+fun StatChip(value: String, label: String, icon: ImageVector, color: Color) {
     Row(
         modifier = Modifier
             .clip(RoundedCornerShape(20.dp))
@@ -204,7 +194,12 @@ fun StatChip(value: String, label: String, emoji: String, color: Color) {
             .padding(horizontal = 16.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(emoji, fontSize = 24.sp)
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = color,
+            modifier = Modifier.size(24.dp)
+        )
         Spacer(modifier = Modifier.width(12.dp))
         Column {
             Text(value, fontWeight = FontWeight.ExtraBold, fontSize = 18.sp, color = color)

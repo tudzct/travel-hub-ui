@@ -4,6 +4,7 @@ import com.mobile.travelhub.data.model.PageResponse
 import com.mobile.travelhub.data.model.PreferenceResponse
 import com.mobile.travelhub.data.model.PreferenceUpdateRequest
 import com.mobile.travelhub.data.model.ProfileUpdateRequest
+import com.mobile.travelhub.data.model.GetPostsResponse
 import com.mobile.travelhub.data.model.UserProfileResponse
 import com.mobile.travelhub.data.model.UserSummaryResponse
 import retrofit2.http.Body
@@ -34,6 +35,13 @@ interface UserApiService {
         @Query("page") page: Int = 0,
         @Query("size") size: Int = 30
     ): PageResponse<UserSummaryResponse>
+
+    @GET("api/users/{id}/posts")
+    suspend fun getUserPosts(
+        @Path("id") id: Long,
+        @Query("page") page: Int = 0,
+        @Query("pageSize") pageSize: Int = 20
+    ): GetPostsResponse
 
     @PUT("api/users/me")
     suspend fun updateMyProfile(

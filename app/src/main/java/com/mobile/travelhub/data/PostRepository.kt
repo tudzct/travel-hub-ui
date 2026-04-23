@@ -7,6 +7,7 @@ import android.net.Uri
 import com.mobile.travelhub.data.api.FileUploadApiService
 import com.mobile.travelhub.data.api.PostApiService
 import com.mobile.travelhub.data.api.UploadApiService
+import com.mobile.travelhub.data.api.UserApiService
 import com.mobile.travelhub.data.model.CreateCommentRequest
 import com.mobile.travelhub.data.model.FeedPostResponse
 import com.mobile.travelhub.data.model.LikePostResponse
@@ -26,6 +27,7 @@ import retrofit2.HttpException
 class PostRepository @Inject constructor(
     @param:ApplicationContext private val context: Context,
     private val postApiService: PostApiService,
+    private val userApiService: UserApiService,
     private val uploadApiService: UploadApiService,
     private val fileUploadApiService: FileUploadApiService
 ) {
@@ -92,6 +94,23 @@ class PostRepository @Inject constructor(
             runCatching {
                 val likedPostIds = getLikedPostIds()
                 postApiService.getAllPosts(
+                    page = page,
+                    pageSize = pageSize
+                ).data.map { post ->
+                    val localLiked = likedPostIds.contains(post.id.toString())
+                    val mergedLiked = (post.likedByCurrentUser == true) || localLiked
+                    post.copy(likedByCurrentUser = mergedLiked)
+                }
+            }
+        }
+    }
+
+    suspend fun getPostsByUser(userId: Long, page: Int = 0, pageSize: Int = 20): Result<List<FeedPostResponse>> {
+        return withContext(Dispatchers.IO) {
+            runCatching {
+                val likedPostIds = getLikedPostIds()
+                userApiService.getUserPosts(
+                    id = userId,
                     page = page,
                     pageSize = pageSize
                 ).data.map { post ->

@@ -10,12 +10,17 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ConfirmationNumber
+import androidx.compose.material.icons.filled.Hotel
+import androidx.compose.material.icons.filled.Restaurant
+import androidx.compose.material.icons.filled.Train
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -288,14 +293,11 @@ fun ExpenseRow(expense: ExpenseItemData) {
                 .background(SurfaceContainerLow),
             contentAlignment = Alignment.Center
         ) {
-            Text(
-                when(expense.category) {
-                    "Food" -> "🍱"
-                    "Stay" -> "🏨"
-                    "Transport" -> "🚄"
-                    else -> "🎟️"
-                },
-                fontSize = 20.sp
+            Icon(
+                imageVector = expenseCategoryIcon(expense.category),
+                contentDescription = null,
+                tint = PrimaryBlue,
+                modifier = Modifier.size(22.dp)
             )
         }
         
@@ -311,3 +313,12 @@ fun ExpenseRow(expense: ExpenseItemData) {
 }
 
 data class ExpenseItemData(val title: String, val paidBy: String, val amount: Double, val category: String)
+
+private fun expenseCategoryIcon(category: String): ImageVector {
+    return when (category) {
+        "Food" -> Icons.Default.Restaurant
+        "Stay" -> Icons.Default.Hotel
+        "Transport" -> Icons.Default.Train
+        else -> Icons.Default.ConfirmationNumber
+    }
+}
