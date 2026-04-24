@@ -20,19 +20,31 @@ import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import javax.inject.Named
 import javax.inject.Singleton
+import okhttp3.logging.HttpLoggingInterceptor
+import java.util.concurrent.TimeUnit
 
 @Module
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
-
+    private const val BASE_URL = ApiConfig.BASE_URL
+    private const val AI_BASE_URL = ApiConfig.AI_BASE_URL
+    private val logging = HttpLoggingInterceptor().apply {
+        level = HttpLoggingInterceptor.Level.BODY
+    }
     @Provides
     @Singleton
     fun provideOkHttpClient(
         authHeaderInterceptor: AuthHeaderInterceptor,
         tokenAuthenticator: TokenAuthenticator
     ): OkHttpClient {
+
         return OkHttpClient.Builder()
+            .connectTimeout(10, TimeUnit.SECONDS)
+            .readTimeout(30, TimeUnit.SECONDS)
+            .writeTimeout(30, TimeUnit.SECONDS)
+            .callTimeout(60, TimeUnit.SECONDS)
             .addInterceptor(authHeaderInterceptor)
+            .addInterceptor(logging)
             .authenticator(tokenAuthenticator)
             .build()
     }
@@ -57,8 +69,8 @@ object NetworkModule {
     @Provides
     @Singleton
     @Named("ai-public")
-    fun provideAiPublicRetrofit(): Retrofit {
-        return RetrofitFactory.create(baseUrl = AI_BASE_URL)
+    fun provideAiPublicRetrofit(okHttpClient: OkHttpClient): Retrofit {
+        return RetrofitFactory.create(baseUrl = AI_BASE_URL, client = okHttpClient)
     }
 
     @Provides
@@ -109,6 +121,4 @@ object NetworkModule {
         return retrofit.create(AiRecommendationApiService::class.java)
     }
 
-    private const val BASE_URL = ApiConfig.BASE_URL
-    private const val AI_BASE_URL = ApiConfig.AI_BASE_URL
 }

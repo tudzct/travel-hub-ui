@@ -85,7 +85,6 @@ fun TripsScreen(
                 }
             }
 
-            // Current Active Trip (More immersive)
             item {
                 Column(modifier = Modifier.padding(horizontal = 24.dp)) {
                     Text(

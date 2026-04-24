@@ -33,7 +33,6 @@ import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material.icons.outlined.ChatBubbleOutline
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.MoreHoriz
-import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -44,7 +43,6 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -76,7 +74,6 @@ fun PlaceListScreenContent(
     placeUiState: PlaceListUiState,
     homeUiState: HomeUiState,
     onPlaceClick: (Long) -> Unit,
-    onKeywordChange: (String) -> Unit,
     onRetryPlaces: () -> Unit,
     onRetryPosts: () -> Unit,
     onLikeClick: (Long) -> Unit,
@@ -101,10 +98,7 @@ fun PlaceListScreenContent(
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             item {
-                FeedHeader(
-                    keyword = placeUiState.keyword,
-                    onKeywordChange = onKeywordChange
-                )
+                FeedHeader()
             }
 
             when {
@@ -135,16 +129,8 @@ fun PlaceListScreenContent(
                 placeUiState.items.isEmpty() -> {
                     item {
                         FeedEmptyState(
-                            title = if (placeUiState.keyword.isBlank()) {
-                                "Chưa có địa điểm nào"
-                            } else {
-                                "Không có địa điểm phù hợp"
-                            },
-                            message = if (placeUiState.keyword.isBlank()) {
-                                "Dữ liệu địa điểm vẫn chưa được thêm vào hệ thống."
-                            } else {
-                                "Thử từ khóa khác để hiện lại danh sách địa điểm."
-                            },
+                            title = "Chưa có địa điểm nào",
+                            message = "Dữ liệu địa điểm vẫn chưa được thêm vào hệ thống.",
                             fullScreen = false,
                             onRetry = null
                         )
@@ -328,8 +314,6 @@ fun PlaceListScreenContent(
 
 @Composable
 private fun FeedHeader(
-    keyword: String,
-    onKeywordChange: (String) -> Unit
 ) {
     Column(
         modifier = Modifier.padding(horizontal = 16.dp),
@@ -354,55 +338,7 @@ private fun FeedHeader(
                     fontWeight = FontWeight.Bold
                 )
             }
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Surface(
-                    shape = CircleShape,
-                    color = VerdantSurfaceContainerHighest,
-                    modifier = Modifier.size(40.dp)
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Text(
-                            text = "T",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = VerdantPrimary,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                }
-            }
         }
-
-        TextField(
-            value = keyword,
-            onValueChange = onKeywordChange,
-            modifier = Modifier.fillMaxWidth(),
-            placeholder = {
-                Text(
-                    text = "Search destinations or provinces",
-                    color = VerdantOnSurfaceVariant
-                )
-            },
-            leadingIcon = {
-                Icon(
-                    imageVector = Icons.Outlined.Search,
-                    contentDescription = null,
-                    tint = VerdantOnSurfaceVariant
-                )
-            },
-            shape = RoundedCornerShape(22.dp),
-            singleLine = true,
-            colors = TextFieldDefaults.colors(
-                focusedContainerColor = VerdantSurfaceContainerHighest,
-                unfocusedContainerColor = VerdantSurfaceContainerHighest,
-                disabledContainerColor = VerdantSurfaceContainerHighest,
-                focusedIndicatorColor = Color.Transparent,
-                unfocusedIndicatorColor = Color.Transparent,
-                disabledIndicatorColor = Color.Transparent,
-                focusedTextColor = VerdantOnSurface,
-                unfocusedTextColor = VerdantOnSurface,
-                cursorColor = VerdantPrimary
-            )
-        )
     }
 }
 
@@ -424,11 +360,6 @@ private fun LocationsRail(
                 style = MaterialTheme.typography.titleMedium,
                 color = VerdantOnSurface,
                 fontWeight = FontWeight.Bold
-            )
-            Text(
-                text = "Swipe",
-                style = MaterialTheme.typography.labelMedium,
-                color = VerdantPrimary
             )
         }
 
@@ -456,7 +387,7 @@ private fun LocationCard(
             .width(104.dp)
             .height(172.dp)
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(24.dp),
+        shape = RoundedCornerShape(8.dp),
         color = VerdantSurfaceContainerLowest,
         shadowElevation = 8.dp
     ) {
@@ -480,25 +411,6 @@ private fun LocationCard(
                         )
                     )
             )
-            Surface(
-                modifier = Modifier
-                    .align(Alignment.TopStart)
-                    .padding(8.dp),
-                shape = CircleShape,
-                color = VerdantSurfaceContainerLowest.copy(alpha = 0.94f)
-            ) {
-                Box(
-                    modifier = Modifier.size(30.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = place.province.name.take(1).uppercase(),
-                        style = MaterialTheme.typography.labelLarge,
-                        color = VerdantPrimary,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            }
             Column(
                 modifier = Modifier
                     .align(Alignment.BottomStart)
@@ -802,10 +714,6 @@ private fun PostItemContent(
             Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = buildAnnotatedString {
-                    withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
-                        append(post.username)
-                    }
-                    append("  ")
                     append(post.description)
                 },
                 style = MaterialTheme.typography.bodyMedium,

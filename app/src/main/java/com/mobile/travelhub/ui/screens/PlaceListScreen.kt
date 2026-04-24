@@ -21,7 +21,6 @@ fun PlaceListScreen(
         placeUiState = placeUiState,
         homeUiState = homeUiState,
         onPlaceClick = onPlaceClick,
-        onKeywordChange = placeListViewModel::onKeywordChange,
         onRetryPlaces = placeListViewModel::refresh,
         onRetryPosts = homeViewModel::refreshPosts,
         onLikeClick = homeViewModel::onLikeClicked,

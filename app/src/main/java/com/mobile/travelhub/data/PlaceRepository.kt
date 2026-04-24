@@ -51,7 +51,7 @@ class PlaceRepository @Inject constructor(
                 offset = page * pageSize
             )
         )
-
+        //TODO: N+1 problem
         val items = coroutineScope {
             recommendationResponse.items.map { recommendation ->
                 async {
