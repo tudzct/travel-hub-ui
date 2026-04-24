@@ -66,9 +66,9 @@ import java.time.format.DateTimeFormatter
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PlaceDetailScreen(
-    placeId: Long,
+    place: TravelPlaceListItemResponse,
     onBack: () -> Unit,
-    onPlaceClick: (Long) -> Unit,
+    onPlaceClick: (TravelPlaceListItemResponse) -> Unit,
     onShowAllReviews: (Long) -> Unit,
     onRequireLogin: () -> Unit,
     placeDetailViewModel: PlaceDetailViewModel = hiltViewModel(),
@@ -78,8 +78,8 @@ fun PlaceDetailScreen(
     val reviewUiState by reviewViewModel.uiState.collectAsState()
     var showReviewSheet by remember { mutableStateOf(false) }
 
-    LaunchedEffect(placeId) {
-        placeDetailViewModel.loadPlace(placeId)
+    LaunchedEffect(place.id) {
+        placeDetailViewModel.loadPlace(place)
     }
 
     LaunchedEffect(showReviewSheet, uiState.detail?.myReview?.id) {
@@ -153,7 +153,7 @@ fun PlaceDetailScreen(
 
                     item {
                         PlaceImageCarousel(
-                            imageUrls = detail.images.map { it.imageUrl },
+                            imageUrls = listOfNotNull(detail.mainImage),
                             contentDescription = detail.name
                         )
                     }
@@ -337,7 +337,7 @@ private fun RelatedPlacesSection(
     places: List<TravelPlaceListItemResponse>,
     isLoading: Boolean,
     errorMessage: String?,
-    onPlaceClick: (Long) -> Unit
+    onPlaceClick: (TravelPlaceListItemResponse) -> Unit
 ) {
     Column(
         modifier = Modifier.fillMaxWidth(),
@@ -385,7 +385,7 @@ private fun RelatedPlacesSection(
                     items(places, key = { it.id }) { place ->
                         RelatedPlaceCard(
                             place = place,
-                            onClick = { onPlaceClick(place.id) }
+                            onClick = { onPlaceClick(place) }
                         )
                     }
                 }

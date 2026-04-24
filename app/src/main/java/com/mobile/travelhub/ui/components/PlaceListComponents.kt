@@ -74,7 +74,7 @@ import androidx.compose.ui.res.stringResource
 fun PlaceListScreenContent(
     placeUiState: PlaceListUiState,
     homeUiState: HomeUiState,
-    onPlaceClick: (Long) -> Unit,
+    onPlaceClick: (TravelPlaceListItemResponse) -> Unit,
     onRetryPlaces: () -> Unit,
     onRetryPosts: () -> Unit,
     onLikeClick: (Long) -> Unit,
@@ -142,7 +142,7 @@ fun PlaceListScreenContent(
                     item {
                         LocationsRail(
                             places = placeUiState.items.take(10),
-                            onPlaceClick = { onPlaceClick(it.id) }
+                            onPlaceClick = onPlaceClick
                         )
                     }
                 }
@@ -731,7 +731,7 @@ private fun PostItemContent(
     }
 }
 
-private val VerdantPrimary = Color(0xFF006B2C)
+private val VerdantPrimary = Color(0xFF60B2E5)
 private val VerdantSurfaceContainer = Color(0xFFEFF6EA)
 private val VerdantSurfaceContainerHighest = Color(0xFFDDE5D9)
 private val VerdantSurfaceContainerLowest = Color(0xFFFFFFFF)

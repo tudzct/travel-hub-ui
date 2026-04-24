@@ -96,7 +96,7 @@ fun OnboardingInterestsScreenContent(
                         color = if (isSelected) Color.White else Color(0xFF3E4A3D),
                         modifier = Modifier
                             .clip(RoundedCornerShape(16.dp))
-                            .background(if (isSelected) Color(0xFF006B2C) else Color(0xFFE7EEE2))
+                            .background(if (isSelected) MaterialTheme.colorScheme.primary else Color(0xFFE7EEE2))
                             .clickable { onToggleInterest(option) }
                             .padding(horizontal = 14.dp, vertical = 10.dp)
                     )
@@ -140,7 +140,7 @@ fun InterestsHeader(onBack: () -> Unit, onSkip: () -> Unit) {
         Text(
             text = "Skip",
             style = MaterialTheme.typography.titleMedium,
-            color = Color(0xFF0A4D66),
+            color = MaterialTheme.colorScheme.primary,
             modifier = Modifier
                 .clip(RoundedCornerShape(12.dp))
                 .clickable(onClick = onSkip)
@@ -184,8 +184,10 @@ fun InterestsBottomActions(
                 onClick = onContinue,
                 shape = RoundedCornerShape(26.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF0A5C77),
-                    disabledContainerColor = Color(0xFF8AA3AF)
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                    disabledContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.45f),
+                    disabledContentColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.7f)
                 )
             ) {
                 Text(

@@ -45,16 +45,21 @@ fun TripsScreen(
     Scaffold(
         containerColor = SurfaceBg,
         floatingActionButton = {
-            ExtendedFloatingActionButton(
-                onClick = { showAddTripSheet = true },
-                containerColor = PrimaryBlue,
-                contentColor = Color.White,
-                shape = RoundedCornerShape(20.dp),
-                elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 4.dp)
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(bottom = 80.dp, end = 16.dp),
+                contentAlignment = Alignment.BottomEnd
             ) {
-                Icon(Icons.Default.FlightTakeoff, contentDescription = "New Trip")
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Chuyến đi mới", fontWeight = FontWeight.Bold)
+                ExtendedFloatingActionButton(
+                    onClick = { showAddTripSheet = true },
+                    containerColor = PrimaryBlue,
+                    contentColor = Color.White
+                ) {
+                    Icon(Icons.Default.FlightTakeoff, contentDescription = null)
+                    Spacer(Modifier.width(8.dp))
+                    Text("Chuyến đi mới")
+                }
             }
         }
     ) { padding ->

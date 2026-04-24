@@ -2,6 +2,7 @@ package com.mobile.travelhub.ui.components
 
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -19,7 +20,7 @@ fun OnboardingStepProgress(
     LinearProgressIndicator(
         progress = { progress },
         modifier = modifier.fillMaxWidth(),
-        color = Color(0xFF006B2C),
+        color = MaterialTheme.colorScheme.primary,
         trackColor = Color(0xFFDDE5D9)
     )
 }

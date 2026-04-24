@@ -15,6 +15,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.mobile.travelhub.data.model.TravelPlaceListItemResponse
 import com.mobile.travelhub.ui.screens.ItineraryBotScreen
 import com.mobile.travelhub.ui.screens.OnboardingInterestsScreen
 import com.mobile.travelhub.ui.screens.OnboardingIntroScreen
@@ -33,6 +34,7 @@ import androidx.navigation.navArgument
 import com.mobile.travelhub.ui.screens.*
 import com.mobile.travelhub.viewmodels.OnboardingViewModel
 
+private const val PLACE_DETAIL_PLACE_KEY = "place_detail_place"
 
 sealed class Screen(
     val route: String,
@@ -153,6 +155,11 @@ fun NavGraph(
 ) {
     val onboardingUiState by onboardingViewModel.uiState.collectAsState()
     val currentRoute = navController.currentBackStackEntry?.destination?.route?.substringBefore("/")
+
+    fun navigateToPlaceDetail(place: TravelPlaceListItemResponse) {
+        navController.currentBackStackEntry?.savedStateHandle?.set(PLACE_DETAIL_PLACE_KEY, place)
+        navController.navigate(Screen.PlaceDetail.createRoute(place.id))
+    }
 
     LaunchedEffect(authUiState.isAuthenticated, currentRoute) {
         val isAuthRoute = currentRoute == Screen.Login.route || currentRoute == Screen.Register.route
@@ -292,9 +299,7 @@ fun NavGraph(
         }
         composable(Screen.Home.route) {
             PlaceListScreen(
-                onPlaceClick = { placeId ->
-                    navController.navigate(Screen.PlaceDetail.createRoute(placeId))
-                }
+                onPlaceClick = ::navigateToPlaceDetail
             )
         }
         composable(Screen.Trips.route) {
@@ -469,11 +474,14 @@ fun NavGraph(
             route = Screen.PlaceDetail.route,
             arguments = listOf(navArgument("placeId") { type = NavType.LongType })
         ) { backStackEntry ->
-            val placeId = backStackEntry.arguments?.getLong("placeId") ?: return@composable
+            val place = backStackEntry.savedStateHandle.get<TravelPlaceListItemResponse>(PLACE_DETAIL_PLACE_KEY)
+                ?: navController.previousBackStackEntry?.savedStateHandle?.get<TravelPlaceListItemResponse>(PLACE_DETAIL_PLACE_KEY)
+                    ?.also { backStackEntry.savedStateHandle[PLACE_DETAIL_PLACE_KEY] = it }
+                ?: return@composable
             PlaceDetailScreen(
-                placeId = placeId,
+                place = place,
                 onBack = { navController.navigateUp() },
-                onPlaceClick = { id -> navController.navigate(Screen.PlaceDetail.createRoute(id)) },
+                onPlaceClick = ::navigateToPlaceDetail,
                 onShowAllReviews = { id -> navController.navigate(Screen.PlaceReviews.createRoute(id)) },
                 onRequireLogin = {
                     onLogout()

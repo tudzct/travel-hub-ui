@@ -3,7 +3,7 @@ package com.mobile.travelhub.viewmodels
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mobile.travelhub.data.PlaceRepository
-import com.mobile.travelhub.data.model.TravelPlaceDetailResponse
+import com.mobile.travelhub.data.model.ProvinceResponse
 import com.mobile.travelhub.data.model.TravelPlaceListItemResponse
 import com.mobile.travelhub.data.model.TravelPlaceReviewResponse
 import com.mobile.travelhub.data.model.TravelPlaceReviewSummaryResponse
@@ -15,9 +15,21 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
+data class PlaceDetailUiModel(
+    val id: Long,
+    val name: String,
+    val description: String?,
+    val province: ProvinceResponse,
+    val mainImage: String?,
+    val views: Int?,
+    val openingTime: String?,
+    val reviewSummary: TravelPlaceReviewSummaryResponse,
+    val myReview: TravelPlaceReviewResponse? = null
+)
+
 data class PlaceDetailUiState(
     val isLoading: Boolean = false,
-    val detail: TravelPlaceDetailResponse? = null,
+    val detail: PlaceDetailUiModel? = null,
     val relatedPlaces: List<TravelPlaceListItemResponse> = emptyList(),
     val relatedPlacesLoading: Boolean = false,
     val reviewPreview: List<TravelPlaceReviewResponse> = emptyList(),
@@ -37,42 +49,33 @@ class PlaceDetailViewModel @Inject constructor(
 
     private var loadedPlaceId: Long? = null
 
-    fun loadPlace(placeId: Long) {
-        if (loadedPlaceId == placeId && uiState.value.detail != null) {
+    fun loadPlace(place: TravelPlaceListItemResponse) {
+        if (loadedPlaceId == place.id && uiState.value.detail != null) {
             return
         }
-        loadedPlaceId = placeId
+        loadedPlaceId = place.id
         viewModelScope.launch {
             _uiState.update {
                 it.copy(
                     isLoading = true,
+                    detail = place.toDetailUiModel(),
                     errorMessage = null,
                     relatedPlaces = emptyList(),
+                    relatedPlacesLoading = true,
                     relatedPlacesErrorMessage = null,
                     reviewErrorMessage = null,
-                    reviewPreview = emptyList()
+                    reviewPreview = emptyList(),
+                    reviewPreviewLoading = true
                 )
             }
-            runCatching { placeRepository.getPlaceDetail(placeId) }
-                .onSuccess { detail ->
-                    _uiState.update {
-                        it.copy(
-                            isLoading = false,
-                            detail = detail,
-                            errorMessage = null
-                        )
-                    }
-                    loadRelatedPlaces(detail.id, detail.province.id)
-                    loadReviewPreview(placeId)
-                }
-                .onFailure { throwable ->
-                    _uiState.update {
-                        it.copy(
-                            isLoading = false,
-                            errorMessage = throwable.message ?: "Unable to load place detail"
-                        )
-                    }
-                }
+            _uiState.update {
+                it.copy(
+                    isLoading = false,
+                    errorMessage = null
+                )
+            }
+            loadRelatedPlaces(place.id, place.province.id)
+            loadReviewPreview(place.id)
         }
     }
 
@@ -177,5 +180,21 @@ class PlaceDetailViewModel @Inject constructor(
             )
         }
         refreshReviewPreview()
+    }
+
+    private fun TravelPlaceListItemResponse.toDetailUiModel(): PlaceDetailUiModel {
+        return PlaceDetailUiModel(
+            id = id,
+            name = name,
+            description = description,
+            province = province,
+            mainImage = mainImage,
+            views = views,
+            openingTime = openingTime,
+            reviewSummary = TravelPlaceReviewSummaryResponse(
+                averageRating = averageRating,
+                reviewCount = reviewCount
+            )
+        )
     }
 }

@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -30,7 +31,7 @@ fun OnboardingDotsIndicator(
                     .size(if (index == selectedIndex) 9.dp else 7.dp)
                     .clip(CircleShape)
                     .background(
-                        if (index == selectedIndex) Color(0xFF0A5C77) else Color(0xFFC7CED8)
+                        if (index == selectedIndex) MaterialTheme.colorScheme.primary else Color(0xFFC7CED8)
                     )
             )
         }

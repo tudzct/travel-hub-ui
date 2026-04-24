@@ -4,13 +4,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.mobile.travelhub.data.model.TravelPlaceListItemResponse
 import com.mobile.travelhub.ui.components.PlaceListScreenContent
 import com.mobile.travelhub.viewmodels.HomeViewModel
 import com.mobile.travelhub.viewmodels.PlaceListViewModel
 
 @Composable
 fun PlaceListScreen(
-    onPlaceClick: (Long) -> Unit,
+    onPlaceClick: (TravelPlaceListItemResponse) -> Unit,
     placeListViewModel: PlaceListViewModel = hiltViewModel(),
     homeViewModel: HomeViewModel = hiltViewModel()
 ) {
