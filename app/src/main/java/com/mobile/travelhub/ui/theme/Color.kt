@@ -14,10 +14,13 @@ val PrimaryContainer = Color(0xFF8AC8EE)
 //val Primary = Color(0xFF0058BC)
 //val PrimaryContainer = Color(0xFF0070EB)
 val OnPrimary = Color(0xFF0D2533)
+val Secondary = PrimaryBlue
+val SecondaryContainer = PrimaryContainer
+val OnSecondary = OnPrimary
 
 val SunsetOrange = Color(0xFF9B4500)
-val Tertiary = SunsetOrange
-val TertiaryContainer = Color(0xFFC64F00)
+val Tertiary = PrimaryBlue
+val TertiaryContainer = PrimaryContainer
 
 val SurfaceBg = Color(0xFFF8F9FA)
 val Surface = Color(0xFFFFFFFF)
