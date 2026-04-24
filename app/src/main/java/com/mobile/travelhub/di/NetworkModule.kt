@@ -1,5 +1,6 @@
 package com.mobile.travelhub.di
 
+import com.mobile.travelhub.BuildConfig
 import com.mobile.travelhub.data.api.ApiConfig
 import com.mobile.travelhub.data.api.AiRecommendationApiService
 import com.mobile.travelhub.data.api.AuthApiService
@@ -16,11 +17,15 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import io.github.jan.supabase.SupabaseClient
+import io.github.jan.supabase.createSupabaseClient
+import io.github.jan.supabase.storage.Storage
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import javax.inject.Named
 import javax.inject.Singleton
 import okhttp3.logging.HttpLoggingInterceptor
+import kotlin.time.Duration.Companion.seconds
 import java.util.concurrent.TimeUnit
 
 @Module
@@ -119,6 +124,25 @@ object NetworkModule {
     @Singleton
     fun provideAiRecommendationApiService(@Named("ai-public") retrofit: Retrofit): AiRecommendationApiService {
         return retrofit.create(AiRecommendationApiService::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideSupabaseClient(): SupabaseClient {
+        val supabaseUrl = BuildConfig.SUPABASE_URL
+        val publishableKey = BuildConfig.SUPABASE_PUBLISHABLE_KEY
+
+        require(supabaseUrl.isNotBlank()) { "SUPABASE_URL is not configured" }
+        require(publishableKey.isNotBlank()) { "SUPABASE_PUBLISHABLE_KEY is not configured" }
+
+        return createSupabaseClient(
+            supabaseUrl = supabaseUrl,
+            supabaseKey = publishableKey
+        ) {
+            install(Storage) {
+                transferTimeout = 90.seconds
+            }
+        }
     }
 
 }

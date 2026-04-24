@@ -4,9 +4,12 @@ plugins {
     id("com.google.devtools.ksp")
     id("com.google.dagger.hilt.android")
     alias(libs.plugins.kotlin.android)
+    id("org.jetbrains.kotlin.plugin.serialization") version "2.2.10"
     id("com.google.gms.google-services")
 
 }
+
+fun gradleStringProperty(name: String): String = providers.gradleProperty(name).orElse("").get()
 
 android {
     namespace = "com.mobile.travelhub"
@@ -20,6 +23,17 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        buildConfigField("String", "SUPABASE_URL", "\"${gradleStringProperty("SUPABASE_URL")}\"")
+        buildConfigField(
+            "String",
+            "SUPABASE_PUBLISHABLE_KEY",
+            "\"${gradleStringProperty("SUPABASE_PUBLISHABLE_KEY")}\""
+        )
+        buildConfigField(
+            "String",
+            "SUPABASE_STORAGE_BUCKET",
+            "\"${gradleStringProperty("SUPABASE_STORAGE_BUCKET")}\""
+        )
     }
 
     buildTypes {
@@ -34,9 +48,11 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
+        isCoreLibraryDesugaringEnabled = true
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
     kotlin {
         jvmToolchain(11)
@@ -61,6 +77,7 @@ dependencies {
     implementation(libs.androidx.compose.material3)
     implementation("androidx.compose.material:material-icons-extended")
     implementation(libs.androidx.navigation.compose)
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")
 
     // Retrofit & Gson
     implementation("com.squareup.retrofit2:retrofit:2.11.0")
@@ -87,6 +104,9 @@ dependencies {
     implementation("com.github.jeziellago:compose-markdown:0.6.0")
     implementation("io.coil-kt:coil-compose:2.7.0")
     implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
+    implementation(platform("io.github.jan-tennert.supabase:bom:3.5.0"))
+    implementation("io.github.jan-tennert.supabase:storage-kt")
+    implementation("io.ktor:ktor-client-okhttp:3.4.1")
     implementation("com.google.dagger:hilt-android:2.57.1")
     ksp("com.google.dagger:hilt-android-compiler:2.57.1")
     implementation("androidx.hilt:hilt-navigation-compose:1.3.0")

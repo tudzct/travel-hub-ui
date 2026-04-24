@@ -4,9 +4,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import android.content.Context
 import android.net.Uri
-import com.mobile.travelhub.data.api.FileUploadApiService
+import android.webkit.MimeTypeMap
+import com.mobile.travelhub.BuildConfig
 import com.mobile.travelhub.data.api.PostApiService
-import com.mobile.travelhub.data.api.UploadApiService
 import com.mobile.travelhub.data.api.UserApiService
 import com.mobile.travelhub.data.model.CreateCommentRequest
 import com.mobile.travelhub.data.model.FeedPostResponse
@@ -14,11 +14,12 @@ import com.mobile.travelhub.data.model.LikePostResponse
 import com.mobile.travelhub.data.model.PostCommentResponse
 import com.mobile.travelhub.data.model.PostCommentsPageResponse
 import com.mobile.travelhub.data.model.PostCreateRequest
-import com.mobile.travelhub.data.model.UploadRequest
 import dagger.hilt.android.qualifiers.ApplicationContext
-import okhttp3.MediaType.Companion.toMediaTypeOrNull
-import okhttp3.RequestBody.Companion.toRequestBody
+import io.github.jan.supabase.SupabaseClient
+import io.github.jan.supabase.storage.storage
+import io.ktor.http.ContentType
 import java.io.IOException
+import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 import retrofit2.HttpException
@@ -28,8 +29,7 @@ class PostRepository @Inject constructor(
     @param:ApplicationContext private val context: Context,
     private val postApiService: PostApiService,
     private val userApiService: UserApiService,
-    private val uploadApiService: UploadApiService,
-    private val fileUploadApiService: FileUploadApiService
+    private val supabaseClient: SupabaseClient
 ) {
     private val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
@@ -40,30 +40,11 @@ class PostRepository @Inject constructor(
                 require(imageUris.isNotEmpty()) { "Please select at least one image" }
                 require(travelPlaceId > 0) { "Please select a place" }
 
-                val uploadResponse = try {
-                    uploadApiService.requestUploadUrls(
-                        request = UploadRequest(folderName = "posts", files = imageUris.size)
-                    )
-                } catch (exception: HttpException) {
-                    if (exception.code() == 401) {
-                        throw IOException("Unauthorized at /api/upload. Access token is missing, expired, or malformed.")
-                    }
-                    val errorBody = exception.response()?.errorBody()?.string()
-                    throw IOException("Failed to get upload URLs. Server returned ${exception.code()}: $errorBody")
+                val objectNames = imageUris.map { uri ->
+                    val objectName = uploadToSupabase(uri)
+                    android.util.Log.d("PostRepository", "Upload success for: $objectName")
+                    objectName
                 }
-
-            if (uploadResponse.items.size < imageUris.size) {
-                throw IOException("Upload URLs are missing from backend response")
-            }
-
-            val objectNames = imageUris.mapIndexed { index, uri ->
-                val uploadItem = uploadResponse.items[index]
-
-                android.util.Log.d("PostRepository", "Uploading to: ${uploadItem.url}")
-                uploadToPresignedUrl(uploadItem.url, uri)
-                android.util.Log.d("PostRepository", "Upload success for: ${uploadItem.objectName}")
-                uploadItem.objectName
-            }
 
                 try {
                     android.util.Log.d("PostRepository", "Calling createPost with: $objectNames")
@@ -190,25 +171,38 @@ class PostRepository @Inject constructor(
         }
     }
 
-    private suspend fun uploadToPresignedUrl(url: String, uri: Uri) {
+    private suspend fun uploadToSupabase(uri: Uri): String {
         val contentResolver = context.contentResolver
         val bytes = contentResolver.openInputStream(uri)?.use { it.readBytes() }
             ?: throw IOException("Unable to read selected image")
         val mimeType = contentResolver.getType(uri) ?: "image/jpeg"
+        val bucketName = BuildConfig.SUPABASE_STORAGE_BUCKET.takeIf { it.isNotBlank() }
+            ?: throw IOException("SUPABASE_STORAGE_BUCKET is not configured")
+        val objectPath = buildStorageObjectPath(uri = uri, mimeType = mimeType)
 
-        val response = runCatching {
-            fileUploadApiService.uploadFile(
-                url = url,
-                body = bytes.toRequestBody(mimeType.toMediaTypeOrNull())
-            )
+        runCatching {
+            supabaseClient.storage.from(bucketName).upload(
+                path = objectPath,
+                data = bytes
+            ) {
+                upsert = false
+                contentType = ContentType.parse(mimeType)
+            }
         }.getOrElse { throwable ->
             throw IOException("Upload failed: ${throwable.message}", throwable)
         }
 
-        if (!response.isSuccessful) {
-            val errorBody = response.errorBody()?.string()
-            throw IOException("Upload failed (${response.code()}). details: $errorBody")
-        }
+        return objectPath
+    }
+
+    private fun buildStorageObjectPath(uri: Uri, mimeType: String): String {
+        val extensionFromMime = MimeTypeMap.getSingleton().getExtensionFromMimeType(mimeType)
+        val extensionFromUri = uri.lastPathSegment
+            ?.substringAfterLast('.', "")
+            ?.takeIf { it.isNotBlank() }
+        val extension = (extensionFromMime ?: extensionFromUri ?: "jpg").lowercase()
+
+        return "public/${System.currentTimeMillis()}-${UUID.randomUUID()}.$extension"
     }
 
     private fun getLikedPostIds(): Set<String> {

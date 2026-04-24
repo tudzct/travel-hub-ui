@@ -67,6 +67,7 @@ import com.mobile.travelhub.data.model.TravelPlaceListItemResponse
 import com.mobile.travelhub.viewmodels.HomePostUiModel
 import com.mobile.travelhub.viewmodels.HomeUiState
 import com.mobile.travelhub.viewmodels.PlaceListUiState
+import androidx.compose.ui.res.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -527,43 +528,28 @@ private fun PostItemContent(
     actionsEnabled: Boolean
 ) {
     val context = LocalContext.current
-    val storageService = context.getString(R.string.storage_service)
+    val storageService = stringResource(R.string.storage_service)
         .trim()
         .trim('"')
         .trimEnd('/')
 
     fun toDisplayUrl(rawUrl: String): String {
-        val normalized = rawUrl.trim()
-        if (normalized.isBlank()) return ""
+        val value = rawUrl.trim()
+        if (value.isEmpty()) return ""
 
-        val fallbackBase = "http://10.0.2.2:9000"
-        val rawBase = if (storageService.isBlank()) fallbackBase else storageService
-        val base = if (rawBase.endsWith("/travelhub", ignoreCase = true)) {
-            rawBase
-        } else {
-            "$rawBase/travelhub"
+        // đã là full URL → return luôn
+        if (value.startsWith("http://", true) || value.startsWith("https://", true)) {
+            return value
         }
 
-        if (
-            normalized.startsWith("http://", ignoreCase = true) ||
-            normalized.startsWith("https://", ignoreCase = true)
-        ) {
-            val parsed = Uri.parse(normalized)
-            val host = parsed.host?.lowercase()
-            if (host == "localhost" || host == "127.0.0.1") {
-                val path = parsed.encodedPath?.trimStart('/').orEmpty()
-                val query = parsed.encodedQuery?.let { "?$it" }.orEmpty()
-                val normalizedPath = if (path.startsWith("travelhub/", ignoreCase = true)) {
-                    path.removePrefix("travelhub/")
-                } else {
-                    path
-                }
-                return if (normalizedPath.isBlank()) base else "$base/$normalizedPath$query"
-            }
-            return normalized
-        }
+        // normalize base
+        val base = storageService
+            .trim()
+            .trim('"')
+            .trimEnd('/')
 
-        return "$base/${normalized.trimStart('/')}"
+        // concat
+        return "$base/${value.trimStart('/')}"
     }
 
     val imageCount = post.imageUrls.size.coerceAtLeast(1)
@@ -620,6 +606,7 @@ private fun PostItemContent(
                     modifier = Modifier.fillMaxSize()
                 ) { page ->
                     val resolvedUrl = toDisplayUrl(post.imageUrls[page])
+                    Log.d("PlaceListPostImageUrl", "Resolved url: $resolvedUrl")
                     LaunchedEffect(resolvedUrl) {
                         Log.d("PlaceListPostImageUrl", "Resolved image url: $resolvedUrl")
                     }
