@@ -45,22 +45,16 @@ fun TripsScreen(
     Scaffold(
         containerColor = SurfaceBg,
         floatingActionButton = {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(bottom = 80.dp, end = 16.dp),
-                contentAlignment = Alignment.BottomEnd
+            ExtendedFloatingActionButton(
+                onClick = { showAddTripSheet = true },
+                containerColor = PrimaryBlue,
+                contentColor = Color.White
             ) {
-                ExtendedFloatingActionButton(
-                    onClick = { showAddTripSheet = true },
-                    containerColor = PrimaryBlue,
-                    contentColor = Color.White
-                ) {
-                    Icon(Icons.Default.FlightTakeoff, contentDescription = null)
-                    Spacer(Modifier.width(8.dp))
-                    Text("Chuyến đi mới")
-                }
+                Icon(Icons.Default.FlightTakeoff, contentDescription = null)
+                Spacer(Modifier.width(8.dp))
+                Text("Chuyến đi mới")
             }
+
         }
     ) { padding ->
         LazyColumn(
@@ -103,7 +97,7 @@ fun TripsScreen(
                 }
                 Spacer(modifier = Modifier.height(36.dp))
             }
-            
+
             // Upcoming Trips
             item {
                 Column(modifier = Modifier.padding(horizontal = 24.dp)) {
@@ -126,10 +120,10 @@ fun TripsScreen(
                         )
                     }
                     Spacer(modifier = Modifier.height(16.dp))
-                    
+
                     val tripNames = listOf("Kyoto Blossoms", "Seoul Foodie Tour", "Bali Retreat")
                     val daysLeft = listOf(12, 35, 60)
-                    
+
                     tripNames.forEachIndexed { index, name ->
                         UpcomingTripItem(
                             name = name,
@@ -161,7 +155,12 @@ fun TripsScreen(
                     ) {
                         items(4) { index ->
                             val places = listOf("Đà Lạt", "Đà Nẵng", "Sapa", "Phú Quốc")
-                            val dates = listOf("Tháng 8, 2023", "Tháng 5, 2023", "Tháng 12, 2022", "Tháng 7, 2022")
+                            val dates = listOf(
+                                "Tháng 8, 2023",
+                                "Tháng 5, 2023",
+                                "Tháng 12, 2022",
+                                "Tháng 7, 2022"
+                            )
                             PastMemoryCard(places[index], dates[index])
                         }
                     }
@@ -255,9 +254,19 @@ fun ActiveJourneyCardV2(onNavigateToGroupDetail: (String) -> Unit) {
                     .padding(horizontal = 12.dp, vertical = 8.dp)
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.WbCloudy, null, tint = Color.White, modifier = Modifier.size(16.dp))
+                    Icon(
+                        Icons.Default.WbCloudy,
+                        null,
+                        tint = Color.White,
+                        modifier = Modifier.size(16.dp)
+                    )
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text("22°C", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                    Text(
+                        "22°C",
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 12.sp
+                    )
                 }
             }
 
@@ -273,7 +282,12 @@ fun ActiveJourneyCardV2(onNavigateToGroupDetail: (String) -> Unit) {
                         .background(SunsetOrange)
                         .padding(horizontal = 8.dp, vertical = 4.dp)
                 ) {
-                    Text("Ngày 3 / 8", fontWeight = FontWeight.ExtraBold, fontSize = 10.sp, color = Color.White)
+                    Text(
+                        "Ngày 3 / 8",
+                        fontWeight = FontWeight.ExtraBold,
+                        fontSize = 10.sp,
+                        color = Color.White
+                    )
                 }
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
@@ -285,7 +299,12 @@ fun ActiveJourneyCardV2(onNavigateToGroupDetail: (String) -> Unit) {
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.LocationOn, null, tint = Color.White.copy(alpha = 0.8f), modifier = Modifier.size(14.dp))
+                    Icon(
+                        Icons.Default.LocationOn,
+                        null,
+                        tint = Color.White.copy(alpha = 0.8f),
+                        modifier = Modifier.size(14.dp)
+                    )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text("Tokyo, Japan", color = Color.White.copy(alpha = 0.8f), fontSize = 13.sp)
                 }
@@ -306,7 +325,9 @@ fun PastMemoryCard(place: String, date: String) {
                 painter = painterResource(id = R.drawable.ic_launcher_foreground),
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize().background(SurfaceContainerLow)
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(SurfaceContainerLow)
             )
         }
         Spacer(modifier = Modifier.height(12.dp))
@@ -334,7 +355,7 @@ fun AddTripOptionsContent(onDismiss: () -> Unit, onCreateNew: () -> Unit) {
                 color = OnSurface
             )
             Spacer(modifier = Modifier.height(24.dp))
-            
+
             TripOptionItem(
                 icon = Icons.Default.Add,
                 title = "Tạo chuyến đi mới",
@@ -372,7 +393,7 @@ fun AddTripOptionsContent(onDismiss: () -> Unit, onCreateNew: () -> Unit) {
                 color = OnSurfaceVariant
             )
             Spacer(modifier = Modifier.height(24.dp))
-            
+
             OutlinedTextField(
                 value = joinCode,
                 onValueChange = { joinCode = it.uppercase().take(6) },
@@ -388,7 +409,9 @@ fun AddTripOptionsContent(onDismiss: () -> Unit, onCreateNew: () -> Unit) {
             Spacer(modifier = Modifier.height(24.dp))
             Button(
                 onClick = onDismiss,
-                modifier = Modifier.fillMaxWidth().height(56.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
                 shape = RoundedCornerShape(20.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
             ) {
@@ -400,9 +423,9 @@ fun AddTripOptionsContent(onDismiss: () -> Unit, onCreateNew: () -> Unit) {
 
 @Composable
 fun TripOptionItem(
-    icon: androidx.compose.ui.graphics.vector.ImageVector, 
-    title: String, 
-    desc: String, 
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    title: String,
+    desc: String,
     color: Color,
     onClick: () -> Unit
 ) {
@@ -458,10 +481,20 @@ fun UpcomingTripItem(name: String, daysLeft: Int, onClick: () -> Unit) {
         }
         Spacer(modifier = Modifier.width(16.dp))
         Column(modifier = Modifier.weight(1f)) {
-            Text(text = name, fontWeight = FontWeight.ExtraBold, fontSize = 16.sp, color = OnSurface)
+            Text(
+                text = name,
+                fontWeight = FontWeight.ExtraBold,
+                fontSize = 16.sp,
+                color = OnSurface
+            )
             Spacer(modifier = Modifier.height(6.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.Timer, null, modifier = Modifier.size(14.dp), tint = SunsetOrange)
+                Icon(
+                    Icons.Default.Timer,
+                    null,
+                    modifier = Modifier.size(14.dp),
+                    tint = SunsetOrange
+                )
                 Spacer(modifier = Modifier.width(4.dp))
                 Text(
                     text = "Còn $daysLeft ngày nữa",

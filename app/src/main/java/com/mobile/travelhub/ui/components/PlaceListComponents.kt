@@ -147,11 +147,6 @@ fun PlaceListScreenContent(
                     }
                 }
             }
-
-            item {
-                PostsSectionHeader()
-            }
-
             when {
                 homeUiState.isLoading && homeUiState.posts.isEmpty() -> {
                     item {
@@ -438,23 +433,6 @@ private fun LocationCard(
     }
 }
 
-@Composable
-private fun PostsSectionHeader() {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 4.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(
-            text = "Posts",
-            style = MaterialTheme.typography.titleLarge,
-            color = VerdantOnSurface,
-            fontWeight = FontWeight.Bold
-        )
-    }
-}
 
 @Composable
 private fun FeedEmptyState(
@@ -511,21 +489,6 @@ fun FeedPostCard(
     onLikeClick: () -> Unit,
     onCommentClick: () -> Unit,
     actionsEnabled: Boolean = true
-) {
-    PostItemContent(
-        post = post,
-        onLikeClick = onLikeClick,
-        onCommentClick = onCommentClick,
-        actionsEnabled = actionsEnabled
-    )
-}
-
-@Composable
-private fun PostItemContent(
-    post: HomePostUiModel,
-    onLikeClick: () -> Unit,
-    onCommentClick: () -> Unit,
-    actionsEnabled: Boolean
 ) {
     val context = LocalContext.current
     val storageService = stringResource(R.string.storage_service)
@@ -587,11 +550,6 @@ private fun PostItemContent(
                     )
                 }
             }
-            Icon(
-                imageVector = Icons.Outlined.MoreHoriz,
-                contentDescription = null,
-                tint = VerdantOnSurfaceVariant
-            )
         }
 
         Box(
@@ -730,6 +688,7 @@ private fun PostItemContent(
         )
     }
 }
+
 
 private val VerdantPrimary = Color(0xFF60B2E5)
 private val VerdantSurfaceContainer = Color(0xFFEFF6EA)
