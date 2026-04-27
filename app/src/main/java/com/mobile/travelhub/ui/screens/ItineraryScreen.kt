@@ -8,7 +8,13 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.DirectionsWalk
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+
+
+import androidx.compose.material.icons.filled.DirectionsBus
+import androidx.compose.material.icons.filled.DirectionsRailway
+
 import androidx.compose.material.icons.filled.DirectionsTransit
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Schedule
@@ -19,6 +25,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -97,7 +104,12 @@ fun ItineraryScreen(onBack: () -> Unit) {
                         desc = "Thăm quan ngôi đền cổ nhất Tokyo",
                         duration = "Ở lại khoảng 2.5 giờ",
                         cost = "Free",
+
                         transportToNext = "🚇 Tàu điện ngầm Ginza Line (15 phút)",
+
+                        transportToNext = "Tàu điện ngầm Ginza Line (15 phút)",
+                        transportIcon = Icons.Default.DirectionsRailway,
+
                         isFirst = true
                     )
                 }
@@ -108,7 +120,12 @@ fun ItineraryScreen(onBack: () -> Unit) {
                         desc = "Ăn trưa tại khu vực chợ cá Tsukiji. Cần lấy số trước.",
                         duration = "Ăn trưa 1.5 giờ",
                         cost = "Dự kiến: $45.00/người",
+
                         transportToNext = "🚶 Đi bộ dọc khu phố (10 phút)",
+
+                        transportToNext = "Đi bộ dọc khu phố (10 phút)",
+                        transportIcon = Icons.AutoMirrored.Filled.DirectionsWalk,
+
                         isHighlight = true
                     )
                 }
@@ -119,7 +136,12 @@ fun ItineraryScreen(onBack: () -> Unit) {
                         desc = "Khám phá trung tâm điện tử và văn hóa anime",
                         duration = "Tham quan tự do 3 giờ",
                         cost = "Variable",
+
                         transportToNext = "🚌 Xe buýt trung tâm (20 phút)"
+
+                        transportToNext = "Xe buýt trung tâm (20 phút)",
+                        transportIcon = Icons.Default.DirectionsBus
+
                     )
                 }
                 item {
@@ -148,6 +170,10 @@ fun TimelineNode(
     duration: String = "",
     cost: String = "",
     transportToNext: String = "",
+
+
+    transportIcon: ImageVector = Icons.Default.DirectionsTransit,
+
     isFirst: Boolean = false,
     isLast: Boolean = false,
     isHighlight: Boolean = false
@@ -266,7 +292,11 @@ fun TimelineNode(
             if (transportToNext.isNotEmpty() && !isLast) {
                 Spacer(modifier = Modifier.height(16.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
+
                     Icon(Icons.Default.DirectionsTransit, null, modifier = Modifier.size(18.dp), tint = OnSurfaceVariant)
+
+                    Icon(transportIcon, null, modifier = Modifier.size(18.dp), tint = OnSurfaceVariant)
+
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = transportToNext,

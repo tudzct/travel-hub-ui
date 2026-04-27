@@ -10,12 +10,23 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+
+
+import androidx.compose.material.icons.filled.ConfirmationNumber
+import androidx.compose.material.icons.filled.Hotel
+import androidx.compose.material.icons.filled.Restaurant
+import androidx.compose.material.icons.filled.Train
+
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+
+
+import androidx.compose.ui.graphics.vector.ImageVector
+
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -261,6 +272,7 @@ fun MemberExpenseCircle(name: String, amount: Double, color: Color) {
                 .size(40.dp)
                 .clip(CircleShape)
                 .background(color.copy(alpha = 0.1f)),
+
             contentAlignment = Alignment.Center
         ) {
             Image(painterResource(id = R.drawable.ic_launcher_foreground), null, modifier = Modifier.size(24.dp))
@@ -268,6 +280,62 @@ fun MemberExpenseCircle(name: String, amount: Double, color: Color) {
         Spacer(modifier = Modifier.height(8.dp))
         Text(name, fontWeight = FontWeight.Bold, fontSize = 12.sp, color = OnSurface)
         Text("$${amount.toInt()}", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = color)
+
+            contentAlignment = Alignment.Center
+        ) {
+            Image(painterResource(id = R.drawable.ic_launcher_foreground), null, modifier = Modifier.size(24.dp))
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(name, fontWeight = FontWeight.Bold, fontSize = 12.sp, color = OnSurface)
+        Text("$${amount.toInt()}", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = color)
+    }
+}
+
+@Composable
+fun ExpenseRow(expense: ExpenseItemData) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(20.dp))
+            .background(SurfaceContainerLowest)
+            .padding(16.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(44.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .background(SurfaceContainerLow),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = expenseCategoryIcon(expense.category),
+                contentDescription = null,
+                tint = PrimaryBlue,
+                modifier = Modifier.size(22.dp)
+            )
+        }
+        
+        Spacer(modifier = Modifier.width(16.dp))
+        
+        Column(modifier = Modifier.weight(1f)) {
+            Text(expense.title, fontWeight = FontWeight.Bold, fontSize = 15.sp, color = OnSurface)
+            Text("Trả bởi ${expense.paidBy}", fontSize = 12.sp, color = OnSurfaceVariant)
+        }
+        
+        Text("$${expense.amount.toInt()}", fontWeight = FontWeight.ExtraBold, fontSize = 16.sp, color = PrimaryBlue)
+    }
+}
+
+data class ExpenseItemData(val title: String, val paidBy: String, val amount: Double, val category: String)
+
+private fun expenseCategoryIcon(category: String): ImageVector {
+    return when (category) {
+        "Food" -> Icons.Default.Restaurant
+        "Stay" -> Icons.Default.Hotel
+        "Transport" -> Icons.Default.Train
+        else -> Icons.Default.ConfirmationNumber
+
     }
 }
 

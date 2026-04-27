@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">Travel Hub</string>
+    <string name="default_notification_channel_id"></string>
+    <string name="storage_service">"https://qhcektghcscbldtnfdir.supabase.co/storage/v1/object/public/mobile-travel-hub"</string>
 </resources>

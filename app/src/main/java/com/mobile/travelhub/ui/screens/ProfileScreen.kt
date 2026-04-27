@@ -27,25 +27,41 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+
 import androidx.lifecycle.viewmodel.compose.viewModel
+
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+
+
 import com.mobile.travelhub.R
-import com.mobile.travelhub.ui.components.PostGrid
+import com.mobile.travelhub.ui.components.FeedPostCard
 import com.mobile.travelhub.ui.components.PrimaryProfileButton
 import com.mobile.travelhub.ui.components.ProfileHeader
 import com.mobile.travelhub.ui.components.ProfileStats
+
 import com.mobile.travelhub.ui.viewmodels.ProfileViewModel
 import com.mobile.travelhub.ui.viewmodels.UiState
 import com.mobile.travelhub.ui.theme.*
+
+import com.mobile.travelhub.ui.theme.*
+import com.mobile.travelhub.ui.components.SecondaryProfileButton
+import com.mobile.travelhub.ui.theme.SurfaceContainerLow
+import com.mobile.travelhub.viewmodels.ProfileViewModel
+import com.mobile.travelhub.viewmodels.UiState
+
 
 @Composable
 fun ProfileScreen(
     onNavigateToEditProfile: () -> Unit,
     onNavigateToFollowers: () -> Unit,
     onNavigateToFollowing: () -> Unit,
+    onNavigateToHistory: (() -> Unit)? = null,
+    onLogout: (() -> Unit)? = null,
+    onRequireLogin: (() -> Unit)? = null,
     viewingUserId: Long? = null,
     onNavigateToChat: (() -> Unit)? = null,
     onBack: (() -> Unit)? = null,
-    viewModel: ProfileViewModel = viewModel()
+    viewModel: ProfileViewModel = hiltViewModel()
 ) {
     val isViewingOwnProfile = viewingUserId == null
     
@@ -54,16 +70,32 @@ fun ProfileScreen(
     } else {
         viewModel.otherUserProfileState.collectAsState()
     }
-    
+    val profilePostsState by viewModel.profilePostsState.collectAsState()
+    val unauthorized by viewModel.unauthorized.collectAsState()
+
     val scrollState = rememberScrollState()
 
     LaunchedEffect(Unit) {
         if (isViewingOwnProfile) {
             viewModel.loadUserProfile()
+            viewModel.loadUserPosts()
         } else {
-            viewingUserId?.let { viewModel.loadOtherUserProfile(it) }
+            viewingUserId?.let {
+                viewModel.loadOtherUserProfile(it)
+                viewModel.loadUserPosts(it)
+            }
         }
     }
+    LaunchedEffect(unauthorized) {
+        if (unauthorized && isViewingOwnProfile) {
+            viewModel.clearUnauthorized()
+            onRequireLogin?.invoke()
+        }
+    }
+
+
+    val showTopBar = !isViewingOwnProfile
+
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -106,8 +138,20 @@ fun ProfileScreen(
                 }
                 is UiState.Error -> {
                     ErrorLayout(message = state.message) {
+
                         if (isViewingOwnProfile) viewModel.loadUserProfile() 
                         else viewingUserId?.let { viewModel.loadOtherUserProfile(it) }
+
+                        if (isViewingOwnProfile) {
+                            viewModel.loadUserProfile()
+                            viewModel.loadUserPosts()
+                        } else {
+                            viewingUserId?.let {
+                                viewModel.loadOtherUserProfile(it)
+                                viewModel.loadUserPosts(it)
+                            }
+                        }
+
                     }
                 }
                 is UiState.Success -> {
@@ -128,12 +172,44 @@ fun ProfileScreen(
                         Spacer(modifier = Modifier.height(24.dp))
 
                         if (isViewingOwnProfile) {
+
                             Box(modifier = Modifier.padding(horizontal = 24.dp)) {
                                 PrimaryProfileButton(
                                     text = "Edit Profile",
                                     onClick = onNavigateToEditProfile,
                                     modifier = Modifier.fillMaxWidth()
                                 )
+
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 24.dp)
+                            ) {
+                                Column(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                                ) {
+                                    PrimaryProfileButton(
+                                        text = "Edit Profile",
+                                        onClick = onNavigateToEditProfile,
+                                        modifier = Modifier.fillMaxWidth()
+                                    )
+                                    onNavigateToHistory?.let { navigate ->
+                                        SecondaryProfileButton(
+                                            text = "View Place History",
+                                            onClick = navigate,
+                                            modifier = Modifier.fillMaxWidth()
+                                        )
+                                    }
+                                    onLogout?.let { logout ->
+                                        SecondaryProfileButton(
+                                            text = "Đăng xuất",
+                                            onClick = logout,
+                                            modifier = Modifier.fillMaxWidth()
+                                        )
+                                    }
+                                }
+
                             }
                         } else {
                             Row(
@@ -151,6 +227,7 @@ fun ProfileScreen(
                                     ),
                                     modifier = Modifier.weight(1f).height(48.dp)
                                 ) {
+
                                     Text(text = if (profile.isFollowing) "Unfollow" else "Follow", fontWeight = FontWeight.Bold)
                                 }
                                 
@@ -161,6 +238,32 @@ fun ProfileScreen(
                                     modifier = Modifier.weight(1f).height(48.dp)
                                 ) {
                                     Text(text = "Chat", fontWeight = FontWeight.Bold)
+
+                                    Text(
+                                        text = if (profile.isFollowing) "Unfollow" else "Follow",
+                                        style = MaterialTheme.typography.labelMedium,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                                
+                                Button(
+                                    onClick = {
+                                        viewingUserId?.let { viewModel.loadOtherUserProfile(it) }
+                                        onNavigateToChat?.invoke()
+                                    },
+                                    shape = RoundedCornerShape(8.dp),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = PrimaryBlue,
+                                        contentColor = MaterialTheme.colorScheme.onPrimary
+                                    ),
+                                    modifier = Modifier.weight(1f).height(48.dp)
+                                ) {
+                                    Text(
+                                        text = "Chat",
+                                        style = MaterialTheme.typography.labelMedium,
+                                        fontWeight = FontWeight.Bold
+                                    )
+
                                 }
                             }
                         }
@@ -185,6 +288,7 @@ fun ProfileScreen(
                                 .padding(top = 24.dp, bottom = 100.dp)
                         ) {
                             Text(
+
                                 text = "GALLERY",
                                 fontWeight = FontWeight.ExtraBold,
                                 fontSize = 13.sp,
@@ -197,6 +301,71 @@ fun ProfileScreen(
                                 posts = posts,
                                 onPostClick = { /* View post details */ }
                             )
+
+                                text = "POSTS",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.ExtraBold,
+                                modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+
+                            when {
+                                profilePostsState.isLoading -> {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(vertical = 24.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        CircularProgressIndicator(color = PrimaryBlue)
+                                    }
+                                }
+
+                                !profilePostsState.errorMessage.isNullOrBlank() -> {
+                                    Column(
+                                        modifier = Modifier.padding(horizontal = 24.dp),
+                                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                                    ) {
+                                        Text(
+                                            text = profilePostsState.errorMessage.orEmpty(),
+                                            color = MaterialTheme.colorScheme.error
+                                        )
+                                        Button(
+                                            onClick = {
+                                            if (isViewingOwnProfile) {
+                                                viewModel.loadUserPosts()
+                                            } else {
+                                                viewingUserId?.let(viewModel::loadUserPosts)
+                                            }
+                                        },
+                                            colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
+                                        ) {
+                                            Icon(Icons.Default.Refresh, contentDescription = null)
+                                            Text(" Try Again", modifier = Modifier.padding(start = 8.dp))
+                                        }
+                                    }
+                                }
+
+                                profilePostsState.posts.isEmpty() -> {
+                                    Text(
+                                        text = "Chưa có bài viết nào.",
+                                        modifier = Modifier.padding(horizontal = 24.dp),
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+
+                                else -> {
+                                    profilePostsState.posts.forEach { post ->
+                                        FeedPostCard(
+                                            post = post,
+                                            onLikeClick = {},
+                                            onCommentClick = {},
+                                            actionsEnabled = false
+                                        )
+                                    }
+                                }
+                            }
+
                         }
                     }
                 }

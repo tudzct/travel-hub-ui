@@ -5,14 +5,28 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
-import com.mobile.travelhub.ui.screens.*
+import com.mobile.travelhub.ui.screens.CostEstimateScreen
+import com.mobile.travelhub.ui.screens.CreateGroupScreen
+import com.mobile.travelhub.ui.screens.EditProfileScreen
+import com.mobile.travelhub.ui.screens.FollowersFollowingScreen
+import com.mobile.travelhub.ui.screens.GroupChatScreen
+import com.mobile.travelhub.ui.screens.GroupDetailScreen
+import com.mobile.travelhub.ui.screens.GroupDiscoveryScreen
+import com.mobile.travelhub.ui.screens.HomeScreen
+import com.mobile.travelhub.ui.screens.ItineraryBotScreen
+import com.mobile.travelhub.ui.screens.ItineraryScreen
+import com.mobile.travelhub.ui.screens.ProfileScreen
 
 sealed class Screen(val route: String, val index: Int) {
     data object Home : Screen("home", 0)
@@ -28,6 +42,7 @@ sealed class Screen(val route: String, val index: Int) {
             return "followers_following/$tabIndex/$normalizedUserId"
         }
     }
+
     data object CreateGroup : Screen("create_group", 7)
     data object GroupDetail : Screen("group_detail/{groupName}", 8) {
         fun createRoute(groupName: String) = "group_detail/$groupName"
@@ -41,17 +56,33 @@ sealed class Screen(val route: String, val index: Int) {
     data object CostEstimate : Screen("cost_estimate/{groupName}", 11) {
         fun createRoute(groupName: String) = "cost_estimate/$groupName"
     }
-    data object GroupDiscovery : Screen("group_discovery", 12)
-    data object RouteMap : Screen("route_map", 13)
 
     data object Chat : Screen("chat", 3)
 
     companion object {
         fun fromRoute(route: String?): Screen? {
             return when (route?.substringBefore("/")) {
+                OnboardingIntro.route -> OnboardingIntro
+                OnboardingTripType.route -> OnboardingTripType
+                OnboardingDestination.route -> OnboardingDestination
+                OnboardingFinish.route -> OnboardingFinish
+                Home.route -> Home
+                Trips.route -> Trips
+                CreatePost.route -> CreatePost
+                Profile.route -> Profile
+                Chat.route -> Chat
+                PlaceDetail.route -> PlaceDetail
+                PlaceReviews.route -> PlaceReviews
+                ViewHistory.route -> ViewHistory
+                Login.route -> Login
+                Register.route -> Register
+                //mẻge from trường
                 "home" -> Home
                 "trips" -> Trips
+                "create_post" -> CreatePost
                 "profile" -> Profile
+                "place" -> PlaceDetail
+                "history" -> ViewHistory
                 "profile_user" -> Profile
                 "edit_profile" -> EditProfile
                 "followers_following" -> FollowersFollowing
@@ -79,11 +110,46 @@ fun getDirection(
         SlideDirection.Right
     }
 }
+
 @Composable
-fun NavGraph(navController: NavHostController, innerPadding: PaddingValues) {
+fun NavGraph(
+    navController: NavHostController,
+    innerPadding: PaddingValues,
+    startDestination: String,
+    authUiState: AuthUiState,
+    onLogin: (String, String) -> Unit,
+    onRegister: (String, String, String) -> Unit,
+    onClearAuthError: () -> Unit,
+    onLogout: () -> Unit,
+    onCompleteOnboarding: () -> Unit,
+    onboardingViewModel: OnboardingViewModel
+) {
+    val onboardingUiState by onboardingViewModel.uiState.collectAsState()
+    val currentRoute = navController.currentBackStackEntry?.destination?.route?.substringBefore("/")
+
+    fun navigateToPlaceDetail(place: TravelPlaceListItemResponse) {
+        navController.currentBackStackEntry?.savedStateHandle?.set(PLACE_DETAIL_PLACE_KEY, place)
+        navController.navigate(Screen.PlaceDetail.createRoute(place.id))
+    }
+
+    LaunchedEffect(authUiState.isAuthenticated, currentRoute) {
+        val isAuthRoute = currentRoute == Screen.Login.route || currentRoute == Screen.Register.route
+        if (authUiState.isAuthenticated && isAuthRoute) {
+            val destination = if (!authUiState.isOnboarded) {
+                Screen.OnboardingTripType.route
+            } else {
+                Screen.Home.route
+            }
+            navController.navigate(destination) {
+                popUpTo(Screen.Login.route) { inclusive = true }
+                launchSingleTop = true
+            }
+        }
+    }
+
     NavHost(
         navController = navController,
-        startDestination = Screen.Home.route,
+        startDestination = startDestination,
         enterTransition = {
             slideIntoContainer(
                 towards = getDirection(initialState, targetState),
@@ -98,25 +164,154 @@ fun NavGraph(navController: NavHostController, innerPadding: PaddingValues) {
         },
         modifier = Modifier.padding(innerPadding)
     ) {
+        composable(Screen.Login.route) {
+            LoginScreen(
+                uiState = authUiState,
+                onLogin = onLogin,
+                onNavigateToRegister = { navController.navigate(Screen.Register.route) },
+                onDismissError = onClearAuthError
+            )
+        }
+        composable(Screen.Register.route) {
+            RegisterScreen(
+                uiState = authUiState,
+                onRegister = onRegister,
+                onNavigateToLogin = { navController.popBackStack() },
+                onDismissError = onClearAuthError
+            )
+        }
+        composable(Screen.OnboardingTripType.route) {
+            OnboardingTripTypeScreen(
+                onSkip = {
+                    onCompleteOnboarding()
+                    val destination = if (authUiState.isAuthenticated) Screen.Home.route else Screen.Login.route
+                    navController.navigate(destination) {
+                        popUpTo(Screen.OnboardingIntro.route) { inclusive = true }
+                    }
+                },
+                onContinue = { selectedTripType ->
+                    onboardingViewModel.updateTripType(selectedTripType)
+                    navController.navigate(Screen.OnboardingIntro.route)
+                },
+                onPrevious = { navController.popBackStack() },
+                onBack = { navController.popBackStack() }
+            )
+        }
+        composable(Screen.OnboardingIntro.route) {
+            OnboardingInterestsScreen(
+                initialSelected = onboardingUiState.interests,
+                onSkip = {
+                    onCompleteOnboarding()
+                    val destination = if (authUiState.isAuthenticated) Screen.Home.route else Screen.Login.route
+                    navController.navigate(destination) {
+                        popUpTo(Screen.OnboardingIntro.route) { inclusive = true }
+                    }
+                },
+                onContinue = { selectedInterests ->
+                    onboardingViewModel.updateInterests(selectedInterests)
+                    navController.navigate(Screen.OnboardingDestination.route)
+                },
+                onPrevious = { navController.navigateUp() },
+                onBack = { navController.popBackStack() }
+            )
+        }
+        composable(Screen.OnboardingDestination.route) {
+            OnboardingIntroScreen(
+                onSkip = {
+                    onCompleteOnboarding()
+                    val destination = if (authUiState.isAuthenticated) Screen.Home.route else Screen.Login.route
+                    navController.navigate(destination) {
+                        popUpTo(Screen.OnboardingIntro.route) { inclusive = true }
+                    }
+                },
+                onContinue = {
+                    navController.navigate(Screen.OnboardingFinish.route)
+                },
+                onPrevious = { navController.navigateUp() },
+                onBack = { navController.popBackStack() }
+            )
+        }
+        composable(Screen.OnboardingFinish.route) {
+
+            OnboardingFinishScreen(
+                selectedInterests = onboardingUiState.interests,
+                selectedTripType = onboardingUiState.tripType,
+                selectedDestination = onboardingUiState.destination,
+                startDate = onboardingUiState.startDate,
+                endDate = onboardingUiState.endDate,
+                travelers = onboardingUiState.travelers,
+                budgetLevel = onboardingUiState.budgetLevel,
+                isSyncingPreferences = onboardingUiState.isSyncingPreferences,
+                syncErrorMessage = onboardingUiState.preferenceSyncErrorMessage,
+                onSkip = {
+                    onCompleteOnboarding()
+                    val destination = if (authUiState.isAuthenticated) Screen.Home.route else Screen.Login.route
+                    navController.navigate(destination) {
+                        popUpTo(Screen.OnboardingIntro.route) { inclusive = true }
+                    }
+                },
+                onContinue = {
+                    if (!authUiState.isAuthenticated) {
+                        navController.navigate(Screen.Login.route) {
+                            popUpTo(Screen.OnboardingIntro.route) { inclusive = true }
+                        }
+                    } else {
+                        onboardingViewModel.syncPreferences {
+                            onCompleteOnboarding()
+                            navController.navigate(Screen.Home.route) {
+                                popUpTo(Screen.OnboardingIntro.route) { inclusive = true }
+                            }
+                        }
+                    }
+                },
+                onPrevious = { navController.navigateUp() },
+                onBack = { navController.navigateUp() }
+            )
+        }
         composable(Screen.Home.route) {
-            HomeScreen()
+            PlaceListScreen(
+                onPlaceClick = ::navigateToPlaceDetail
+            )
         }
         composable(Screen.Trips.route) {
-            TripsScreen(
+            GroupDiscoveryScreen(
+                onNavigateToCreateGroup = { navController.navigate(Screen.CreateGroup.route) { launchSingleTop = true } },
                 onNavigateToGroupDetail = { groupName -> 
                     navController.navigate(Screen.GroupDetail.createRoute(groupName)) { launchSingleTop = true } 
-                },
-                onNavigateToCreateGroup = {
-                    navController.navigate(Screen.CreateGroup.route) { launchSingleTop = true }
                 }
             )
         }
         composable(Screen.Profile.route) {
+            if (!authUiState.isAuthenticated) {
+                LaunchedEffect(Unit) {
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(navController.graph.findStartDestination().id) { inclusive = false }
+                        launchSingleTop = true
+                    }
+                }
+                return@composable
+            }
+            //^^^^ tu^^^^
             ProfileScreen(
                 onNavigateToEditProfile = { navController.navigate(Screen.EditProfile.route) { launchSingleTop = true } },
                 onNavigateToFollowers = { navController.navigate(Screen.FollowersFollowing.createRoute(0, null)) { launchSingleTop = true } },
                 onNavigateToFollowing = { navController.navigate(Screen.FollowersFollowing.createRoute(1, null)) { launchSingleTop = true } },
-                onNavigateToChat = { navController.navigate(Screen.Chat.route) { launchSingleTop = true } }
+                onNavigateToHistory = { navController.navigate(Screen.ViewHistory.route) { launchSingleTop = true } },
+                onNavigateToChat = { navController.navigate(Screen.Chat.route) { launchSingleTop = true } },
+                onLogout = {
+                    onLogout()
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(navController.graph.findStartDestination().id) { inclusive = false }
+                        launchSingleTop = true
+                    }
+                },
+                onRequireLogin = {
+                    onLogout()
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(navController.graph.findStartDestination().id) { inclusive = false }
+                        launchSingleTop = true
+                    }
+                }
             )
         }
         composable(
@@ -128,6 +323,8 @@ fun NavGraph(navController: NavHostController, innerPadding: PaddingValues) {
                 onNavigateToEditProfile = {},
                 onNavigateToFollowers = { navController.navigate(Screen.FollowersFollowing.createRoute(0, userId)) { launchSingleTop = true } },
                 onNavigateToFollowing = { navController.navigate(Screen.FollowersFollowing.createRoute(1, userId)) { launchSingleTop = true } },
+                onNavigateToHistory = null,
+                onRequireLogin = null,
                 viewingUserId = userId,
                 onNavigateToChat = {
                     navController.navigate(Screen.Chat.route) {
@@ -174,19 +371,13 @@ fun NavGraph(navController: NavHostController, innerPadding: PaddingValues) {
             )
         }
 
-        composable(Screen.Chat.route) {
-            ItineraryBotScreen(
-                onBack = { navController.popBackStack() }
-            )
-        }
-        
         composable(Screen.CreateGroup.route) {
             CreateGroupScreen(
                 onBack = { navController.popBackStack() },
                 onCreate = { navController.popBackStack() }
             )
         }
-        
+
         composable(
             route = Screen.GroupDetail.route,
             arguments = listOf(navArgument("groupName") { type = NavType.StringType })
@@ -202,7 +393,7 @@ fun NavGraph(navController: NavHostController, innerPadding: PaddingValues) {
                 onNavigateToCost = { navController.navigate(Screen.CostEstimate.createRoute(groupName)) { launchSingleTop = true } }
             )
         }
-        
+
         composable(
             route = Screen.GroupChat.route,
             arguments = listOf(navArgument("groupName") { type = NavType.StringType })
@@ -213,16 +404,17 @@ fun NavGraph(navController: NavHostController, innerPadding: PaddingValues) {
                 onBack = { navController.popBackStack() }
             )
         }
-        
+
         composable(
             route = Screen.Itinerary.route,
             arguments = listOf(navArgument("groupName") { type = NavType.StringType })
         ) {
             ItineraryScreen(
+                groupName = groupName,
                 onBack = { navController.popBackStack() }
             )
         }
-        
+
         composable(
             route = Screen.CostEstimate.route,
             arguments = listOf(navArgument("groupName") { type = NavType.StringType })
@@ -230,18 +422,6 @@ fun NavGraph(navController: NavHostController, innerPadding: PaddingValues) {
             val groupName = backStackEntry.arguments?.getString("groupName") ?: "Cost Estimate"
             CostEstimateScreen(
                 groupName = groupName,
-                onBack = { navController.popBackStack() }
-            )
-        }
-        
-        composable(Screen.GroupDiscovery.route) {
-            GroupDiscoveryScreen(
-                onBack = { navController.popBackStack() }
-            )
-        }
-        
-        composable(Screen.RouteMap.route) {
-            RouteMapScreen(
                 onBack = { navController.popBackStack() }
             )
         }
