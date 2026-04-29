@@ -1,0 +1,314 @@
+package com.mobile.travelhub.ui.components.itinerary
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
+import com.mobile.travelhub.data.model.ItineraryEvent
+import com.mobile.travelhub.data.model.ItineraryEventColors
+import com.mobile.travelhub.ui.theme.OnSurface
+import com.mobile.travelhub.ui.theme.OnSurfaceVariant
+import com.mobile.travelhub.ui.theme.PrimaryBlue
+import com.mobile.travelhub.ui.theme.SurfaceContainerLow
+import com.mobile.travelhub.ui.theme.SurfaceContainerLowest
+import com.mobile.travelhub.ui.theme.SunsetOrange
+
+@Composable
+fun ItineraryEventEditorDialog(
+    event: ItineraryEvent,
+    dayCount: Int,
+    isCreating: Boolean,
+    onDismiss: () -> Unit,
+    onSave: (ItineraryEvent) -> Unit,
+    onDelete: () -> Unit
+) {
+    var selectedDay by remember(event.eventId) { mutableStateOf(event.dayIndex) }
+    var startTime by remember(event.eventId) { mutableStateOf(event.startTime) }
+    var endTime by remember(event.eventId) { mutableStateOf(event.endTime) }
+    var title by remember(event.eventId) { mutableStateOf(event.title) }
+    var placeName by remember(event.eventId) { mutableStateOf(event.placeName) }
+    var note by remember(event.eventId) { mutableStateOf(event.note) }
+    var transport by remember(event.eventId) { mutableStateOf(event.transportToNext) }
+    var cost by remember(event.eventId) { mutableStateOf(event.estimatedCost) }
+    var highlighted by remember(event.eventId) { mutableStateOf(event.isHighlighted) }
+    var colorHex by remember(event.eventId) { mutableStateOf(event.colorHex) }
+
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp),
+            shape = RoundedCornerShape(32.dp),
+            color = SurfaceContainerLowest
+        ) {
+            Column(
+                modifier = Modifier
+                    .verticalScroll(rememberScrollState())
+                    .padding(20.dp),
+                verticalArrangement = Arrangement.spacedBy(18.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(
+                            brush = Brush.linearGradient(
+                                colors = listOf(
+                                    PrimaryBlue.copy(alpha = 0.18f),
+                                    SunsetOrange.copy(alpha = 0.12f)
+                                )
+                            ),
+                            shape = RoundedCornerShape(24.dp)
+                        )
+                        .padding(18.dp)
+                ) {
+                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text(
+                            text = if (isCreating) "Add stop" else "Edit stop",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = OnSurface
+                        )
+                        Text(
+                            text = if (isCreating) {
+                                "Create a new itinerary event for the selected day."
+                            } else {
+                                "Refine timing, place, notes, and highlight status without leaving the itinerary."
+                            },
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = OnSurfaceVariant,
+                            lineHeight = 20.sp
+                        )
+                    }
+                }
+
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text(
+                        text = "Day",
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = OnSurfaceVariant
+                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        for (day in 1..dayCount) {
+                            FilterChip(
+                                selected = selectedDay == day,
+                                onClick = { selectedDay = day },
+                                label = { Text("Day $day") }
+                            )
+                        }
+                    }
+                }
+
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    ItineraryEditorField(
+                        value = startTime,
+                        onValueChange = { startTime = it },
+                        label = "Start",
+                        modifier = Modifier.weight(1f)
+                    )
+                    ItineraryEditorField(
+                        value = endTime,
+                        onValueChange = { endTime = it },
+                        label = "End",
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+
+                ItineraryEditorField(
+                    value = title,
+                    onValueChange = { title = it },
+                    label = "Title"
+                )
+                ItineraryEditorField(
+                    value = placeName,
+                    onValueChange = { placeName = it },
+                    label = "Place"
+                )
+                ItineraryEditorField(
+                    value = note,
+                    onValueChange = { note = it },
+                    label = "Note",
+                    minLines = 3
+                )
+                ItineraryEditorField(
+                    value = transport,
+                    onValueChange = { transport = it },
+                    label = "Transport to next"
+                )
+                ItineraryEditorField(
+                    value = cost,
+                    onValueChange = { cost = it },
+                    label = "Estimated cost"
+                )
+
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text(
+                        text = "Color",
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = OnSurfaceVariant
+                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        ItineraryEventColors.Palette.forEach { option ->
+                            EventColorSwatch(
+                                colorHex = option,
+                                selected = colorHex == option,
+                                onClick = { colorHex = option }
+                            )
+                        }
+                    }
+                }
+
+                Surface(
+                    color = SurfaceContainerLow,
+                    shape = RoundedCornerShape(22.dp)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 14.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Highlight this stop",
+                                fontWeight = FontWeight.Bold,
+                                color = OnSurface
+                            )
+                            Text(
+                                text = "Use this for anchor stops you want to emphasize on the timeline.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = OnSurfaceVariant,
+                                lineHeight = 18.sp
+                            )
+                        }
+                        Switch(checked = highlighted, onCheckedChange = { highlighted = it })
+                    }
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    if (!isCreating) {
+                        TextButton(onClick = onDelete) {
+                            Text("Delete stop", color = SunsetOrange)
+                        }
+                        Spacer(modifier = Modifier.weight(1f))
+                    }
+                    TextButton(onClick = onDismiss) {
+                        Text("Cancel")
+                    }
+                    TextButton(
+                        onClick = {
+                            onSave(
+                                event.copy(
+                                    dayIndex = selectedDay,
+                                    startTime = startTime.trim(),
+                                    endTime = endTime.trim(),
+                                    title = title.trim(),
+                                    placeName = placeName.trim(),
+                                    note = note.trim(),
+                                    transportToNext = transport.trim(),
+                                    estimatedCost = cost.trim(),
+                                    isHighlighted = highlighted,
+                                    colorHex = colorHex
+                                )
+                            )
+                        }
+                    ) {
+                        Text(if (isCreating) "Add stop" else "Save changes")
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun EventColorSwatch(
+    colorHex: Long,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    val color = colorHex.toItineraryColor()
+    Box(
+        modifier = Modifier
+            .size(32.dp)
+            .clip(CircleShape)
+            .background(color)
+            .border(
+                width = if (selected) 3.dp else 1.dp,
+                color = if (selected) OnSurface else color.copy(alpha = 0.22f),
+                shape = CircleShape
+            )
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center
+    ) {
+        if (selected) {
+            Icon(
+                imageVector = Icons.Default.Check,
+                contentDescription = null,
+                tint = Color.White,
+                modifier = Modifier.size(16.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun ItineraryEditorField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    label: String,
+    modifier: Modifier = Modifier,
+    minLines: Int = 1
+) {
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
+        label = { Text(label) },
+        modifier = modifier.fillMaxWidth(),
+        minLines = minLines
+    )
+}

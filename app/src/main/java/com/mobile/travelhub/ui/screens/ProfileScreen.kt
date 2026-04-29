@@ -8,9 +8,12 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.AddCircle
+import androidx.compose.material.icons.outlined.PhotoCamera
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -28,16 +31,18 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.border
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.clickable
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 
 import com.mobile.travelhub.R
 import com.mobile.travelhub.ui.components.FeedPostCard
-import com.mobile.travelhub.ui.components.PrimaryProfileButton
-import com.mobile.travelhub.ui.components.ProfileHeader
-import com.mobile.travelhub.ui.components.ProfileStats
 import com.mobile.travelhub.ui.theme.*
-import com.mobile.travelhub.ui.components.SecondaryProfileButton
-import com.mobile.travelhub.ui.theme.SurfaceContainerLow
 import com.mobile.travelhub.viewmodels.ProfileViewModel
 import com.mobile.travelhub.viewmodels.UiState
 
@@ -145,53 +150,117 @@ fun ProfileScreen(
                             .fillMaxSize()
                             .verticalScroll(scrollState)
                     ) {
-                        ProfileHeader(
-                            name = profile.name,
-                            handle = "@${profile.username}",
-                            bio = profile.bio ?: "Traveler & Explorer.",
-                            avatarRes = R.drawable.ic_launcher_foreground
-                        )
-
-                        Spacer(modifier = Modifier.height(24.dp))
-
-                        if (isViewingOwnProfile) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 24.dp)
-                            ) {
-                                Column(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                        // Top Row: Avatar and Stats
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 16.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            // Avatar
+                            Box(modifier = Modifier.size(80.dp)) {
+                                Image(
+                                    painter = painterResource(id = R.drawable.female_avatar_maker),
+                                    contentDescription = "Avatar",
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .clip(CircleShape)
+                                        .border(2.dp, Color(0xFFE0E0E0), CircleShape),
+                                    contentScale = ContentScale.Crop
+                                )
+                                // + icon
+                                Box(
+                                    modifier = Modifier
+                                        .align(Alignment.BottomEnd)
+                                        .offset(x = (-4).dp, y = (-4).dp)
+                                        .size(24.dp)
+                                        .background(Color.White, CircleShape)
+                                        .padding(2.dp)
                                 ) {
-                                    PrimaryProfileButton(
-                                        text = "Edit Profile",
-                                        onClick = onNavigateToEditProfile,
-                                        modifier = Modifier.fillMaxWidth()
+                                    Icon(
+                                        imageVector = Icons.Default.AddCircle,
+                                        contentDescription = "Add Story",
+                                        tint = PrimaryBlue,
+                                        modifier = Modifier.fillMaxSize()
                                     )
-                                    onNavigateToHistory?.let { navigate ->
-                                        SecondaryProfileButton(
-                                            text = "View Place History",
-                                            onClick = navigate,
-                                            modifier = Modifier.fillMaxWidth()
-                                        )
-                                    }
-                                    onLogout?.let { logout ->
-                                        SecondaryProfileButton(
-                                            text = "Đăng xuất",
-                                            onClick = logout,
-                                            modifier = Modifier.fillMaxWidth()
-                                        )
-                                    }
                                 }
                             }
-                        } else {
+
+                            Spacer(modifier = Modifier.width(24.dp))
+
+                            // Stats
                             Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 24.dp),
-                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                modifier = Modifier.weight(1f),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text(text = profile.postsCount.toString(), fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                                    Text(text = "Posts", fontSize = 12.sp, color = Color.Gray)
+                                }
+                                Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.clickable { onNavigateToFollowers() }) {
+                                    Text(text = profile.followersCount.toString(), fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                                    Text(text = "Followers", fontSize = 12.sp, color = Color.Gray)
+                                }
+                                Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.clickable { onNavigateToFollowing() }) {
+                                    Text(text = profile.followingCount.toString(), fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                                    Text(text = "Following", fontSize = 12.sp, color = Color.Gray)
+                                }
+                            }
+                        }
+
+                        // Bio section
+                        Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+                            Text(
+                                text = profile.name,
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold
+                            )
+                            if (!profile.bio.isNullOrBlank()) {
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = profile.bio,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = Color.DarkGray
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        // Action Buttons
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            if (isViewingOwnProfile) {
+                                Button(
+                                    onClick = onNavigateToEditProfile,
+                                    modifier = Modifier.weight(1f).height(36.dp),
+                                    shape = RoundedCornerShape(8.dp),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = Color(0xFFEAEAF0),
+                                        contentColor = Color.Black
+                                    ),
+                                    contentPadding = PaddingValues(0.dp)
+                                ) {
+                                    Text("Edit Profile", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold)
+                                }
+                                Button(
+                                    onClick = { /* Share Profile Action */ },
+                                    modifier = Modifier.weight(1f).height(36.dp),
+                                    shape = RoundedCornerShape(8.dp),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = Color(0xFFEAEAF0),
+                                        contentColor = Color.Black
+                                    ),
+                                    contentPadding = PaddingValues(0.dp)
+                                ) {
+                                    Text("Share Profile", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold)
+                                }
+                            } else {
                                 Button(
                                     onClick = { 
                                         viewingUserId?.let { 
@@ -200,15 +269,16 @@ fun ProfileScreen(
                                     },
                                     shape = RoundedCornerShape(8.dp),
                                     colors = ButtonDefaults.buttonColors(
-                                        containerColor = if (profile.isFollowing) SurfaceContainerLow else PrimaryBlue,
-                                        contentColor = if (profile.isFollowing) PrimaryBlue else Color.White
+                                        containerColor = if (profile.isFollowing) Color(0xFFEAEAF0) else PrimaryBlue,
+                                        contentColor = if (profile.isFollowing) Color.Black else Color.White
                                     ),
-                                    modifier = Modifier.weight(1f).height(48.dp)
+                                    modifier = Modifier.weight(1f).height(36.dp),
+                                    contentPadding = PaddingValues(0.dp)
                                 ) {
                                     Text(
-                                        text = if (profile.isFollowing) "Unfollow" else "Follow",
+                                        text = if (profile.isFollowing) "Following" else "Follow",
                                         style = MaterialTheme.typography.labelMedium,
-                                        fontWeight = FontWeight.Bold
+                                        fontWeight = FontWeight.SemiBold
                                     )
                                 }
                                 
@@ -219,53 +289,30 @@ fun ProfileScreen(
                                     },
                                     shape = RoundedCornerShape(8.dp),
                                     colors = ButtonDefaults.buttonColors(
-                                        containerColor = PrimaryBlue,
-                                        contentColor = MaterialTheme.colorScheme.onPrimary
+                                        containerColor = Color(0xFFEAEAF0),
+                                        contentColor = Color.Black
                                     ),
-                                    modifier = Modifier.weight(1f).height(48.dp)
+                                    modifier = Modifier.weight(1f).height(36.dp),
+                                    contentPadding = PaddingValues(0.dp)
                                 ) {
                                     Text(
-                                        text = "Chat",
+                                        text = "Message",
                                         style = MaterialTheme.typography.labelMedium,
-                                        fontWeight = FontWeight.Bold
+                                        fontWeight = FontWeight.SemiBold
                                     )
                                 }
                             }
                         }
 
-                        Spacer(modifier = Modifier.height(32.dp))
+                        Spacer(modifier = Modifier.height(16.dp))
+                        HorizontalDivider(color = Color(0xFFF0F0F0))
 
-                        ProfileStats(
-                            postsCount = profile.postsCount,
-                            followersCount = profile.followersCount,
-                            followingCount = profile.followingCount,
-                            onPostsClick = {
-                                if (isViewingOwnProfile) {
-                                    onNavigateToEditProfile()
-                                } else {
-                                    viewingUserId?.let { viewModel.loadOtherUserProfile(it) }
-                                }
-                            },
-                            onFollowersClick = onNavigateToFollowers,
-                            onFollowingClick = onNavigateToFollowing
-                        )
-
-                        Spacer(modifier = Modifier.height(32.dp))
-
+                        // Posts Section
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .background(SurfaceContainerLow)
                                 .padding(top = 24.dp, bottom = 100.dp)
                         ) {
-                            Text(
-                                text = "POSTS",
-                                style = MaterialTheme.typography.labelMedium,
-                                fontWeight = FontWeight.ExtraBold,
-                                modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp),
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-
                             when {
                                 profilePostsState.isLoading -> {
                                     Box(
@@ -304,11 +351,47 @@ fun ProfileScreen(
                                 }
 
                                 profilePostsState.posts.isEmpty() -> {
-                                    Text(
-                                        text = "Chưa có bài viết nào.",
-                                        modifier = Modifier.padding(horizontal = 24.dp),
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
+                                    Column(
+                                        modifier = Modifier.fillMaxWidth().padding(horizontal = 32.dp, vertical = 32.dp),
+                                        horizontalAlignment = Alignment.CenterHorizontally
+                                    ) {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(80.dp)
+                                                .border(1.dp, Color.Gray, CircleShape),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Outlined.PhotoCamera,
+                                                contentDescription = "No Posts",
+                                                modifier = Modifier.size(40.dp),
+                                                tint = Color.Gray
+                                            )
+                                        }
+                                        Spacer(modifier = Modifier.height(16.dp))
+                                        Text(
+                                            text = "No Posts Yet",
+                                            style = MaterialTheme.typography.titleLarge,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                        Spacer(modifier = Modifier.height(8.dp))
+                                        Text(
+                                            text = "When you share photos, they will appear on your profile.",
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = Color.Gray,
+                                            textAlign = TextAlign.Center
+                                        )
+                                        Spacer(modifier = Modifier.height(24.dp))
+                                        if (isViewingOwnProfile) {
+                                            Button(
+                                                onClick = { /* navigate to create post */ },
+                                                shape = RoundedCornerShape(24.dp),
+                                                colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
+                                            ) {
+                                                Text("Create your first post", fontWeight = FontWeight.Bold)
+                                            }
+                                        }
+                                    }
                                 }
 
                                 else -> {
@@ -325,6 +408,7 @@ fun ProfileScreen(
                         }
                     }
                 }
+
                 else -> {}
             }
         }

@@ -3,10 +3,14 @@ package com.mobile.travelhub.ui.screens
 import androidx.activity.compose.LocalOnBackPressedDispatcherOwner
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.automirrored.outlined.DirectionsWalk
 import androidx.compose.material.icons.outlined.AccountCircle
-import androidx.compose.material.icons.outlined.ChatBubble
+import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.AutoAwesome
+import androidx.compose.material.icons.outlined.CalendarMonth
+import androidx.compose.material.icons.outlined.DirectionsWalk
 import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.TravelExplore
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -14,7 +18,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.composables.explorenavigationicon
 import com.mobile.travelhub.navigation.NavGraph
 import com.mobile.travelhub.navigation.Screen
 import com.mobile.travelhub.ui.components.layout.BottomNavItem
@@ -33,19 +36,31 @@ fun TravelHubScreen(
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
     val navItems = listOf(
-        BottomNavItem(screen = Screen.Home, icon = Icons.Outlined.Home, contentDescription = "Home"),
+        BottomNavItem(
+            screen = Screen.Home,
+            icon = Icons.Outlined.Home,
+            label = "Home"
+        ),
         BottomNavItem(
             screen = Screen.Trips,
-            icon = explorenavigationicon,
-            contentDescription = "Explore"
+            icon = Icons.Outlined.TravelExplore,
+            label = "Explore"
+        ),
+        BottomNavItem(
+            screen = Screen.Trips,
+            icon = Icons.AutoMirrored.Outlined.DirectionsWalk,
+            label = "Itinerary"
         ),
         BottomNavItem(
             screen = Screen.CreatePost,
             icon = Icons.Outlined.Add,
-            contentDescription = "Create Post"
+            label = "Create"
         ),
-        BottomNavItem(screen = Screen.Chat, icon = Icons.Outlined.ChatBubble, contentDescription = "Chat AI", badgeCount = 3),
-        BottomNavItem(screen = Screen.Profile, icon = Icons.Outlined.AccountCircle, contentDescription = "Profile")
+        BottomNavItem(
+            screen = Screen.Profile,
+            icon = Icons.Outlined.AccountCircle,
+            label = "Profile"
+        )
     )
 
     val startDestination = when {

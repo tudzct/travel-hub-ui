@@ -16,7 +16,6 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.mobile.travelhub.data.model.TravelPlaceListItemResponse
-import com.mobile.travelhub.ui.screens.ItineraryBotScreen
 import com.mobile.travelhub.ui.screens.OnboardingInterestsScreen
 import com.mobile.travelhub.ui.screens.OnboardingIntroScreen
 import com.mobile.travelhub.ui.screens.ProfileScreen
@@ -82,11 +81,14 @@ sealed class Screen(
     data object Itinerary : Screen("itinerary/{groupName}", 10) {
         fun createRoute(groupName: String) = "itinerary/$groupName"
     }
-    data object CostEstimate : Screen("cost_estimate/{groupName}", 11) {
+    data object ItineraryDayDetail : Screen("itinerary/{groupName}/day/{dayIndex}", 11) {
+        fun createRoute(groupName: String, dayIndex: Int) = "itinerary/$groupName/day/$dayIndex"
+    }
+    data object CostEstimate : Screen("cost_estimate/{groupName}", 12) {
         fun createRoute(groupName: String) = "cost_estimate/$groupName"
     }
-    data object GroupDiscovery : Screen("group_discovery", 12)
-    data object RouteMap : Screen("route_map", 13)
+    data object GroupDiscovery : Screen("group_discovery", 13)
+    data object RouteMap : Screen("route_map", 14)
 
     companion object {
         fun fromRoute(route: String?): Screen? {
@@ -451,7 +453,28 @@ fun NavGraph(
         ) { backStackEntry ->
             val groupName = backStackEntry.arguments?.getString("groupName") ?: "Itinerary"
             ItineraryScreen(
-//                groupName = groupName,
+                groupName = groupName,
+                onBack = { navController.popBackStack() },
+                onOpenDayDetail = { dayIndex ->
+                    navController.navigate(Screen.ItineraryDayDetail.createRoute(groupName, dayIndex)) {
+                        launchSingleTop = true
+                    }
+                }
+            )
+        }
+
+        composable(
+            route = Screen.ItineraryDayDetail.route,
+            arguments = listOf(
+                navArgument("groupName") { type = NavType.StringType },
+                navArgument("dayIndex") { type = NavType.IntType }
+            )
+        ) { backStackEntry ->
+            val groupName = backStackEntry.arguments?.getString("groupName") ?: "Itinerary"
+            val dayIndex = backStackEntry.arguments?.getInt("dayIndex") ?: 1
+            ItineraryDayDetailScreen(
+                groupName = groupName,
+                dayIndex = dayIndex,
                 onBack = { navController.popBackStack() }
             )
         }
@@ -467,9 +490,6 @@ fun NavGraph(
             )
         }
 
-        composable(Screen.Chat.route) {
-            ItineraryBotScreen()
-        }
         composable(
             route = Screen.PlaceDetail.route,
             arguments = listOf(navArgument("placeId") { type = NavType.LongType })
