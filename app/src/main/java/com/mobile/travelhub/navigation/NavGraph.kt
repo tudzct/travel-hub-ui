@@ -15,6 +15,20 @@ import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.mobile.travelhub.data.model.TravelPlaceListItemResponse
+import com.mobile.travelhub.ui.screens.OnboardingInterestsScreen
+import com.mobile.travelhub.ui.screens.OnboardingIntroScreen
+import com.mobile.travelhub.ui.screens.ProfileScreen
+import com.mobile.travelhub.ui.screens.OnboardingFinishScreen
+import com.mobile.travelhub.ui.screens.OnboardingTripTypeScreen
+import com.mobile.travelhub.ui.screens.LoginScreen
+import com.mobile.travelhub.ui.screens.PlaceDetailScreen
+import com.mobile.travelhub.ui.screens.PlaceListScreen
+import com.mobile.travelhub.ui.screens.ReviewListScreen
+
+import com.mobile.travelhub.ui.screens.RegisterScreen
+import com.mobile.travelhub.ui.screens.ViewHistoryScreen
+import com.mobile.travelhub.viewmodels.AuthUiState
 import androidx.navigation.navArgument
 import com.mobile.travelhub.ui.screens.CostEstimateScreen
 import com.mobile.travelhub.ui.screens.CreateGroupScreen
@@ -53,11 +67,14 @@ sealed class Screen(val route: String, val index: Int) {
     data object Itinerary : Screen("itinerary/{groupName}", 10) {
         fun createRoute(groupName: String) = "itinerary/$groupName"
     }
-    data object CostEstimate : Screen("cost_estimate/{groupName}", 11) {
+    data object ItineraryDayDetail : Screen("itinerary/{groupName}/day/{dayIndex}", 11) {
+        fun createRoute(groupName: String, dayIndex: Int) = "itinerary/$groupName/day/$dayIndex"
+    }
+    data object CostEstimate : Screen("cost_estimate/{groupName}", 12) {
         fun createRoute(groupName: String) = "cost_estimate/$groupName"
     }
-
-    data object Chat : Screen("chat", 3)
+    data object GroupDiscovery : Screen("group_discovery", 13)
+    data object RouteMap : Screen("route_map", 14)
 
     companion object {
         fun fromRoute(route: String?): Screen? {
@@ -411,6 +428,27 @@ fun NavGraph(
         ) {
             ItineraryScreen(
                 groupName = groupName,
+                onBack = { navController.popBackStack() },
+                onOpenDayDetail = { dayIndex ->
+                    navController.navigate(Screen.ItineraryDayDetail.createRoute(groupName, dayIndex)) {
+                        launchSingleTop = true
+                    }
+                }
+            )
+        }
+
+        composable(
+            route = Screen.ItineraryDayDetail.route,
+            arguments = listOf(
+                navArgument("groupName") { type = NavType.StringType },
+                navArgument("dayIndex") { type = NavType.IntType }
+            )
+        ) { backStackEntry ->
+            val groupName = backStackEntry.arguments?.getString("groupName") ?: "Itinerary"
+            val dayIndex = backStackEntry.arguments?.getInt("dayIndex") ?: 1
+            ItineraryDayDetailScreen(
+                groupName = groupName,
+                dayIndex = dayIndex,
                 onBack = { navController.popBackStack() }
             )
         }
@@ -422,6 +460,73 @@ fun NavGraph(
             val groupName = backStackEntry.arguments?.getString("groupName") ?: "Cost Estimate"
             CostEstimateScreen(
                 groupName = groupName,
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(
+            route = Screen.PlaceDetail.route,
+            arguments = listOf(navArgument("placeId") { type = NavType.LongType })
+        ) { backStackEntry ->
+            val place = backStackEntry.savedStateHandle.get<TravelPlaceListItemResponse>(PLACE_DETAIL_PLACE_KEY)
+                ?: navController.previousBackStackEntry?.savedStateHandle?.get<TravelPlaceListItemResponse>(PLACE_DETAIL_PLACE_KEY)
+                    ?.also { backStackEntry.savedStateHandle[PLACE_DETAIL_PLACE_KEY] = it }
+                ?: return@composable
+            PlaceDetailScreen(
+                place = place,
+                onBack = { navController.navigateUp() },
+                onPlaceClick = ::navigateToPlaceDetail,
+                onShowAllReviews = { id -> navController.navigate(Screen.PlaceReviews.createRoute(id)) },
+                onRequireLogin = {
+                    onLogout()
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(navController.graph.findStartDestination().id) { inclusive = false }
+                        launchSingleTop = true
+                    }
+                }
+            )
+        }
+
+        composable(
+            route = Screen.PlaceReviews.route,
+            arguments = listOf(navArgument("placeId") { type = NavType.LongType })
+        ) { backStackEntry ->
+            val placeId = backStackEntry.arguments?.getLong("placeId") ?: return@composable
+            ReviewListScreen(
+                placeId = placeId,
+                onBack = { navController.navigateUp() }
+            )
+        }
+
+        composable(Screen.ViewHistory.route) {
+            if (!authUiState.isAuthenticated) {
+                LaunchedEffect(Unit) {
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(navController.graph.findStartDestination().id) { inclusive = false }
+                        launchSingleTop = true
+                    }
+                }
+                return@composable
+            }
+            ViewHistoryScreen(
+                onBack = { navController.navigateUp() },
+                onRequireLogin = {
+                    onLogout()
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(navController.graph.findStartDestination().id) { inclusive = false }
+                        launchSingleTop = true
+                    }
+                }
+            )
+        }
+        composable(Screen.GroupDiscovery.route) {
+            GroupDiscoveryScreen(
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(Screen.RouteMap.route) {
+            RouteMapScreen(
                 onBack = { navController.popBackStack() }
             )
         }

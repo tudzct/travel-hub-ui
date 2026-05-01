@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mobile.travelhub.data.LocationRepository
 import com.mobile.travelhub.data.PlaceRepository
+import com.mobile.travelhub.data.api.UserApiService
 import com.mobile.travelhub.data.model.AdminProvinceResponse
 import com.mobile.travelhub.data.model.TravelPlaceListItemResponse
 import com.mobile.travelhub.usecase.CreatePostUseCase
@@ -26,7 +27,9 @@ data class CreatePostUiState(
     val isLoadingLocations: Boolean = false,
     val isSubmitting: Boolean = false,
     val errorMessage: String? = null,
-    val isPostCreated: Boolean = false
+    val isPostCreated: Boolean = false,
+    val userName: String = "",
+    val userAvatarUrl: String? = null
 ) {
     val selectedProvince: AdminProvinceResponse?
         get() = provinces.firstOrNull { it.id == selectedProvinceId }
@@ -45,7 +48,8 @@ data class CreatePostUiState(
 class CreatePostViewModel @Inject constructor(
     private val createPostUseCase: CreatePostUseCase,
     private val locationRepository: LocationRepository,
-    private val placeRepository: PlaceRepository
+    private val placeRepository: PlaceRepository,
+    private val userApiService: UserApiService
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(CreatePostUiState())
@@ -53,6 +57,7 @@ class CreatePostViewModel @Inject constructor(
 
     init {
         loadProvinces()
+        loadUserProfile()
     }
 
     fun updateDescription(value: String) {
@@ -189,6 +194,20 @@ class CreatePostViewModel @Inject constructor(
                     )
                 }
             }
+        }
+    }
+
+    private fun loadUserProfile() {
+        viewModelScope.launch {
+            runCatching { userApiService.getMyProfile() }
+                .onSuccess { profile ->
+                    _uiState.update {
+                        it.copy(
+                            userName = profile.name,
+                            userAvatarUrl = profile.avatarUrl
+                        )
+                    }
+                }
         }
     }
 

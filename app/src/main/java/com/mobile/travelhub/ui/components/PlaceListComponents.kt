@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -33,6 +34,7 @@ import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material.icons.outlined.ChatBubbleOutline
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.MoreHoriz
+import androidx.compose.material.icons.outlined.Place
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -500,18 +502,15 @@ fun FeedPostCard(
         val value = rawUrl.trim()
         if (value.isEmpty()) return ""
 
-        // đã là full URL → return luôn
         if (value.startsWith("http://", true) || value.startsWith("https://", true)) {
             return value
         }
 
-        // normalize base
         val base = storageService
             .trim()
             .trim('"')
             .trimEnd('/')
 
-        // concat
         return "$base/${value.trimStart('/')}"
     }
 
@@ -522,7 +521,7 @@ fun FeedPostCard(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 14.dp),
+                .padding(horizontal = 16.dp, vertical = 12.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -531,31 +530,45 @@ fun FeedPostCard(
                     painter = painterResource(R.drawable.female_avatar_maker),
                     contentDescription = post.username,
                     modifier = Modifier
-                        .size(42.dp)
+                        .size(36.dp)
                         .clip(CircleShape),
                     contentScale = ContentScale.Crop
                 )
-                Spacer(modifier = Modifier.width(12.dp))
+                Spacer(modifier = Modifier.width(10.dp))
                 Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                     Text(
                         text = post.username,
-                        style = MaterialTheme.typography.titleMedium,
+                        style = MaterialTheme.typography.titleSmall,
                         color = VerdantOnSurface,
                         fontWeight = FontWeight.Bold
                     )
-                    Text(
-                        text = post.subtitle,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = VerdantOnSurfaceVariant
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Outlined.Place,
+                            contentDescription = null,
+                            modifier = Modifier.size(12.dp),
+                            tint = VerdantOnSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.width(2.dp))
+                        Text(
+                            text = post.subtitle,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = VerdantOnSurfaceVariant
+                        )
+                    }
                 }
             }
+            Text(
+                text = post.timeAgoLabel,
+                style = MaterialTheme.typography.labelSmall,
+                color = VerdantOnSurfaceVariant.copy(alpha = 0.7f)
+            )
         }
 
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(360.dp)
+                .aspectRatio(4f / 5f)
                 .background(Color(0xFFF5F5F5))
         ) {
             if (post.imageUrls.isNotEmpty()) {
@@ -564,10 +577,6 @@ fun FeedPostCard(
                     modifier = Modifier.fillMaxSize()
                 ) { page ->
                     val resolvedUrl = toDisplayUrl(post.imageUrls[page])
-                    Log.d("PlaceListPostImageUrl", "Resolved url: $resolvedUrl")
-                    LaunchedEffect(resolvedUrl) {
-                        Log.d("PlaceListPostImageUrl", "Resolved image url: $resolvedUrl")
-                    }
                     AsyncImage(
                         model = resolvedUrl,
                         contentDescription = post.description,
@@ -576,33 +585,34 @@ fun FeedPostCard(
                     )
                 }
             }
-        }
 
-        if (imageCount > 1) {
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.Center
-            ) {
-                repeat(imageCount) { index ->
-                    Box(
-                        modifier = Modifier
-                            .padding(horizontal = 2.dp)
-                            .size(6.dp)
-                            .clip(CircleShape)
-                            .background(
-                                if (pagerState.currentPage == index) {
-                                    VerdantOnSurface
-                                } else {
-                                    VerdantSurfaceContainerHighest
-                                }
-                            )
-                    )
+            if (imageCount > 1) {
+                Row(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = 16.dp),
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    repeat(imageCount) { index ->
+                        Box(
+                            modifier = Modifier
+                                .padding(horizontal = 2.dp)
+                                .size(6.dp)
+                                .clip(CircleShape)
+                                .background(
+                                    if (pagerState.currentPage == index) {
+                                        Color.White
+                                    } else {
+                                        Color.White.copy(alpha = 0.5f)
+                                    }
+                                )
+                        )
+                    }
                 }
             }
         }
 
-        Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp)) {
+        Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -612,53 +622,57 @@ fun FeedPostCard(
                     IconButton(
                         onClick = onLikeClick,
                         enabled = actionsEnabled && !post.isLikeLoading,
-                        modifier = Modifier.size(24.dp)
+                        modifier = Modifier.size(28.dp)
                     ) {
                         Icon(
                             imageVector = if (post.isLiked) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
                             contentDescription = "Like",
                             tint = if (post.isLiked) MaterialTheme.colorScheme.error else VerdantOnSurface,
-                            modifier = Modifier.size(24.dp)
+                            modifier = Modifier.size(26.dp)
                         )
                     }
-                    Spacer(modifier = Modifier.width(14.dp))
+                    Spacer(modifier = Modifier.width(16.dp))
                     IconButton(
                         onClick = onCommentClick,
                         enabled = actionsEnabled,
-                        modifier = Modifier.size(24.dp)
+                        modifier = Modifier.size(28.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Outlined.ChatBubbleOutline,
                             contentDescription = "Comment",
-                            modifier = Modifier.size(22.dp),
+                            modifier = Modifier.size(24.dp),
                             tint = VerdantOnSurface
                         )
                     }
-                    Spacer(modifier = Modifier.width(14.dp))
+                    Spacer(modifier = Modifier.width(16.dp))
                     Icon(
                         imageVector = Icons.AutoMirrored.Outlined.Send,
                         contentDescription = "Share",
-                        modifier = Modifier.size(22.dp),
+                        modifier = Modifier.size(24.dp),
                         tint = VerdantOnSurface
                     )
                 }
                 Icon(
                     imageVector = Icons.Outlined.BookmarkBorder,
                     contentDescription = "Save",
-                    modifier = Modifier.size(22.dp),
+                    modifier = Modifier.size(26.dp),
                     tint = VerdantOnSurface
                 )
             }
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(10.dp))
             Text(
                 text = "${post.likeCount} likes",
                 style = MaterialTheme.typography.labelLarge,
                 fontWeight = FontWeight.Bold,
                 color = VerdantOnSurface
             )
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(6.dp))
             Text(
                 text = buildAnnotatedString {
+                    withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
+                        append(post.username)
+                    }
+                    append(" ")
                     append(post.description)
                 },
                 style = MaterialTheme.typography.bodyMedium,
@@ -666,25 +680,13 @@ fun FeedPostCard(
                 overflow = TextOverflow.Ellipsis,
                 color = VerdantOnSurface
             )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = if (post.commentCount <= 0) "View all comments" else "View all ${post.commentCount} comments",
-                style = MaterialTheme.typography.bodySmall,
-                color = VerdantOnSurfaceVariant
-            )
-            Spacer(modifier = Modifier.height(2.dp))
-            Text(
-                text = post.timeAgoLabel,
-                style = MaterialTheme.typography.labelSmall,
-                color = VerdantOnSurfaceVariant
-            )
         }
 
         Spacer(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(10.dp)
-                .background(Color(0xFFF3F3F3))
+                .height(1.dp)
+                .background(Color(0xFFE0E0E0))
         )
     }
 }
