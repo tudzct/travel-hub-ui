@@ -20,6 +20,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.DirectionsWalk
+import androidx.compose.material.icons.outlined.AccountCircle
+import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.TravelExplore
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -30,13 +36,16 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
 import com.mobile.travelhub.navigation.Screen
 
 data class BottomNavItem(
@@ -86,10 +95,10 @@ fun RoundedTopNavigationBar(
                     else -> currentRoute?.substringBefore("/") == screen.route
                 }
 
-                val itemWeight by animateFloatAsState(
-                    targetValue = if (isSelected) 1.6f else 0.8f,
+                val selectionProgress by animateFloatAsState(
+                    targetValue = if (isSelected) 1f else 0f,
                     animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
-                    label = "weight_${item.label}"
+                    label = "selection_${item.label}"
                 )
 
                 val iconColor by animateColorAsState(
@@ -103,7 +112,7 @@ fun RoundedTopNavigationBar(
 
                 Box(
                     modifier = Modifier
-                        .weight(itemWeight)
+                        .weight(1f)
                         .clip(RoundedCornerShape(50))
                         .clickable(
                             interactionSource = remember { MutableInteractionSource() },
@@ -124,56 +133,56 @@ fun RoundedTopNavigationBar(
                         },
                     contentAlignment = Alignment.Center
                 ) {
-                    if (isSelected) {
-                        // Pill with icon on top, label below
-                        Column(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(50))
-                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f))
-                                .padding(horizontal = 20.dp, vertical = 8.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Center
-                        ) {
-                            Icon(
-                                imageVector = item.icon,
-                                contentDescription = item.contentDescription,
-                                tint = iconColor,
-                                modifier = Modifier.size(22.dp)
-                            )
-                            Text(
-                                text = item.label,
-                                color = iconColor,
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                maxLines = 1,
-                                style = MaterialTheme.typography.labelSmall
-                            )
-                        }
-                    } else {
-                        // Icon + label stacked
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Center
-                        ) {
-                            Icon(
-                                imageVector = item.icon,
-                                contentDescription = item.contentDescription,
-                                tint = iconColor,
-                                modifier = Modifier.size(22.dp)
-                            )
+                    Column(
+                        modifier = Modifier
+                            .graphicsLayer {
+                                scaleX = 1f + 0.05f * selectionProgress
+                                scaleY = 1f + 0.05f * selectionProgress
+                            }
+                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f * selectionProgress))
+                            .padding(
+                                horizontal = (12 * selectionProgress).dp,
+                                vertical = (8 * selectionProgress).dp
+                            ),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Icon(
+                            imageVector = item.icon,
+                            contentDescription = item.contentDescription,
+                            tint = iconColor,
+                            modifier = Modifier.size(22.dp)
+                        )
+                        if (selectionProgress < 0.5f) {
                             Spacer(modifier = Modifier.height(2.dp))
-                            Text(
-                                text = item.label,
-                                color = iconColor,
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Normal,
-                                maxLines = 1,
-                                style = MaterialTheme.typography.labelSmall
-                            )
                         }
+                        Text(
+                            text = item.label,
+                            color = iconColor,
+                            fontSize = 11.sp,
+                            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                            maxLines = 1,
+                            style = MaterialTheme.typography.labelSmall
+                        )
                     }
                 }
             }
         }
     }
+}
+
+@Preview
+@Composable
+fun RoundedTopNavigationBarPreview() {
+    val navController = rememberNavController()
+    RoundedTopNavigationBar(
+        items = listOf(
+            BottomNavItem(Screen.Home, Icons.Outlined.Home, "Home"),
+            BottomNavItem(Screen.Trips, Icons.Outlined.TravelExplore, "Explore"),
+            BottomNavItem(Screen.Trips, Icons.AutoMirrored.Outlined.DirectionsWalk, "Itinerary"),
+            BottomNavItem(Screen.CreatePost, Icons.Outlined.Add, "Create"),
+            BottomNavItem(Screen.Profile, Icons.Outlined.AccountCircle, "Profile")
+        ),
+        navController = navController
+    )
 }
