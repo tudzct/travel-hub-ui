@@ -366,7 +366,6 @@ private fun ItineraryOverviewContent(
         item {
             AddActionCard(
                 title = "Add day",
-                description = "Create a new day card at the end of the itinerary.",
                 onClick = onAddDay
             )
         }
@@ -451,7 +450,6 @@ private fun ItineraryDayDetailContent(
             item {
                 AddActionCard(
                     title = "Add stop",
-                    description = "Create a new stop at the end of this day.",
                     onClick = onAddStop
                 )
             }
@@ -900,7 +898,6 @@ private fun EmptyOverviewCard() {
 @Composable
 private fun AddActionCard(
     title: String,
-    description: String,
     onClick: () -> Unit
 ) {
     Card(
@@ -928,12 +925,6 @@ private fun AddActionCard(
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.ExtraBold,
                     color = OnSurface
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = description,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = OnSurfaceVariant
                 )
             }
         }
