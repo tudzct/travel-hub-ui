@@ -22,6 +22,7 @@ data class ItineraryUiState(
     val editingDay: ItineraryDay? = null,
     val editingEvent: ItineraryEvent? = null,
     val isCreatingEvent: Boolean = false,
+    val isEditMode: Boolean = false,
     val errorMessage: String? = null
 ) {
     val isLeader: Boolean

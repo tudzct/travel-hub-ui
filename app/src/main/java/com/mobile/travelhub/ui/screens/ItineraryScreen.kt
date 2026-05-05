@@ -40,7 +40,9 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DragIndicator
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.MoreVert
@@ -216,6 +218,8 @@ fun ItineraryDayDetailScreen(
                 subtitle = selectedDay?.dateLabel ?: state.groupName,
                 isLeader = state.isLeader,
                 showBackButton = showBackButton,
+                isEditMode = state.isEditMode,
+                onToggleEditMode = viewModel::toggleEditMode,
                 onBack = onBack
             )
         },
@@ -233,6 +237,7 @@ fun ItineraryDayDetailScreen(
     ) { paddingValues ->
         ItineraryDayDetailContent(
             day = selectedDay,
+            isEditMode = state.isEditMode,
             paddingValues = paddingValues,
             onAddStop = viewModel::startAddingStop,
             onReorderEvents = viewModel::reorderDayEvents,
@@ -262,6 +267,8 @@ private fun ItineraryTopBar(
     subtitle: String,
     isLeader: Boolean,
     showBackButton: Boolean,
+    isEditMode: Boolean = false,
+    onToggleEditMode: (() -> Unit)? = null,
     onBack: () -> Unit
 ) {
     TopAppBar(
@@ -292,17 +299,27 @@ private fun ItineraryTopBar(
             }
         },
         actions = {
-            AssistChip(
-                onClick = {},
-                label = { Text(if (isLeader) "Leader" else "Member") },
-                leadingIcon = {
-                    Icon(
-                        imageVector = if (isLeader) Icons.Default.Check else Icons.Default.Close,
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp)
+            if (onToggleEditMode != null) {
+                TextButton(onClick = onToggleEditMode) {
+                    Text(
+                        text = if (isEditMode) "Done" else "Edit",
+                        fontWeight = FontWeight.ExtraBold,
+                        color = if (isEditMode) PrimaryBlue else OnSurface
                     )
                 }
-            )
+            } else {
+                AssistChip(
+                    onClick = {},
+                    label = { Text(if (isLeader) "Leader" else "Member") },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = if (isLeader) Icons.Default.Check else Icons.Default.Close,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                )
+            }
             Spacer(modifier = Modifier.width(8.dp))
         },
         colors = TopAppBarDefaults.topAppBarColors(containerColor = SurfaceBg)
@@ -368,6 +385,7 @@ private fun ItineraryOverviewContent(
 @Composable
 private fun ItineraryDayDetailContent(
     day: ItineraryDay?,
+    isEditMode: Boolean,
     paddingValues: PaddingValues,
     onAddStop: () -> Unit,
     onReorderEvents: (Int, Int) -> Unit,
@@ -457,27 +475,30 @@ private fun ItineraryDayDetailContent(
                         DayEventCard(
                             event = event,
                             isDragging = isDragging,
+                            isEditMode = isEditMode,
                             dragHandle = {
-                                IconButton(
-                                    onClick = {},
-                                    modifier = with(this) {
-                                        Modifier.draggableHandle(
-                                            onDragStarted = {
-                                                hapticFeedback.performHapticFeedback(
-                                                    HapticFeedbackType.GestureThresholdActivate
-                                                )
-                                            },
-                                            onDragStopped = {
-                                                hapticFeedback.performHapticFeedback(HapticFeedbackType.GestureEnd)
-                                            }
+                                if (isEditMode) {
+                                    IconButton(
+                                        onClick = {},
+                                        modifier = with(this) {
+                                            Modifier.draggableHandle(
+                                                onDragStarted = {
+                                                    hapticFeedback.performHapticFeedback(
+                                                        HapticFeedbackType.GestureThresholdActivate
+                                                    )
+                                                },
+                                                onDragStopped = {
+                                                    hapticFeedback.performHapticFeedback(HapticFeedbackType.GestureEnd)
+                                                }
+                                            )
+                                        }
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.DragIndicator,
+                                            contentDescription = "Reorder event",
+                                            tint = OnSurfaceVariant
                                         )
                                     }
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.DragIndicator,
-                                        contentDescription = "Reorder event",
-                                        tint = OnSurfaceVariant
-                                    )
                                 }
                             },
                             onEdit = { onEditEvent(event) },
@@ -487,7 +508,7 @@ private fun ItineraryDayDetailContent(
                 }
             }
         }
-        if (day != null) {
+        if (day != null && isEditMode) {
             item {
                 AddActionCard(
                     title = "Add stop",
@@ -786,6 +807,7 @@ private fun ItineraryDayCard(
 private fun DayEventCard(
     event: ItineraryEvent,
     isDragging: Boolean,
+    isEditMode: Boolean,
     dragHandle: @Composable (() -> Unit),
     onEdit: () -> Unit,
     onDelete: () -> Unit
@@ -836,34 +858,24 @@ private fun DayEventCard(
                     )
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    dragHandle()
-                    Box {
-                        IconButton(onClick = { isMenuExpanded = true }) {
+                    if (isEditMode) {
+                        IconButton(onClick = onEdit) {
                             Icon(
-                                Icons.Default.MoreVert,
-                                contentDescription = "Event actions",
-                                tint = OnSurfaceVariant
+                                imageVector = Icons.Default.Edit,
+                                contentDescription = "Edit stop",
+                                tint = OnSurfaceVariant,
+                                modifier = Modifier.size(20.dp)
                             )
                         }
-                        DropdownMenu(
-                            expanded = isMenuExpanded,
-                            onDismissRequest = { isMenuExpanded = false }
-                        ) {
-                            DropdownMenuItem(
-                                text = { Text("Cập nhật") },
-                                onClick = {
-                                    isMenuExpanded = false
-                                    onEdit()
-                                }
-                            )
-                            DropdownMenuItem(
-                                text = { Text("Xóa") },
-                                onClick = {
-                                    isMenuExpanded = false
-                                    onDelete()
-                                }
+                        IconButton(onClick = onDelete) {
+                            Icon(
+                                imageVector = Icons.Default.Delete,
+                                contentDescription = "Delete stop",
+                                tint = SunsetOrange.copy(alpha = 0.8f),
+                                modifier = Modifier.size(20.dp)
                             )
                         }
+                        dragHandle()
                     }
                 }
             }

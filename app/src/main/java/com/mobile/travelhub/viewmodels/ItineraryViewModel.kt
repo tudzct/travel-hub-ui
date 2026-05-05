@@ -326,6 +326,10 @@ class ItineraryViewModel @Inject constructor(
         )
     }
 
+    fun toggleEditMode() {
+        _uiState.update { it.copy(isEditMode = !it.isEditMode) }
+    }
+
     fun clearError() {
         _uiState.update { it.copy(errorMessage = null) }
     }
