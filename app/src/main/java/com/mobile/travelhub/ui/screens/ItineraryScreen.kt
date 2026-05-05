@@ -749,114 +749,122 @@ private fun DayEventCard(
     onEdit: () -> Unit,
     onDelete: () -> Unit
 ) {
-    var expanded by remember(event.eventId) { mutableStateOf(false) }
+    var isMenuExpanded by remember(event.eventId) { mutableStateOf(false) }
+    var isDetailExpanded by remember(event.eventId) { mutableStateOf(false) }
     val elevation by animateDpAsState(targetValue = if (isDragging) 10.dp else 0.dp, label = "eventCardElevation")
     val accent = event.displayColor()
 
     Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { isDetailExpanded = !isDetailExpanded },
         shape = RoundedCornerShape(28.dp),
         colors = CardDefaults.cardColors(containerColor = SurfaceContainerLowest),
         elevation = CardDefaults.cardElevation(defaultElevation = elevation)
     ) {
-        Row {
-            Box(
-                modifier = Modifier
-                    .width(10.dp)
-                    .fillMaxHeight()
-                    .background(accent)
-            )
-            Column(
-                modifier = Modifier.padding(18.dp),
-                verticalArrangement = Arrangement.spacedBy(14.dp)
+        Column(
+            modifier = Modifier.padding(18.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top
             ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.Top
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "${event.startTime} - ${event.endTime}",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 13.sp,
-                            color = accent
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                text = event.title,
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.ExtraBold,
-                                color = OnSurface
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = event.placeName,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = OnSurfaceVariant
-                        )
-                    }
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        dragHandle()
-                        Box {
-                            IconButton(onClick = { expanded = true }) {
-                                Icon(
-                                    Icons.Default.MoreVert,
-                                    contentDescription = "Event actions",
-                                    tint = OnSurfaceVariant
-                                )
-                            }
-                            DropdownMenu(
-                                expanded = expanded,
-                                onDismissRequest = { expanded = false }
-                            ) {
-                                DropdownMenuItem(
-                                    text = { Text("Cập nhật") },
-                                    onClick = {
-                                        expanded = false
-                                        onEdit()
-                                    }
-                                )
-                                DropdownMenuItem(
-                                    text = { Text("Xóa") },
-                                    onClick = {
-                                        expanded = false
-                                        onDelete()
-                                    }
-                                )
-                            }
-                        }
-                    }
-                }
-
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    MetaPill(
-                        icon = {
-                            Icon(
-                                Icons.Default.Schedule,
-                                null,
-                                tint = OnSurfaceVariant,
-                                modifier = Modifier.size(14.dp)
-                            )
-                        }
-                    ) {
-                        Text(event.estimatedCost.ifBlank { "No cost" }, fontSize = 12.sp, color = OnSurfaceVariant)
-                    }
-                    if (event.transportToNext.isNotBlank()) {
-                        MetaPill {
-                            Text(event.transportToNext, fontSize = 12.sp, color = OnSurfaceVariant)
-                        }
-                    }
-                }
-
-                if (event.note.isNotBlank()) {
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = event.note,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = OnSurface,
-                        lineHeight = 20.sp
+                        text = "${event.startTime} - ${event.endTime}",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 13.sp,
+                        color = accent
                     )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = event.title,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = OnSurface
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = event.placeName,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = OnSurfaceVariant
+                    )
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    dragHandle()
+                    Box {
+                        IconButton(onClick = { isMenuExpanded = true }) {
+                            Icon(
+                                Icons.Default.MoreVert,
+                                contentDescription = "Event actions",
+                                tint = OnSurfaceVariant
+                            )
+                        }
+                        DropdownMenu(
+                            expanded = isMenuExpanded,
+                            onDismissRequest = { isMenuExpanded = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("Cập nhật") },
+                                onClick = {
+                                    isMenuExpanded = false
+                                    onEdit()
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Xóa") },
+                                onClick = {
+                                    isMenuExpanded = false
+                                    onDelete()
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+
+            AnimatedVisibility(
+                visible = isDetailExpanded,
+                enter = expandVertically() + fadeIn(),
+                exit = shrinkVertically() + fadeOut()
+            ) {
+                Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        MetaPill(
+                            icon = {
+                                Icon(
+                                    Icons.Default.Schedule,
+                                    null,
+                                    tint = OnSurfaceVariant,
+                                    modifier = Modifier.size(14.dp)
+                                )
+                            }
+                        ) {
+                            Text(
+                                event.estimatedCost.ifBlank { "No cost" },
+                                fontSize = 12.sp,
+                                color = OnSurfaceVariant
+                            )
+                        }
+                        if (event.transportToNext.isNotBlank()) {
+                            MetaPill {
+                                Text(event.transportToNext, fontSize = 12.sp, color = OnSurfaceVariant)
+                            }
+                        }
+                    }
+
+                    if (event.note.isNotBlank()) {
+                        Text(
+                            text = event.note,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = OnSurface,
+                            lineHeight = 20.sp
+                        )
+                    }
                 }
             }
         }
