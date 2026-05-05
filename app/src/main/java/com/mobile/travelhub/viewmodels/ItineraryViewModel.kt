@@ -236,7 +236,6 @@ class ItineraryViewModel @Inject constructor(
             note = "",
             transportToNext = "",
             estimatedCost = "",
-            isHighlighted = false,
             colorHex = ItineraryEventColors.Palette[selectedDay.events.size % ItineraryEventColors.Palette.size]
         )
         _uiState.update {

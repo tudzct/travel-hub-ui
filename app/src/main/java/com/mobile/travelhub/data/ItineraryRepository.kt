@@ -382,7 +382,6 @@ class ItineraryRepository @Inject constructor() {
             note = "Short recharge stop to absorb delays before the next long visit.",
             transportToNext = "Walk 8 minutes to the next venue.",
             estimatedCost = "$12 / person",
-            isHighlighted = false,
             colorHex = eventColorForIndex(insertAt)
         )
         return AddEventChange(
@@ -394,7 +393,7 @@ class ItineraryRepository @Inject constructor() {
     }
 
     private fun buildUpdateChange(day: ItineraryDay): UpdateEventChange {
-        val target = day.events.firstOrNull { it.isHighlighted } ?: day.events.first()
+        val target = day.events.first()
         val updated = target.copy(
             startTime = shiftHour(target.startTime, 1),
             endTime = shiftHour(target.endTime, 1),
@@ -474,13 +473,6 @@ class ItineraryRepository @Inject constructor() {
         if (before.estimatedCost != after.estimatedCost) {
             diffs += FieldDiff(ItineraryField.ESTIMATED_COST, before.estimatedCost, after.estimatedCost)
         }
-        if (before.isHighlighted != after.isHighlighted) {
-            diffs += FieldDiff(
-                ItineraryField.HIGHLIGHT,
-                before.isHighlighted.toString(),
-                after.isHighlighted.toString()
-            )
-        }
         if (before.colorHex != after.colorHex) {
             diffs += FieldDiff(
                 ItineraryField.COLOR,
@@ -520,7 +512,6 @@ class ItineraryRepository @Inject constructor() {
                             note = "Start early to avoid the densest crowds at Nakamise.",
                             transportToNext = "Ginza Line, 15 minutes",
                             estimatedCost = "Free",
-                            isHighlighted = true,
                             colorHex = ItineraryEventColors.Palette[0]
                         ),
                         ItineraryEvent(
@@ -588,7 +579,6 @@ class ItineraryRepository @Inject constructor() {
                             note = "Sunset slot already reserved.",
                             transportToNext = "Dinner nearby",
                             estimatedCost = "$15 prepaid",
-                            isHighlighted = true,
                             colorHex = ItineraryEventColors.Palette[3]
                         )
                     )

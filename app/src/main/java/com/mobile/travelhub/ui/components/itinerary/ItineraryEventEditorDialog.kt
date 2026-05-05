@@ -66,7 +66,6 @@ fun ItineraryEventEditorDialog(
     var note by remember(event.eventId) { mutableStateOf(event.note) }
     var transport by remember(event.eventId) { mutableStateOf(event.transportToNext) }
     var cost by remember(event.eventId) { mutableStateOf(event.estimatedCost) }
-    var highlighted by remember(event.eventId) { mutableStateOf(event.isHighlighted) }
     var colorHex by remember(event.eventId) { mutableStateOf(event.colorHex) }
 
     Dialog(
@@ -86,40 +85,14 @@ fun ItineraryEventEditorDialog(
                     .padding(20.dp),
                 verticalArrangement = Arrangement.spacedBy(18.dp)
             ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(
-                            brush = Brush.linearGradient(
-                                colors = listOf(
-                                    PrimaryBlue.copy(alpha = 0.18f),
-                                    SunsetOrange.copy(alpha = 0.12f)
-                                )
-                            ),
-                            shape = RoundedCornerShape(24.dp)
-                        )
-                        .padding(18.dp)
-                ) {
-                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Text(
-                            text = if (isCreating) "Add stop" else "Edit stop",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = OnSurface
-                        )
-                        Text(
-                            text = if (isCreating) {
-                                "Create a new itinerary event for the selected day."
-                            } else {
-                                "Refine timing, place, notes, and highlight status without leaving the itinerary."
-                            },
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = OnSurfaceVariant,
-                            lineHeight = 20.sp
-                        )
-                    }
-                }
 
+                Text(
+                    text = if (isCreating) "Add stop" else "Edit stop",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = OnSurface
+                )
+                
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text(
                         text = "Day",
@@ -198,33 +171,6 @@ fun ItineraryEventEditorDialog(
                     }
                 }
 
-                Surface(
-                    color = SurfaceContainerLow,
-                    shape = RoundedCornerShape(22.dp)
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 14.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = "Highlight this stop",
-                                fontWeight = FontWeight.Bold,
-                                color = OnSurface
-                            )
-                            Text(
-                                text = "Use this for anchor stops you want to emphasize on the timeline.",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = OnSurfaceVariant,
-                                lineHeight = 18.sp
-                            )
-                        }
-                        Switch(checked = highlighted, onCheckedChange = { highlighted = it })
-                    }
-                }
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -251,7 +197,6 @@ fun ItineraryEventEditorDialog(
                                     note = note.trim(),
                                     transportToNext = transport.trim(),
                                     estimatedCost = cost.trim(),
-                                    isHighlighted = highlighted,
                                     colorHex = colorHex
                                 )
                             )

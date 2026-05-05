@@ -791,15 +791,6 @@ private fun DayEventCard(
                                 fontWeight = FontWeight.ExtraBold,
                                 color = OnSurface
                             )
-                            if (event.isHighlighted) {
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Icon(
-                                    imageVector = Icons.Default.Star,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(16.dp),
-                                    tint = SunsetOrange
-                                )
-                            }
                         }
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
@@ -853,9 +844,6 @@ private fun DayEventCard(
                         }
                     ) {
                         Text(event.estimatedCost.ifBlank { "No cost" }, fontSize = 12.sp, color = OnSurfaceVariant)
-                    }
-                    MetaPill {
-                        Text(colorLabel(event.colorHex), fontSize = 12.sp, color = accent)
                     }
                     if (event.transportToNext.isNotBlank()) {
                         MetaPill {

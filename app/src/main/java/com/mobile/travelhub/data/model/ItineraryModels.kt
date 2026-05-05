@@ -30,7 +30,6 @@ data class ItineraryEvent(
     val note: String,
     val transportToNext: String,
     val estimatedCost: String,
-    val isHighlighted: Boolean = false,
     val colorHex: Long = ItineraryEventColors.Default
 )
 
@@ -57,7 +56,6 @@ enum class ItineraryField(val label: String) {
     NOTE("Note"),
     TRANSPORT("Transport"),
     ESTIMATED_COST("Cost"),
-    HIGHLIGHT("Highlight"),
     COLOR("Color")
 }
 

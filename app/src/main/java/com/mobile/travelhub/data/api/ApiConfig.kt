@@ -1,7 +1,7 @@
 package com.mobile.travelhub.data.api
 
 object ApiConfig {
-    const val BASE_URL = "http://192.168.1.10:8080" //153
-    const val AI_BASE_URL = "http://192.168.1.10:8888"
+    const val BASE_URL = "http://192.168.1.105:8080" //153
+    const val AI_BASE_URL = "http://192.168.1.105:8888"
 }
 
