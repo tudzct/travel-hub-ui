@@ -1,4 +1,8 @@
 package com.mobile.travelhub.data.model
+ 
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
+import androidx.compose.runtime.Composable
 
 enum class ItineraryUserRole {
     LEADER,
@@ -30,7 +34,8 @@ data class ItineraryEvent(
     val note: String,
     val transportToNext: String,
     val estimatedCost: String,
-    val colorHex: Long = ItineraryEventColors.Default
+    val colorHex: Long = ItineraryEventColors.Default,
+    val iconName: String = "Place"
 )
 
 data class ItineraryProposal(
@@ -56,7 +61,8 @@ enum class ItineraryField(val label: String) {
     NOTE("Note"),
     TRANSPORT("Transport"),
     ESTIMATED_COST("Cost"),
-    COLOR("Color")
+    COLOR("Color"),
+    ICON("Icon")
 }
 
 object ItineraryEventColors {
@@ -70,6 +76,45 @@ object ItineraryEventColors {
         0xFF00838F,
         0xFFAF3E6A,
         0xFF6B7280
+    )
+}
+
+@Composable
+fun getItineraryIcon(name: String) = when (name) {
+    "Restaurant" -> Icons.Default.Restaurant
+    "Flight" -> Icons.Default.Flight
+    "Hotel" -> Icons.Default.Hotel
+    "PhotoCamera" -> Icons.Default.PhotoCamera
+    "ShoppingBag" -> Icons.Default.ShoppingBag
+    "Museum" -> Icons.Default.Museum
+    "DirectionsBus" -> Icons.Default.DirectionsBus
+    "DirectionsWalk" -> Icons.Default.DirectionsWalk
+    "DirectionsCar" -> Icons.Default.DirectionsCar
+    "Train" -> Icons.Default.Train
+    "LocalDrink" -> Icons.Default.LocalDrink
+    "LocalPark" -> Icons.Default.Park
+    "BeachAccess" -> Icons.Default.BeachAccess
+    "Nightlife" -> Icons.Default.Nightlife
+    else -> Icons.Default.Place
+}
+
+object ItineraryIcons {
+    val Palette: List<String> = listOf(
+        "Place",
+        "Restaurant",
+        "Flight",
+        "Hotel",
+        "PhotoCamera",
+        "ShoppingBag",
+        "Museum",
+        "DirectionsBus",
+        "DirectionsWalk",
+        "DirectionsCar",
+        "Train",
+        "LocalDrink",
+        "LocalPark",
+        "BeachAccess",
+        "Nightlife"
     )
 }
 

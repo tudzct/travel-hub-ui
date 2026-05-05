@@ -236,7 +236,8 @@ class ItineraryViewModel @Inject constructor(
             note = "",
             transportToNext = "",
             estimatedCost = "",
-            colorHex = ItineraryEventColors.Palette[selectedDay.events.size % ItineraryEventColors.Palette.size]
+            colorHex = ItineraryEventColors.Palette[selectedDay.events.size % ItineraryEventColors.Palette.size],
+            iconName = "Place"
         )
         _uiState.update {
             it.copy(

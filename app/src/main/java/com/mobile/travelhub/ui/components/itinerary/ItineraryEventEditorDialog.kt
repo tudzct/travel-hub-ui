@@ -22,9 +22,12 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.*
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -48,6 +51,8 @@ import com.mobile.travelhub.ui.theme.PrimaryBlue
 import com.mobile.travelhub.ui.theme.SurfaceContainerLow
 import com.mobile.travelhub.ui.theme.SurfaceContainerLowest
 import com.mobile.travelhub.ui.theme.SunsetOrange
+import com.mobile.travelhub.data.model.ItineraryIcons
+import com.mobile.travelhub.data.model.getItineraryIcon
 
 @Composable
 fun ItineraryEventEditorDialog(
@@ -67,6 +72,7 @@ fun ItineraryEventEditorDialog(
     var transport by remember(event.eventId) { mutableStateOf(event.transportToNext) }
     var cost by remember(event.eventId) { mutableStateOf(event.estimatedCost) }
     var colorHex by remember(event.eventId) { mutableStateOf(event.colorHex) }
+    var iconName by remember(event.eventId) { mutableStateOf(event.iconName) }
 
     Dialog(
         onDismissRequest = onDismiss,
@@ -171,6 +177,28 @@ fun ItineraryEventEditorDialog(
                     }
                 }
 
+                @OptIn(ExperimentalLayoutApi::class)
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text(
+                        text = "Icon",
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = OnSurfaceVariant
+                    )
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        ItineraryIcons.Palette.forEach { option ->
+                            EventIconSwatch(
+                                iconName = option,
+                                selected = iconName == option,
+                                onClick = { iconName = option }
+                            )
+                        }
+                    }
+                }
+
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -197,7 +225,8 @@ fun ItineraryEventEditorDialog(
                                     note = note.trim(),
                                     transportToNext = transport.trim(),
                                     estimatedCost = cost.trim(),
-                                    colorHex = colorHex
+                                    colorHex = colorHex,
+                                    iconName = iconName
                                 )
                             )
                         }
@@ -257,3 +286,32 @@ private fun ItineraryEditorField(
         minLines = minLines
     )
 }
+
+@Composable
+private fun EventIconSwatch(
+    iconName: String,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .size(40.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(if (selected) PrimaryBlue.copy(alpha = 0.12f) else SurfaceContainerLow)
+            .border(
+                width = if (selected) 2.dp else 0.dp,
+                color = if (selected) PrimaryBlue else Color.Transparent,
+                shape = RoundedCornerShape(12.dp)
+            )
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            imageVector = getItineraryIcon(iconName),
+            contentDescription = null,
+            tint = if (selected) PrimaryBlue else OnSurfaceVariant,
+            modifier = Modifier.size(20.dp)
+        )
+    }
+}
+

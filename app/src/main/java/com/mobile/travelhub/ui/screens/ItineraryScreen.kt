@@ -28,8 +28,10 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -85,16 +87,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import com.mobile.travelhub.data.model.AddEventChange
-import com.mobile.travelhub.data.model.DeleteEventChange
-import com.mobile.travelhub.data.model.ItineraryChange
-import com.mobile.travelhub.data.model.ItineraryChatRole
-import com.mobile.travelhub.data.model.ItineraryDay
-import com.mobile.travelhub.data.model.ItineraryEvent
-import com.mobile.travelhub.data.model.ItineraryEventColors
-import com.mobile.travelhub.data.model.ItineraryProposal
-import com.mobile.travelhub.data.model.MoveEventChange
-import com.mobile.travelhub.data.model.UpdateEventChange
+import com.mobile.travelhub.data.model.*
 import com.mobile.travelhub.ui.components.itinerary.ItineraryDayEditorDialog
 import com.mobile.travelhub.ui.components.itinerary.ItineraryEventEditorDialog
 import com.mobile.travelhub.ui.components.itinerary.toItineraryColor
@@ -412,37 +405,85 @@ private fun ItineraryDayDetailContent(
                 EmptyDayCard()
             }
         } else {
-            items(day.events, key = { it.eventId }) { event ->
+            itemsIndexed(day.events, key = { _, it -> it.eventId }) { index, event ->
                 ReorderableItem(reorderableState, key = event.eventId) { isDragging ->
-                    DayEventCard(
-                        event = event,
-                        isDragging = isDragging,
-                        dragHandle = {
-                            IconButton(
-                                onClick = {},
-                                modifier = with(this) {
-                                    Modifier.draggableHandle(
-                                        onDragStarted = {
-                                            hapticFeedback.performHapticFeedback(
-                                                HapticFeedbackType.GestureThresholdActivate
-                                            )
-                                        },
-                                        onDragStopped = {
-                                            hapticFeedback.performHapticFeedback(HapticFeedbackType.GestureEnd)
-                                        }
-                                    )
-                                }
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(IntrinsicSize.Min)
+                    ) {
+                        // Timeline decoration
+                        Column(
+                            modifier = Modifier
+                                .width(36.dp)
+                                .fillMaxHeight(),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            // Top line segment (except for first item)
+                            Box(
+                                modifier = Modifier
+                                    .width(2.dp)
+                                    .height(12.dp)
+                                    .background(if (index == 0) Color.Transparent else OnSurfaceVariant.copy(alpha = 0.15f))
+                            )
+                            
+                            // Icon dot
+                            Box(
+                                modifier = Modifier
+                                    .size(32.dp)
+                                    .background(event.colorHex.toItineraryColor().copy(alpha = 0.12f), CircleShape)
+                                    .border(1.5.dp, event.colorHex.toItineraryColor().copy(alpha = 0.3f), CircleShape),
+                                contentAlignment = Alignment.Center
                             ) {
                                 Icon(
-                                    imageVector = Icons.Default.DragIndicator,
-                                    contentDescription = "Reorder event",
-                                    tint = OnSurfaceVariant
+                                    imageVector = getItineraryIcon(event.iconName),
+                                    contentDescription = null,
+                                    tint = event.colorHex.toItineraryColor(),
+                                    modifier = Modifier.size(16.dp)
                                 )
                             }
-                        },
-                        onEdit = { onEditEvent(event) },
-                        onDelete = { onDeleteEvent(event.eventId) }
-                    )
+
+                            // Bottom line segment (except for last item)
+                            Box(
+                                modifier = Modifier
+                                    .width(2.dp)
+                                    .fillMaxHeight()
+                                    .background(if (index == day.events.size - 1) Color.Transparent else OnSurfaceVariant.copy(alpha = 0.15f))
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.width(12.dp))
+
+                        DayEventCard(
+                            event = event,
+                            isDragging = isDragging,
+                            dragHandle = {
+                                IconButton(
+                                    onClick = {},
+                                    modifier = with(this) {
+                                        Modifier.draggableHandle(
+                                            onDragStarted = {
+                                                hapticFeedback.performHapticFeedback(
+                                                    HapticFeedbackType.GestureThresholdActivate
+                                                )
+                                            },
+                                            onDragStopped = {
+                                                hapticFeedback.performHapticFeedback(HapticFeedbackType.GestureEnd)
+                                            }
+                                        )
+                                    }
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.DragIndicator,
+                                        contentDescription = "Reorder event",
+                                        tint = OnSurfaceVariant
+                                    )
+                                }
+                            },
+                            onEdit = { onEditEvent(event) },
+                            onDelete = { onDeleteEvent(event.eventId) }
+                        )
+                    }
                 }
             }
         }

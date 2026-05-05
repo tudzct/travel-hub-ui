@@ -382,7 +382,8 @@ class ItineraryRepository @Inject constructor() {
             note = "Short recharge stop to absorb delays before the next long visit.",
             transportToNext = "Walk 8 minutes to the next venue.",
             estimatedCost = "$12 / person",
-            colorHex = eventColorForIndex(insertAt)
+            colorHex = eventColorForIndex(insertAt),
+            iconName = "LocalDrink"
         )
         return AddEventChange(
             changeId = "change-add-${day.dayIndex}-${System.nanoTime()}",
@@ -480,6 +481,9 @@ class ItineraryRepository @Inject constructor() {
                 after.colorHex.toString()
             )
         }
+        if (before.iconName != after.iconName) {
+            diffs += FieldDiff(ItineraryField.ICON, before.iconName, after.iconName)
+        }
         return diffs
     }
 
@@ -512,7 +516,8 @@ class ItineraryRepository @Inject constructor() {
                             note = "Start early to avoid the densest crowds at Nakamise.",
                             transportToNext = "Ginza Line, 15 minutes",
                             estimatedCost = "Free",
-                            colorHex = ItineraryEventColors.Palette[0]
+                            colorHex = ItineraryEventColors.Palette[0],
+                            iconName = "Museum"
                         ),
                         ItineraryEvent(
                             eventId = "d1-e2",
@@ -524,7 +529,8 @@ class ItineraryRepository @Inject constructor() {
                             note = "Queue can spike quickly; keep a backup lunch option nearby.",
                             transportToNext = "Walk 10 minutes",
                             estimatedCost = "$45 / person",
-                            colorHex = ItineraryEventColors.Palette[2]
+                            colorHex = ItineraryEventColors.Palette[2],
+                            iconName = "Restaurant"
                         ),
                         ItineraryEvent(
                             eventId = "d1-e3",
@@ -536,7 +542,8 @@ class ItineraryRepository @Inject constructor() {
                             note = "Light shopping and arcade stop before sunset.",
                             transportToNext = "JR Yamanote, 22 minutes",
                             estimatedCost = "Variable",
-                            colorHex = ItineraryEventColors.Palette[4]
+                            colorHex = ItineraryEventColors.Palette[4],
+                            iconName = "PhotoCamera"
                         )
                     )
                 ),
@@ -555,7 +562,8 @@ class ItineraryRepository @Inject constructor() {
                             note = "Arrive before tour buses and leave room for the forest walk.",
                             transportToNext = "Taxi 12 minutes",
                             estimatedCost = "Free",
-                            colorHex = ItineraryEventColors.Palette[1]
+                            colorHex = ItineraryEventColors.Palette[1],
+                            iconName = "LocalPark"
                         ),
                         ItineraryEvent(
                             eventId = "d2-e2",
@@ -567,7 +575,8 @@ class ItineraryRepository @Inject constructor() {
                             note = "Good indoor pause if weather turns.",
                             transportToNext = "Walk 14 minutes",
                             estimatedCost = "$28 / person",
-                            colorHex = ItineraryEventColors.Palette[5]
+                            colorHex = ItineraryEventColors.Palette[5],
+                            iconName = "Restaurant"
                         ),
                         ItineraryEvent(
                             eventId = "d2-e3",
@@ -579,7 +588,8 @@ class ItineraryRepository @Inject constructor() {
                             note = "Sunset slot already reserved.",
                             transportToNext = "Dinner nearby",
                             estimatedCost = "$15 prepaid",
-                            colorHex = ItineraryEventColors.Palette[3]
+                            colorHex = ItineraryEventColors.Palette[3],
+                            iconName = "Nightlife"
                         )
                     )
                 ),
@@ -598,7 +608,8 @@ class ItineraryRepository @Inject constructor() {
                             note = "Pick 1 museum instead of trying to do all three.",
                             transportToNext = "Walk 6 minutes",
                             estimatedCost = "$20 / person",
-                            colorHex = ItineraryEventColors.Palette[6]
+                            colorHex = ItineraryEventColors.Palette[6],
+                            iconName = "Museum"
                         ),
                         ItineraryEvent(
                             eventId = "d3-e2",
@@ -610,7 +621,8 @@ class ItineraryRepository @Inject constructor() {
                             note = "Low-intensity afternoon for recovery after two dense days.",
                             transportToNext = "Train 18 minutes",
                             estimatedCost = "Snacks only",
-                            colorHex = ItineraryEventColors.Palette[7]
+                            colorHex = ItineraryEventColors.Palette[7],
+                            iconName = "DirectionsWalk"
                         )
                     )
                 )
