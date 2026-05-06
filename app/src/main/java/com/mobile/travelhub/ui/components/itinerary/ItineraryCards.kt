@@ -136,6 +136,7 @@ fun SummaryChip(label: String) {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ItineraryDayCard(
     day: ItineraryDay,
@@ -151,160 +152,177 @@ fun ItineraryDayCard(
         else "${formatDisplayTime(sortedEvents.first().startTime)} — ${formatDisplayTime(sortedEvents.last().endTime)}"
     }
 
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = SurfaceContainerLowest),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
-    ) {
-        Box {
+    val dismissState = rememberSwipeToDismissBoxState(
+        confirmValueChange = {
+            it == SwipeToDismissBoxValue.EndToStart
+        }
+    )
+
+    LaunchedEffect(dismissState.currentValue) {
+        if (dismissState.currentValue == SwipeToDismissBoxValue.EndToStart) {
+            onDelete()
+            dismissState.snapTo(SwipeToDismissBoxValue.Settled)
+        }
+    }
+
+    val cardContent = @Composable {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth(),
+            shape = RoundedCornerShape(20.dp),
+            colors = CardDefaults.cardColors(containerColor = SurfaceContainerLowest),
+            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+        ) {
             Column(
                 modifier = Modifier
                     .clickable(onClick = onClick)
                     .padding(20.dp)
             ) {
                 // Header: "Day X - Date" + events chip
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "${day.label} - ${day.dateLabel}",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = OnSurface,
-                    modifier = Modifier.weight(1f)
-                )
-                if (day.events.isNotEmpty()) {
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Row(
-                        modifier = Modifier
-                            .border(
-                                width = 1.dp,
-                                color = OnSurfaceVariant.copy(alpha = 0.3f),
-                                shape = RoundedCornerShape(999.dp)
-                            )
-                            .clickable(
-                                interactionSource = remember { MutableInteractionSource() },
-                                indication = null
-                            ) { showEvents = !showEvents }
-                            .padding(horizontal = 12.dp, vertical = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        Text(
-                            text = "${day.events.size} events",
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = OnSurfaceVariant
-                        )
-                        Icon(
-                            imageVector = if (showEvents) Icons.Default.KeyboardArrowUp
-                            else Icons.Default.KeyboardArrowDown,
-                            contentDescription = if (showEvents) "Collapse" else "Expand",
-                            modifier = Modifier.size(16.dp),
-                            tint = OnSurfaceVariant
-                        )
-                    }
-                }
-            }
-
-            if (timeRange != null) {
-                Text(
-                    text = timeRange,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = PrimaryBlue,
-                    modifier = Modifier.padding(top = 4.dp)
-                )
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Description — auto-generated from events
-            Text(
-                text = if (day.events.isEmpty()) {
-                    "No events yet. Tap to start planning this day."
-                } else {
-                    day.events.joinToString(", ") { it.title } + "."
-                },
-                style = MaterialTheme.typography.bodyMedium,
-                color = OnSurfaceVariant,
-                lineHeight = 20.sp
-            )
-
-            // Expandable events timeline
-            AnimatedVisibility(
-                visible = showEvents && day.events.isNotEmpty(),
-                enter = expandVertically() + fadeIn(),
-                exit = shrinkVertically() + fadeOut()
-            ) {
-                Column(modifier = Modifier.padding(top = 16.dp)) {
-                    sortedEvents.forEachIndexed { index, event ->
-                        Row(modifier = Modifier.height(IntrinsicSize.Min)) {
-                            // Left time column
-                            Column(
-                                horizontalAlignment = Alignment.Start,
-                                modifier = Modifier.width(80.dp)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "${day.label} - ${day.dateLabel}",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = OnSurface,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        if (day.events.isNotEmpty()) {
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Row(
+                                modifier = Modifier
+                                    .border(
+                                        width = 1.dp,
+                                        color = OnSurfaceVariant.copy(alpha = 0.3f),
+                                        shape = RoundedCornerShape(999.dp)
+                                    )
+                                    .clickable(
+                                        interactionSource = remember { MutableInteractionSource() },
+                                        indication = null
+                                    ) { showEvents = !showEvents }
+                                    .padding(horizontal = 12.dp, vertical = 6.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
                             ) {
                                 Text(
-                                    text = formatDisplayTime(event.startTime),
-                                    fontSize = 13.sp,
-                                    fontWeight = FontWeight.Normal,
+                                    text = "${day.events.size} events",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Medium,
                                     color = OnSurfaceVariant
                                 )
-                            }
-                            // Vertical line + dot
-                            Column(
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                modifier = Modifier
-                                    .fillMaxHeight()
-                                    .width(24.dp)
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(8.dp)
-                                        .background(
-                                            color = OnSurfaceVariant.copy(alpha = 0.4f),
-                                            shape = RoundedCornerShape(999.dp)
-                                        )
+                                Icon(
+                                    imageVector = if (showEvents) Icons.Default.KeyboardArrowUp
+                                    else Icons.Default.KeyboardArrowDown,
+                                    contentDescription = if (showEvents) "Collapse" else "Expand",
+                                    modifier = Modifier.size(16.dp),
+                                    tint = OnSurfaceVariant
                                 )
-                                if (index < sortedEvents.size - 1) {
-                                    Box(
-                                        modifier = Modifier
-                                            .width(1.5.dp)
-                                            .weight(1f)
-                                            .background(OnSurfaceVariant.copy(alpha = 0.2f))
-                                    )
-                                }
                             }
-                            // Event info
-                            Column(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .padding(bottom = if (index < sortedEvents.size - 1) 16.dp else 0.dp)
-                            ) {
-                                Text(
-                                    text = event.title,
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = OnSurface
-                                )
-                                val subtitle = buildString {
-                                    if (event.placeName.isNotBlank()) append(event.placeName)
-                                    val duration = computeDuration(event.startTime, event.endTime)
-                                    if (duration.isNotBlank()) {
-                                        if (isNotEmpty()) append(" · ")
-                                        append(duration)
-                                    }
-                                }
-                                if (subtitle.isNotBlank()) {
+                        }
+                    }
+                }
+
+                if (timeRange != null) {
+                    Text(
+                        text = timeRange,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = PrimaryBlue,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Description — auto-generated from events
+                Text(
+                    text = if (day.events.isEmpty()) {
+                        "No events yet. Tap to start planning this day."
+                    } else {
+                        day.events.joinToString(", ") { it.title } + "."
+                    },
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = OnSurfaceVariant,
+                    lineHeight = 20.sp
+                )
+
+                // Expandable events timeline
+                AnimatedVisibility(
+                    visible = showEvents && day.events.isNotEmpty(),
+                    enter = expandVertically() + fadeIn(),
+                    exit = shrinkVertically() + fadeOut()
+                ) {
+                    Column(modifier = Modifier.padding(top = 16.dp)) {
+                        sortedEvents.forEachIndexed { index, event ->
+                            Row(modifier = Modifier.height(IntrinsicSize.Min)) {
+                                // Left time column
+                                Column(
+                                    horizontalAlignment = Alignment.Start,
+                                    modifier = Modifier.width(80.dp)
+                                ) {
                                     Text(
-                                        text = subtitle,
-                                        fontSize = 12.sp,
+                                        text = formatDisplayTime(event.startTime),
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.Normal,
                                         color = OnSurfaceVariant
                                     )
+                                }
+                                // Vertical line + dot
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    modifier = Modifier
+                                        .fillMaxHeight()
+                                        .width(24.dp)
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(8.dp)
+                                            .background(
+                                                color = OnSurfaceVariant.copy(alpha = 0.4f),
+                                                shape = RoundedCornerShape(999.dp)
+                                            )
+                                    )
+                                    if (index < sortedEvents.size - 1) {
+                                        Box(
+                                            modifier = Modifier
+                                                .width(1.5.dp)
+                                                .weight(1f)
+                                                .background(OnSurfaceVariant.copy(alpha = 0.2f))
+                                        )
+                                    }
+                                }
+                                // Event info
+                                Column(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .padding(bottom = if (index < sortedEvents.size - 1) 16.dp else 0.dp)
+                                ) {
+                                    Text(
+                                        text = event.title,
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = OnSurface
+                                    )
+                                    val subtitle = buildString {
+                                        if (event.placeName.isNotBlank()) append(event.placeName)
+                                        val duration = computeDuration(event.startTime, event.endTime)
+                                        if (duration.isNotBlank()) {
+                                            if (isNotEmpty()) append(" · ")
+                                            append(duration)
+                                        }
+                                    }
+                                    if (subtitle.isNotBlank()) {
+                                        Text(
+                                            text = subtitle,
+                                            fontSize = 12.sp,
+                                            color = OnSurfaceVariant
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -312,28 +330,39 @@ fun ItineraryDayCard(
                 }
             }
         }
-        if (isEditMode) {
-            IconButton(
-                onClick = onDelete,
+    }
+
+    if (isEditMode) {
+        SwipeToDismissBox(
+            state = dismissState,
+            enableDismissFromStartToEnd = false,
+            backgroundContent = {
+                val color = when (dismissState.dismissDirection) {
+                    SwipeToDismissBoxValue.EndToStart -> SunsetOrange.copy(alpha = 0.8f)
+                    else -> Color.Transparent
+                }
+                Box(
                     modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(8.dp)
-                        .size(32.dp)
-                        .offset(x = 16.dp, y = (-16).dp)
-                        .background(SunsetOrange, CircleShape)
+                        .fillMaxSize()
+                        .background(color, RoundedCornerShape(20.dp)),
+                    contentAlignment = Alignment.CenterEnd
                 ) {
                     Icon(
-                        imageVector = Icons.Default.Remove,
-                        contentDescription = "Delete day",
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = "Delete",
                         tint = Color.White,
-                        modifier = Modifier.size(16.dp)
+                        modifier = Modifier.padding(end = 24.dp)
                     )
                 }
-            }
-        }
+            },
+            content = { cardContent() }
+        )
+    } else {
+        cardContent()
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DayEventCard(
     event: ItineraryEvent,
@@ -348,110 +377,146 @@ fun DayEventCard(
     val elevation by animateDpAsState(targetValue = if (isDragging) 10.dp else 0.dp, label = "eventCardElevation")
     val accent = event.displayColor()
 
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { isDetailExpanded = !isDetailExpanded },
-        shape = RoundedCornerShape(28.dp),
-        colors = CardDefaults.cardColors(containerColor = SurfaceContainerLowest),
-        elevation = CardDefaults.cardElevation(defaultElevation = elevation)
-    ) {
-        Column(
-            modifier = Modifier.padding(18.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
+    val dismissState = rememberSwipeToDismissBoxState(
+        confirmValueChange = {
+            it == SwipeToDismissBoxValue.EndToStart
+        }
+    )
+
+    LaunchedEffect(dismissState.currentValue) {
+        if (dismissState.currentValue == SwipeToDismissBoxValue.EndToStart) {
+            onDelete()
+            dismissState.snapTo(SwipeToDismissBoxValue.Settled)
+        }
+    }
+
+    val cardContent = @Composable {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { isDetailExpanded = !isDetailExpanded },
+            shape = RoundedCornerShape(28.dp),
+            colors = CardDefaults.cardColors(containerColor = SurfaceContainerLowest),
+            elevation = CardDefaults.cardElevation(defaultElevation = elevation)
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Top
+            Column(
+                modifier = Modifier.padding(18.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "${event.startTime} - ${event.endTime}",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 13.sp,
-                        color = accent
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.Top
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = event.title,
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = OnSurface
+                            text = "${event.startTime} - ${event.endTime}",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 13.sp,
+                            color = accent
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = event.title,
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = OnSurface
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = event.placeName,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = OnSurfaceVariant
                         )
                     }
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = event.placeName,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = OnSurfaceVariant
-                    )
-                }
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    if (isEditMode) {
-                        IconButton(onClick = onEdit) {
-                            Icon(
-                                imageVector = Icons.Default.Edit,
-                                contentDescription = "Edit stop",
-                                tint = OnSurfaceVariant,
-                                modifier = Modifier.size(20.dp)
-                            )
-                        }
-                        IconButton(onClick = onDelete) {
-                            Icon(
-                                imageVector = Icons.Default.Delete,
-                                contentDescription = "Delete stop",
-                                tint = SunsetOrange.copy(alpha = 0.8f),
-                                modifier = Modifier.size(20.dp)
-                            )
-                        }
-                        dragHandle()
-                    }
-                }
-            }
-
-            AnimatedVisibility(
-                visible = isDetailExpanded,
-                enter = expandVertically() + fadeIn(),
-                exit = shrinkVertically() + fadeOut()
-            ) {
-                Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        MetaPill(
-                            icon = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        if (isEditMode) {
+                            IconButton(onClick = onEdit) {
                                 Icon(
-                                    Icons.Default.Schedule,
-                                    null,
+                                    imageVector = Icons.Default.Edit,
+                                    contentDescription = "Edit stop",
                                     tint = OnSurfaceVariant,
-                                    modifier = Modifier.size(14.dp)
+                                    modifier = Modifier.size(20.dp)
                                 )
                             }
-                        ) {
-                            Text(
-                                event.estimatedCost.ifBlank { "No cost" },
-                                fontSize = 12.sp,
-                                color = OnSurfaceVariant
-                            )
-                        }
-                        if (event.transportToNext.isNotBlank()) {
-                            MetaPill {
-                                Text(event.transportToNext, fontSize = 12.sp, color = OnSurfaceVariant)
-                            }
+                            dragHandle()
                         }
                     }
+                }
 
-                    if (event.note.isNotBlank()) {
-                        Text(
-                            text = event.note,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = OnSurface,
-                            lineHeight = 20.sp
-                        )
+                AnimatedVisibility(
+                    visible = isDetailExpanded,
+                    enter = expandVertically() + fadeIn(),
+                    exit = shrinkVertically() + fadeOut()
+                ) {
+                    Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            MetaPill(
+                                icon = {
+                                    Icon(
+                                        Icons.Default.Schedule,
+                                        null,
+                                        tint = OnSurfaceVariant,
+                                        modifier = Modifier.size(14.dp)
+                                    )
+                                }
+                            ) {
+                                Text(
+                                    event.estimatedCost.ifBlank { "No cost" },
+                                    fontSize = 12.sp,
+                                    color = OnSurfaceVariant
+                                )
+                            }
+                            if (event.transportToNext.isNotBlank()) {
+                                MetaPill {
+                                    Text(event.transportToNext, fontSize = 12.sp, color = OnSurfaceVariant)
+                                }
+                            }
+                        }
+
+                        if (event.note.isNotBlank()) {
+                            Text(
+                                text = event.note,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = OnSurface,
+                                lineHeight = 20.sp
+                            )
+                        }
                     }
                 }
             }
         }
+    }
+
+    if (isEditMode) {
+        SwipeToDismissBox(
+            state = dismissState,
+            enableDismissFromStartToEnd = false,
+            backgroundContent = {
+                val color = when (dismissState.dismissDirection) {
+                    SwipeToDismissBoxValue.EndToStart -> SunsetOrange.copy(alpha = 0.8f)
+                    else -> Color.Transparent
+                }
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(color, RoundedCornerShape(28.dp)),
+                    contentAlignment = Alignment.CenterEnd
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = "Delete",
+                        tint = Color.White,
+                        modifier = Modifier.padding(end = 20.dp)
+                    )
+                }
+            },
+            content = { cardContent() }
+        )
+    } else {
+        cardContent()
     }
 }
 

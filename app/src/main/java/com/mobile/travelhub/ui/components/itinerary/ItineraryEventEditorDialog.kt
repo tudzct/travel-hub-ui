@@ -16,7 +16,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -64,6 +63,7 @@ fun ItineraryEventEditorDialog(
     onDelete: () -> Unit
 ) {
     var selectedDay by remember(event.eventId) { mutableStateOf(event.dayIndex) }
+    val effectiveDayCount = maxOf(dayCount, event.dayIndex)
     var startTime by remember(event.eventId) { mutableStateOf(event.startTime) }
     var endTime by remember(event.eventId) { mutableStateOf(event.endTime) }
     var title by remember(event.eventId) { mutableStateOf(event.title) }
@@ -107,7 +107,7 @@ fun ItineraryEventEditorDialog(
                         color = OnSurfaceVariant
                     )
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        for (day in 1..dayCount) {
+                        for (day in 1..effectiveDayCount) {
                             FilterChip(
                                 selected = selectedDay == day,
                                 onClick = { selectedDay = day },
