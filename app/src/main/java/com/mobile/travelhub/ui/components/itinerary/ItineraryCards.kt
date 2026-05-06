@@ -15,6 +15,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
@@ -318,12 +319,13 @@ fun ItineraryDayCard(
                         .align(Alignment.TopEnd)
                         .padding(8.dp)
                         .size(32.dp)
-                        .background(SunsetOrange.copy(alpha = 0.15f), CircleShape)
+                        .offset(x = 16.dp, y = (-16).dp)
+                        .background(SunsetOrange, CircleShape)
                 ) {
                     Icon(
                         imageVector = Icons.Default.Remove,
                         contentDescription = "Delete day",
-                        tint = SunsetOrange,
+                        tint = Color.White,
                         modifier = Modifier.size(16.dp)
                     )
                 }
