@@ -1,11 +1,7 @@
 package com.mobile.travelhub.ui.components
 
-import android.net.Uri
-import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -34,7 +30,6 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material.icons.outlined.ChatBubbleOutline
 import androidx.compose.material.icons.outlined.FavoriteBorder
-import androidx.compose.material.icons.outlined.MoreHoriz
 import androidx.compose.material.icons.outlined.Place
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -46,12 +41,10 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -362,70 +355,14 @@ private fun LocationsRail(
             horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             items(places, key = { it.id }) { place ->
-                LocationCard(
-                    place = place,
+                FeaturedLocationCard(
+                    country = place.province.name,
+                    city = place.name,
+                    imageUrl = place.mainImage,
+                    modifier = Modifier
+                        .width(150.dp)
+                        .height(190.dp),
                     onClick = { onPlaceClick(place) }
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun LocationCard(
-    place: TravelPlaceListItemResponse,
-    onClick: () -> Unit
-) {
-    Surface(
-        modifier = Modifier
-            .width(134.dp)
-            .height(182.dp)
-            .clickable(onClick = onClick)
-            .border(1.dp, VerdantSurfaceContainerHighest, RoundedCornerShape(12.dp))
-            .clip(RoundedCornerShape(12.dp)),
-        shape = RoundedCornerShape(12.dp),
-        color = VerdantSurfaceContainerLowest,
-    ) {
-        Box {
-            AsyncImage(
-                model = place.mainImage,
-                contentDescription = place.name,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop
-            )
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        Brush.verticalGradient(
-                            colors = listOf(
-                                VerdantPrimary.copy(alpha = 0.08f),
-                                Color.Transparent,
-                                VerdantOnSurface.copy(alpha = 0.76f)
-                            )
-                        )
-                    )
-            )
-            Column(
-                modifier = Modifier
-                    .align(Alignment.BottomStart)
-                    .padding(10.dp),
-                verticalArrangement = Arrangement.spacedBy(3.dp)
-            ) {
-                Text(
-                    text = place.name,
-                    style = MaterialTheme.typography.labelLarge,
-                    color = Color.White,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Text(
-                    text = place.province.name,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = Color.White.copy(alpha = 0.82f),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
                 )
             }
         }
@@ -691,7 +628,5 @@ fun FeedPostCard(
 
 private val VerdantPrimary = Color(0xFF60B2E5)
 private val VerdantSurfaceContainer = Color(0xFFEFF6EA)
-private val VerdantSurfaceContainerHighest = Color(0xFFDDE5D9)
-private val VerdantSurfaceContainerLowest = Color(0xFFFFFFFF)
 private val VerdantOnSurface = Color(0xFF171D16)
 private val VerdantOnSurfaceVariant = Color(0xFF3E4A3D)
