@@ -5,6 +5,7 @@ import com.google.gson.annotations.SerializedName
 data class UserProfileResponse(
     val id: Long = 0,
     val username: String = "",
+    @SerializedName(value = "name", alternate = ["full_name", "fullName"])
     val name: String = "",
     val bio: String? = null,
     val dateOfBirth: String? = null,
@@ -23,6 +24,7 @@ data class UserProfileResponse(
 data class UserSummaryResponse(
     val id: Long = 0,
     val username: String = "",
+    @SerializedName(value = "name", alternate = ["full_name", "fullName"])
     val name: String = "",
     val avatarUrl: String? = null,
     @SerializedName("following")
@@ -32,6 +34,7 @@ data class UserSummaryResponse(
 data class ProfileUpdateRequest(
     val id: Long,
     val username: String,
+    @SerializedName(value = "name", alternate = ["full_name", "fullName"])
     val name: String,
     val bio: String?,
     val dateOfBirth: String?,

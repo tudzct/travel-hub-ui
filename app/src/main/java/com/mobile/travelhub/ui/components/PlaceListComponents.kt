@@ -4,6 +4,7 @@ import android.net.Uri
 import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -41,11 +42,9 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
@@ -251,22 +250,19 @@ fun PlaceListScreenContent(
                         .padding(horizontal = 16.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    OutlinedTextField(
+                    SimpleFormTextField(
                         value = homeUiState.commentInput,
                         onValueChange = onCommentInputChanged,
-                        placeholder = { Text("Add a comment") },
+                        placeholder = "Add a comment",
                         modifier = Modifier.weight(1f),
                         enabled = !homeUiState.isCommentSubmitting,
+                        singleLine = false,
                         maxLines = 3,
                         shape = RoundedCornerShape(24.dp),
-                        colors = TextFieldDefaults.colors(
-                            focusedContainerColor = Color.White,
-                            unfocusedContainerColor = Color.White,
-                            disabledContainerColor = Color(0xFFF4F4F4),
-                            focusedIndicatorColor = VerdantPrimary,
-                            unfocusedIndicatorColor = Color.Transparent,
-                            disabledIndicatorColor = Color.Transparent
-                        )
+                        focusedContainerColor = Color.White,
+                        unfocusedContainerColor = Color.White,
+                        disabledContainerColor = Color(0xFFF4F4F4),
+                        focusedIndicatorColor = VerdantPrimary
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     IconButton(
@@ -362,8 +358,8 @@ private fun LocationsRail(
         }
 
         LazyRow(
-            contentPadding = PaddingValues(horizontal = 16.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            contentPadding = PaddingValues(horizontal = 12.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             items(places, key = { it.id }) { place ->
                 LocationCard(
@@ -382,12 +378,13 @@ private fun LocationCard(
 ) {
     Surface(
         modifier = Modifier
-            .width(104.dp)
-            .height(172.dp)
-            .clickable(onClick = onClick),
-        shape = RoundedCornerShape(8.dp),
+            .width(134.dp)
+            .height(182.dp)
+            .clickable(onClick = onClick)
+            .border(1.dp, VerdantSurfaceContainerHighest, RoundedCornerShape(12.dp))
+            .clip(RoundedCornerShape(12.dp)),
+        shape = RoundedCornerShape(12.dp),
         color = VerdantSurfaceContainerLowest,
-        shadowElevation = 8.dp
     ) {
         Box {
             AsyncImage(
@@ -568,19 +565,19 @@ fun FeedPostCard(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .aspectRatio(4f / 5f)
+                .aspectRatio(5f / 3f)
                 .background(Color(0xFFF5F5F5))
         ) {
             if (post.imageUrls.isNotEmpty()) {
                 HorizontalPager(
                     state = pagerState,
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier.fillMaxWidth()
                 ) { page ->
                     val resolvedUrl = toDisplayUrl(post.imageUrls[page])
                     AsyncImage(
                         model = resolvedUrl,
                         contentDescription = post.description,
-                        modifier = Modifier.fillMaxSize(),
+                        modifier = Modifier.fillMaxWidth(),
                         contentScale = ContentScale.Crop
                     )
                 }

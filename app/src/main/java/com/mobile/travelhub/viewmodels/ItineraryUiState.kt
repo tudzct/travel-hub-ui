@@ -16,6 +16,7 @@ data class ItineraryUiState(
     val selectedChangeIds: Set<String> = emptySet(),
     val chatMessages: List<ItineraryChatMessage> = emptyList(),
     val chatInput: String = "",
+    val chatInputType: String = "TEXT",
     val thinking: String = "",
     val isStreaming: Boolean = false,
     val isChatSheetOpen: Boolean = false,
