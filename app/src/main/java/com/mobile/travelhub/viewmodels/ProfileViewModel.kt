@@ -11,6 +11,7 @@ import com.mobile.travelhub.data.httpStatusCode
 import com.mobile.travelhub.data.model.ProfileUpdateRequest
 import com.mobile.travelhub.data.model.UserProfileResponse
 import com.mobile.travelhub.data.model.UserSummaryResponse
+import com.mobile.travelhub.utils.PostsUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -283,51 +284,8 @@ class ProfileViewModel @Inject constructor(
             commentCount = post.commentCount?.coerceAtLeast(0) ?: 0,
             isLiked = post.likedByCurrentUser == true,
             isLikeLoading = false,
-            timeAgoLabel = formatTimeAgo(safeCreatedAt)
+            timeAgoLabel = PostsUtils.formatTimeAgo(safeCreatedAt)
         )
-    }
-
-    private fun formatTimeAgo(rawTimestamp: String?): String {
-        if (rawTimestamp.isNullOrBlank()) return "JUST NOW"
-
-        val createdAtMillis = parseTimestampToMillis(rawTimestamp) ?: return "JUST NOW"
-        val durationMillis = (System.currentTimeMillis() - createdAtMillis).coerceAtLeast(0L)
-
-        val minutes = durationMillis / 60_000
-        return when {
-            minutes < 1 -> "JUST NOW"
-            minutes < 60 -> "$minutes MINUTES AGO"
-            minutes < 60 * 24 -> "${minutes / 60} HOURS AGO"
-            else -> "${minutes / (60 * 24)} DAYS AGO"
-        }
-    }
-
-    private fun parseTimestampToMillis(value: String): Long? {
-        val formats = listOf(
-            "yyyy-MM-dd'T'HH:mm:ss.SSSSSSX",
-            "yyyy-MM-dd'T'HH:mm:ss.SSSSSS'Z'",
-            "yyyy-MM-dd'T'HH:mm:ss.SSSSSS",
-            "yyyy-MM-dd'T'HH:mm:ss.SSSX",
-            "yyyy-MM-dd'T'HH:mm:ss.SSS",
-            "yyyy-MM-dd'T'HH:mm:ssX",
-            "yyyy-MM-dd'T'HH:mm:ss",
-            "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
-            "yyyy-MM-dd'T'HH:mm:ss'Z'",
-            "yyyy-MM-dd HH:mm:ss"
-        )
-
-        for (pattern in formats) {
-            val parser = SimpleDateFormat(pattern, Locale.US).apply {
-                timeZone = TimeZone.getTimeZone("UTC")
-                isLenient = false
-            }
-            val parsed = runCatching { parser.parse(value) as Date? }.getOrNull()
-            if (parsed != null) {
-                return parsed.time
-            }
-        }
-
-        return null
     }
 }
 

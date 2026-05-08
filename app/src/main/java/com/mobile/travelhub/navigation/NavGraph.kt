@@ -46,6 +46,7 @@ sealed class Screen(
     data object OnboardingDestination : Screen("onboarding-destination", -3)
     data object OnboardingFinish : Screen("onboarding-finish", -2)
     data object Home : Screen("home", 0, true)
+    data object Explore : Screen("explore", 1, true)
     data object Trips : Screen("trips", 1, true)
     data object CreatePost : Screen("create_post", showBottomBar = true)
     data object Profile : Screen("profile", 2, true)
@@ -99,6 +100,7 @@ sealed class Screen(
                 OnboardingDestination.route -> OnboardingDestination
                 OnboardingFinish.route -> OnboardingFinish
                 Home.route -> Home
+                Explore.route -> Explore
                 Trips.route -> Trips
                 CreatePost.route -> CreatePost
                 Profile.route -> Profile
@@ -110,6 +112,7 @@ sealed class Screen(
                 Register.route -> Register
                 //mẻge from trường
                 "home" -> Home
+                "explore" -> Explore
                 "trips" -> Trips
                 "create_post" -> CreatePost
                 "profile" -> Profile
@@ -304,6 +307,9 @@ fun NavGraph(
             PlaceListScreen(
                 onPlaceClick = ::navigateToPlaceDetail
             )
+        }
+        composable(Screen.Explore.route) {
+            ExploreScreen()
         }
         composable(Screen.Trips.route) {
             TripsScreen(

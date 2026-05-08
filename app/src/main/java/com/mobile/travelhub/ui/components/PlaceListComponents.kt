@@ -1,10 +1,9 @@
 package com.mobile.travelhub.ui.components
 
-import android.net.Uri
-import android.util.Log
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -33,7 +32,6 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material.icons.outlined.ChatBubbleOutline
 import androidx.compose.material.icons.outlined.FavoriteBorder
-import androidx.compose.material.icons.outlined.MoreHoriz
 import androidx.compose.material.icons.outlined.Place
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -41,18 +39,14 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -66,6 +60,7 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.mobile.travelhub.R
 import com.mobile.travelhub.data.model.TravelPlaceListItemResponse
+import com.mobile.travelhub.ui.components.modifiers.shimmerEffect
 import com.mobile.travelhub.viewmodels.HomePostUiModel
 import com.mobile.travelhub.viewmodels.HomeUiState
 import com.mobile.travelhub.viewmodels.PlaceListUiState
@@ -107,14 +102,7 @@ fun PlaceListScreenContent(
             when {
                 placeUiState.isLoading && placeUiState.items.isEmpty() -> {
                     item {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(top = 40.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            CircularProgressIndicator(color = VerdantPrimary)
-                        }
+                        LocationsRailSkeleton()
                     }
                 }
 
@@ -251,22 +239,19 @@ fun PlaceListScreenContent(
                         .padding(horizontal = 16.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    OutlinedTextField(
+                    SimpleFormTextField(
                         value = homeUiState.commentInput,
                         onValueChange = onCommentInputChanged,
-                        placeholder = { Text("Add a comment") },
+                        placeholder = "Add a comment",
                         modifier = Modifier.weight(1f),
                         enabled = !homeUiState.isCommentSubmitting,
+                        singleLine = false,
                         maxLines = 3,
                         shape = RoundedCornerShape(24.dp),
-                        colors = TextFieldDefaults.colors(
-                            focusedContainerColor = Color.White,
-                            unfocusedContainerColor = Color.White,
-                            disabledContainerColor = Color(0xFFF4F4F4),
-                            focusedIndicatorColor = VerdantPrimary,
-                            unfocusedIndicatorColor = Color.Transparent,
-                            disabledIndicatorColor = Color.Transparent
-                        )
+                        focusedContainerColor = Color.White,
+                        unfocusedContainerColor = Color.White,
+                        disabledContainerColor = Color(0xFFF4F4F4),
+                        focusedIndicatorColor = VerdantPrimary
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     IconButton(
@@ -345,92 +330,78 @@ private fun LocationsRail(
     places: List<TravelPlaceListItemResponse>,
     onPlaceClick: (TravelPlaceListItemResponse) -> Unit
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "Locations",
-                style = MaterialTheme.typography.titleMedium,
-                color = VerdantOnSurface,
-                fontWeight = FontWeight.Bold
+    LazyRow(
+        contentPadding = PaddingValues(horizontal = 12.dp),
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        items(places, key = { it.id }) { place ->
+            FeaturedLocationCard(
+                country = place.province.name,
+                city = place.name,
+                imageUrl = place.mainImage,
+                modifier = Modifier
+                    .width(220.dp)
+                    .height(270.dp),
+                onClick = { onPlaceClick(place) }
             )
         }
+    }
 
-        LazyRow(
-            contentPadding = PaddingValues(horizontal = 16.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            items(places, key = { it.id }) { place ->
-                LocationCard(
-                    place = place,
-                    onClick = { onPlaceClick(place) }
-                )
-            }
+}
+
+@Composable
+private fun LocationsRailSkeleton() {
+    LazyRow(
+        contentPadding = PaddingValues(horizontal = 12.dp),
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        items(4) {
+            FeaturedLocationCardSkeleton(
+                modifier = Modifier
+                    .width(220.dp)
+                    .height(270.dp)
+            )
         }
     }
 }
 
 @Composable
-private fun LocationCard(
-    place: TravelPlaceListItemResponse,
-    onClick: () -> Unit
+private fun FeaturedLocationCardSkeleton(
+    modifier: Modifier = Modifier
 ) {
-    Surface(
-        modifier = Modifier
-            .width(104.dp)
-            .height(172.dp)
-            .clickable(onClick = onClick),
-        shape = RoundedCornerShape(8.dp),
-        color = VerdantSurfaceContainerLowest,
-        shadowElevation = 8.dp
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(10.dp))
+            .shimmerEffect()
     ) {
-        Box {
-            AsyncImage(
-                model = place.mainImage,
-                contentDescription = place.name,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop
+        Box(
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(14.dp)
+                .size(42.dp)
+                .clip(CircleShape)
+                .shimmerEffect()
+        )
+        Column(
+            modifier = Modifier
+                .align(Alignment.BottomStart)
+                .padding(start = 14.dp, end = 56.dp, bottom = 14.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .width(76.dp)
+                    .height(10.dp)
+                    .clip(RoundedCornerShape(50))
+                    .shimmerEffect()
             )
             Box(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        Brush.verticalGradient(
-                            colors = listOf(
-                                VerdantPrimary.copy(alpha = 0.08f),
-                                Color.Transparent,
-                                VerdantOnSurface.copy(alpha = 0.76f)
-                            )
-                        )
-                    )
+                    .width(124.dp)
+                    .height(20.dp)
+                    .clip(RoundedCornerShape(50))
+                    .shimmerEffect()
             )
-            Column(
-                modifier = Modifier
-                    .align(Alignment.BottomStart)
-                    .padding(10.dp),
-                verticalArrangement = Arrangement.spacedBy(3.dp)
-            ) {
-                Text(
-                    text = place.name,
-                    style = MaterialTheme.typography.labelLarge,
-                    color = Color.White,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Text(
-                    text = place.province.name,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = Color.White.copy(alpha = 0.82f),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
         }
     }
 }
@@ -486,6 +457,7 @@ private fun FeedEmptyState(
 }
 
 @Composable
+@OptIn(ExperimentalFoundationApi::class)
 fun FeedPostCard(
     post: HomePostUiModel,
     onLikeClick: () -> Unit,
@@ -525,7 +497,10 @@ fun FeedPostCard(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                modifier = Modifier.weight(1f),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 Image(
                     painter = painterResource(R.drawable.female_avatar_maker),
                     contentDescription = post.username,
@@ -535,14 +510,22 @@ fun FeedPostCard(
                     contentScale = ContentScale.Crop
                 )
                 Spacer(modifier = Modifier.width(10.dp))
-                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(2.dp)
+                ) {
                     Text(
                         text = post.username,
                         style = MaterialTheme.typography.titleSmall,
                         color = VerdantOnSurface,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
                         Icon(
                             imageVector = Icons.Outlined.Place,
                             contentDescription = null,
@@ -552,12 +535,18 @@ fun FeedPostCard(
                         Spacer(modifier = Modifier.width(2.dp))
                         Text(
                             text = post.subtitle,
+                            modifier = Modifier
+                                .weight(1f)
+                                .basicMarquee(),
                             style = MaterialTheme.typography.bodySmall,
-                            color = VerdantOnSurfaceVariant
+                            color = VerdantOnSurfaceVariant,
+                            maxLines = 1
                         )
                     }
                 }
             }
+            Spacer(modifier = Modifier.width(4.dp))
+
             Text(
                 text = post.timeAgoLabel,
                 style = MaterialTheme.typography.labelSmall,
@@ -568,19 +557,19 @@ fun FeedPostCard(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .aspectRatio(4f / 5f)
+                .aspectRatio(5f / 3f)
                 .background(Color(0xFFF5F5F5))
         ) {
             if (post.imageUrls.isNotEmpty()) {
                 HorizontalPager(
                     state = pagerState,
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier.fillMaxWidth()
                 ) { page ->
                     val resolvedUrl = toDisplayUrl(post.imageUrls[page])
                     AsyncImage(
                         model = resolvedUrl,
                         contentDescription = post.description,
-                        modifier = Modifier.fillMaxSize(),
+                        modifier = Modifier.fillMaxWidth(),
                         contentScale = ContentScale.Crop
                     )
                 }
@@ -685,7 +674,7 @@ fun FeedPostCard(
         Spacer(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(1.dp)
+                .height(3.dp)
                 .background(Color(0xFFE0E0E0))
         )
     }
@@ -694,7 +683,5 @@ fun FeedPostCard(
 
 private val VerdantPrimary = Color(0xFF60B2E5)
 private val VerdantSurfaceContainer = Color(0xFFEFF6EA)
-private val VerdantSurfaceContainerHighest = Color(0xFFDDE5D9)
-private val VerdantSurfaceContainerLowest = Color(0xFFFFFFFF)
 private val VerdantOnSurface = Color(0xFF171D16)
 private val VerdantOnSurfaceVariant = Color(0xFF3E4A3D)

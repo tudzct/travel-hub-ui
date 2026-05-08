@@ -42,6 +42,10 @@ class ItineraryViewModel @Inject constructor(
             )
         }
         workspaceJob = viewModelScope.launch {
+            runCatching { repository.refreshWorkspace(groupName) }
+                .onFailure { throwable ->
+                    _uiState.update { it.copy(errorMessage = throwable.message ?: "Unable to load itinerary") }
+                }
             repository.observeWorkspace(groupName).collect { workspace ->
                 val selectedDayIndex = _uiState.value.selectedDayIndex
                     .takeIf { value -> workspace.days.any { it.dayIndex == value } }
@@ -83,7 +87,11 @@ class ItineraryViewModel @Inject constructor(
     }
 
     fun updateChatInput(value: String) {
-        _uiState.update { it.copy(chatInput = value) }
+        _uiState.update { it.copy(chatInput = value, chatInputType = "TEXT") }
+    }
+
+    fun updateVoiceChatInput(value: String) {
+        _uiState.update { it.copy(chatInput = value, chatInputType = "VOICE") }
     }
 
     fun sendChatPrompt() {
@@ -112,7 +120,8 @@ class ItineraryViewModel @Inject constructor(
             repository.streamProposal(
                 groupName = groupName,
                 prompt = prompt,
-                selectedDayIndex = _uiState.value.selectedDayIndex
+                selectedDayIndex = _uiState.value.selectedDayIndex,
+                inputType = _uiState.value.chatInputType
             ).collect { event ->
                 when (event) {
                     is ItineraryAssistantEvent.Thinking -> {
@@ -184,13 +193,15 @@ class ItineraryViewModel @Inject constructor(
         val proposal = state.pendingProposal ?: return
         val groupName = boundGroupName ?: return
 
-        repository.applyProposalChanges(
-            groupName = groupName,
-            proposalId = proposal.proposalId,
-            selectedChangeIds = state.selectedChangeIds,
-            baseVersion = proposal.baseVersion
-        ).onFailure { throwable ->
-            _uiState.update { it.copy(errorMessage = throwable.message ?: "Unable to apply changes") }
+        viewModelScope.launch {
+            repository.applyProposalChanges(
+                groupName = groupName,
+                proposalId = proposal.proposalId,
+                selectedChangeIds = state.selectedChangeIds,
+                baseVersion = proposal.baseVersion
+            ).onFailure { throwable ->
+                _uiState.update { it.copy(errorMessage = throwable.message ?: "Unable to apply changes") }
+            }
         }
     }
 
@@ -236,8 +247,9 @@ class ItineraryViewModel @Inject constructor(
             note = "",
             transportToNext = "",
             estimatedCost = "",
-            isHighlighted = false,
-            colorHex = ItineraryEventColors.Palette[selectedDay.events.size % ItineraryEventColors.Palette.size]
+            colorHex = ItineraryEventColors.Palette[selectedDay.events.size % ItineraryEventColors.Palette.size],
+            iconName = "Place",
+            dayId = selectedDay.dayId
         )
         _uiState.update {
             it.copy(
@@ -258,14 +270,18 @@ class ItineraryViewModel @Inject constructor(
 
     fun saveEvent(updatedEvent: ItineraryEvent) {
         val groupName = boundGroupName ?: return
-        repository.updateEvent(groupName, updatedEvent)
-        _uiState.update { it.copy(editingEvent = null, isCreatingEvent = false) }
+        launchMutation {
+            repository.updateEvent(groupName, updatedEvent)
+            _uiState.update { it.copy(editingEvent = null, isCreatingEvent = false) }
+        }
     }
 
     fun saveDay(updatedDay: ItineraryDay) {
         val groupName = boundGroupName ?: return
-        repository.updateDay(groupName, updatedDay)
-        _uiState.update { it.copy(editingDay = null) }
+        launchMutation {
+            repository.updateDay(groupName, updatedDay)
+            _uiState.update { it.copy(editingDay = null) }
+        }
     }
 
     fun deleteEditingEvent() {
@@ -275,55 +291,73 @@ class ItineraryViewModel @Inject constructor(
             _uiState.update { it.copy(editingEvent = null, isCreatingEvent = false) }
             return
         }
-        repository.deleteEvent(groupName, event.eventId)
-        _uiState.update { it.copy(editingEvent = null, isCreatingEvent = false) }
+        launchMutation {
+            repository.deleteEvent(groupName, event.eventId)
+            _uiState.update { it.copy(editingEvent = null, isCreatingEvent = false) }
+        }
     }
 
     fun deleteEvent(eventId: String) {
         val groupName = boundGroupName ?: return
-        repository.deleteEvent(groupName, eventId)
-        _uiState.update { it.copy(editingEvent = null, isCreatingEvent = false) }
+        launchMutation {
+            repository.deleteEvent(groupName, eventId)
+            _uiState.update { it.copy(editingEvent = null, isCreatingEvent = false) }
+        }
     }
 
     fun deleteEditingDay() {
         val groupName = boundGroupName ?: return
         val day = _uiState.value.editingDay ?: return
-        repository.deleteDay(groupName, day.dayIndex)
-        _uiState.update { it.copy(editingDay = null) }
+        launchMutation {
+            repository.deleteDay(groupName, day.dayIndex)
+            _uiState.update { it.copy(editingDay = null) }
+        }
     }
 
     fun deleteDay(dayIndex: Int) {
         val groupName = boundGroupName ?: return
-        repository.deleteDay(groupName, dayIndex)
-        _uiState.update { it.copy(editingDay = null) }
+        launchMutation {
+            repository.deleteDay(groupName, dayIndex)
+            _uiState.update { it.copy(editingDay = null) }
+        }
     }
 
     fun addDay() {
         val groupName = boundGroupName ?: return
-        val newDayIndex = repository.addDay(groupName)
-        _uiState.update { it.copy(selectedDayIndex = newDayIndex) }
+        launchMutation {
+            val newDayIndex = repository.addDay(groupName)
+            _uiState.update { it.copy(selectedDayIndex = newDayIndex) }
+        }
     }
 
     fun moveEvent(eventId: String, moveUp: Boolean) {
         val groupName = boundGroupName ?: return
         val dayIndex = _uiState.value.selectedDayIndex
-        repository.reorderEvent(
-            groupName = groupName,
-            dayIndex = dayIndex,
-            eventId = eventId,
-            moveUp = moveUp
-        )
+        launchMutation {
+            repository.reorderEvent(
+                groupName = groupName,
+                dayIndex = dayIndex,
+                eventId = eventId,
+                moveUp = moveUp
+            )
+        }
     }
 
     fun reorderDayEvents(fromIndex: Int, toIndex: Int) {
         val groupName = boundGroupName ?: return
         val dayIndex = _uiState.value.selectedDayIndex
-        repository.reorderEvents(
-            groupName = groupName,
-            dayIndex = dayIndex,
-            fromIndex = fromIndex,
-            toIndex = toIndex
-        )
+        launchMutation {
+            repository.reorderEvents(
+                groupName = groupName,
+                dayIndex = dayIndex,
+                fromIndex = fromIndex,
+                toIndex = toIndex
+            )
+        }
+    }
+
+    fun toggleEditMode() {
+        _uiState.update { it.copy(isEditMode = !it.isEditMode) }
     }
 
     fun clearError() {
@@ -337,5 +371,14 @@ class ItineraryViewModel @Inject constructor(
         val minute = parts[1].toIntOrNull() ?: return time
         val nextHour = (hour + 1).coerceAtMost(23)
         return "%02d:%02d".format(nextHour, minute)
+    }
+
+    private fun launchMutation(block: suspend () -> Unit) {
+        viewModelScope.launch {
+            runCatching { block() }
+                .onFailure { throwable ->
+                    _uiState.update { it.copy(errorMessage = throwable.message ?: "Unable to update itinerary") }
+                }
+        }
     }
 }
