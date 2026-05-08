@@ -1,5 +1,6 @@
 package com.mobile.travelhub.navigation
 
+import android.net.Uri
 import androidx.compose.animation.AnimatedContentTransitionScope.SlideDirection
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.PaddingValues
@@ -84,8 +85,8 @@ sealed class Screen(
     }
 
     data object CreateGroup : Screen("create_group", 7)
-    data object GroupDetail : Screen("group_detail/{groupName}", 8) {
-        fun createRoute(groupName: String) = "group_detail/$groupName"
+    data object GroupDetail : Screen("group_detail/{tripId}/{groupName}", 8) {
+        fun createRoute(tripId: Long, groupName: String): String = "group_detail/$tripId/${Uri.encode(groupName)}"
     }
     data object GroupChat : Screen("group_chat/{groupName}", 9) {
         fun createRoute(groupName: String) = "group_chat/$groupName"
@@ -342,8 +343,8 @@ fun NavGraph(
         }
         composable(Screen.Trips.route) {
             TripsScreen(
-                onNavigateToGroupDetail = { groupName ->
-                    navController.navigate(Screen.GroupDetail.createRoute(groupName)) { launchSingleTop = true }
+                onNavigateToGroupDetail = { tripId, groupName ->
+                    navController.navigate(Screen.GroupDetail.createRoute(tripId, groupName)) { launchSingleTop = true }
                 },
                 onNavigateToCreateGroup = {
                     navController.navigate(Screen.CreateGroup.route) { launchSingleTop = true }
@@ -452,16 +453,23 @@ fun NavGraph(
         composable(Screen.CreateGroup.route) {
             CreateGroupScreen(
                 onBack = { navController.popBackStack() },
-                onCreate = { navController.popBackStack() }
+                onCreate = { tripId, groupName ->
+                    navController.navigate(Screen.GroupDetail.createRoute(tripId, groupName)) { launchSingleTop = true }
+                }
             )
         }
 
         composable(
             route = Screen.GroupDetail.route,
-            arguments = listOf(navArgument("groupName") { type = NavType.StringType })
+            arguments = listOf(
+                navArgument("tripId") { type = NavType.LongType },
+                navArgument("groupName") { type = NavType.StringType }
+            )
         ) { backStackEntry ->
+            val tripId = backStackEntry.arguments?.getLong("tripId") ?: -1L
             val groupName = backStackEntry.arguments?.getString("groupName") ?: "Group"
             GroupDetailScreen(
+                tripId = tripId,
                 groupName = groupName,
                 onBack = { navController.popBackStack() },
                 onNavigateToChat = { navController.navigate(Screen.GroupChat.createRoute(groupName)) { launchSingleTop = true } },
