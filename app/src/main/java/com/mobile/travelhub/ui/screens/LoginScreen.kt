@@ -27,8 +27,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -38,7 +36,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusDirection
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -50,6 +47,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
+import com.mobile.travelhub.ui.components.SimpleFormTextField
 import com.mobile.travelhub.viewmodels.AuthUiState
 
 @Composable
@@ -63,19 +61,6 @@ fun LoginScreen(
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
     val focusManager = LocalFocusManager.current
-
-    val filledFieldColors = TextFieldDefaults.colors(
-        unfocusedContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.08f),
-        focusedContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
-        unfocusedIndicatorColor = Color.Transparent,
-        focusedIndicatorColor = Color.Transparent,
-        errorIndicatorColor = Color.Transparent,
-        cursorColor = MaterialTheme.colorScheme.primary,
-        unfocusedPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-        focusedPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
-        unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
-        focusedTextColor = MaterialTheme.colorScheme.onSurface
-    )
 
     Column(
         modifier = Modifier
@@ -103,14 +88,13 @@ fun LoginScreen(
         // ── Form fields ──
         Column(modifier = Modifier.padding(horizontal = 28.dp)) {
             // Email field
-            TextField(
+            SimpleFormTextField(
                 value = email,
                 onValueChange = {
                     email = it
                     if (uiState.errorMessage != null) onDismissError()
                 },
-                placeholder = { Text("Email address") },
-                singleLine = true,
+                placeholder = "Email address",
                 keyboardOptions = KeyboardOptions(
                     keyboardType = KeyboardType.Email,
                     imeAction = ImeAction.Next
@@ -125,22 +109,19 @@ fun LoginScreen(
                         tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
                     )
                 },
-                colors = filledFieldColors,
-                shape = RoundedCornerShape(14.dp),
                 modifier = Modifier.fillMaxWidth()
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
             // Password field
-            TextField(
+            SimpleFormTextField(
                 value = password,
                 onValueChange = {
                     password = it
                     if (uiState.errorMessage != null) onDismissError()
                 },
-                placeholder = { Text("Password") },
-                singleLine = true,
+                placeholder = "Password",
                 visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                 keyboardOptions = KeyboardOptions(
                     keyboardType = KeyboardType.Password,
@@ -161,8 +142,6 @@ fun LoginScreen(
                         )
                     }
                 },
-                colors = filledFieldColors,
-                shape = RoundedCornerShape(14.dp),
                 modifier = Modifier.fillMaxWidth()
             )
 

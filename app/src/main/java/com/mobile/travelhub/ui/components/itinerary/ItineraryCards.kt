@@ -611,9 +611,12 @@ fun ProposalChangeCard(
     onToggle: () -> Unit
 ) {
     val accent = when (change) {
+        is AddDayChange -> Color(0xFF0D8A4B)
+        is DeleteDayChange -> Color(0xFFC44536)
         is AddEventChange -> Color(0xFF0D8A4B)
         is DeleteEventChange -> Color(0xFFC44536)
         is MoveEventChange -> Color(0xFF006D77)
+        is UpdateDayChange -> PrimaryBlue
         is UpdateEventChange -> PrimaryBlue
     }
 
@@ -663,6 +666,8 @@ fun ProposalChangeCard(
             }
 
             when (change) {
+                is AddDayChange -> DayProposalPreview(day = change.dayAfter, accent = accent)
+                is DeleteDayChange -> DayProposalPreview(day = change.dayBefore, accent = accent)
                 is AddEventChange -> EventPreviewCard(event = change.eventAfter, accent = accent)
                 is DeleteEventChange -> EventPreviewCard(
                     event = change.eventBefore,
@@ -681,6 +686,38 @@ fun ProposalChangeCard(
                         DiffRow(label = diff.label, before = diff.before, after = diff.after)
                     }
                 }
+                is UpdateDayChange -> {
+                    DiffRow(label = "Label", before = change.dayBefore.label, after = change.dayAfter.label)
+                    DiffRow(label = "Date", before = change.dayBefore.dateLabel, after = change.dayAfter.dateLabel)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun DayProposalPreview(day: ItineraryDay, accent: Color) {
+    Surface(
+        color = Color.White.copy(alpha = 0.8f),
+        shape = RoundedCornerShape(18.dp)
+    ) {
+        Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(
+                text = "${day.label} · ${day.dateLabel}",
+                fontWeight = FontWeight.ExtraBold,
+                color = OnSurface
+            )
+            Text(
+                text = "${day.events.size} stop${if (day.events.size == 1) "" else "s"}",
+                color = accent,
+                style = MaterialTheme.typography.labelSmall
+            )
+            day.events.take(2).forEach { event ->
+                Text(
+                    text = "${event.startTime} ${event.title}",
+                    color = OnSurfaceVariant,
+                    style = MaterialTheme.typography.bodySmall
+                )
             }
         }
     }
@@ -847,9 +884,12 @@ fun diffValueLabel(label: String, value: String?): String {
 
 fun changeTitle(change: ItineraryChange): String {
     return when (change) {
+        is AddDayChange -> "Add ${change.dayAfter.label}"
+        is DeleteDayChange -> "Delete ${change.dayBefore.label}"
         is AddEventChange -> "Add ${change.eventAfter.title}"
         is DeleteEventChange -> "Delete ${change.eventBefore.title}"
         is MoveEventChange -> "Move ${change.eventSnapshot.title}"
+        is UpdateDayChange -> "Update ${change.dayBefore.label}"
         is UpdateEventChange -> "Update ${change.eventBefore.title}"
     }
 }
@@ -858,9 +898,12 @@ fun changeTitle(change: ItineraryChange): String {
 
 fun changeTypeLabel(change: ItineraryChange): String {
     return when (change) {
+        is AddDayChange -> "Add day"
+        is DeleteDayChange -> "Delete day"
         is AddEventChange -> "Add"
         is DeleteEventChange -> "Delete"
         is MoveEventChange -> "Move"
+        is UpdateDayChange -> "Edit day"
         is UpdateEventChange -> "Edit"
     }
 }

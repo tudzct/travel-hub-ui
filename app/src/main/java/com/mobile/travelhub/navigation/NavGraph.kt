@@ -1,5 +1,6 @@
 package com.mobile.travelhub.navigation
 
+import android.net.Uri
 import androidx.compose.animation.AnimatedContentTransitionScope.SlideDirection
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.PaddingValues
@@ -45,6 +46,18 @@ sealed class Screen(
     data object OnboardingDestination : Screen("onboarding-destination", -3)
     data object OnboardingFinish : Screen("onboarding-finish", -2)
     data object Home : Screen("home", 0, true)
+    data object Explore : Screen("explore", 1, true) {
+        const val ACTIVATE_SEARCH_ARG = "activateSearch"
+        const val ROUTE_WITH_ARGS = "explore?activateSearch={activateSearch}"
+
+        fun createRoute(activateSearch: Boolean = false): String {
+            return if (activateSearch) {
+                "explore?activateSearch=true"
+            } else {
+                route
+            }
+        }
+    }
     data object Trips : Screen("trips", 1, true)
     data object CreatePost : Screen("create_post", showBottomBar = true)
     data object Profile : Screen("profile", 2, true)
@@ -72,8 +85,8 @@ sealed class Screen(
     }
 
     data object CreateGroup : Screen("create_group", 7)
-    data object GroupDetail : Screen("group_detail/{groupName}", 8) {
-        fun createRoute(groupName: String) = "group_detail/$groupName"
+    data object GroupDetail : Screen("group_detail/{tripId}/{groupName}", 8) {
+        fun createRoute(tripId: Long, groupName: String): String = "group_detail/$tripId/${Uri.encode(groupName)}"
     }
     data object GroupChat : Screen("group_chat/{groupName}", 9) {
         fun createRoute(groupName: String) = "group_chat/$groupName"
@@ -92,12 +105,13 @@ sealed class Screen(
 
     companion object {
         fun fromRoute(route: String?): Screen? {
-            return when (route?.substringBefore("/")) {
+            return when (route?.substringBefore("?")?.substringBefore("/")) {
                 OnboardingIntro.route -> OnboardingIntro
                 OnboardingTripType.route -> OnboardingTripType
                 OnboardingDestination.route -> OnboardingDestination
                 OnboardingFinish.route -> OnboardingFinish
                 Home.route -> Home
+                Explore.route -> Explore
                 Trips.route -> Trips
                 CreatePost.route -> CreatePost
                 Profile.route -> Profile
@@ -109,6 +123,7 @@ sealed class Screen(
                 Register.route -> Register
                 //mẻge from trường
                 "home" -> Home
+                "explore" -> Explore
                 "trips" -> Trips
                 "create_post" -> CreatePost
                 "profile" -> Profile
@@ -156,7 +171,9 @@ fun NavGraph(
     onboardingViewModel: OnboardingViewModel
 ) {
     val onboardingUiState by onboardingViewModel.uiState.collectAsState()
-    val currentRoute = navController.currentBackStackEntry?.destination?.route?.substringBefore("/")
+    val currentRoute = navController.currentBackStackEntry?.destination?.route
+        ?.substringBefore("?")
+        ?.substringBefore("/")
 
     fun navigateToPlaceDetail(place: TravelPlaceListItemResponse) {
         navController.currentBackStackEntry?.savedStateHandle?.set(PLACE_DETAIL_PLACE_KEY, place)
@@ -301,13 +318,33 @@ fun NavGraph(
         }
         composable(Screen.Home.route) {
             PlaceListScreen(
-                onPlaceClick = ::navigateToPlaceDetail
+                onPlaceClick = ::navigateToPlaceDetail,
+                onSearchClick = {
+                    navController.navigate(Screen.Explore.createRoute(activateSearch = true)) {
+                        launchSingleTop = true
+                    }
+                }
+            )
+        }
+        composable(
+            route = Screen.Explore.ROUTE_WITH_ARGS,
+            arguments = listOf(
+                navArgument(Screen.Explore.ACTIVATE_SEARCH_ARG) {
+                    type = NavType.BoolType
+                    defaultValue = false
+                }
+            )
+        ) { backStackEntry ->
+            ExploreScreen(
+                activateSearch = backStackEntry.arguments
+                    ?.getBoolean(Screen.Explore.ACTIVATE_SEARCH_ARG)
+                    ?: false
             )
         }
         composable(Screen.Trips.route) {
             TripsScreen(
-                onNavigateToGroupDetail = { groupName ->
-                    navController.navigate(Screen.GroupDetail.createRoute(groupName)) { launchSingleTop = true }
+                onNavigateToGroupDetail = { tripId, groupName ->
+                    navController.navigate(Screen.GroupDetail.createRoute(tripId, groupName)) { launchSingleTop = true }
                 },
                 onNavigateToCreateGroup = {
                     navController.navigate(Screen.CreateGroup.route) { launchSingleTop = true }
@@ -416,16 +453,23 @@ fun NavGraph(
         composable(Screen.CreateGroup.route) {
             CreateGroupScreen(
                 onBack = { navController.popBackStack() },
-                onCreate = { navController.popBackStack() }
+                onCreate = { tripId, groupName ->
+                    navController.navigate(Screen.GroupDetail.createRoute(tripId, groupName)) { launchSingleTop = true }
+                }
             )
         }
 
         composable(
             route = Screen.GroupDetail.route,
-            arguments = listOf(navArgument("groupName") { type = NavType.StringType })
+            arguments = listOf(
+                navArgument("tripId") { type = NavType.LongType },
+                navArgument("groupName") { type = NavType.StringType }
+            )
         ) { backStackEntry ->
+            val tripId = backStackEntry.arguments?.getLong("tripId") ?: -1L
             val groupName = backStackEntry.arguments?.getString("groupName") ?: "Group"
             GroupDetailScreen(
+                tripId = tripId,
                 groupName = groupName,
                 onBack = { navController.popBackStack() },
                 onNavigateToChat = { navController.navigate(Screen.GroupChat.createRoute(groupName)) { launchSingleTop = true } },

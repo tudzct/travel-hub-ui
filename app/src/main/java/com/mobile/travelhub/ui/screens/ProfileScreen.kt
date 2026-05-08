@@ -7,28 +7,41 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.AddCircle
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.outlined.PhotoCamera
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalDrawerSheet
+import androidx.compose.material3.ModalNavigationDrawer
+import androidx.compose.material3.NavigationDrawerItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.Image
@@ -42,9 +55,11 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 
 import com.mobile.travelhub.R
 import com.mobile.travelhub.ui.components.FeedPostCard
+import com.mobile.travelhub.ui.components.FeedPostCardSkeleton
 import com.mobile.travelhub.ui.theme.*
 import com.mobile.travelhub.viewmodels.ProfileViewModel
 import com.mobile.travelhub.viewmodels.UiState
+import kotlinx.coroutines.launch
 
 @Composable
 fun ProfileScreen(
@@ -70,6 +85,8 @@ fun ProfileScreen(
     val unauthorized by viewModel.unauthorized.collectAsState()
 
     val scrollState = rememberScrollState()
+    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+    val coroutineScope = rememberCoroutineScope()
 
     LaunchedEffect(Unit) {
         if (isViewingOwnProfile) {
@@ -88,328 +105,404 @@ fun ProfileScreen(
             onRequireLogin?.invoke()
         }
     }
-    val showTopBar = !isViewingOwnProfile
+    val profileTitle = (profileState as? UiState.Success)
+        ?.data
+        ?.username
+        ?.takeIf { it.isNotBlank() }
+        ?: "Profile"
 
-    Scaffold(
-        modifier = Modifier.fillMaxSize(),
-        containerColor = MaterialTheme.colorScheme.background,
-        topBar = {
-            if (showTopBar) {
-                Surface(
-                    color = MaterialTheme.colorScheme.background
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(56.dp)
-                            .padding(horizontal = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        IconButton(onClick = { onBack?.invoke() }) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = "Back",
-                                tint = OnSurface
+    CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
+        ModalNavigationDrawer(
+            drawerState = drawerState,
+            gesturesEnabled = isViewingOwnProfile,
+            drawerContent = {
+                if (isViewingOwnProfile) {
+                    ModalDrawerSheet {
+                        CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(56.dp)
+                                    .padding(horizontal = 8.dp),
+                                horizontalArrangement = Arrangement.End,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                IconButton(
+                                    onClick = { coroutineScope.launch { drawerState.close() } }
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Close,
+                                        contentDescription = "Close menu"
+                                    )
+                                }
+                            }
+                            NavigationDrawerItem(
+                                label = { Text("Logout") },
+                                selected = false,
+                                onClick = {
+                                    coroutineScope.launch { drawerState.close() }
+                                    onLogout?.invoke()
+                                },
+                                icon = {
+                                    Icon(
+                                        imageVector = Icons.AutoMirrored.Filled.ExitToApp,
+                                        contentDescription = null
+                                    )
+                                },
+                                modifier = Modifier.padding(horizontal = 12.dp)
                             )
                         }
-                        Text(
-                            text = "PROFILE",
-                            fontWeight = FontWeight.ExtraBold,
-                            fontSize = 14.sp,
-                            letterSpacing = 1.sp,
-                            color = OnSurface
-                        )
                     }
                 }
             }
-        }
-    ) { innerPadding ->
-        Box(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
-            when (val state = profileState) {
-                is UiState.Loading -> {
-                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center), color = PrimaryBlue)
-                }
-                is UiState.Error -> {
-                    ErrorLayout(message = state.message) {
-                        if (isViewingOwnProfile) {
-                            viewModel.loadUserProfile()
-                            viewModel.loadUserPosts()
-                        } else {
-                            viewingUserId?.let {
-                                viewModel.loadOtherUserProfile(it)
-                                viewModel.loadUserPosts(it)
+        ) {
+            CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+                Scaffold(
+                    modifier = Modifier.fillMaxSize(),
+                    containerColor = MaterialTheme.colorScheme.background,
+                    topBar = {
+                        Surface(
+                            color = MaterialTheme.colorScheme.background
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(56.dp)
+                                    .padding(horizontal = 4.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                if (!isViewingOwnProfile) {
+                                    IconButton(
+                                        onClick = { onBack?.invoke() },
+                                        modifier = Modifier.align(Alignment.CenterStart)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                            contentDescription = "Back",
+                                            tint = OnSurface
+                                        )
+                                    }
+                                }
+                                Text(
+                                    text = profileTitle,
+                                    modifier = Modifier.padding(horizontal = 56.dp),
+                                    fontWeight = FontWeight.ExtraBold,
+                                    fontSize = 16.sp,
+                                    color = OnSurface,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                if (isViewingOwnProfile) {
+                                    IconButton(
+                                        onClick = { coroutineScope.launch { drawerState.open() } },
+                                        modifier = Modifier.align(Alignment.CenterEnd)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Menu,
+                                            contentDescription = "Open menu",
+                                            tint = OnSurface
+                                        )
+                                    }
+                                }
                             }
                         }
                     }
-                }
-                is UiState.Success -> {
-                    val profile = state.data
-                    
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .verticalScroll(scrollState)
-                    ) {
-                        // Top Row: Avatar and Stats
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 16.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            // Avatar
-                            Box(modifier = Modifier.size(80.dp)) {
-                                Image(
-                                    painter = painterResource(id = R.drawable.female_avatar_maker),
-                                    contentDescription = "Avatar",
+                ) { innerPadding ->
+                    Box(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
+                        when (val state = profileState) {
+                            is UiState.Loading -> {
+                                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center), color = PrimaryBlue)
+                            }
+                            is UiState.Error -> {
+                                ErrorLayout(message = state.message) {
+                                    if (isViewingOwnProfile) {
+                                        viewModel.loadUserProfile()
+                                        viewModel.loadUserPosts()
+                                    } else {
+                                        viewingUserId?.let {
+                                            viewModel.loadOtherUserProfile(it)
+                                            viewModel.loadUserPosts(it)
+                                        }
+                                    }
+                                }
+                            }
+                            is UiState.Success -> {
+                                val profile = state.data
+                                val displayName = profile.name.ifBlank { profile.username }
+
+                                Column(
                                     modifier = Modifier
                                         .fillMaxSize()
-                                        .clip(CircleShape)
-                                        .border(2.dp, Color(0xFFE0E0E0), CircleShape),
-                                    contentScale = ContentScale.Crop
-                                )
-                                // + icon
-                                Box(
-                                    modifier = Modifier
-                                        .align(Alignment.BottomEnd)
-                                        .offset(x = (-4).dp, y = (-4).dp)
-                                        .size(24.dp)
-                                        .background(Color.White, CircleShape)
-                                        .padding(2.dp)
+                                        .verticalScroll(scrollState)
                                 ) {
-                                    Icon(
-                                        imageVector = Icons.Default.AddCircle,
-                                        contentDescription = "Add Story",
-                                        tint = PrimaryBlue,
-                                        modifier = Modifier.fillMaxSize()
-                                    )
-                                }
-                            }
-
-                            Spacer(modifier = Modifier.width(24.dp))
-
-                            // Stats
-                            Row(
-                                modifier = Modifier.weight(1f),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Text(text = profile.postsCount.toString(), fontWeight = FontWeight.Bold, fontSize = 18.sp)
-                                    Text(text = "Posts", fontSize = 12.sp, color = Color.Gray)
-                                }
-                                Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.clickable { onNavigateToFollowers() }) {
-                                    Text(text = profile.followersCount.toString(), fontWeight = FontWeight.Bold, fontSize = 18.sp)
-                                    Text(text = "Followers", fontSize = 12.sp, color = Color.Gray)
-                                }
-                                Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.clickable { onNavigateToFollowing() }) {
-                                    Text(text = profile.followingCount.toString(), fontWeight = FontWeight.Bold, fontSize = 18.sp)
-                                    Text(text = "Following", fontSize = 12.sp, color = Color.Gray)
-                                }
-                            }
-                        }
-
-                        // Bio section
-                        Column(modifier = Modifier.padding(horizontal = 16.dp)) {
-                            Text(
-                                text = profile.name,
-                                style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.Bold
-                            )
-                            if (!profile.bio.isNullOrBlank()) {
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Text(
-                                    text = profile.bio,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = Color.DarkGray
-                                )
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        // Action Buttons
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            if (isViewingOwnProfile) {
-                                Button(
-                                    onClick = onNavigateToEditProfile,
-                                    modifier = Modifier.weight(1f).height(36.dp),
-                                    shape = RoundedCornerShape(8.dp),
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = Color(0xFFEAEAF0),
-                                        contentColor = Color.Black
-                                    ),
-                                    contentPadding = PaddingValues(0.dp)
-                                ) {
-                                    Text("Edit Profile", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold)
-                                }
-                                Button(
-                                    onClick = { /* Share Profile Action */ },
-                                    modifier = Modifier.weight(1f).height(36.dp),
-                                    shape = RoundedCornerShape(8.dp),
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = Color(0xFFEAEAF0),
-                                        contentColor = Color.Black
-                                    ),
-                                    contentPadding = PaddingValues(0.dp)
-                                ) {
-                                    Text("Share Profile", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold)
-                                }
-                            } else {
-                                Button(
-                                    onClick = { 
-                                        viewingUserId?.let { 
-                                            viewModel.toggleFollowOtherUser(it, profile.isFollowing)
-                                        }
-                                    },
-                                    shape = RoundedCornerShape(8.dp),
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = if (profile.isFollowing) Color(0xFFEAEAF0) else PrimaryBlue,
-                                        contentColor = if (profile.isFollowing) Color.Black else Color.White
-                                    ),
-                                    modifier = Modifier.weight(1f).height(36.dp),
-                                    contentPadding = PaddingValues(0.dp)
-                                ) {
-                                    Text(
-                                        text = if (profile.isFollowing) "Following" else "Follow",
-                                        style = MaterialTheme.typography.labelMedium,
-                                        fontWeight = FontWeight.SemiBold
-                                    )
-                                }
-                                
-                                Button(
-                                    onClick = {
-                                        viewingUserId?.let { viewModel.loadOtherUserProfile(it) }
-                                        onNavigateToChat?.invoke()
-                                    },
-                                    shape = RoundedCornerShape(8.dp),
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = Color(0xFFEAEAF0),
-                                        contentColor = Color.Black
-                                    ),
-                                    modifier = Modifier.weight(1f).height(36.dp),
-                                    contentPadding = PaddingValues(0.dp)
-                                ) {
-                                    Text(
-                                        text = "Message",
-                                        style = MaterialTheme.typography.labelMedium,
-                                        fontWeight = FontWeight.SemiBold
-                                    )
-                                }
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(16.dp))
-                        HorizontalDivider(color = Color(0xFFF0F0F0))
-
-                        // Posts Section
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(top = 24.dp, bottom = 100.dp)
-                        ) {
-                            when {
-                                profilePostsState.isLoading -> {
-                                    Box(
+                                    // Top Row: Avatar, full name, and stats
+                                    Row(
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .padding(vertical = 24.dp),
-                                        contentAlignment = Alignment.Center
+                                            .padding(horizontal = 16.dp, vertical = 16.dp),
+                                        verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        CircularProgressIndicator(color = PrimaryBlue)
-                                    }
-                                }
-
-                                !profilePostsState.errorMessage.isNullOrBlank() -> {
-                                    Column(
-                                        modifier = Modifier.padding(horizontal = 24.dp),
-                                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                                    ) {
-                                        Text(
-                                            text = profilePostsState.errorMessage.orEmpty(),
-                                            color = MaterialTheme.colorScheme.error
-                                        )
-                                        Button(
-                                            onClick = {
-                                            if (isViewingOwnProfile) {
-                                                viewModel.loadUserPosts()
-                                            } else {
-                                                viewingUserId?.let(viewModel::loadUserPosts)
+                                        // Avatar
+                                        Box(modifier = Modifier.size(80.dp)) {
+                                            Image(
+                                                painter = painterResource(id = R.drawable.female_avatar_maker),
+                                                contentDescription = "Avatar",
+                                                modifier = Modifier
+                                                    .fillMaxSize()
+                                                    .clip(CircleShape)
+                                                    .border(2.dp, Color(0xFFE0E0E0), CircleShape),
+                                                contentScale = ContentScale.Crop
+                                            )
+                                            // + icon
+                                            Box(
+                                                modifier = Modifier
+                                                    .align(Alignment.BottomEnd)
+                                                    .offset(x = (-4).dp, y = (-4).dp)
+                                                    .size(24.dp)
+                                                    .background(Color.White, CircleShape)
+                                                    .padding(2.dp)
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Default.AddCircle,
+                                                    contentDescription = "Add Story",
+                                                    tint = PrimaryBlue,
+                                                    modifier = Modifier.fillMaxSize()
+                                                )
                                             }
-                                        },
-                                            colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
+                                        }
+
+                                        Spacer(modifier = Modifier.width(24.dp))
+
+                                        Column(
+                                            modifier = Modifier.weight(1f),
+                                            verticalArrangement = Arrangement.Center
                                         ) {
-                                            Icon(Icons.Default.Refresh, contentDescription = null)
-                                            Text(" Try Again", modifier = Modifier.padding(start = 8.dp))
+                                            Text(
+                                                text = displayName,
+                                                style = MaterialTheme.typography.titleMedium,
+                                                fontWeight = FontWeight.Bold,
+                                                color = OnSurface,
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis
+                                            )
+
+                                            Spacer(modifier = Modifier.height(10.dp))
+
+                                            // Stats
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                                    Text(text = profile.postsCount.toString(), fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                                                    Text(text = "Posts", fontSize = 12.sp, color = Color.Gray)
+                                                }
+                                                Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.clickable { onNavigateToFollowers() }) {
+                                                    Text(text = profile.followersCount.toString(), fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                                                    Text(text = "Followers", fontSize = 12.sp, color = Color.Gray)
+                                                }
+                                                Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.clickable { onNavigateToFollowing() }) {
+                                                    Text(text = profile.followingCount.toString(), fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                                                    Text(text = "Following", fontSize = 12.sp, color = Color.Gray)
+                                                }
+                                            }
                                         }
                                     }
-                                }
 
-                                profilePostsState.posts.isEmpty() -> {
-                                    Column(
-                                        modifier = Modifier.fillMaxWidth().padding(horizontal = 32.dp, vertical = 32.dp),
-                                        horizontalAlignment = Alignment.CenterHorizontally
-                                    ) {
-                                        Box(
-                                            modifier = Modifier
-                                                .size(80.dp)
-                                                .border(1.dp, Color.Gray, CircleShape),
-                                            contentAlignment = Alignment.Center
-                                        ) {
-                                            Icon(
-                                                imageVector = Icons.Outlined.PhotoCamera,
-                                                contentDescription = "No Posts",
-                                                modifier = Modifier.size(40.dp),
-                                                tint = Color.Gray
+                                    // Bio section
+                                    if (!profile.bio.isNullOrBlank()) {
+                                        Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+                                            Text(
+                                                text = profile.bio,
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                color = Color.DarkGray
                                             )
                                         }
-                                        Spacer(modifier = Modifier.height(16.dp))
-                                        Text(
-                                            text = "No Posts Yet",
-                                            style = MaterialTheme.typography.titleLarge,
-                                            fontWeight = FontWeight.Bold
-                                        )
-                                        Spacer(modifier = Modifier.height(8.dp))
-                                        Text(
-                                            text = "When you share photos, they will appear on your profile.",
-                                            style = MaterialTheme.typography.bodyMedium,
-                                            color = Color.Gray,
-                                            textAlign = TextAlign.Center
-                                        )
-                                        Spacer(modifier = Modifier.height(24.dp))
+                                    }
+
+                                    Spacer(modifier = Modifier.height(16.dp))
+
+                                    // Action Buttons
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(horizontal = 16.dp),
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
                                         if (isViewingOwnProfile) {
                                             Button(
-                                                onClick = { /* navigate to create post */ },
-                                                shape = RoundedCornerShape(24.dp),
-                                                colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
+                                                onClick = onNavigateToEditProfile,
+                                                modifier = Modifier.weight(1f).height(36.dp),
+                                                shape = RoundedCornerShape(8.dp),
+                                                colors = ButtonDefaults.buttonColors(
+                                                    containerColor = Color(0xFFEAEAF0),
+                                                    contentColor = Color.Black
+                                                ),
+                                                contentPadding = PaddingValues(0.dp)
                                             ) {
-                                                Text("Create your first post", fontWeight = FontWeight.Bold)
+                                                Text("Edit Profile", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold)
+                                            }
+                                            Button(
+                                                onClick = { /* Share Profile Action */ },
+                                                modifier = Modifier.weight(1f).height(36.dp),
+                                                shape = RoundedCornerShape(8.dp),
+                                                colors = ButtonDefaults.buttonColors(
+                                                    containerColor = Color(0xFFEAEAF0),
+                                                    contentColor = Color.Black
+                                                ),
+                                                contentPadding = PaddingValues(0.dp)
+                                            ) {
+                                                Text("Share Profile", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold)
+                                            }
+                                        } else {
+                                            Button(
+                                                onClick = {
+                                                    viewingUserId?.let {
+                                                        viewModel.toggleFollowOtherUser(it, profile.isFollowing)
+                                                    }
+                                                },
+                                                shape = RoundedCornerShape(8.dp),
+                                                colors = ButtonDefaults.buttonColors(
+                                                    containerColor = if (profile.isFollowing) Color(0xFFEAEAF0) else PrimaryBlue,
+                                                    contentColor = if (profile.isFollowing) Color.Black else Color.White
+                                                ),
+                                                modifier = Modifier.weight(1f).height(36.dp),
+                                                contentPadding = PaddingValues(0.dp)
+                                            ) {
+                                                Text(
+                                                    text = if (profile.isFollowing) "Following" else "Follow",
+                                                    style = MaterialTheme.typography.labelMedium,
+                                                    fontWeight = FontWeight.SemiBold
+                                                )
+                                            }
+
+                                            Button(
+                                                onClick = {
+                                                    viewingUserId?.let { viewModel.loadOtherUserProfile(it) }
+                                                    onNavigateToChat?.invoke()
+                                                },
+                                                shape = RoundedCornerShape(8.dp),
+                                                colors = ButtonDefaults.buttonColors(
+                                                    containerColor = Color(0xFFEAEAF0),
+                                                    contentColor = Color.Black
+                                                ),
+                                                modifier = Modifier.weight(1f).height(36.dp),
+                                                contentPadding = PaddingValues(0.dp)
+                                            ) {
+                                                Text(
+                                                    text = "Message",
+                                                    style = MaterialTheme.typography.labelMedium,
+                                                    fontWeight = FontWeight.SemiBold
+                                                )
                                             }
                                         }
                                     }
-                                }
 
-                                else -> {
-                                    profilePostsState.posts.forEach { post ->
-                                        FeedPostCard(
-                                            post = post,
-                                            onLikeClick = {},
-                                            onCommentClick = {},
-                                            actionsEnabled = false
-                                        )
+                                    Spacer(modifier = Modifier.height(16.dp))
+                                    HorizontalDivider(color = Color(0xFFF0F0F0))
+
+                                    // Posts Section
+                                    Column(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(top = 24.dp, bottom = 100.dp)
+                                    ) {
+                                        when {
+                                            profilePostsState.isLoading -> {
+                                                repeat(3) {
+                                                    FeedPostCardSkeleton()
+                                                }
+                                            }
+
+                                            !profilePostsState.errorMessage.isNullOrBlank() -> {
+                                                Column(
+                                                    modifier = Modifier.padding(horizontal = 24.dp),
+                                                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                                                ) {
+                                                    Text(
+                                                        text = profilePostsState.errorMessage.orEmpty(),
+                                                        color = MaterialTheme.colorScheme.error
+                                                    )
+                                                    Button(
+                                                        onClick = {
+                                                        if (isViewingOwnProfile) {
+                                                            viewModel.loadUserPosts()
+                                                        } else {
+                                                            viewingUserId?.let(viewModel::loadUserPosts)
+                                                        }
+                                                    },
+                                                        colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
+                                                    ) {
+                                                        Icon(Icons.Default.Refresh, contentDescription = null)
+                                                        Text(" Try Again", modifier = Modifier.padding(start = 8.dp))
+                                                    }
+                                                }
+                                            }
+
+                                            profilePostsState.posts.isEmpty() -> {
+                                                Column(
+                                                    modifier = Modifier.fillMaxWidth().padding(horizontal = 32.dp, vertical = 32.dp),
+                                                    horizontalAlignment = Alignment.CenterHorizontally
+                                                ) {
+                                                    Box(
+                                                        modifier = Modifier
+                                                            .size(80.dp)
+                                                            .border(1.dp, Color.Gray, CircleShape),
+                                                        contentAlignment = Alignment.Center
+                                                    ) {
+                                                        Icon(
+                                                            imageVector = Icons.Outlined.PhotoCamera,
+                                                            contentDescription = "No Posts",
+                                                            modifier = Modifier.size(40.dp),
+                                                            tint = Color.Gray
+                                                        )
+                                                    }
+                                                    Spacer(modifier = Modifier.height(16.dp))
+                                                    Text(
+                                                        text = "No Posts Yet",
+                                                        style = MaterialTheme.typography.titleLarge,
+                                                        fontWeight = FontWeight.Bold
+                                                    )
+                                                    Spacer(modifier = Modifier.height(8.dp))
+                                                    Text(
+                                                        text = "When you share photos, they will appear on your profile.",
+                                                        style = MaterialTheme.typography.bodyMedium,
+                                                        color = Color.Gray,
+                                                        textAlign = TextAlign.Center
+                                                    )
+                                                    Spacer(modifier = Modifier.height(24.dp))
+                                                    if (isViewingOwnProfile) {
+                                                        Button(
+                                                            onClick = { /* navigate to create post */ },
+                                                            shape = RoundedCornerShape(24.dp),
+                                                            colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
+                                                        ) {
+                                                            Text("Create your first post", fontWeight = FontWeight.Bold)
+                                                        }
+                                                    }
+                                                }
+                                            }
+
+                                            else -> {
+                                                profilePostsState.posts.forEach { post ->
+                                                    FeedPostCard(
+                                                        post = post,
+                                                        onLikeClick = {},
+                                                        onCommentClick = {},
+                                                        actionsEnabled = false
+                                                    )
+                                                }
+                                            }
+                                        }
                                     }
                                 }
                             }
+
+                            else -> {}
                         }
                     }
                 }
-
-                else -> {}
             }
         }
     }

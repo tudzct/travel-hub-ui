@@ -6,6 +6,12 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -57,7 +63,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -82,7 +87,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
@@ -148,15 +156,7 @@ fun ItineraryScreen(
             )
         },
         floatingActionButton = {
-            ExtendedFloatingActionButton(
-                onClick = viewModel::openChat,
-                containerColor = PrimaryBlue,
-                contentColor = Color.White
-            ) {
-                Icon(Icons.Default.AutoAwesome, contentDescription = null)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("AI edits")
-            }
+            GeminiItineraryFab(onClick = viewModel::openChat)
         }
     ) { paddingValues ->
         ItineraryOverviewContent(
@@ -176,6 +176,7 @@ fun ItineraryScreen(
         state = state,
         onCloseChat = viewModel::closeChat,
         onChatInputChange = viewModel::updateChatInput,
+        onVoiceInputChange = viewModel::updateVoiceChatInput,
         onSendChat = viewModel::sendChatPrompt,
         onDismissDayEditor = viewModel::cancelEditingDay,
         onSaveDay = viewModel::saveDay,
@@ -230,15 +231,7 @@ fun ItineraryDayDetailScreen(
             )
         },
         floatingActionButton = {
-            ExtendedFloatingActionButton(
-                onClick = viewModel::openChat,
-                containerColor = PrimaryBlue,
-                contentColor = Color.White
-            ) {
-                Icon(Icons.Default.AutoAwesome, contentDescription = null)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("AI edits")
-            }
+            GeminiItineraryFab(onClick = viewModel::openChat)
         }
     ) { paddingValues ->
         ItineraryDayDetailContent(
@@ -256,6 +249,7 @@ fun ItineraryDayDetailScreen(
         state = state,
         onCloseChat = viewModel::closeChat,
         onChatInputChange = viewModel::updateChatInput,
+        onVoiceInputChange = viewModel::updateVoiceChatInput,
         onSendChat = viewModel::sendChatPrompt,
         onDismissDayEditor = viewModel::cancelEditingDay,
         onSaveDay = viewModel::saveDay,
@@ -264,6 +258,62 @@ fun ItineraryDayDetailScreen(
         onSaveEvent = viewModel::saveEvent,
         onDeleteEditingEvent = viewModel::deleteEditingEvent
     )
+}
+
+@Composable
+private fun GeminiItineraryFab(onClick: () -> Unit) {
+    val infiniteTransition = rememberInfiniteTransition(label = "ai-fab-rainbow")
+    val rotation by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 2400, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "ai-fab-border-rotation"
+    )
+    val rainbow = listOf(
+        Color(0xFFFF3B30),
+        Color(0xFFFF9500),
+        Color(0xFFFFCC00),
+        Color(0xFF34C759),
+        Color(0xFF00C7BE),
+        Color(0xFF007AFF),
+        Color(0xFFAF52DE),
+        Color(0xFFFF3B30)
+    )
+
+    Box(
+        modifier = Modifier
+            .size(64.dp)
+            .shadow(elevation = 10.dp, shape = CircleShape, clip = false)
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                onClick = onClick
+            ),
+        contentAlignment = Alignment.Center
+    ) {
+        Box(
+            modifier = Modifier
+                .matchParentSize()
+                .graphicsLayer { rotationZ = rotation }
+                .background(Brush.sweepGradient(rainbow), CircleShape)
+        )
+        Box(
+            modifier = Modifier
+                .size(56.dp)
+                .background(SurfaceContainerLowest, CircleShape),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.Default.AutoAwesome,
+                contentDescription = "Open AI itinerary editor",
+                tint = Color(0xFF5B35F5),
+                modifier = Modifier.size(28.dp)
+            )
+        }
+    }
 }
 
 
