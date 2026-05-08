@@ -1,9 +1,11 @@
 package com.mobile.travelhub.viewmodels
 
 import android.util.Patterns
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mobile.travelhub.data.AuthRepository
+import com.mobile.travelhub.data.DeviceTokenRepository
 import com.mobile.travelhub.data.model.AuthSession
 import com.mobile.travelhub.data.model.LoginRequest
 import com.mobile.travelhub.data.model.RegisterRequest
@@ -27,7 +29,8 @@ data class AuthUiState(
 
 @HiltViewModel
 class AuthViewModel @Inject constructor(
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
+    private val deviceTokenRepository: DeviceTokenRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(
@@ -56,6 +59,7 @@ class AuthViewModel @Inject constructor(
 
             result.onSuccess { response ->
                 authRepository.saveSession(response)
+                registerDeviceToken()
                 _uiState.update {
                     it.copy(
                         isLoading = false,
@@ -98,6 +102,7 @@ class AuthViewModel @Inject constructor(
 
             result.onSuccess { response ->
                 authRepository.saveSession(response)
+                registerDeviceToken()
                 _uiState.update {
                     it.copy(
                         isLoading = false,
@@ -165,5 +170,16 @@ class AuthViewModel @Inject constructor(
         }
 
         return null
+    }
+
+    private suspend fun registerDeviceToken() {
+        deviceTokenRepository.registerCurrentDeviceToken()
+            .onFailure { throwable ->
+                Log.w(TAG, "Failed to register device token", throwable)
+            }
+    }
+
+    private companion object {
+        private const val TAG = "AuthViewModel"
     }
 }

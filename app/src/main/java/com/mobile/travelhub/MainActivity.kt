@@ -8,19 +8,26 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.lifecycleScope
+import com.mobile.travelhub.data.DeviceTokenRepository
 import com.mobile.travelhub.ui.screens.TravelHubScreen
 import com.mobile.travelhub.ui.theme.TravelHubTheme
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 @AndroidEntryPoint
-
 class MainActivity : ComponentActivity() {
+    @Inject
+    lateinit var deviceTokenRepository: DeviceTokenRepository
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        askNotificationPermission()
+        registerDeviceToken()
         setContent {
             TravelHubTheme {
                 TravelHubScreen()
@@ -47,16 +54,17 @@ class MainActivity : ComponentActivity() {
             ) {
                 // FCM SDK (and your app) can post notifications.
             } else if (shouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS)) {
-                // TODO: display an educational UI explaining to the user the features that will be enabled
-                //       by them granting the POST_NOTIFICATION permission. This UI should provide the user
-                //       "OK" and "No thanks" buttons. If the user selects "OK," directly request the permission.
-                //       If the user selects "No thanks," allow the user to continue without notifications.
+                requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
             } else {
                 // Directly ask for the permission
                 requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
             }
         }
     }
+
+    private fun registerDeviceToken() {
+        lifecycleScope.launch(Dispatchers.IO) {
+            deviceTokenRepository.registerCurrentDeviceToken()
+        }
+    }
 }
-
-

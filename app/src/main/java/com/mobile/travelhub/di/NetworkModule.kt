@@ -5,6 +5,7 @@ import com.mobile.travelhub.data.api.ApiConfig
 import com.mobile.travelhub.data.api.AiRecommendationApiService
 import com.mobile.travelhub.data.api.AuthApiService
 import com.mobile.travelhub.data.api.AuthHeaderInterceptor
+import com.mobile.travelhub.data.api.DeviceApiService
 import com.mobile.travelhub.data.api.ItineraryApiService
 import com.mobile.travelhub.data.api.FileUploadApiService
 import com.mobile.travelhub.data.api.ItineraryApiService
@@ -97,6 +98,12 @@ object NetworkModule {
     @Singleton
     fun provideUserApiService(@Named("authenticated") retrofit: Retrofit): UserApiService {
         return retrofit.create(UserApiService::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideDeviceApiService(@Named("authenticated") retrofit: Retrofit): DeviceApiService {
+        return retrofit.create(DeviceApiService::class.java)
     }
 
     @Provides
