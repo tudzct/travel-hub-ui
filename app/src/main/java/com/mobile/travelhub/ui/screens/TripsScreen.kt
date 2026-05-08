@@ -1,11 +1,13 @@
 package com.mobile.travelhub.ui.screens
 
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -30,15 +32,19 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.mobile.travelhub.R
 import com.mobile.travelhub.ui.theme.*
+import com.mobile.travelhub.viewmodels.TripsViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TripsScreen(
-    onNavigateToGroupDetail: (String) -> Unit = {},
+    onNavigateToGroupDetail: (Long, String) -> Unit = { _, _ -> },
     onNavigateToCreateGroup: () -> Unit = {}
 ) {
+    val viewModel: TripsViewModel = hiltViewModel()
+    val state by viewModel.uiState.collectAsState()
     var showAddTripSheet by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
@@ -63,6 +69,20 @@ fun TripsScreen(
                 .padding(padding),
             contentPadding = PaddingValues(bottom = 100.dp) // Space for FAB
         ) {
+            if (state.errorMessage != null) {
+                item {
+                    Column(modifier = Modifier.padding(horizontal = 24.dp)) {
+                        Text(
+                            text = state.errorMessage.orEmpty(),
+                            color = SunsetOrange,
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 14.sp
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(12.dp))
+                }
+            }
+
             // Personalized Header
             item {
                 Column(modifier = Modifier.padding(horizontal = 24.dp, vertical = 24.dp)) {
@@ -93,7 +113,14 @@ fun TripsScreen(
                         color = OnSurface
                     )
                     Spacer(modifier = Modifier.height(16.dp))
-                    ActiveJourneyCardV2(onNavigateToGroupDetail)
+                    if (state.isLoading) {
+                        LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                    } else {
+                        ActiveJourneyCardV2(
+                            trip = state.activeTrip,
+                            onNavigateToGroupDetail = onNavigateToGroupDetail
+                        )
+                    }
                 }
                 Spacer(modifier = Modifier.height(36.dp))
             }
@@ -121,16 +148,24 @@ fun TripsScreen(
                     }
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    val tripNames = listOf("Kyoto Blossoms", "Seoul Foodie Tour", "Bali Retreat")
-                    val daysLeft = listOf(12, 35, 60)
+                    val trips = state.upcomingTrips.ifEmpty {
+                        listOfNotNull(state.activeTrip)
+                    }
 
-                    tripNames.forEachIndexed { index, name ->
-                        UpcomingTripItem(
-                            name = name,
-                            daysLeft = daysLeft[index],
-                            onClick = { onNavigateToGroupDetail(name) }
+                    if (trips.isEmpty()) {
+                        Text(
+                            text = "Chưa có trip nào từ dashboard BE.",
+                            color = OnSurfaceVariant,
+                            fontSize = 14.sp
                         )
-                        if (index < tripNames.size - 1) {
+                    }
+
+                    trips.forEachIndexed { index, trip ->
+                        UpcomingTripItem(
+                            trip = trip,
+                            onClick = { onNavigateToGroupDetail(trip.tripId, trip.name) }
+                        )
+                        if (index < trips.size - 1) {
                             Spacer(modifier = Modifier.height(12.dp))
                         }
                     }
@@ -153,15 +188,8 @@ fun TripsScreen(
                         contentPadding = PaddingValues(horizontal = 24.dp),
                         horizontalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        items(4) { index ->
-                            val places = listOf("Đà Lạt", "Đà Nẵng", "Sapa", "Phú Quốc")
-                            val dates = listOf(
-                                "Tháng 8, 2023",
-                                "Tháng 5, 2023",
-                                "Tháng 12, 2022",
-                                "Tháng 7, 2022"
-                            )
-                            PastMemoryCard(places[index], dates[index])
+                        items(state.pastTrips) { trip ->
+                            PastMemoryCard(trip.locationName, trip.dateString)
                         }
                     }
                 }
@@ -212,14 +240,19 @@ fun StatChip(value: String, label: String, icon: ImageVector, color: Color) {
 }
 
 @Composable
-fun ActiveJourneyCardV2(onNavigateToGroupDetail: (String) -> Unit) {
+fun ActiveJourneyCardV2(
+    trip: com.mobile.travelhub.viewmodels.UpcomingTripUiModel?,
+    onNavigateToGroupDetail: (Long, String) -> Unit
+) {
     Card(
         shape = RoundedCornerShape(32.dp),
         colors = CardDefaults.cardColors(containerColor = SurfaceContainerLowest),
         elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onNavigateToGroupDetail("Tokyo Neon & Nature") }
+            .clickable(enabled = trip != null) {
+                trip?.let { onNavigateToGroupDetail(it.tripId, it.name) }
+            }
     ) {
         Box(
             modifier = Modifier
@@ -291,7 +324,7 @@ fun ActiveJourneyCardV2(onNavigateToGroupDetail: (String) -> Unit) {
                 }
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "Tokyo Neon & Nature",
+                    text = trip?.name ?: "Chưa có chuyến đi đang diễn ra",
                     fontWeight = FontWeight.ExtraBold,
                     fontSize = 24.sp,
                     color = Color.White,
@@ -306,7 +339,11 @@ fun ActiveJourneyCardV2(onNavigateToGroupDetail: (String) -> Unit) {
                         modifier = Modifier.size(14.dp)
                     )
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text("Tokyo, Japan", color = Color.White.copy(alpha = 0.8f), fontSize = 13.sp)
+                    Text(
+                        trip?.location ?: "Dashboard BE chưa trả location",
+                        color = Color.White.copy(alpha = 0.8f),
+                        fontSize = 13.sp
+                    )
                 }
             }
         }
@@ -338,6 +375,7 @@ fun PastMemoryCard(place: String, date: String) {
 
 @Composable
 fun AddTripOptionsContent(onDismiss: () -> Unit, onCreateNew: () -> Unit) {
+    val context = androidx.compose.ui.platform.LocalContext.current
     var showJoinInput by remember { mutableStateOf(false) }
     var joinCode by remember { mutableStateOf("") }
 
@@ -369,7 +407,13 @@ fun AddTripOptionsContent(onDismiss: () -> Unit, onCreateNew: () -> Unit) {
                 title = "Tham gia bằng mã",
                 desc = "Nhập mã để tham gia nhóm có sẵn",
                 color = SunsetOrange,
-                onClick = { showJoinInput = true }
+                onClick = {
+                    Toast.makeText(
+                        context,
+                        "Luồng tham gia bằng mã chưa có endpoint BE",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
             )
             Spacer(modifier = Modifier.height(16.dp))
             TripOptionItem(
@@ -456,7 +500,10 @@ fun TripOptionItem(
 }
 
 @Composable
-fun UpcomingTripItem(name: String, daysLeft: Int, onClick: () -> Unit) {
+fun UpcomingTripItem(
+    trip: com.mobile.travelhub.viewmodels.UpcomingTripUiModel,
+    onClick: () -> Unit
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -482,7 +529,7 @@ fun UpcomingTripItem(name: String, daysLeft: Int, onClick: () -> Unit) {
         Spacer(modifier = Modifier.width(16.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = name,
+                text = trip.name,
                 fontWeight = FontWeight.ExtraBold,
                 fontSize = 16.sp,
                 color = OnSurface
@@ -497,7 +544,11 @@ fun UpcomingTripItem(name: String, daysLeft: Int, onClick: () -> Unit) {
                 )
                 Spacer(modifier = Modifier.width(4.dp))
                 Text(
-                    text = "Còn $daysLeft ngày nữa",
+                    text = if (trip.daysLeft > 0) {
+                        "Còn ${trip.daysLeft} ngày nữa"
+                    } else {
+                        trip.startDate?.let { "Bắt đầu $it" } ?: "Đang chờ ngày khởi hành"
+                    },
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Bold,
                     color = SunsetOrange
