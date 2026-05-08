@@ -2,6 +2,7 @@ package com.mobile.travelhub.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -27,11 +28,20 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -44,7 +54,9 @@ import com.mobile.travelhub.ui.theme.PrimaryBlue
 import com.mobile.travelhub.ui.theme.SurfaceBg
 
 @Composable
-fun ExploreScreen() {
+fun ExploreScreen(
+    activateSearch: Boolean = false
+) {
     val featuredLocations = listOf(
         FeaturedLocation(
             country = "INDONESIA",
@@ -85,7 +97,7 @@ fun ExploreScreen() {
             fontWeight = FontWeight.ExtraBold
         )
 
-        SearchField()
+        SearchField(activateSearch = activateSearch)
 
         SectionLabel(text = "Recent Searches", topPadding = 18.dp)
         HorizontalChipRow(
@@ -142,32 +154,69 @@ fun ExploreScreen() {
 }
 
 @Composable
-private fun SearchField() {
-    Row(
+private fun SearchField(
+    activateSearch: Boolean
+) {
+    var query by remember { mutableStateOf("") }
+    val focusRequester = remember { FocusRequester() }
+    val keyboardController = LocalSoftwareKeyboardController.current
+
+    LaunchedEffect(activateSearch) {
+        if (activateSearch) {
+            focusRequester.requestFocus()
+            keyboardController?.show()
+        }
+    }
+
+    BasicTextField(
+        value = query,
+        onValueChange = { query = it },
+        singleLine = true,
+        textStyle = MaterialTheme.typography.bodyMedium.copy(
+            color = OnSurface,
+            fontSize = 14.sp
+        ),
+        cursorBrush = SolidColor(PrimaryBlue),
         modifier = Modifier
             .padding(horizontal = 16.dp, vertical = 14.dp)
             .fillMaxWidth()
             .height(42.dp)
             .clip(RoundedCornerShape(8.dp))
             .background(Color(0xFFEFF2FA))
-            .padding(horizontal = 14.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Icon(
-            imageVector = Icons.Outlined.Search,
-            contentDescription = null,
-            tint = OnSurfaceVariant,
-            modifier = Modifier.size(19.dp)
-        )
-        Text(
-            text = "Search destinations, people, or hashtags",
-            modifier = Modifier.padding(start = 10.dp),
-            color = OnSurfaceVariant,
-            fontSize = 14.sp,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
-    }
+            .focusRequester(focusRequester),
+        decorationBox = { innerTextField ->
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 14.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.Search,
+                    contentDescription = null,
+                    tint = OnSurfaceVariant,
+                    modifier = Modifier.size(19.dp)
+                )
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(start = 10.dp),
+                    contentAlignment = Alignment.CenterStart
+                ) {
+                    if (query.isEmpty()) {
+                        Text(
+                            text = "Search destinations, people, or hashtags",
+                            color = OnSurfaceVariant,
+                            fontSize = 14.sp,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                    innerTextField()
+                }
+            }
+        }
+    )
 }
 
 @Composable

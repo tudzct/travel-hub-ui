@@ -45,7 +45,18 @@ sealed class Screen(
     data object OnboardingDestination : Screen("onboarding-destination", -3)
     data object OnboardingFinish : Screen("onboarding-finish", -2)
     data object Home : Screen("home", 0, true)
-    data object Explore : Screen("explore", 1, true)
+    data object Explore : Screen("explore", 1, true) {
+        const val ACTIVATE_SEARCH_ARG = "activateSearch"
+        const val ROUTE_WITH_ARGS = "explore?activateSearch={activateSearch}"
+
+        fun createRoute(activateSearch: Boolean = false): String {
+            return if (activateSearch) {
+                "explore?activateSearch=true"
+            } else {
+                route
+            }
+        }
+    }
     data object Trips : Screen("trips", 1, true)
     data object CreatePost : Screen("create_post", showBottomBar = true)
     data object Profile : Screen("profile", 2, true)
@@ -93,7 +104,7 @@ sealed class Screen(
 
     companion object {
         fun fromRoute(route: String?): Screen? {
-            return when (route?.substringBefore("/")) {
+            return when (route?.substringBefore("?")?.substringBefore("/")) {
                 OnboardingIntro.route -> OnboardingIntro
                 OnboardingTripType.route -> OnboardingTripType
                 OnboardingDestination.route -> OnboardingDestination
@@ -159,7 +170,9 @@ fun NavGraph(
     onboardingViewModel: OnboardingViewModel
 ) {
     val onboardingUiState by onboardingViewModel.uiState.collectAsState()
-    val currentRoute = navController.currentBackStackEntry?.destination?.route?.substringBefore("/")
+    val currentRoute = navController.currentBackStackEntry?.destination?.route
+        ?.substringBefore("?")
+        ?.substringBefore("/")
 
     fun navigateToPlaceDetail(place: TravelPlaceListItemResponse) {
         navController.currentBackStackEntry?.savedStateHandle?.set(PLACE_DETAIL_PLACE_KEY, place)
@@ -304,11 +317,28 @@ fun NavGraph(
         }
         composable(Screen.Home.route) {
             PlaceListScreen(
-                onPlaceClick = ::navigateToPlaceDetail
+                onPlaceClick = ::navigateToPlaceDetail,
+                onSearchClick = {
+                    navController.navigate(Screen.Explore.createRoute(activateSearch = true)) {
+                        launchSingleTop = true
+                    }
+                }
             )
         }
-        composable(Screen.Explore.route) {
-            ExploreScreen()
+        composable(
+            route = Screen.Explore.ROUTE_WITH_ARGS,
+            arguments = listOf(
+                navArgument(Screen.Explore.ACTIVATE_SEARCH_ARG) {
+                    type = NavType.BoolType
+                    defaultValue = false
+                }
+            )
+        ) { backStackEntry ->
+            ExploreScreen(
+                activateSearch = backStackEntry.arguments
+                    ?.getBoolean(Screen.Explore.ACTIVATE_SEARCH_ARG)
+                    ?: false
+            )
         }
         composable(Screen.Trips.route) {
             TripsScreen(

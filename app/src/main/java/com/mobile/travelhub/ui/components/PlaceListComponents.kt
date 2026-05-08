@@ -1,5 +1,11 @@
 package com.mobile.travelhub.ui.components
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -10,18 +16,22 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
@@ -29,10 +39,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Send
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material.icons.outlined.ChatBubbleOutline
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.Place
+import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -43,7 +55,13 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -65,6 +83,7 @@ import com.mobile.travelhub.viewmodels.HomePostUiModel
 import com.mobile.travelhub.viewmodels.HomeUiState
 import com.mobile.travelhub.viewmodels.PlaceListUiState
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.tooling.preview.Preview
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -72,6 +91,8 @@ fun PlaceListScreenContent(
     placeUiState: PlaceListUiState,
     homeUiState: HomeUiState,
     onPlaceClick: (TravelPlaceListItemResponse) -> Unit,
+    onMenuClick: () -> Unit,
+    onSearchClick: () -> Unit,
     onRetryPlaces: () -> Unit,
     onRetryPosts: () -> Unit,
     onLikeClick: (Long) -> Unit,
@@ -84,21 +105,58 @@ fun PlaceListScreenContent(
     val activeComments = homeUiState.activeCommentPostId
         ?.let { homeUiState.commentsByPostId[it] }
         .orEmpty()
+    val listState = rememberLazyListState()
+    var previousScrollIndex by remember { mutableIntStateOf(0) }
+    var previousScrollOffset by remember { mutableIntStateOf(0) }
+    var isTopBarVisible by remember { mutableStateOf(true) }
+    val statusBarTopPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+    val topBarContentHeight = 52.dp
+
+    LaunchedEffect(listState) {
+        snapshotFlow { listState.firstVisibleItemIndex to listState.firstVisibleItemScrollOffset }
+            .collect { (index, offset) ->
+                val isAtTop = index == 0 && offset < 8
+                val isScrollingDown = index > previousScrollIndex ||
+                    (index == previousScrollIndex && offset > previousScrollOffset)
+
+                isTopBarVisible = isAtTop || !isScrollingDown
+                previousScrollIndex = index
+                previousScrollOffset = offset
+            }
+    }
 
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.White)
     ) {
+        AnimatedVisibility(
+            visible = isTopBarVisible,
+            enter = slideInVertically(
+                animationSpec = tween(durationMillis = 180),
+                initialOffsetY = { -it }
+            ) + fadeIn(animationSpec = tween(durationMillis = 180)),
+            exit = slideOutVertically(
+                animationSpec = tween(durationMillis = 180),
+                targetOffsetY = { -it }
+            ) + fadeOut(animationSpec = tween(durationMillis = 180)),
+            modifier = Modifier.align(Alignment.TopCenter)
+        ) {
+            FeedTopBar(
+                onMenuClick = onMenuClick,
+                onSearchClick = onSearchClick
+            )
+        }
+
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(top = 18.dp, bottom = 112.dp),
+            state = listState,
+            contentPadding = PaddingValues(
+                top = statusBarTopPadding + topBarContentHeight + 18.dp,
+                bottom = 112.dp
+            ),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            item {
-                FeedHeader()
-            }
-
             when {
                 placeUiState.isLoading && placeUiState.items.isEmpty() -> {
                     item {
@@ -139,15 +197,8 @@ fun PlaceListScreenContent(
             }
             when {
                 homeUiState.isLoading && homeUiState.posts.isEmpty() -> {
-                    item {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 24.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            CircularProgressIndicator(color = VerdantPrimary)
-                        }
+                    items(3) {
+                        FeedPostCardSkeleton()
                     }
                 }
 
@@ -176,6 +227,7 @@ fun PlaceListScreenContent(
                 }
             }
         }
+
 
         if (activeCommentPost != null) {
             ModalBottomSheet(
@@ -296,33 +348,63 @@ fun PlaceListScreenContent(
 }
 
 @Composable
-private fun FeedHeader(
+private fun FeedTopBar(
+    onMenuClick: () -> Unit,
+    onSearchClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
-    Column(
-        modifier = Modifier.padding(horizontal = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp)
+    val statusBarTopPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+    val topBarContentHeight = 52.dp
+
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(statusBarTopPadding + topBarContentHeight)
+            .background(Color.White)
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(topBarContentHeight)
+                .align(Alignment.BottomCenter)
+                .padding(horizontal = 6.dp)
         ) {
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(
-                    text = "TRAVEL HUB",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = VerdantPrimary,
-                    fontWeight = FontWeight.SemiBold
+            IconButton(
+                onClick = onMenuClick,
+                modifier = Modifier.align(Alignment.CenterStart)
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Menu,
+                    contentDescription = "Open menu",
+                    tint = VerdantOnSurface
                 )
-                Text(
-                    text = "Discovery Feed",
-                    style = MaterialTheme.typography.headlineMedium,
-                    color = VerdantOnSurface,
-                    fontWeight = FontWeight.Bold
+            }
+            Text(
+                text = "Travel Hub",
+                modifier = Modifier.align(Alignment.Center),
+                style = MaterialTheme.typography.titleMedium,
+                color = VerdantOnSurface,
+                fontWeight = FontWeight.ExtraBold
+            )
+
+            IconButton(
+                onClick = onSearchClick,
+                modifier = Modifier.align(Alignment.CenterEnd)
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.Search,
+                    contentDescription = "Search",
+                    tint = VerdantOnSurface
                 )
             }
         }
     }
+}
+
+@Preview
+@Composable
+fun FeedTopBarPreview(){
+    FeedTopBar(onMenuClick = {}, onSearchClick = {})
 }
 
 @Composable
@@ -627,7 +709,7 @@ fun FeedPostCard(
                         modifier = Modifier.size(28.dp)
                     ) {
                         Icon(
-                            imageVector = Icons.Outlined.ChatBubbleOutline,
+                            painter = painterResource(R.drawable.message_circle),
                             contentDescription = "Comment",
                             modifier = Modifier.size(24.dp),
                             tint = VerdantOnSurface
@@ -668,6 +750,126 @@ fun FeedPostCard(
                 maxLines = 3,
                 overflow = TextOverflow.Ellipsis,
                 color = VerdantOnSurface
+            )
+        }
+
+        Spacer(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(4.dp)
+                .background(Color(0xFFE0E0E0))
+        )
+    }
+}
+
+@Composable
+fun FeedPostCardSkeleton(
+    modifier: Modifier = Modifier
+) {
+    Column(modifier = modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(
+                modifier = Modifier.weight(1f),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(CircleShape)
+                        .shimmerEffect()
+                )
+                Spacer(modifier = Modifier.width(10.dp))
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(7.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .width(112.dp)
+                            .height(13.dp)
+                            .clip(RoundedCornerShape(50))
+                            .shimmerEffect()
+                    )
+                    Box(
+                        modifier = Modifier
+                            .width(156.dp)
+                            .height(10.dp)
+                            .clip(RoundedCornerShape(50))
+                            .shimmerEffect()
+                    )
+                }
+            }
+            Box(
+                modifier = Modifier
+                    .width(44.dp)
+                    .height(10.dp)
+                    .clip(RoundedCornerShape(50))
+                    .shimmerEffect()
+            )
+        }
+
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(5f / 3f)
+                .shimmerEffect()
+        )
+
+        Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    repeat(3) {
+                        Box(
+                            modifier = Modifier
+                                .size(26.dp)
+                                .clip(CircleShape)
+                                .shimmerEffect()
+                        )
+                    }
+                }
+                Box(
+                    modifier = Modifier
+                        .size(26.dp)
+                        .clip(CircleShape)
+                        .shimmerEffect()
+                )
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+            Box(
+                modifier = Modifier
+                    .width(84.dp)
+                    .height(12.dp)
+                    .clip(RoundedCornerShape(50))
+                    .shimmerEffect()
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(0.92f)
+                    .height(12.dp)
+                    .clip(RoundedCornerShape(50))
+                    .shimmerEffect()
+            )
+            Spacer(modifier = Modifier.height(6.dp))
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(0.62f)
+                    .height(12.dp)
+                    .clip(RoundedCornerShape(50))
+                    .shimmerEffect()
             )
         }
 

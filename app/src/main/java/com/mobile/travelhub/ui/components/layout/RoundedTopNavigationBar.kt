@@ -75,6 +75,12 @@ fun RoundedTopNavigationBar(
                 route?.startsWith("followers_following") == true
     }
 
+    fun baseRoute(route: String?): String? {
+        return route
+            ?.substringBefore("?")
+            ?.substringBefore("/")
+    }
+
     Surface(
         modifier = Modifier
             .fillMaxWidth()
@@ -99,7 +105,7 @@ fun RoundedTopNavigationBar(
                 val isSelected = when {
                     screen == null -> false
                     screen == Screen.Profile -> isProfileRoute(currentRoute)
-                    else -> currentRoute?.substringBefore("/") == screen.route
+                    else -> baseRoute(currentRoute) == screen.route
                 }
 
                 val iconColor by animateColorAsState(
@@ -122,7 +128,7 @@ fun RoundedTopNavigationBar(
                             if (screen == null) return@clickable
                             if (screen == Screen.Profile && isProfileRoute(currentRoute) && currentRoute != Screen.Profile.route) {
                                 backPressedDispatcher?.onBackPressed()
-                            } else if (currentRoute?.substringBefore("/") != screen.route) {
+                            } else if (baseRoute(currentRoute) != screen.route) {
                                 navController.navigate(screen.route) {
                                     popUpTo(navController.graph.findStartDestination().id) {
                                         saveState = true

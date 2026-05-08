@@ -55,6 +55,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 
 import com.mobile.travelhub.R
 import com.mobile.travelhub.ui.components.FeedPostCard
+import com.mobile.travelhub.ui.components.FeedPostCardSkeleton
 import com.mobile.travelhub.ui.theme.*
 import com.mobile.travelhub.viewmodels.ProfileViewModel
 import com.mobile.travelhub.viewmodels.UiState
@@ -409,13 +410,8 @@ fun ProfileScreen(
                                     ) {
                                         when {
                                             profilePostsState.isLoading -> {
-                                                Box(
-                                                    modifier = Modifier
-                                                        .fillMaxWidth()
-                                                        .padding(vertical = 24.dp),
-                                                    contentAlignment = Alignment.Center
-                                                ) {
-                                                    CircularProgressIndicator(color = PrimaryBlue)
+                                                repeat(3) {
+                                                    FeedPostCardSkeleton()
                                                 }
                                             }
 

@@ -12,6 +12,8 @@ import com.mobile.travelhub.viewmodels.PlaceListViewModel
 @Composable
 fun PlaceListScreen(
     onPlaceClick: (TravelPlaceListItemResponse) -> Unit,
+    onSearchClick: () -> Unit,
+    onMenuClick: () -> Unit = {},
     placeListViewModel: PlaceListViewModel = hiltViewModel(),
     homeViewModel: HomeViewModel = hiltViewModel()
 ) {
@@ -22,6 +24,8 @@ fun PlaceListScreen(
         placeUiState = placeUiState,
         homeUiState = homeUiState,
         onPlaceClick = onPlaceClick,
+        onMenuClick = onMenuClick,
+        onSearchClick = onSearchClick,
         onRetryPlaces = placeListViewModel::refresh,
         onRetryPosts = homeViewModel::refreshPosts,
         onLikeClick = homeViewModel::onLikeClicked,
