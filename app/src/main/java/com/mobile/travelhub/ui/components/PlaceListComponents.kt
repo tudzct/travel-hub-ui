@@ -60,6 +60,7 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.mobile.travelhub.R
 import com.mobile.travelhub.data.model.TravelPlaceListItemResponse
+import com.mobile.travelhub.ui.components.modifiers.shimmerEffect
 import com.mobile.travelhub.viewmodels.HomePostUiModel
 import com.mobile.travelhub.viewmodels.HomeUiState
 import com.mobile.travelhub.viewmodels.PlaceListUiState
@@ -101,14 +102,7 @@ fun PlaceListScreenContent(
             when {
                 placeUiState.isLoading && placeUiState.items.isEmpty() -> {
                     item {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(top = 40.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            CircularProgressIndicator(color = VerdantPrimary)
-                        }
+                        LocationsRailSkeleton()
                     }
                 }
 
@@ -336,37 +330,78 @@ private fun LocationsRail(
     places: List<TravelPlaceListItemResponse>,
     onPlaceClick: (TravelPlaceListItemResponse) -> Unit
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "Locations",
-                style = MaterialTheme.typography.titleMedium,
-                color = VerdantOnSurface,
-                fontWeight = FontWeight.Bold
+    LazyRow(
+        contentPadding = PaddingValues(horizontal = 12.dp),
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        items(places, key = { it.id }) { place ->
+            FeaturedLocationCard(
+                country = place.province.name,
+                city = place.name,
+                imageUrl = place.mainImage,
+                modifier = Modifier
+                    .width(220.dp)
+                    .height(270.dp),
+                onClick = { onPlaceClick(place) }
             )
         }
+    }
 
-        LazyRow(
-            contentPadding = PaddingValues(horizontal = 12.dp),
-            horizontalArrangement = Arrangement.spacedBy(6.dp)
+}
+
+@Composable
+private fun LocationsRailSkeleton() {
+    LazyRow(
+        contentPadding = PaddingValues(horizontal = 12.dp),
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        items(4) {
+            FeaturedLocationCardSkeleton(
+                modifier = Modifier
+                    .width(220.dp)
+                    .height(270.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun FeaturedLocationCardSkeleton(
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(10.dp))
+            .shimmerEffect()
+    ) {
+        Box(
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(14.dp)
+                .size(42.dp)
+                .clip(CircleShape)
+                .shimmerEffect()
+        )
+        Column(
+            modifier = Modifier
+                .align(Alignment.BottomStart)
+                .padding(start = 14.dp, end = 56.dp, bottom = 14.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            items(places, key = { it.id }) { place ->
-                FeaturedLocationCard(
-                    country = place.province.name,
-                    city = place.name,
-                    imageUrl = place.mainImage,
-                    modifier = Modifier
-                        .width(150.dp)
-                        .height(190.dp),
-                    onClick = { onPlaceClick(place) }
-                )
-            }
+            Box(
+                modifier = Modifier
+                    .width(76.dp)
+                    .height(10.dp)
+                    .clip(RoundedCornerShape(50))
+                    .shimmerEffect()
+            )
+            Box(
+                modifier = Modifier
+                    .width(124.dp)
+                    .height(20.dp)
+                    .clip(RoundedCornerShape(50))
+                    .shimmerEffect()
+            )
         }
     }
 }
@@ -510,6 +545,8 @@ fun FeedPostCard(
                     }
                 }
             }
+            Spacer(modifier = Modifier.width(4.dp))
+
             Text(
                 text = post.timeAgoLabel,
                 style = MaterialTheme.typography.labelSmall,
@@ -637,7 +674,7 @@ fun FeedPostCard(
         Spacer(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(1.dp)
+                .height(2.dp)
                 .background(Color(0xFFE0E0E0))
         )
     }

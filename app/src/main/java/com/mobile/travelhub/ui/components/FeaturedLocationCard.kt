@@ -25,6 +25,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
@@ -100,16 +101,26 @@ private fun BoxScope.CircularActionButton() {
             .padding(14.dp)
             .size(42.dp)
             .clip(CircleShape)
-            .background(Color.White.copy(alpha = 0.24f)),
+            .background(Color.White.copy(alpha = 0.84f)),
         contentAlignment = Alignment.Center
     ) {
         Icon(
             imageVector = Icons.AutoMirrored.Filled.ArrowForward,
             contentDescription = null,
-            tint = Color.White,
+            tint = Color.Black,
             modifier = Modifier
                 .size(22.dp)
                 .graphicsLayer(rotationZ = -45f)
         )
     }
+}
+
+@Preview
+@Composable
+fun FeaturedLocationCardPreview(){
+    FeaturedLocationCard(
+        country = "Italy",
+        city = "Rome",
+        imageUrl = "https://images.unsplash.com/photo-1506744038136-46273834b3fb?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8cm9tZXxlbnwwfHwwfHx8MA%3D%3D&auto=format&fit=crop&w=800&q=60"
+    )
 }
