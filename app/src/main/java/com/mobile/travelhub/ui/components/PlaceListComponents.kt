@@ -674,7 +674,7 @@ fun FeedPostCard(
         Spacer(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(2.dp)
+                .height(3.dp)
                 .background(Color(0xFFE0E0E0))
         )
     }

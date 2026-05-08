@@ -60,43 +60,40 @@ fun FeaturedLocationCard(
                 .fillMaxSize()
                 .background(
                     Brush.verticalGradient(
-                        colors = listOf(
-                            Color.Transparent,
-                            Color.Black.copy(alpha = 0.58f)
-                        )
+                        colors = listOf( Color.Transparent, Color.Black.copy(alpha = 0.58f) )
                     )
                 )
         )
         Column(
             modifier = Modifier
                 .align(Alignment.BottomStart)
-                .padding(start = 14.dp, end = 56.dp, bottom = 14.dp)
+                .padding(start = 14.dp, end = 14.dp, bottom = 14.dp)
         ) {
             Text(
                 text = country.uppercase(),
                 color = Color.White.copy(alpha = 0.82f),
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Bold,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
             )
             Text(
                 text = city,
                 color = Color.White,
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.ExtraBold,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
             )
         }
-        CircularActionButton()
+        CircularActionButton(
+            modifier = Modifier.align(Alignment.TopEnd)
+        )
     }
 }
 
 @Composable
-private fun BoxScope.CircularActionButton() {
+private fun BoxScope.CircularActionButton(
+    modifier: Modifier = Modifier
+) {
     Box(
-        modifier = Modifier
+        modifier = modifier
             .align(Alignment.TopEnd)
             .padding(14.dp)
             .size(42.dp)
@@ -120,7 +117,7 @@ private fun BoxScope.CircularActionButton() {
 fun FeaturedLocationCardPreview(){
     FeaturedLocationCard(
         country = "Italy",
-        city = "Rome",
+        city = "RomeRomeRomeRomeRomeRomeRomeRomeRomeRomeRomeRomeRomeRomeRomeRomeRomeRome",
         imageUrl = "https://images.unsplash.com/photo-1506744038136-46273834b3fb?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8cm9tZXxlbnwwfHwwfHx8MA%3D%3D&auto=format&fit=crop&w=800&q=60"
     )
 }
