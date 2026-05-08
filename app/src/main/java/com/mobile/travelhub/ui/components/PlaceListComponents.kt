@@ -1,7 +1,9 @@
 package com.mobile.travelhub.ui.components
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -420,6 +422,7 @@ private fun FeedEmptyState(
 }
 
 @Composable
+@OptIn(ExperimentalFoundationApi::class)
 fun FeedPostCard(
     post: HomePostUiModel,
     onLikeClick: () -> Unit,
@@ -459,7 +462,10 @@ fun FeedPostCard(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                modifier = Modifier.weight(1f),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 Image(
                     painter = painterResource(R.drawable.female_avatar_maker),
                     contentDescription = post.username,
@@ -469,14 +475,22 @@ fun FeedPostCard(
                     contentScale = ContentScale.Crop
                 )
                 Spacer(modifier = Modifier.width(10.dp))
-                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(2.dp)
+                ) {
                     Text(
                         text = post.username,
                         style = MaterialTheme.typography.titleSmall,
                         color = VerdantOnSurface,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
                         Icon(
                             imageVector = Icons.Outlined.Place,
                             contentDescription = null,
@@ -486,8 +500,12 @@ fun FeedPostCard(
                         Spacer(modifier = Modifier.width(2.dp))
                         Text(
                             text = post.subtitle,
+                            modifier = Modifier
+                                .weight(1f)
+                                .basicMarquee(),
                             style = MaterialTheme.typography.bodySmall,
-                            color = VerdantOnSurfaceVariant
+                            color = VerdantOnSurfaceVariant,
+                            maxLines = 1
                         )
                     }
                 }
