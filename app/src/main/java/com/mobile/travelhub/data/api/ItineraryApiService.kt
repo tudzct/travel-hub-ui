@@ -1,6 +1,7 @@
 package com.mobile.travelhub.data.api
 
 import com.google.gson.annotations.SerializedName
+import com.mobile.travelhub.data.model.ItineraryResponse
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
@@ -9,8 +10,9 @@ import retrofit2.http.PUT
 import retrofit2.http.Path
 
 interface ItineraryApiService {
+    //TODO: có vấn đ, response cass cần xem lại
     @GET("/api/itineraries/by-group/{groupName}")
-    suspend fun getByGroupName(@Path("groupName") groupName: String): ItineraryResponseDto
+    suspend fun getByGroupName(@Path("groupName") groupName: String): ItineraryResponse
 
     @POST("/api/itineraries")
     suspend fun createItinerary(@Body request: CreateItineraryRequestDto): ItineraryResponseDto

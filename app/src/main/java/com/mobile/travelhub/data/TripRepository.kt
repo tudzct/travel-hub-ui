@@ -22,6 +22,6 @@ class TripRepository @Inject constructor(
     }
 
     suspend fun getItineraryByGroupName(groupName: String): Result<ItineraryResponse> {
-        return runCatching { itineraryApiService.getItineraryByGroupName(groupName) }
+        return runCatching { itineraryApiService.getByGroupName(groupName) }
     }
 }

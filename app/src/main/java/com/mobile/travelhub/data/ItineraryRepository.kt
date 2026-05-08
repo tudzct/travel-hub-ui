@@ -211,7 +211,7 @@ class ItineraryRepository @Inject constructor(
         } catch (error: HttpException) {
             if (error.code() != 404) throw error
             itineraryApiService.createItinerary(CreateItineraryRequestDto(groupName = groupName))
-        }
+        } as ItineraryResponseDto // TODO:  cần xem lại
     }
 
     private fun cacheItinerary(
