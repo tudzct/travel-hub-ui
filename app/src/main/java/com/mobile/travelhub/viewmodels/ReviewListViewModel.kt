@@ -3,9 +3,11 @@ package com.mobile.travelhub.viewmodels
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mobile.travelhub.data.PlaceRepository
+import com.mobile.travelhub.data.httpStatusCode
 import com.mobile.travelhub.data.model.TravelPlaceReviewResponse
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -35,7 +37,11 @@ class ReviewListViewModel @Inject constructor(
         loadedPlaceId = placeId
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, errorMessage = null) }
-            runCatching { placeRepository.getReviews(placeId = placeId, page = 0, pageSize = 20) }
+            runCatching {
+                retryTransientServerError {
+                    placeRepository.getReviews(placeId = placeId, page = 0, pageSize = 20)
+                }
+            }
                 .onSuccess { response ->
                     _uiState.update {
                         it.copy(
@@ -54,5 +60,30 @@ class ReviewListViewModel @Inject constructor(
                     }
                 }
         }
+    }
+
+    private suspend fun <T> retryTransientServerError(
+        attempts: Int = 3,
+        initialDelayMillis: Long = 350,
+        block: suspend () -> T
+    ): T {
+        var nextDelay = initialDelayMillis
+        var lastError: Throwable? = null
+
+        repeat(attempts) { attempt ->
+            try {
+                return block()
+            } catch (throwable: Throwable) {
+                lastError = throwable
+                val shouldRetry = throwable.httpStatusCode() == 500 && attempt < attempts - 1
+                if (!shouldRetry) {
+                    throw throwable
+                }
+                delay(nextDelay)
+                nextDelay *= 2
+            }
+        }
+
+        throw lastError ?: IllegalStateException("Request failed")
     }
 }

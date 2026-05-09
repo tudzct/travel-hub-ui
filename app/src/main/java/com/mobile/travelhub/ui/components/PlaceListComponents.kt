@@ -29,6 +29,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Send
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material.icons.outlined.ChatBubbleOutline
 import androidx.compose.material.icons.outlined.FavoriteBorder
@@ -93,12 +94,12 @@ fun PlaceListScreenContent(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.White)
+            .background(TravelSurfaceBg)
     ) {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(top = 18.dp, bottom = 112.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
+            contentPadding = PaddingValues(top = 24.dp, bottom = 112.dp),
+            verticalArrangement = Arrangement.spacedBy(22.dp)
         ) {
             item {
                 FeedHeader(
@@ -332,8 +333,8 @@ private fun FeedHeader(
     onKeywordChange: (String) -> Unit
 ) {
     Column(
-        modifier = Modifier.padding(horizontal = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp)
+        modifier = Modifier.padding(horizontal = 24.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -342,23 +343,23 @@ private fun FeedHeader(
         ) {
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(
-                    text = "TRAVEL HUB",
+                    text = "Khám phá địa điểm,",
                     style = MaterialTheme.typography.labelMedium,
-                    color = VerdantPrimary,
-                    fontWeight = FontWeight.SemiBold
+                    color = VerdantOnSurfaceVariant,
+                    fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text = "Discovery Feed",
+                    text = "Đi đâu hôm nay?",
                     style = MaterialTheme.typography.headlineMedium,
                     color = VerdantOnSurface,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.ExtraBold
                 )
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Surface(
                     shape = CircleShape,
-                    color = VerdantSurfaceContainerHighest,
-                    modifier = Modifier.size(40.dp)
+                    color = VerdantSurfaceContainerLow,
+                    modifier = Modifier.size(44.dp)
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Text(
@@ -392,9 +393,9 @@ private fun FeedHeader(
             shape = RoundedCornerShape(22.dp),
             singleLine = true,
             colors = TextFieldDefaults.colors(
-                focusedContainerColor = VerdantSurfaceContainerHighest,
-                unfocusedContainerColor = VerdantSurfaceContainerHighest,
-                disabledContainerColor = VerdantSurfaceContainerHighest,
+                focusedContainerColor = VerdantSurfaceContainerLowest,
+                unfocusedContainerColor = VerdantSurfaceContainerLowest,
+                disabledContainerColor = VerdantSurfaceContainerLowest,
                 focusedIndicatorColor = Color.Transparent,
                 unfocusedIndicatorColor = Color.Transparent,
                 disabledIndicatorColor = Color.Transparent,
@@ -411,30 +412,30 @@ private fun LocationsRail(
     places: List<TravelPlaceListItemResponse>,
     onPlaceClick: (TravelPlaceListItemResponse) -> Unit
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp),
+                .padding(horizontal = 24.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "Locations",
+                text = "Gợi ý địa điểm",
                 style = MaterialTheme.typography.titleMedium,
                 color = VerdantOnSurface,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.ExtraBold
             )
             Text(
-                text = "Swipe",
+                text = "Lướt xem",
                 style = MaterialTheme.typography.labelMedium,
                 color = VerdantPrimary
             )
         }
 
         LazyRow(
-            contentPadding = PaddingValues(horizontal = 16.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            contentPadding = PaddingValues(horizontal = 24.dp),
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             items(places, key = { it.id }) { place ->
                 LocationCard(
@@ -453,61 +454,81 @@ private fun LocationCard(
 ) {
     Surface(
         modifier = Modifier
-            .width(104.dp)
-            .height(172.dp)
+            .width(250.dp)
+            .height(210.dp)
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(24.dp),
+        shape = RoundedCornerShape(32.dp),
         color = VerdantSurfaceContainerLowest,
         shadowElevation = 8.dp
     ) {
         Box {
-            AsyncImage(
-                model = place.mainImage,
-                contentDescription = place.name,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop
-            )
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        Brush.verticalGradient(
-                            colors = listOf(
-                                VerdantPrimary.copy(alpha = 0.08f),
-                                Color.Transparent,
-                                VerdantOnSurface.copy(alpha = 0.76f)
-                            )
-                        )
-                    )
-            )
-            Surface(
-                modifier = Modifier
-                    .align(Alignment.TopStart)
-                    .padding(8.dp),
-                shape = CircleShape,
-                color = VerdantSurfaceContainerLowest.copy(alpha = 0.94f)
-            ) {
+            if (place.mainImage.isNullOrBlank()) {
                 Box(
-                    modifier = Modifier.size(30.dp),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(VerdantSurfaceContainerHighest),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = place.province.name.take(1).uppercase(),
-                        style = MaterialTheme.typography.labelLarge,
+                        style = MaterialTheme.typography.headlineMedium,
                         color = VerdantPrimary,
                         fontWeight = FontWeight.Bold
+                    )
+                }
+            } else {
+                AsyncImage(
+                    model = place.mainImage,
+                    contentDescription = place.name,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+            }
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            Color.Transparent,
+                            Color.Transparent,
+                            VerdantOnSurface.copy(alpha = 0.84f)
+                        )
+                        )
+                    )
+            )
+            Row(
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(10.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Surface(
+                    shape = RoundedCornerShape(16.dp),
+                    color = Color.White.copy(alpha = 0.94f)
+                ) {
+                    Text(
+                        text = place.province.name,
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = VerdantPrimary,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
             }
             Column(
                 modifier = Modifier
                     .align(Alignment.BottomStart)
-                    .padding(10.dp),
-                verticalArrangement = Arrangement.spacedBy(3.dp)
+                    .fillMaxWidth()
+                    .padding(18.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 Text(
                     text = place.name,
-                    style = MaterialTheme.typography.labelLarge,
+                    style = MaterialTheme.typography.titleMedium,
                     color = Color.White,
                     fontWeight = FontWeight.Bold,
                     maxLines = 2,
@@ -520,6 +541,33 @@ private fun LocationCard(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Filled.Star,
+                            contentDescription = null,
+                            tint = Color(0xFFFFC247),
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Spacer(modifier = Modifier.width(3.dp))
+                        Text(
+                            text = String.format("%.1f", place.averageRating),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Color.White,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                    Text(
+                        text = "${place.views ?: 0} lượt xem",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color.White.copy(alpha = 0.84f),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
             }
         }
     }
@@ -530,15 +578,15 @@ private fun PostsSectionHeader() {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 4.dp),
+            .padding(horizontal = 24.dp, vertical = 4.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            text = "Posts",
+            text = "Bài viết mới",
             style = MaterialTheme.typography.titleLarge,
             color = VerdantOnSurface,
-            fontWeight = FontWeight.Bold
+            fontWeight = FontWeight.ExtraBold
         )
     }
 }
@@ -555,7 +603,7 @@ private fun FeedEmptyState(
     } else {
         Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp)
+            .padding(horizontal = 24.dp)
     }
 
     Box(
@@ -564,7 +612,7 @@ private fun FeedEmptyState(
     ) {
         Surface(
             shape = RoundedCornerShape(24.dp),
-            color = VerdantSurfaceContainer,
+            color = VerdantSurfaceContainerLowest,
             modifier = Modifier.fillMaxWidth()
         ) {
             Column(
@@ -657,7 +705,15 @@ private fun PostItemContent(
     val imageCount = post.imageUrls.size.coerceAtLeast(1)
     val pagerState = rememberPagerState(pageCount = { imageCount })
 
-    Column {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 24.dp),
+        shape = RoundedCornerShape(24.dp),
+        color = VerdantSurfaceContainerLowest,
+        shadowElevation = 2.dp
+    ) {
+        Column {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -699,8 +755,8 @@ private fun PostItemContent(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(360.dp)
-                .background(Color(0xFFF5F5F5))
+                .height(320.dp)
+                .background(VerdantSurfaceContainerLow)
         ) {
             if (post.imageUrls.isNotEmpty()) {
                 HorizontalPager(
@@ -830,15 +886,17 @@ private fun PostItemContent(
         Spacer(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(10.dp)
-                .background(Color(0xFFF3F3F3))
+                .height(12.dp)
         )
+        }
     }
 }
 
-private val VerdantPrimary = Color(0xFF006B2C)
-private val VerdantSurfaceContainer = Color(0xFFEFF6EA)
-private val VerdantSurfaceContainerHighest = Color(0xFFDDE5D9)
+private val TravelSurfaceBg = Color(0xFFF8F9FA)
+private val VerdantPrimary = Color(0xFF0052D1)
+private val VerdantSurfaceContainer = Color(0xFFEDEEEF)
+private val VerdantSurfaceContainerLow = Color(0xFFF3F4F5)
+private val VerdantSurfaceContainerHighest = Color(0xFFC1C6D7)
 private val VerdantSurfaceContainerLowest = Color(0xFFFFFFFF)
-private val VerdantOnSurface = Color(0xFF171D16)
-private val VerdantOnSurfaceVariant = Color(0xFF3E4A3D)
+private val VerdantOnSurface = Color(0xFF191C1D)
+private val VerdantOnSurfaceVariant = Color(0xFF414755)
