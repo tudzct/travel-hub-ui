@@ -761,9 +761,9 @@ fun FeedPostCard(
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
-                        imageVector = Icons.AutoMirrored.Outlined.Send,
-                        contentDescription = "Share",
-                        modifier = Modifier.size(24.dp),
+                        imageVector = Icons.Outlined.BookmarkBorder,
+                        contentDescription = "Save",
+                        modifier = Modifier.size(26.dp),
                         tint = VerdantOnSurface
                     )
                 }
@@ -772,9 +772,9 @@ fun FeedPostCard(
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
-                        imageVector = Icons.Outlined.BookmarkBorder,
-                        contentDescription = "Save",
-                        modifier = Modifier.size(26.dp),
+                        imageVector = Icons.AutoMirrored.Outlined.Send,
+                        contentDescription = "Share",
+                        modifier = Modifier.size(24.dp),
                         tint = VerdantOnSurface
                     )
                 }
