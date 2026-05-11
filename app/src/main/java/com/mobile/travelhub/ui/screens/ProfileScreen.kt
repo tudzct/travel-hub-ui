@@ -51,13 +51,17 @@ import androidx.compose.foundation.clickable
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 
 import com.mobile.travelhub.R
+import com.mobile.travelhub.data.model.UserProfileResponse
 import com.mobile.travelhub.ui.components.FeedPostCard
 import com.mobile.travelhub.ui.components.FeedPostCardSkeleton
 import com.mobile.travelhub.ui.theme.*
+import com.mobile.travelhub.viewmodels.HomePostUiModel
 import com.mobile.travelhub.viewmodels.ProfileViewModel
+import com.mobile.travelhub.viewmodels.ProfilePostsUiState
 import com.mobile.travelhub.viewmodels.UiState
 import kotlinx.coroutines.launch
 
@@ -84,10 +88,6 @@ fun ProfileScreen(
     val profilePostsState by viewModel.profilePostsState.collectAsState()
     val unauthorized by viewModel.unauthorized.collectAsState()
 
-    val scrollState = rememberScrollState()
-    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
-    val coroutineScope = rememberCoroutineScope()
-
     LaunchedEffect(Unit) {
         if (isViewingOwnProfile) {
             viewModel.loadUserProfile()
@@ -105,11 +105,61 @@ fun ProfileScreen(
             onRequireLogin?.invoke()
         }
     }
+    ProfileScreenContent(
+        isViewingOwnProfile = isViewingOwnProfile,
+        profileState = profileState,
+        profilePostsState = profilePostsState,
+        onNavigateToEditProfile = onNavigateToEditProfile,
+        onNavigateToFollowers = onNavigateToFollowers,
+        onNavigateToFollowing = onNavigateToFollowing,
+        onLogout = onLogout,
+        onBack = onBack,
+        viewingUserId = viewingUserId,
+        onNavigateToChat = onNavigateToChat,
+        onReloadProfile = {
+            if (isViewingOwnProfile) {
+                viewModel.loadUserProfile()
+            } else {
+                viewingUserId?.let(viewModel::loadOtherUserProfile)
+            }
+        },
+        onReloadOtherUserProfile = viewModel::loadOtherUserProfile,
+        onReloadPosts = { userId ->
+            if (userId == null) {
+                viewModel.loadUserPosts()
+            } else {
+                viewModel.loadUserPosts(userId)
+            }
+        },
+        onToggleFollow = viewModel::toggleFollowOtherUser
+    )
+}
+
+@Composable
+private fun ProfileScreenContent(
+    isViewingOwnProfile: Boolean,
+    profileState: UiState<UserProfileResponse>,
+    profilePostsState: ProfilePostsUiState,
+    onNavigateToEditProfile: () -> Unit,
+    onNavigateToFollowers: () -> Unit,
+    onNavigateToFollowing: () -> Unit,
+    onLogout: (() -> Unit)?,
+    onBack: (() -> Unit)?,
+    viewingUserId: Long?,
+    onNavigateToChat: (() -> Unit)?,
+    onReloadProfile: () -> Unit,
+    onReloadOtherUserProfile: (Long) -> Unit,
+    onReloadPosts: (Long?) -> Unit,
+    onToggleFollow: (Long, Boolean) -> Unit
+) {
     val profileTitle = (profileState as? UiState.Success)
         ?.data
         ?.username
         ?.takeIf { it.isNotBlank() }
         ?: "Profile"
+    val scrollState = rememberScrollState()
+    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+    val coroutineScope = rememberCoroutineScope()
 
     CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
         ModalNavigationDrawer(
@@ -171,6 +221,18 @@ fun ProfileScreen(
                                     .padding(horizontal = 4.dp),
                                 contentAlignment = Alignment.Center
                             ) {
+                                if (isViewingOwnProfile) {
+                                    IconButton(
+                                        onClick = { coroutineScope.launch { drawerState.open() } },
+                                        modifier = Modifier.align(Alignment.CenterEnd)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Menu,
+                                            contentDescription = "Open menu",
+                                            tint = OnSurface
+                                        )
+                                    }
+                                }
                                 if (!isViewingOwnProfile) {
                                     IconButton(
                                         onClick = { onBack?.invoke() },
@@ -192,18 +254,6 @@ fun ProfileScreen(
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis
                                 )
-                                if (isViewingOwnProfile) {
-                                    IconButton(
-                                        onClick = { coroutineScope.launch { drawerState.open() } },
-                                        modifier = Modifier.align(Alignment.CenterEnd)
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.Menu,
-                                            contentDescription = "Open menu",
-                                            tint = OnSurface
-                                        )
-                                    }
-                                }
                             }
                         }
                     }
@@ -215,15 +265,8 @@ fun ProfileScreen(
                             }
                             is UiState.Error -> {
                                 ErrorLayout(message = state.message) {
-                                    if (isViewingOwnProfile) {
-                                        viewModel.loadUserProfile()
-                                        viewModel.loadUserPosts()
-                                    } else {
-                                        viewingUserId?.let {
-                                            viewModel.loadOtherUserProfile(it)
-                                            viewModel.loadUserPosts(it)
-                                        }
-                                    }
+                                    onReloadProfile()
+                                    onReloadPosts(if (isViewingOwnProfile) null else viewingUserId)
                                 }
                             }
                             is UiState.Success -> {
@@ -359,7 +402,7 @@ fun ProfileScreen(
                                             Button(
                                                 onClick = {
                                                     viewingUserId?.let {
-                                                        viewModel.toggleFollowOtherUser(it, profile.isFollowing)
+                                                        onToggleFollow(it, profile.isFollowing)
                                                     }
                                                 },
                                                 shape = RoundedCornerShape(8.dp),
@@ -379,7 +422,7 @@ fun ProfileScreen(
 
                                             Button(
                                                 onClick = {
-                                                    viewingUserId?.let { viewModel.loadOtherUserProfile(it) }
+                                                    viewingUserId?.let(onReloadOtherUserProfile)
                                                     onNavigateToChat?.invoke()
                                                 },
                                                 shape = RoundedCornerShape(8.dp),
@@ -426,12 +469,8 @@ fun ProfileScreen(
                                                     )
                                                     Button(
                                                         onClick = {
-                                                        if (isViewingOwnProfile) {
-                                                            viewModel.loadUserPosts()
-                                                        } else {
-                                                            viewingUserId?.let(viewModel::loadUserPosts)
-                                                        }
-                                                    },
+                                                            onReloadPosts(if (isViewingOwnProfile) null else viewingUserId)
+                                                        },
                                                         colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
                                                     ) {
                                                         Icon(Icons.Default.Refresh, contentDescription = null)
@@ -521,5 +560,53 @@ fun ErrorLayout(message: String, onRetry: () -> Unit) {
             Icon(Icons.Default.Refresh, contentDescription = null)
             Text(" Try Again", modifier = Modifier.padding(start = 8.dp))
         }
+    }
+}
+
+@Preview
+@Composable
+fun ProfileScreenPreview() {
+    val sampleProfile = UserProfileResponse(
+        id = 1,
+        username = "traveler",
+        name = "Alex Nguyen",
+        bio = "Chasing sunsets and street food.",
+        postsCount = 12,
+        followersCount = 345,
+        followingCount = 180,
+        isFollowing = false
+    )
+    val samplePosts = listOf(
+        HomePostUiModel(
+            id = 1,
+            username = "traveler",
+            subtitle = "Hoi An, Viet Nam",
+            description = "Golden hour by the river.",
+            imageUrls = emptyList(),
+            likeCount = 120,
+            commentCount = 24,
+            isLiked = false,
+            isLikeLoading = false,
+            timeAgoLabel = "2h"
+        )
+    )
+
+    TravelHubTheme {
+        ProfileScreenContent(
+            isViewingOwnProfile = true,
+            profileState = UiState.Success(sampleProfile),
+            profilePostsState = ProfilePostsUiState(isLoading = false, posts = samplePosts),
+            onNavigateToEditProfile = {},
+            onNavigateToFollowers = {},
+            onNavigateToFollowing = {},
+            onLogout = {},
+            onBack = {},
+            viewingUserId = null,
+            onNavigateToChat = {},
+            onReloadProfile = {},
+            onReloadOtherUserProfile = {},
+            onReloadPosts = {},
+            onToggleFollow = { _, _ -> }
+        )
     }
 }
