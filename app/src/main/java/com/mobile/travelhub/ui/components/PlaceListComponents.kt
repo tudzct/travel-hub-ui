@@ -571,7 +571,8 @@ fun FeedPostCard(
     val imageCount = post.imageUrls.size.coerceAtLeast(1)
     val pagerState = rememberPagerState(pageCount = { imageCount })
 
-    Column {
+    Column (modifier = Modifier.background(Color.White)) {
+
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -636,6 +637,17 @@ fun FeedPostCard(
             )
         }
 
+        Text(
+            modifier = Modifier.padding(horizontal = 16.dp),
+            text = post.description,
+            style = MaterialTheme.typography.bodyMedium,
+            maxLines = 3,
+            overflow = TextOverflow.Ellipsis,
+            color = VerdantOnSurface
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
+
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -683,13 +695,37 @@ fun FeedPostCard(
             }
         }
 
+
         Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
             Row(
+                modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = "${post.likeCount} likes",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = VerdantOnSurface
+                )
+                Text(
+                    text = "${post.commentCount} comments",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = VerdantOnSurface
+                )
+            }
+//            Spacer(
+//                modifier = Modifier
+//                    .fillMaxWidth()
+//                    .height(1.dp)
+//                    .background(Color(0xFFE0E0E0))
+//            )
+            Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier.weight(1f),
+                    contentAlignment = Alignment.Center
+                ) {
                     IconButton(
                         onClick = onLikeClick,
                         enabled = actionsEnabled && !post.isLikeLoading,
@@ -702,7 +738,11 @@ fun FeedPostCard(
                             modifier = Modifier.size(26.dp)
                         )
                     }
-                    Spacer(modifier = Modifier.width(16.dp))
+                }
+                Box(
+                    modifier = Modifier.weight(1f),
+                    contentAlignment = Alignment.Center
+                ) {
                     IconButton(
                         onClick = onCommentClick,
                         enabled = actionsEnabled,
@@ -715,7 +755,11 @@ fun FeedPostCard(
                             tint = VerdantOnSurface
                         )
                     }
-                    Spacer(modifier = Modifier.width(16.dp))
+                }
+                Box(
+                    modifier = Modifier.weight(1f),
+                    contentAlignment = Alignment.Center
+                ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Outlined.Send,
                         contentDescription = "Share",
@@ -723,34 +767,18 @@ fun FeedPostCard(
                         tint = VerdantOnSurface
                     )
                 }
-                Icon(
-                    imageVector = Icons.Outlined.BookmarkBorder,
-                    contentDescription = "Save",
-                    modifier = Modifier.size(26.dp),
-                    tint = VerdantOnSurface
-                )
+                Box(
+                    modifier = Modifier.weight(1f),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.BookmarkBorder,
+                        contentDescription = "Save",
+                        modifier = Modifier.size(26.dp),
+                        tint = VerdantOnSurface
+                    )
+                }
             }
-            Spacer(modifier = Modifier.height(10.dp))
-            Text(
-                text = "${post.likeCount} likes",
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.Bold,
-                color = VerdantOnSurface
-            )
-            Spacer(modifier = Modifier.height(6.dp))
-            Text(
-                text = buildAnnotatedString {
-                    withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
-                        append(post.username)
-                    }
-                    append(" ")
-                    append(post.description)
-                },
-                style = MaterialTheme.typography.bodyMedium,
-                maxLines = 3,
-                overflow = TextOverflow.Ellipsis,
-                color = VerdantOnSurface
-            )
         }
 
         Spacer(
@@ -880,6 +908,27 @@ fun FeedPostCardSkeleton(
                 .background(Color(0xFFE0E0E0))
         )
     }
+}
+
+@Preview
+@Composable
+fun FeedPostCardPreview() {
+    FeedPostCard(
+        post = HomePostUiModel(
+            id = 1L,
+            username = "Duc Duong Hoang",
+            subtitle = "Da Nang, Viet Nam",
+            description = "A calm afternoon by the river.",
+            imageUrls = listOf("sample.jpg"),
+            likeCount = 142,
+            commentCount = 4,
+            isLiked = true,
+            isLikeLoading = false,
+            timeAgoLabel = "2h"
+        ),
+        onLikeClick = {},
+        onCommentClick = {}
+    )
 }
 
 
