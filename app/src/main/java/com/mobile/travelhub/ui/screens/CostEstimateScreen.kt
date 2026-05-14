@@ -14,6 +14,7 @@ import androidx.compose.material.icons.filled.ConfirmationNumber
 import androidx.compose.material.icons.filled.Hotel
 import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material.icons.filled.Train
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -27,15 +28,24 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mobile.travelhub.R
 import com.mobile.travelhub.ui.theme.*
+import com.mobile.travelhub.viewmodels.CostEstimateViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CostEstimateScreen(
+    tripId: Long,
     groupName: String = "Tokyo Trip",
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    viewModel: CostEstimateViewModel = hiltViewModel()
 ) {
+    val uiState by viewModel.uiState.collectAsState()
     var showAddExpense by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+    LaunchedEffect(tripId, groupName) {
+        viewModel.loadExpenseSummary(tripId, groupName)
+    }
 
     Scaffold(
         containerColor = SurfaceBg,
@@ -75,12 +85,29 @@ fun CostEstimateScreen(
             contentPadding = PaddingValues(horizontal = 20.dp, vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
+            if (uiState.errorMessage != null) {
+                item {
+                    Text(
+                        text = uiState.errorMessage.orEmpty(),
+                        color = SunsetOrange,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+            }
+
+            if (uiState.isLoading) {
+                item {
+                    LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                }
+            }
+
             // Budget Summary Card
             item {
                 BudgetSummaryCard(
-                    totalSpent = 850.0,
-                    budgetMax = 1500.0,
-                    budgetMin = 1200.0
+                    totalSpent = uiState.totalSpent,
+                    budgetMax = uiState.budgetMax ?: 0.0,
+                    budgetMin = uiState.budgetMin ?: 0.0
                 )
             }
 
@@ -100,9 +127,22 @@ fun CostEstimateScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    MemberExpenseCircle(name = "Me", amount = 450.0, color = PrimaryBlue)
-                    MemberExpenseCircle(name = "Alex", amount = 200.0, color = SunsetOrange)
-                    MemberExpenseCircle(name = "Sarah", amount = 200.0, color = Color(0xFF4CAF50))
+                    val contributions = uiState.contributions
+                    if (contributions.isEmpty()) {
+                        Text(
+                            text = "Chưa có dữ liệu đóng góp từ BE.",
+                            color = OnSurfaceVariant,
+                            fontSize = 13.sp
+                        )
+                    } else {
+                        contributions.take(3).forEachIndexed { index, contribution ->
+                            MemberExpenseCircle(
+                                name = contribution.userName,
+                                amount = contribution.amountPaid,
+                                color = listOf(PrimaryBlue, SunsetOrange, Color(0xFF4CAF50))[index % 3]
+                            )
+                        }
+                    }
                 }
             }
 
@@ -117,15 +157,28 @@ fun CostEstimateScreen(
                 )
             }
 
-            val recentExpenses = listOf(
-                ExpenseItemData("Sushi Lunch", "Sarah", 120.0, "Food"),
-                ExpenseItemData("Hotel Deposit", "Me", 400.0, "Stay"),
-                ExpenseItemData("Train Tickets", "Alex", 200.0, "Transport"),
-                ExpenseItemData("Museum Entry", "Me", 50.0, "Entry")
-            )
+            val recentExpenses = uiState.transactions.map {
+                ExpenseItemData(
+                    title = it.title,
+                    paidBy = it.paidByName,
+                    amount = it.amount,
+                    category = it.category,
+                    dateLabel = it.date.orEmpty()
+                )
+            }
 
-            items(recentExpenses) { expense ->
-                ExpenseRow(expense)
+            if (recentExpenses.isEmpty()) {
+                item {
+                    Text(
+                        text = "Chưa có giao dịch chi phí từ BE.",
+                        color = OnSurfaceVariant,
+                        fontSize = 13.sp
+                    )
+                }
+            } else {
+                items(recentExpenses) { expense ->
+                    ExpenseRow(expense)
+                }
             }
 
             item { Spacer(modifier = Modifier.height(80.dp)) }
@@ -138,16 +191,29 @@ fun CostEstimateScreen(
                 containerColor = SurfaceContainerLowest,
                 dragHandle = { BottomSheetDefaults.DragHandle(color = SurfaceContainerLow) }
             ) {
-                AddExpenseContent(onDismiss = { showAddExpense = false })
+                AddExpenseContent(
+                    isSaving = uiState.isAddingExpense,
+                    onSave = { title, amountText, category ->
+                        viewModel.addExpense(title, amountText, category)
+                    },
+                    onDismiss = { showAddExpense = false }
+                )
             }
         }
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AddExpenseContent(onDismiss: () -> Unit) {
+fun AddExpenseContent(
+    isSaving: Boolean,
+    onSave: (String, String, String) -> Unit,
+    onDismiss: () -> Unit
+) {
     var expenseTitle by remember { mutableStateOf("") }
     var expenseAmount by remember { mutableStateOf("") }
+    var selectedCategory by remember { mutableStateOf("FOOD") }
+    var expanded by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -189,22 +255,67 @@ fun AddExpenseContent(onDismiss: () -> Unit) {
             )
         )
 
+        Spacer(modifier = Modifier.height(16.dp))
+
+        ExposedDropdownMenuBox(
+            expanded = expanded,
+            onExpandedChange = { expanded = !expanded }
+        ) {
+            OutlinedTextField(
+                value = selectedCategory,
+                onValueChange = {},
+                readOnly = true,
+                label = { Text("Danh mục") },
+                trailingIcon = {
+                    Icon(Icons.Default.ArrowDropDown, contentDescription = null)
+                },
+                modifier = Modifier
+                    .menuAnchor()
+                    .fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = PrimaryBlue,
+                    unfocusedBorderColor = SurfaceContainerLow
+                )
+            )
+            ExposedDropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false }
+            ) {
+                listOf("FOOD", "STAY", "TRANSPORT", "ENTRY").forEach { category ->
+                    DropdownMenuItem(
+                        text = { Text(category) },
+                        onClick = {
+                            selectedCategory = category
+                            expanded = false
+                        }
+                    )
+                }
+            }
+        }
+
         Spacer(modifier = Modifier.height(24.dp))
         
         Button(
-            onClick = onDismiss,
+            onClick = {
+                if (!isSaving) {
+                    onSave(expenseTitle, expenseAmount, selectedCategory)
+                    onDismiss()
+                }
+            },
             modifier = Modifier.fillMaxWidth().height(56.dp),
             shape = RoundedCornerShape(20.dp),
+            enabled = !isSaving,
             colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
         ) {
-            Text("Lưu chi phí", fontWeight = FontWeight.Bold)
+            Text(if (isSaving) "Đang lưu..." else "Lưu chi phí", fontWeight = FontWeight.Bold)
         }
     }
 }
 
 @Composable
 fun BudgetSummaryCard(totalSpent: Double, budgetMin: Double, budgetMax: Double) {
-    val progress = (totalSpent / budgetMax).toFloat()
+    val progress = if (budgetMax > 0.0) (totalSpent / budgetMax).toFloat() else 0f
     
     Card(
         shape = RoundedCornerShape(28.dp),
@@ -312,13 +423,19 @@ fun ExpenseRow(expense: ExpenseItemData) {
     }
 }
 
-data class ExpenseItemData(val title: String, val paidBy: String, val amount: Double, val category: String)
+data class ExpenseItemData(
+    val title: String,
+    val paidBy: String,
+    val amount: Double,
+    val category: String,
+    val dateLabel: String = ""
+)
 
 private fun expenseCategoryIcon(category: String): ImageVector {
-    return when (category) {
-        "Food" -> Icons.Default.Restaurant
-        "Stay" -> Icons.Default.Hotel
-        "Transport" -> Icons.Default.Train
+    return when (category.uppercase()) {
+        "FOOD" -> Icons.Default.Restaurant
+        "STAY" -> Icons.Default.Hotel
+        "TRANSPORT" -> Icons.Default.Train
         else -> Icons.Default.ConfirmationNumber
     }
 }

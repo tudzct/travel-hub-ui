@@ -1,5 +1,7 @@
 package com.mobile.travelhub.data.model
 
+import java.io.Serializable
+
 data class PaginationResponse<T>(
     val pageNumber: Int = 0,
     val pageSize: Int = 0,
@@ -12,7 +14,7 @@ data class ProvinceResponse(
     val id: Long,
     val name: String,
     val image: String?
-)
+) : Serializable
 
 data class TravelPlaceListItemResponse(
     val id: Long,
@@ -24,7 +26,7 @@ data class TravelPlaceListItemResponse(
     val openingTime: String?,
     val averageRating: Double,
     val reviewCount: Long
-)
+) : Serializable
 
 data class TravelPlaceImageResponse(
     val id: Long,
@@ -35,14 +37,14 @@ data class TravelPlaceImageResponse(
 data class TravelPlaceReviewSummaryResponse(
     val averageRating: Double,
     val reviewCount: Long
-)
+) : Serializable
 
 data class TravelPlaceReviewAuthorResponse(
     val id: Long,
     val name: String,
     val username: String,
     val avatarUrl: String?
-)
+) : Serializable
 
 data class TravelPlaceReviewResponse(
     val id: Long,
@@ -51,21 +53,7 @@ data class TravelPlaceReviewResponse(
     val content: String,
     val createdAt: String?,
     val updatedAt: String?
-)
-
-data class TravelPlaceDetailResponse(
-    val id: Long,
-    val name: String,
-    val description: String?,
-    val lat: Double?,
-    val lon: Double?,
-    val views: Int?,
-    val openingTime: String?,
-    val province: ProvinceResponse,
-    val images: List<TravelPlaceImageResponse>,
-    val reviewSummary: TravelPlaceReviewSummaryResponse,
-    val myReview: TravelPlaceReviewResponse?
-)
+) : Serializable
 
 data class TravelPlaceViewHistoryResponse(
     val placeId: Long,

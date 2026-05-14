@@ -1,290 +1,356 @@
 package com.mobile.travelhub.ui.screens
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.DirectionsWalk
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.DirectionsBus
-import androidx.compose.material.icons.filled.DirectionsRailway
-import androidx.compose.material.icons.filled.DirectionsTransit
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.DragIndicator
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.mobile.travelhub.ui.theme.*
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.mobile.travelhub.data.model.*
+
+import com.mobile.travelhub.ui.components.itinerary.*
+import com.mobile.travelhub.ui.components.itinerary.ItineraryDayEditorDialog
+import com.mobile.travelhub.ui.components.itinerary.ItineraryEditButton
+import com.mobile.travelhub.ui.components.itinerary.ItineraryEventEditorDialog
+import com.mobile.travelhub.ui.components.itinerary.toItineraryColor
+import com.mobile.travelhub.ui.theme.OnSurface
+import com.mobile.travelhub.ui.theme.OnSurfaceVariant
+import com.mobile.travelhub.ui.theme.PrimaryBlue
+import com.mobile.travelhub.ui.theme.SurfaceBg
+import com.mobile.travelhub.ui.theme.SurfaceContainerLow
+import com.mobile.travelhub.ui.theme.SurfaceContainerLowest
+import com.mobile.travelhub.ui.theme.SunsetOrange
+import com.mobile.travelhub.viewmodels.ItineraryUiState
+import com.mobile.travelhub.viewmodels.ItineraryViewModel
+import kotlin.math.max
+import sh.calvin.reorderable.ReorderableItem
+import sh.calvin.reorderable.rememberReorderableLazyListState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ItineraryScreen(onBack: () -> Unit) {
-    var selectedDay by remember { mutableIntStateOf(1) }
-    
+fun ItineraryScreen(
+    groupName: String,
+    onBack: () -> Unit,
+    onOpenDayDetail: (Int) -> Unit,
+    showBackButton: Boolean = true,
+    openChatOnLaunch: Boolean = false,
+    viewModel: ItineraryViewModel = hiltViewModel()
+) {
+    val state by viewModel.uiState.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(groupName, openChatOnLaunch) {
+        viewModel.bindGroup(groupName = groupName, openChatOnLaunch = openChatOnLaunch)
+    }
+
+    LaunchedEffect(state.errorMessage) {
+        val message = state.errorMessage ?: return@LaunchedEffect
+        snackbarHostState.showSnackbar(message)
+        viewModel.clearError()
+    }
+
     Scaffold(
         containerColor = SurfaceBg,
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        "Lịch trình Chi tiết",
-                        fontWeight = FontWeight.ExtraBold,
-                        fontSize = 18.sp,
-                        color = OnSurface
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = OnSurface)
-                    }
-                },
-                actions = {
-                    IconButton(onClick = { }) {
-                        Icon(Icons.Default.MoreVert, contentDescription = "More", tint = OnSurface)
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = SurfaceBg)
+            ItineraryTopBar(
+                title = if (state.groupName.isBlank()) "Itinerary" else state.groupName,
+                subtitle = "Version ${state.version}",
+                isLeader = state.isLeader,
+                showBackButton = showBackButton,
+                isEditMode = state.isEditMode,
+                onToggleEditMode = viewModel::toggleEditMode,
+                onBack = onBack
             )
+        },
+        floatingActionButton = {
+            GeminiItineraryFab(onClick = viewModel::openChat)
         }
-    ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-        ) {
-            // Day Selector
-            LazyRow(
-                contentPadding = PaddingValues(horizontal = 20.dp, vertical = 12.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                items(5) { index ->
-                    val dayNum = index + 1
-                    val isSelected = selectedDay == dayNum
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(50))
-                            .background(if (isSelected) PrimaryBlue else SurfaceContainerLowest)
-                            .clickable { selectedDay = dayNum }
-                            .padding(horizontal = 24.dp, vertical = 10.dp)
-                    ) {
-                        Text(
-                            text = "Ngày $dayNum",
-                            color = if (isSelected) Color.White else OnSurfaceVariant,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 14.sp
-                        )
-                    }
-                }
-            }
-
-            // Timeline
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(20.dp)
-            ) {
-                item {
-                    TimelineNode(
-                        time = "09:00 AM",
-                        title = "Senso-ji Temple",
-                        desc = "Thăm quan ngôi đền cổ nhất Tokyo",
-                        duration = "Ở lại khoảng 2.5 giờ",
-                        cost = "Free",
-                        transportToNext = "Tàu điện ngầm Ginza Line (15 phút)",
-                        transportIcon = Icons.Default.DirectionsRailway,
-                        isFirst = true
-                    )
-                }
-                item {
-                    TimelineNode(
-                        time = "11:45 AM",
-                        title = "Sushi Dai",
-                        desc = "Ăn trưa tại khu vực chợ cá Tsukiji. Cần lấy số trước.",
-                        duration = "Ăn trưa 1.5 giờ",
-                        cost = "Dự kiến: $45.00/người",
-                        transportToNext = "Đi bộ dọc khu phố (10 phút)",
-                        transportIcon = Icons.AutoMirrored.Filled.DirectionsWalk,
-                        isHighlight = true
-                    )
-                }
-                item {
-                    TimelineNode(
-                        time = "01:30 PM",
-                        title = "Akihabara",
-                        desc = "Khám phá trung tâm điện tử và văn hóa anime",
-                        duration = "Tham quan tự do 3 giờ",
-                        cost = "Variable",
-                        transportToNext = "Xe buýt trung tâm (20 phút)",
-                        transportIcon = Icons.Default.DirectionsBus
-                    )
-                }
-                item {
-                    TimelineNode(
-                        time = "05:00 PM",
-                        title = "Shibuya Sky",
-                        desc = "Ngắm hoàng hôn từ đỉnh tòa nhà. Đã đặt vé trước.",
-                        duration = "Tham quan & Chụp ảnh 2 giờ",
-                        cost = "Đã thanh toán: $15.00",
-                        isLast = true
-                    )
-                }
-                item {
-                    Spacer(modifier = Modifier.height(60.dp))
-                }
-            }
-        }
+    ) { paddingValues ->
+        ItineraryOverviewContent(
+            state = state,
+            paddingValues = paddingValues,
+            onOpenDayDetail = onOpenDayDetail,
+            onAddDay = viewModel::addDay,
+            onEditDay = viewModel::startEditingDay,
+            onDeleteDay = viewModel::deleteDay,
+            onToggleChange = viewModel::toggleChangeSelection,
+            onApplySelected = viewModel::applySelectedChanges,
+            onDiscardProposal = viewModel::discardPendingProposal
+        )
     }
+
+    ItinerarySharedOverlays(
+        state = state,
+        onCloseChat = viewModel::closeChat,
+        onChatInputChange = viewModel::updateChatInput,
+        onVoiceInputChange = viewModel::updateVoiceChatInput,
+        onSendChat = viewModel::sendChatPrompt,
+        onDismissDayEditor = viewModel::cancelEditingDay,
+        onSaveDay = viewModel::saveDay,
+        onDeleteEditingDay = viewModel::deleteEditingDay,
+        onDismissEventEditor = viewModel::cancelEditing,
+        onSaveEvent = viewModel::saveEvent,
+        onDeleteEditingEvent = viewModel::deleteEditingEvent
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ItineraryDayDetailScreen(
+    groupName: String,
+    dayIndex: Int,
+    onBack: () -> Unit,
+    showBackButton: Boolean = true,
+    openChatOnLaunch: Boolean = false,
+    viewModel: ItineraryViewModel = hiltViewModel()
+) {
+    val state by viewModel.uiState.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(groupName, openChatOnLaunch) {
+        viewModel.bindGroup(groupName = groupName, openChatOnLaunch = openChatOnLaunch)
+    }
+
+    LaunchedEffect(dayIndex) {
+        viewModel.selectDay(dayIndex)
+    }
+
+    LaunchedEffect(state.errorMessage) {
+        val message = state.errorMessage ?: return@LaunchedEffect
+        snackbarHostState.showSnackbar(message)
+        viewModel.clearError()
+    }
+
+    val selectedDay = state.days.firstOrNull { it.dayIndex == dayIndex } ?: state.selectedDay
+
+    Scaffold(
+        containerColor = SurfaceBg,
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
+        topBar = {
+            ItineraryTopBar(
+                title = selectedDay?.label ?: "Day detail",
+                subtitle = selectedDay?.dateLabel ?: state.groupName,
+                isLeader = state.isLeader,
+                showBackButton = showBackButton,
+                isEditMode = state.isEditMode,
+                onToggleEditMode = viewModel::toggleEditMode,
+                onBack = onBack
+            )
+        },
+        floatingActionButton = {
+            GeminiItineraryFab(onClick = viewModel::openChat)
+        }
+    ) { paddingValues ->
+        ItineraryDayDetailContent(
+            day = selectedDay,
+            isEditMode = state.isEditMode,
+            paddingValues = paddingValues,
+            onAddStop = viewModel::startAddingStop,
+            onReorderEvents = viewModel::reorderDayEvents,
+            onEditEvent = viewModel::startEditing,
+            onDeleteEvent = viewModel::deleteEvent
+        )
+    }
+
+    ItinerarySharedOverlays(
+        state = state,
+        onCloseChat = viewModel::closeChat,
+        onChatInputChange = viewModel::updateChatInput,
+        onVoiceInputChange = viewModel::updateVoiceChatInput,
+        onSendChat = viewModel::sendChatPrompt,
+        onDismissDayEditor = viewModel::cancelEditingDay,
+        onSaveDay = viewModel::saveDay,
+        onDeleteEditingDay = viewModel::deleteEditingDay,
+        onDismissEventEditor = viewModel::cancelEditing,
+        onSaveEvent = viewModel::saveEvent,
+        onDeleteEditingEvent = viewModel::deleteEditingEvent
+    )
 }
 
 @Composable
-fun TimelineNode(
-    time: String,
-    title: String,
-    desc: String,
-    duration: String = "",
-    cost: String = "",
-    transportToNext: String = "",
-    transportIcon: ImageVector = Icons.Default.DirectionsTransit,
-    isFirst: Boolean = false,
-    isLast: Boolean = false,
-    isHighlight: Boolean = false
-) {
-    Row(modifier = Modifier.fillMaxWidth()) {
-        // Left Column: Time & Line
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.width(60.dp)
-        ) {
-            Text(
-                time.split(" ")[0],
-                fontWeight = FontWeight.Bold,
-                fontSize = 13.sp,
-                color = OnSurface
-            )
-            Text(
-                time.split(" ")[1],
-                fontWeight = FontWeight.Medium,
-                fontSize = 11.sp,
-                color = OnSurfaceVariant
-            )
-            
-            Spacer(modifier = Modifier.height(12.dp))
-            
-            Box(
-                modifier = Modifier
-                    .size(16.dp)
-                    .clip(CircleShape)
-                    .background(if (isHighlight) SunsetOrange else PrimaryBlue)
-            )
-            
-            if (!isLast) {
-                Box(
-                    modifier = Modifier
-                        .width(2.dp)
-                        .weight(1f) // Fill remaining height
-                        .background(
-                            brush = androidx.compose.ui.graphics.Brush.verticalGradient(
-                                colors = listOf(
-                                    if (isHighlight) SunsetOrange else PrimaryBlue,
-                                    SurfaceContainerLow
-                                )
-                            )
-                        )
-                )
-            }
-        }
-        
-        Spacer(modifier = Modifier.width(16.dp))
-        
-        // Right Column: Card & Transport
-        Column(
+private fun GeminiItineraryFab(onClick: () -> Unit) {
+    val infiniteTransition = rememberInfiniteTransition(label = "ai-fab-rainbow")
+    val rotation by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 2400, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "ai-fab-border-rotation"
+    )
+    val rainbow = listOf(
+        Color(0xFFFF3B30),
+        Color(0xFFFF9500),
+        Color(0xFFFFCC00),
+        Color(0xFF34C759),
+        Color(0xFF00C7BE),
+        Color(0xFF007AFF),
+        Color(0xFFAF52DE),
+        Color(0xFFFF3B30)
+    )
+
+    Box(
+        modifier = Modifier
+            .size(64.dp)
+            .shadow(elevation = 10.dp, shape = CircleShape, clip = false)
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                onClick = onClick
+            ),
+        contentAlignment = Alignment.Center
+    ) {
+        Box(
             modifier = Modifier
-                .weight(1f)
-                .padding(bottom = 24.dp)
+                .matchParentSize()
+                .graphicsLayer { rotationZ = rotation }
+                .background(Brush.sweepGradient(rainbow), CircleShape)
+        )
+        Box(
+            modifier = Modifier
+                .size(56.dp)
+                .background(SurfaceContainerLowest, CircleShape),
+            contentAlignment = Alignment.Center
         ) {
-            Card(
-                shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = if (isHighlight) PrimaryBlue.copy(alpha = 0.05f) else SurfaceContainerLowest
-                ),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
-                            Text(title, fontWeight = FontWeight.ExtraBold, fontSize = 16.sp, color = OnSurface)
-                            if (isHighlight) {
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Icon(Icons.Default.Star, null, modifier = Modifier.size(16.dp), tint = SunsetOrange)
-                            }
-                        }
-                        
-                        if (cost.isNotEmpty()) {
-                            Text(
-                                text = cost,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 13.sp,
-                                color = PrimaryBlue
-                            )
-                        }
-                    }
-                    
-                    Spacer(modifier = Modifier.height(8.dp))
-                    
-                    if (duration.isNotEmpty()) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.Schedule, null, modifier = Modifier.size(14.dp), tint = OnSurfaceVariant)
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(duration, fontSize = 12.sp, color = OnSurfaceVariant, fontWeight = FontWeight.Medium)
-                        }
-                        Spacer(modifier = Modifier.height(8.dp))
-                    }
-
-                    Text(desc, fontSize = 13.sp, color = OnSurface, lineHeight = 20.sp)
-                    
-                    if (isHighlight) {
-                        Spacer(modifier = Modifier.height(12.dp))
-                        Box(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(SunsetOrange.copy(alpha = 0.1f))
-                                .padding(horizontal = 8.dp, vertical = 4.dp)
-                        ) {
-                            Text("Must Visit", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = SunsetOrange)
-                        }
-                    }
-                }
-            }
-
-            if (transportToNext.isNotEmpty() && !isLast) {
-                Spacer(modifier = Modifier.height(16.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(transportIcon, null, modifier = Modifier.size(18.dp), tint = OnSurfaceVariant)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = transportToNext,
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = OnSurfaceVariant
-                    )
-                }
-                Spacer(modifier = Modifier.height(16.dp))
-            }
+            Icon(
+                imageVector = Icons.Default.AutoAwesome,
+                contentDescription = "Open AI itinerary editor",
+                tint = Color(0xFF5B35F5),
+                modifier = Modifier.size(28.dp)
+            )
         }
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

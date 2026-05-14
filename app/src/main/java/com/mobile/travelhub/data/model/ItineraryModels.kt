@@ -1,0 +1,228 @@
+package com.mobile.travelhub.data.model
+ 
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
+import androidx.compose.runtime.Composable
+
+enum class ItineraryUserRole {
+    LEADER,
+    MEMBER
+}
+
+data class ItineraryWorkspace(
+    val groupName: String,
+    val version: Int,
+    val role: ItineraryUserRole,
+    val days: List<ItineraryDay>,
+    val pendingProposal: ItineraryProposal? = null
+)
+
+data class ItineraryDay(
+    val dayIndex: Int,
+    val label: String,
+    val dateLabel: String,
+    val events: List<ItineraryEvent>,
+    val dayId: Long? = null
+)
+
+data class ItineraryEvent(
+    val eventId: String,
+    val dayIndex: Int,
+    val startTime: String,
+    val endTime: String,
+    val title: String,
+    val placeName: String,
+    val note: String,
+    val transportToNext: String,
+    val estimatedCost: String,
+    val colorHex: Long = ItineraryEventColors.Default,
+    val iconName: String = "Place",
+    val dayId: Long? = null,
+    val stopId: Long? = null
+)
+
+data class ItineraryProposal(
+    val proposalId: String,
+    val baseVersion: Int,
+    val summary: String,
+    val changes: List<ItineraryChange>
+)
+
+enum class ItineraryChangeType {
+    ADD_DAY,
+    UPDATE_DAY,
+    DELETE_DAY,
+    ADD_EVENT,
+    UPDATE_EVENT,
+    DELETE_EVENT,
+    MOVE_EVENT
+}
+
+enum class ItineraryField(val label: String) {
+    DAY("Day"),
+    START_TIME("Start time"),
+    END_TIME("End time"),
+    TITLE("Title"),
+    PLACE_NAME("Place"),
+    NOTE("Note"),
+    TRANSPORT("Transport"),
+    ESTIMATED_COST("Cost"),
+    COLOR("Color"),
+    ICON("Icon")
+}
+
+object ItineraryEventColors {
+    const val Default: Long = 0xFF3E6AE1
+    val Palette: List<Long> = listOf(
+        Default,
+        0xFF0D8A4B,
+        0xFFCC5F00,
+        0xFFB3261E,
+        0xFF7A4DFF,
+        0xFF00838F,
+        0xFFAF3E6A,
+        0xFF6B7280
+    )
+}
+
+@Composable
+fun getItineraryIcon(name: String) = when (name) {
+    "Restaurant" -> Icons.Default.Restaurant
+    "Flight" -> Icons.Default.Flight
+    "Hotel" -> Icons.Default.Hotel
+    "PhotoCamera" -> Icons.Default.PhotoCamera
+    "ShoppingBag" -> Icons.Default.ShoppingBag
+    "Museum" -> Icons.Default.Museum
+    "DirectionsBus" -> Icons.Default.DirectionsBus
+    "DirectionsWalk" -> Icons.Default.DirectionsWalk
+    "DirectionsCar" -> Icons.Default.DirectionsCar
+    "Train" -> Icons.Default.Train
+    "LocalDrink" -> Icons.Default.LocalDrink
+    "LocalPark" -> Icons.Default.Park
+    "BeachAccess" -> Icons.Default.BeachAccess
+    "Nightlife" -> Icons.Default.Nightlife
+    "AutoAwesome" -> Icons.Default.AutoAwesome
+    else -> Icons.Default.Place
+}
+
+object ItineraryIcons {
+    val Palette: List<String> = listOf(
+        "Place",
+        "Restaurant",
+        "Flight",
+        "Hotel",
+        "PhotoCamera",
+        "ShoppingBag",
+        "Museum",
+        "DirectionsBus",
+        "DirectionsWalk",
+        "DirectionsCar",
+        "Train",
+        "LocalDrink",
+        "LocalPark",
+        "BeachAccess",
+        "Nightlife",
+        "AutoAwesome"
+    )
+}
+
+data class FieldDiff(
+    val field: ItineraryField,
+    val before: String?,
+    val after: String?
+) {
+    val label: String = field.label
+}
+
+sealed interface ItineraryChange {
+    val changeId: String
+    val type: ItineraryChangeType
+    val reason: String
+}
+
+data class AddDayChange(
+    override val changeId: String,
+    override val reason: String,
+    val insertAt: Int,
+    val dayAfter: ItineraryDay
+) : ItineraryChange {
+    override val type: ItineraryChangeType = ItineraryChangeType.ADD_DAY
+}
+
+data class UpdateDayChange(
+    override val changeId: String,
+    override val reason: String,
+    val dayBefore: ItineraryDay,
+    val dayAfter: ItineraryDay
+) : ItineraryChange {
+    override val type: ItineraryChangeType = ItineraryChangeType.UPDATE_DAY
+}
+
+data class DeleteDayChange(
+    override val changeId: String,
+    override val reason: String,
+    val dayBefore: ItineraryDay
+) : ItineraryChange {
+    override val type: ItineraryChangeType = ItineraryChangeType.DELETE_DAY
+}
+
+data class AddEventChange(
+    override val changeId: String,
+    override val reason: String,
+    val insertAt: Int,
+    val eventAfter: ItineraryEvent
+) : ItineraryChange {
+    override val type: ItineraryChangeType = ItineraryChangeType.ADD_EVENT
+}
+
+data class UpdateEventChange(
+    override val changeId: String,
+    override val reason: String,
+    val targetEventId: String,
+    val fieldDiffs: List<FieldDiff>,
+    val eventBefore: ItineraryEvent,
+    val eventAfter: ItineraryEvent
+) : ItineraryChange {
+    override val type: ItineraryChangeType = ItineraryChangeType.UPDATE_EVENT
+}
+
+data class DeleteEventChange(
+    override val changeId: String,
+    override val reason: String,
+    val targetEventId: String,
+    val eventBefore: ItineraryEvent
+) : ItineraryChange {
+    override val type: ItineraryChangeType = ItineraryChangeType.DELETE_EVENT
+}
+
+data class MoveEventChange(
+    override val changeId: String,
+    override val reason: String,
+    val targetEventId: String,
+    val fromDayIndex: Int,
+    val fromIndex: Int,
+    val toDayIndex: Int,
+    val toIndex: Int,
+    val eventSnapshot: ItineraryEvent
+) : ItineraryChange {
+    override val type: ItineraryChangeType = ItineraryChangeType.MOVE_EVENT
+}
+
+enum class ItineraryChatRole {
+    USER,
+    ASSISTANT
+}
+
+data class ItineraryChatMessage(
+    val id: String,
+    val role: ItineraryChatRole,
+    val text: String
+)
+
+sealed interface ItineraryAssistantEvent {
+    data class Thinking(val text: String) : ItineraryAssistantEvent
+    data class MessageChunk(val text: String) : ItineraryAssistantEvent
+    data class ProposalReady(val proposal: ItineraryProposal) : ItineraryAssistantEvent
+    data class Error(val message: String) : ItineraryAssistantEvent
+    data object Done : ItineraryAssistantEvent
+}

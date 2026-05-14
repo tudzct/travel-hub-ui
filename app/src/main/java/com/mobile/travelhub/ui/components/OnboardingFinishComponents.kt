@@ -104,7 +104,7 @@ fun FinishHeader(onBack: () -> Unit, onSkip: () -> Unit) {
         Text(
             text = "Skip",
             style = MaterialTheme.typography.titleMedium,
-            color = Color(0xFF164B63),
+            color = MaterialTheme.colorScheme.primary,
             modifier = Modifier
                 .clip(RoundedCornerShape(12.dp))
                 .clickable(onClick = onSkip)
@@ -143,7 +143,12 @@ fun FinishActions(isLoading: Boolean, onPrevious: () -> Unit, onContinue: () -> 
                 enabled = !isLoading,
                 onClick = onContinue,
                 shape = RoundedCornerShape(26.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0A5C77))
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                    disabledContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.45f),
+                    disabledContentColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.7f)
+                )
             ) {
                 Text(
                     text = if (isLoading) "Saving..." else "Start Exploring ->",

@@ -1,27 +1,37 @@
 package com.mobile.travelhub.ui.components
 
-import android.net.Uri
-import android.util.Log
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
@@ -30,10 +40,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Send
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Menu
+
 import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material.icons.outlined.ChatBubbleOutline
 import androidx.compose.material.icons.outlined.FavoriteBorder
-import androidx.compose.material.icons.outlined.MoreHoriz
+import androidx.compose.material.icons.outlined.Place
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -41,19 +53,20 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -67,17 +80,21 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.mobile.travelhub.R
 import com.mobile.travelhub.data.model.TravelPlaceListItemResponse
+import com.mobile.travelhub.ui.components.modifiers.shimmerEffect
 import com.mobile.travelhub.viewmodels.HomePostUiModel
 import com.mobile.travelhub.viewmodels.HomeUiState
 import com.mobile.travelhub.viewmodels.PlaceListUiState
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.tooling.preview.Preview
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PlaceListScreenContent(
     placeUiState: PlaceListUiState,
     homeUiState: HomeUiState,
-    onPlaceClick: (Long) -> Unit,
-    onKeywordChange: (String) -> Unit,
+    onPlaceClick: (TravelPlaceListItemResponse) -> Unit,
+    onMenuClick: () -> Unit,
+    onSearchClick: () -> Unit,
     onRetryPlaces: () -> Unit,
     onRetryPosts: () -> Unit,
     onLikeClick: (Long) -> Unit,
@@ -90,35 +107,62 @@ fun PlaceListScreenContent(
     val activeComments = homeUiState.activeCommentPostId
         ?.let { homeUiState.commentsByPostId[it] }
         .orEmpty()
+    val listState = rememberLazyListState()
+    var previousScrollIndex by remember { mutableIntStateOf(0) }
+    var previousScrollOffset by remember { mutableIntStateOf(0) }
+    var isTopBarVisible by remember { mutableStateOf(true) }
+    val statusBarTopPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+    val topBarContentHeight = 52.dp
+
+    LaunchedEffect(listState) {
+        snapshotFlow { listState.firstVisibleItemIndex to listState.firstVisibleItemScrollOffset }
+            .collect { (index, offset) ->
+                val isAtTop = index == 0 && offset < 8
+                val isScrollingDown = index > previousScrollIndex ||
+                    (index == previousScrollIndex && offset > previousScrollOffset)
+
+                isTopBarVisible = isAtTop || !isScrollingDown
+                previousScrollIndex = index
+                previousScrollOffset = offset
+            }
+    }
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(TravelSurfaceBg)
+            .background(Color.White)
     ) {
+        AnimatedVisibility(
+            visible = isTopBarVisible,
+            enter = slideInVertically(
+                animationSpec = tween(durationMillis = 180),
+                initialOffsetY = { -it }
+            ) + fadeIn(animationSpec = tween(durationMillis = 180)),
+            exit = slideOutVertically(
+                animationSpec = tween(durationMillis = 180),
+                targetOffsetY = { -it }
+            ) + fadeOut(animationSpec = tween(durationMillis = 180)),
+            modifier = Modifier.align(Alignment.TopCenter)
+        ) {
+            FeedTopBar(
+                onMenuClick = onMenuClick,
+                onSearchClick = onSearchClick
+            )
+        }
+
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(top = 24.dp, bottom = 112.dp),
-            verticalArrangement = Arrangement.spacedBy(22.dp)
+            state = listState,
+            contentPadding = PaddingValues(
+                top = statusBarTopPadding + topBarContentHeight + 18.dp,
+                bottom = 112.dp
+            ),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            item {
-                FeedHeader(
-                    keyword = placeUiState.keyword,
-                    onKeywordChange = onKeywordChange
-                )
-            }
-
             when {
                 placeUiState.isLoading && placeUiState.items.isEmpty() -> {
                     item {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(top = 40.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            CircularProgressIndicator(color = VerdantPrimary)
-                        }
+                        LocationsRailSkeleton()
                     }
                 }
 
@@ -136,16 +180,8 @@ fun PlaceListScreenContent(
                 placeUiState.items.isEmpty() -> {
                     item {
                         FeedEmptyState(
-                            title = if (placeUiState.keyword.isBlank()) {
-                                "Chưa có địa điểm nào"
-                            } else {
-                                "Không có địa điểm phù hợp"
-                            },
-                            message = if (placeUiState.keyword.isBlank()) {
-                                "Dữ liệu địa điểm vẫn chưa được thêm vào hệ thống."
-                            } else {
-                                "Thử từ khóa khác để hiện lại danh sách địa điểm."
-                            },
+                            title = "Chưa có địa điểm nào",
+                            message = "Dữ liệu địa điểm vẫn chưa được thêm vào hệ thống.",
                             fullScreen = false,
                             onRetry = null
                         )
@@ -156,27 +192,15 @@ fun PlaceListScreenContent(
                     item {
                         LocationsRail(
                             places = placeUiState.items.take(10),
-                            onPlaceClick = { onPlaceClick(it.id) }
+                            onPlaceClick = onPlaceClick
                         )
                     }
                 }
             }
-
-            item {
-                PostsSectionHeader()
-            }
-
             when {
                 homeUiState.isLoading && homeUiState.posts.isEmpty() -> {
-                    item {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 24.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            CircularProgressIndicator(color = VerdantPrimary)
-                        }
+                    items(3) {
+                        FeedPostCardSkeleton()
                     }
                 }
 
@@ -205,6 +229,7 @@ fun PlaceListScreenContent(
                 }
             }
         }
+
 
         if (activeCommentPost != null) {
             ModalBottomSheet(
@@ -268,22 +293,19 @@ fun PlaceListScreenContent(
                         .padding(horizontal = 16.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    OutlinedTextField(
+                    SimpleFormTextField(
                         value = homeUiState.commentInput,
                         onValueChange = onCommentInputChanged,
-                        placeholder = { Text("Add a comment") },
+                        placeholder = "Add a comment",
                         modifier = Modifier.weight(1f),
                         enabled = !homeUiState.isCommentSubmitting,
+                        singleLine = false,
                         maxLines = 3,
                         shape = RoundedCornerShape(24.dp),
-                        colors = TextFieldDefaults.colors(
-                            focusedContainerColor = Color.White,
-                            unfocusedContainerColor = Color.White,
-                            disabledContainerColor = Color(0xFFF4F4F4),
-                            focusedIndicatorColor = VerdantPrimary,
-                            unfocusedIndicatorColor = Color.Transparent,
-                            disabledIndicatorColor = Color.Transparent
-                        )
+                        focusedContainerColor = Color.White,
+                        unfocusedContainerColor = Color.White,
+                        disabledContainerColor = Color(0xFFF4F4F4),
+                        focusedIndicatorColor = VerdantPrimary
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     IconButton(
@@ -328,83 +350,63 @@ fun PlaceListScreenContent(
 }
 
 @Composable
-private fun FeedHeader(
-    keyword: String,
-    onKeywordChange: (String) -> Unit
+private fun FeedTopBar(
+    onMenuClick: () -> Unit,
+    onSearchClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
-    Column(
-        modifier = Modifier.padding(horizontal = 24.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(
-                    text = "Khám phá địa điểm,",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = VerdantOnSurfaceVariant,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    text = "Đi đâu hôm nay?",
-                    style = MaterialTheme.typography.headlineMedium,
-                    color = VerdantOnSurface,
-                    fontWeight = FontWeight.ExtraBold
-                )
-            }
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Surface(
-                    shape = CircleShape,
-                    color = VerdantSurfaceContainerLow,
-                    modifier = Modifier.size(44.dp)
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Text(
-                            text = "T",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = VerdantPrimary,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                }
-            }
-        }
+    val statusBarTopPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+    val topBarContentHeight = 52.dp
 
-        TextField(
-            value = keyword,
-            onValueChange = onKeywordChange,
-            modifier = Modifier.fillMaxWidth(),
-            placeholder = {
-                Text(
-                    text = "Search destinations or provinces",
-                    color = VerdantOnSurfaceVariant
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(statusBarTopPadding + topBarContentHeight)
+            .background(Color.White)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(topBarContentHeight)
+                .align(Alignment.BottomCenter)
+                .padding(horizontal = 6.dp)
+        ) {
+            IconButton(
+                onClick = onMenuClick,
+                modifier = Modifier.align(Alignment.CenterStart)
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Menu,
+                    contentDescription = "Open menu",
+                    tint = VerdantOnSurface
                 )
-            },
-            leadingIcon = {
+            }
+            Text(
+                text = "Travel Hub",
+                modifier = Modifier.align(Alignment.Center),
+                style = MaterialTheme.typography.titleMedium,
+                color = VerdantOnSurface,
+                fontWeight = FontWeight.ExtraBold
+            )
+
+            IconButton(
+                onClick = onSearchClick,
+                modifier = Modifier.align(Alignment.CenterEnd)
+            ) {
                 Icon(
                     imageVector = Icons.Outlined.Search,
-                    contentDescription = null,
-                    tint = VerdantOnSurfaceVariant
+                    contentDescription = "Search",
+                    tint = VerdantOnSurface
                 )
-            },
-            shape = RoundedCornerShape(22.dp),
-            singleLine = true,
-            colors = TextFieldDefaults.colors(
-                focusedContainerColor = VerdantSurfaceContainerLowest,
-                unfocusedContainerColor = VerdantSurfaceContainerLowest,
-                disabledContainerColor = VerdantSurfaceContainerLowest,
-                focusedIndicatorColor = Color.Transparent,
-                unfocusedIndicatorColor = Color.Transparent,
-                disabledIndicatorColor = Color.Transparent,
-                focusedTextColor = VerdantOnSurface,
-                unfocusedTextColor = VerdantOnSurface,
-                cursorColor = VerdantPrimary
-            )
-        )
+            }
+        }
     }
+}
+
+@Preview
+@Composable
+fun FeedTopBarPreview(){
+    FeedTopBar(onMenuClick = {}, onSearchClick = {})
 }
 
 @Composable
@@ -412,184 +414,82 @@ private fun LocationsRail(
     places: List<TravelPlaceListItemResponse>,
     onPlaceClick: (TravelPlaceListItemResponse) -> Unit
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "Gợi ý địa điểm",
-                style = MaterialTheme.typography.titleMedium,
-                color = VerdantOnSurface,
-                fontWeight = FontWeight.ExtraBold
-            )
-            Text(
-                text = "Lướt xem",
-                style = MaterialTheme.typography.labelMedium,
-                color = VerdantPrimary
+    LazyRow(
+        contentPadding = PaddingValues(horizontal = 12.dp),
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        items(places, key = { it.id }) { place ->
+            FeaturedLocationCard(
+                country = place.province.name,
+                city = place.name,
+                imageUrl = place.mainImage,
+                modifier = Modifier
+                    .width(220.dp)
+                    .height(270.dp),
+                onClick = { onPlaceClick(place) }
             )
         }
+    }
 
-        LazyRow(
-            contentPadding = PaddingValues(horizontal = 24.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            items(places, key = { it.id }) { place ->
-                LocationCard(
-                    place = place,
-                    onClick = { onPlaceClick(place) }
-                )
-            }
+}
+
+@Composable
+private fun LocationsRailSkeleton() {
+    LazyRow(
+        contentPadding = PaddingValues(horizontal = 12.dp),
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        items(4) {
+            FeaturedLocationCardSkeleton(
+                modifier = Modifier
+                    .width(220.dp)
+                    .height(270.dp)
+            )
         }
     }
 }
 
 @Composable
-private fun LocationCard(
-    place: TravelPlaceListItemResponse,
-    onClick: () -> Unit
+private fun FeaturedLocationCardSkeleton(
+    modifier: Modifier = Modifier
 ) {
-    Surface(
-        modifier = Modifier
-            .width(250.dp)
-            .height(210.dp)
-            .clickable(onClick = onClick),
-        shape = RoundedCornerShape(32.dp),
-        color = VerdantSurfaceContainerLowest,
-        shadowElevation = 8.dp
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(10.dp))
+            .shimmerEffect()
     ) {
-        Box {
-            if (place.mainImage.isNullOrBlank()) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(VerdantSurfaceContainerHighest),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = place.province.name.take(1).uppercase(),
-                        style = MaterialTheme.typography.headlineMedium,
-                        color = VerdantPrimary,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            } else {
-                AsyncImage(
-                    model = place.mainImage,
-                    contentDescription = place.name,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop
-                )
-            }
+        Box(
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(14.dp)
+                .size(42.dp)
+                .clip(CircleShape)
+                .shimmerEffect()
+        )
+        Column(
+            modifier = Modifier
+                .align(Alignment.BottomStart)
+                .padding(start = 14.dp, end = 56.dp, bottom = 14.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
             Box(
                 modifier = Modifier
-                    .fillMaxSize()
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            Color.Transparent,
-                            Color.Transparent,
-                            VerdantOnSurface.copy(alpha = 0.84f)
-                        )
-                        )
-                    )
+                    .width(76.dp)
+                    .height(10.dp)
+                    .clip(RoundedCornerShape(50))
+                    .shimmerEffect()
             )
-            Row(
+            Box(
                 modifier = Modifier
-                    .align(Alignment.TopStart)
-                    .padding(10.dp),
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Surface(
-                    shape = RoundedCornerShape(16.dp),
-                    color = Color.White.copy(alpha = 0.94f)
-                ) {
-                    Text(
-                        text = place.province.name,
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = VerdantPrimary,
-                        fontWeight = FontWeight.SemiBold,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-            }
-            Column(
-                modifier = Modifier
-                    .align(Alignment.BottomStart)
-                    .fillMaxWidth()
-                    .padding(18.dp),
-                verticalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                Text(
-                    text = place.name,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = Color.White,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Text(
-                    text = place.province.name,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = Color.White.copy(alpha = 0.82f),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Filled.Star,
-                            contentDescription = null,
-                            tint = Color(0xFFFFC247),
-                            modifier = Modifier.size(14.dp)
-                        )
-                        Spacer(modifier = Modifier.width(3.dp))
-                        Text(
-                            text = String.format("%.1f", place.averageRating),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = Color.White,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    }
-                    Text(
-                        text = "${place.views ?: 0} lượt xem",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = Color.White.copy(alpha = 0.84f),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-            }
+                    .width(124.dp)
+                    .height(20.dp)
+                    .clip(RoundedCornerShape(50))
+                    .shimmerEffect()
+            )
         }
     }
 }
 
-@Composable
-private fun PostsSectionHeader() {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 24.dp, vertical = 4.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(
-            text = "Bài viết mới",
-            style = MaterialTheme.typography.titleLarge,
-            color = VerdantOnSurface,
-            fontWeight = FontWeight.ExtraBold
-        )
-    }
-}
 
 @Composable
 private fun FeedEmptyState(
@@ -603,7 +503,7 @@ private fun FeedEmptyState(
     } else {
         Modifier
             .fillMaxWidth()
-            .padding(horizontal = 24.dp)
+            .padding(horizontal = 16.dp)
     }
 
     Box(
@@ -612,7 +512,7 @@ private fun FeedEmptyState(
     ) {
         Surface(
             shape = RoundedCornerShape(24.dp),
-            color = VerdantSurfaceContainerLowest,
+            color = VerdantSurfaceContainer,
             modifier = Modifier.fillMaxWidth()
         ) {
             Column(
@@ -641,262 +541,403 @@ private fun FeedEmptyState(
 }
 
 @Composable
+@OptIn(ExperimentalFoundationApi::class)
 fun FeedPostCard(
     post: HomePostUiModel,
     onLikeClick: () -> Unit,
     onCommentClick: () -> Unit,
     actionsEnabled: Boolean = true
 ) {
-    PostItemContent(
-        post = post,
-        onLikeClick = onLikeClick,
-        onCommentClick = onCommentClick,
-        actionsEnabled = actionsEnabled
-    )
-}
-
-@Composable
-private fun PostItemContent(
-    post: HomePostUiModel,
-    onLikeClick: () -> Unit,
-    onCommentClick: () -> Unit,
-    actionsEnabled: Boolean
-) {
     val context = LocalContext.current
-    val storageService = context.getString(R.string.storage_service)
+    val storageService = stringResource(R.string.storage_service)
         .trim()
         .trim('"')
         .trimEnd('/')
 
     fun toDisplayUrl(rawUrl: String): String {
-        val normalized = rawUrl.trim()
-        if (normalized.isBlank()) return ""
+        val value = rawUrl.trim()
+        if (value.isEmpty()) return ""
 
-        val fallbackBase = "http://10.0.2.2:9000"
-        val rawBase = if (storageService.isBlank()) fallbackBase else storageService
-        val base = if (rawBase.endsWith("/travelhub", ignoreCase = true)) {
-            rawBase
-        } else {
-            "$rawBase/travelhub"
+        if (value.startsWith("http://", true) || value.startsWith("https://", true)) {
+            return value
         }
 
-        if (
-            normalized.startsWith("http://", ignoreCase = true) ||
-            normalized.startsWith("https://", ignoreCase = true)
-        ) {
-            val parsed = Uri.parse(normalized)
-            val host = parsed.host?.lowercase()
-            if (host == "localhost" || host == "127.0.0.1") {
-                val path = parsed.encodedPath?.trimStart('/').orEmpty()
-                val query = parsed.encodedQuery?.let { "?$it" }.orEmpty()
-                val normalizedPath = if (path.startsWith("travelhub/", ignoreCase = true)) {
-                    path.removePrefix("travelhub/")
-                } else {
-                    path
-                }
-                return if (normalizedPath.isBlank()) base else "$base/$normalizedPath$query"
-            }
-            return normalized
-        }
+        val base = storageService
+            .trim()
+            .trim('"')
+            .trimEnd('/')
 
-        return "$base/${normalized.trimStart('/')}"
+        return "$base/${value.trimStart('/')}"
     }
 
     val imageCount = post.imageUrls.size.coerceAtLeast(1)
     val pagerState = rememberPagerState(pageCount = { imageCount })
 
-    Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 24.dp),
-        shape = RoundedCornerShape(24.dp),
-        color = VerdantSurfaceContainerLowest,
-        shadowElevation = 2.dp
-    ) {
-        Column {
+    Column (modifier = Modifier.background(Color.White)) {
+
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 14.dp),
+                .padding(horizontal = 16.dp, vertical = 12.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                modifier = Modifier.weight(1f),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 Image(
                     painter = painterResource(R.drawable.female_avatar_maker),
                     contentDescription = post.username,
                     modifier = Modifier
-                        .size(42.dp)
+                        .size(36.dp)
                         .clip(CircleShape),
                     contentScale = ContentScale.Crop
                 )
-                Spacer(modifier = Modifier.width(12.dp))
-                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Spacer(modifier = Modifier.width(10.dp))
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(2.dp)
+                ) {
                     Text(
                         text = post.username,
-                        style = MaterialTheme.typography.titleMedium,
+                        style = MaterialTheme.typography.titleSmall,
                         color = VerdantOnSurface,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
-                    Text(
-                        text = post.subtitle,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = VerdantOnSurfaceVariant
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.Place,
+                            contentDescription = null,
+                            modifier = Modifier.size(12.dp),
+                            tint = VerdantOnSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.width(2.dp))
+                        Text(
+                            text = post.subtitle,
+                            modifier = Modifier
+                                .weight(1f)
+                                .basicMarquee(),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = VerdantOnSurfaceVariant,
+                            maxLines = 1
+                        )
+                    }
+                }
+            }
+            Spacer(modifier = Modifier.width(4.dp))
+
+            Text(
+                text = post.timeAgoLabel,
+                style = MaterialTheme.typography.labelSmall,
+                color = VerdantOnSurfaceVariant.copy(alpha = 0.7f)
+            )
+        }
+
+        Text(
+            modifier = Modifier.padding(horizontal = 16.dp),
+            text = post.description,
+            style = MaterialTheme.typography.bodyMedium,
+            maxLines = 3,
+            overflow = TextOverflow.Ellipsis,
+            color = VerdantOnSurface
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(5f / 3f)
+                .background(Color(0xFFF5F5F5))
+        ) {
+            if (post.imageUrls.isNotEmpty()) {
+                HorizontalPager(
+                    state = pagerState,
+                    modifier = Modifier.fillMaxWidth()
+                ) { page ->
+                    val resolvedUrl = toDisplayUrl(post.imageUrls[page])
+                    AsyncImage(
+                        model = resolvedUrl,
+                        contentDescription = post.description,
+                        modifier = Modifier.fillMaxWidth(),
+                        contentScale = ContentScale.Crop
                     )
                 }
             }
-            Icon(
-                imageVector = Icons.Outlined.MoreHoriz,
-                contentDescription = null,
-                tint = VerdantOnSurfaceVariant
+
+            if (imageCount > 1) {
+                Row(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = 16.dp),
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    repeat(imageCount) { index ->
+                        Box(
+                            modifier = Modifier
+                                .padding(horizontal = 2.dp)
+                                .size(6.dp)
+                                .clip(CircleShape)
+                                .background(
+                                    if (pagerState.currentPage == index) {
+                                        Color.White
+                                    } else {
+                                        Color.White.copy(alpha = 0.5f)
+                                    }
+                                )
+                        )
+                    }
+                }
+            }
+        }
+
+
+        Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = "${post.likeCount} likes",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = VerdantOnSurface
+                )
+                Text(
+                    text = "${post.commentCount} comments",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = VerdantOnSurface
+                )
+            }
+//            Spacer(
+//                modifier = Modifier
+//                    .fillMaxWidth()
+//                    .height(1.dp)
+//                    .background(Color(0xFFE0E0E0))
+//            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier.weight(1f),
+                    contentAlignment = Alignment.Center
+                ) {
+                    IconButton(
+                        onClick = onLikeClick,
+                        enabled = actionsEnabled && !post.isLikeLoading,
+                        modifier = Modifier.size(28.dp)
+                    ) {
+                        Icon(
+                            imageVector = if (post.isLiked) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                            contentDescription = "Like",
+                            tint = if (post.isLiked) MaterialTheme.colorScheme.error else VerdantOnSurface,
+                            modifier = Modifier.size(26.dp)
+                        )
+                    }
+                }
+                Box(
+                    modifier = Modifier.weight(1f),
+                    contentAlignment = Alignment.Center
+                ) {
+                    IconButton(
+                        onClick = onCommentClick,
+                        enabled = actionsEnabled,
+                        modifier = Modifier.size(28.dp)
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.message_circle),
+                            contentDescription = "Comment",
+                            modifier = Modifier.size(24.dp),
+                            tint = VerdantOnSurface
+                        )
+                    }
+                }
+                Box(
+                    modifier = Modifier.weight(1f),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.BookmarkBorder,
+                        contentDescription = "Save",
+                        modifier = Modifier.size(26.dp),
+                        tint = VerdantOnSurface
+                    )
+                }
+                Box(
+                    modifier = Modifier.weight(1f),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Outlined.Send,
+                        contentDescription = "Share",
+                        modifier = Modifier.size(24.dp),
+                        tint = VerdantOnSurface
+                    )
+                }
+            }
+        }
+
+        Spacer(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(4.dp)
+                .background(Color(0xFFE0E0E0))
+        )
+    }
+}
+
+@Composable
+fun FeedPostCardSkeleton(
+    modifier: Modifier = Modifier
+) {
+    Column(modifier = modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(
+                modifier = Modifier.weight(1f),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(CircleShape)
+                        .shimmerEffect()
+                )
+                Spacer(modifier = Modifier.width(10.dp))
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(7.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .width(112.dp)
+                            .height(13.dp)
+                            .clip(RoundedCornerShape(50))
+                            .shimmerEffect()
+                    )
+                    Box(
+                        modifier = Modifier
+                            .width(156.dp)
+                            .height(10.dp)
+                            .clip(RoundedCornerShape(50))
+                            .shimmerEffect()
+                    )
+                }
+            }
+            Box(
+                modifier = Modifier
+                    .width(44.dp)
+                    .height(10.dp)
+                    .clip(RoundedCornerShape(50))
+                    .shimmerEffect()
             )
         }
 
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(320.dp)
-                .background(VerdantSurfaceContainerLow)
-        ) {
-            if (post.imageUrls.isNotEmpty()) {
-                HorizontalPager(
-                    state = pagerState,
-                    modifier = Modifier.fillMaxSize()
-                ) { page ->
-                    val resolvedUrl = toDisplayUrl(post.imageUrls[page])
-                    LaunchedEffect(resolvedUrl) {
-                        Log.d("PlaceListPostImageUrl", "Resolved image url: $resolvedUrl")
-                    }
-                    AsyncImage(
-                        model = resolvedUrl,
-                        contentDescription = post.description,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
-                    )
-                }
-            }
-        }
+                .aspectRatio(5f / 3f)
+                .shimmerEffect()
+        )
 
-        if (imageCount > 1) {
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.Center
-            ) {
-                repeat(imageCount) { index ->
-                    Box(
-                        modifier = Modifier
-                            .padding(horizontal = 2.dp)
-                            .size(6.dp)
-                            .clip(CircleShape)
-                            .background(
-                                if (pagerState.currentPage == index) {
-                                    VerdantOnSurface
-                                } else {
-                                    VerdantSurfaceContainerHighest
-                                }
-                            )
-                    )
-                }
-            }
-        }
-
-        Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp)) {
+        Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(
-                        onClick = onLikeClick,
-                        enabled = actionsEnabled && !post.isLikeLoading,
-                        modifier = Modifier.size(24.dp)
-                    ) {
-                        Icon(
-                            imageVector = if (post.isLiked) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
-                            contentDescription = "Like",
-                            tint = if (post.isLiked) MaterialTheme.colorScheme.error else VerdantOnSurface,
-                            modifier = Modifier.size(24.dp)
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    repeat(3) {
+                        Box(
+                            modifier = Modifier
+                                .size(26.dp)
+                                .clip(CircleShape)
+                                .shimmerEffect()
                         )
                     }
-                    Spacer(modifier = Modifier.width(14.dp))
-                    IconButton(
-                        onClick = onCommentClick,
-                        enabled = actionsEnabled,
-                        modifier = Modifier.size(24.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Outlined.ChatBubbleOutline,
-                            contentDescription = "Comment",
-                            modifier = Modifier.size(22.dp),
-                            tint = VerdantOnSurface
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(14.dp))
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Outlined.Send,
-                        contentDescription = "Share",
-                        modifier = Modifier.size(22.dp),
-                        tint = VerdantOnSurface
-                    )
                 }
-                Icon(
-                    imageVector = Icons.Outlined.BookmarkBorder,
-                    contentDescription = "Save",
-                    modifier = Modifier.size(22.dp),
-                    tint = VerdantOnSurface
+                Box(
+                    modifier = Modifier
+                        .size(26.dp)
+                        .clip(CircleShape)
+                        .shimmerEffect()
                 )
             }
+            Spacer(modifier = Modifier.height(12.dp))
+            Box(
+                modifier = Modifier
+                    .width(84.dp)
+                    .height(12.dp)
+                    .clip(RoundedCornerShape(50))
+                    .shimmerEffect()
+            )
             Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "${post.likeCount} likes",
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.Bold,
-                color = VerdantOnSurface
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(0.92f)
+                    .height(12.dp)
+                    .clip(RoundedCornerShape(50))
+                    .shimmerEffect()
             )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = buildAnnotatedString {
-                    withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
-                        append(post.username)
-                    }
-                    append("  ")
-                    append(post.description)
-                },
-                style = MaterialTheme.typography.bodyMedium,
-                maxLines = 3,
-                overflow = TextOverflow.Ellipsis,
-                color = VerdantOnSurface
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = if (post.commentCount <= 0) "View all comments" else "View all ${post.commentCount} comments",
-                style = MaterialTheme.typography.bodySmall,
-                color = VerdantOnSurfaceVariant
-            )
-            Spacer(modifier = Modifier.height(2.dp))
-            Text(
-                text = post.timeAgoLabel,
-                style = MaterialTheme.typography.labelSmall,
-                color = VerdantOnSurfaceVariant
+            Spacer(modifier = Modifier.height(6.dp))
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(0.62f)
+                    .height(12.dp)
+                    .clip(RoundedCornerShape(50))
+                    .shimmerEffect()
             )
         }
 
         Spacer(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(12.dp)
+                .height(3.dp)
+                .background(Color(0xFFE0E0E0))
         )
-        }
     }
 }
 
+@Preview
+@Composable
+fun FeedPostCardPreview() {
+    FeedPostCard(
+        post = HomePostUiModel(
+            id = 1L,
+            username = "Duc Duong Hoang",
+            subtitle = "Da Nang, Viet Nam",
+            description = "A calm afternoon by the river.",
+            imageUrls = listOf("sample.jpg"),
+            likeCount = 142,
+            commentCount = 4,
+            isLiked = true,
+            isLikeLoading = false,
+            timeAgoLabel = "2h"
+        ),
+        onLikeClick = {},
+        onCommentClick = {}
+    )
+}
+
 private val TravelSurfaceBg = Color(0xFFF8F9FA)
-private val VerdantPrimary = Color(0xFF0052D1)
-private val VerdantSurfaceContainer = Color(0xFFEDEEEF)
-private val VerdantSurfaceContainerLow = Color(0xFFF3F4F5)
-private val VerdantSurfaceContainerHighest = Color(0xFFC1C6D7)
+private val VerdantPrimary = Color(0xFF006B2C)
+private val VerdantSurfaceContainer = Color(0xFFEFF6EA)
+private val VerdantSurfaceContainerHighest = Color(0xFFDDE5D9)
 private val VerdantSurfaceContainerLowest = Color(0xFFFFFFFF)
-private val VerdantOnSurface = Color(0xFF191C1D)
-private val VerdantOnSurfaceVariant = Color(0xFF414755)
+private val VerdantOnSurface = Color(0xFF171D16)
+private val VerdantOnSurfaceVariant = Color(0xFF3E4A3D)
+private val VerdantSurfaceContainerLow = Color(0xFFF3F4F5)

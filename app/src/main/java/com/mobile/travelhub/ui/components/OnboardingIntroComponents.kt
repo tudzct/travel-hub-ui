@@ -148,7 +148,7 @@ fun IntroHeader(onBack: () -> Unit, onSkip: () -> Unit) {
         Text(
             text = "Skip",
             style = MaterialTheme.typography.titleMedium,
-            color = Color(0xFF0A4D66),
+            color = MaterialTheme.colorScheme.primary,
             modifier = Modifier
                 .clip(RoundedCornerShape(12.dp))
                 .clickable(onClick = onSkip)
@@ -170,7 +170,7 @@ fun IntroTagChip(
     val background = when (level) {
         InterestLevel.Neutral -> tag.tone
         InterestLevel.Like -> Color(0xFFAFDAB3)
-        InterestLevel.Strong -> Color(0xFF0A5C77)
+        InterestLevel.Strong -> MaterialTheme.colorScheme.primary
         InterestLevel.Hidden -> Color(0xFFF1D8DB)
     }
     val textColor = when (level) {
@@ -242,7 +242,10 @@ fun IntroBottomActions(onPrevious: () -> Unit, onContinue: () -> Unit) {
             Button(
                 onClick = onContinue,
                 shape = RoundedCornerShape(26.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0A5C77))
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
+                )
             ) {
                 Text(
                     text = "Continue ->",

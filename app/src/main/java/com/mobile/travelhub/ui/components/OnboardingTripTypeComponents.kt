@@ -124,7 +124,7 @@ fun TripTypeHeader(onBack: () -> Unit, onSkip: () -> Unit) {
         Text(
             text = "Skip",
             style = MaterialTheme.typography.titleMedium,
-            color = Color(0xFF0A4D66),
+            color = MaterialTheme.colorScheme.primary,
             modifier = Modifier
                 .clip(RoundedCornerShape(12.dp))
                 .clickable(onClick = onSkip)
@@ -195,8 +195,10 @@ fun TripTypeBottomActions(canContinue: Boolean, onPrevious: () -> Unit, onContin
                 onClick = onContinue,
                 shape = RoundedCornerShape(26.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF0A5C77),
-                    disabledContainerColor = Color(0xFF8AA3AF)
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                    disabledContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.45f),
+                    disabledContentColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.7f)
                 )
             ) {
                 Text(
