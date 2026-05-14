@@ -16,6 +16,7 @@ import kotlinx.coroutines.launch
 
 data class TripsUiState(
     val isLoading: Boolean = true,
+    val isJoining: Boolean = false,
     val activeTrip: UpcomingTripUiModel? = null,
     val upcomingTrips: List<UpcomingTripUiModel> = emptyList(),
     val pastTrips: List<PastTripUiModel> = emptyList(),
@@ -74,6 +75,34 @@ class TripsViewModel @Inject constructor(
                             errorMessage = throwable.message ?: "Không tải được danh sách chuyến đi"
                         )
                     }
+                }
+        }
+    }
+
+    fun joinTrip(inviteCode: String, onResult: (Boolean, String) -> Unit = { _, _ -> }) {
+        val normalizedCode = inviteCode.trim().uppercase()
+        if (normalizedCode.isBlank()) {
+            onResult(false, "Vui lòng nhập mã chuyến đi")
+            return
+        }
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(isJoining = true, errorMessage = null) }
+            tripRepository.joinTrip(com.mobile.travelhub.data.model.JoinTripRequest(inviteCode = normalizedCode))
+                .onSuccess { response ->
+                    _uiState.update { it.copy(isJoining = false) }
+                    refreshDashboard()
+                    onResult(true, response.message.ifBlank { "Đã gửi yêu cầu tham gia" })
+                }
+                .onFailure { throwable ->
+                    val message = throwable.message ?: "Không tham gia được chuyến đi"
+                    _uiState.update {
+                        it.copy(
+                            isJoining = false,
+                            errorMessage = message
+                        )
+                    }
+                    onResult(false, message)
                 }
         }
     }

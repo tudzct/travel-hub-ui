@@ -28,6 +28,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -45,6 +46,7 @@ fun TripsScreen(
 ) {
     val viewModel: TripsViewModel = hiltViewModel()
     val state by viewModel.uiState.collectAsState()
+    val context = LocalContext.current
     var showAddTripSheet by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
@@ -209,7 +211,18 @@ fun TripsScreen(
                     onCreateNew = {
                         showAddTripSheet = false
                         onNavigateToCreateGroup()
-                    }
+                    },
+                    onJoinTrip = { joinCode, onDone ->
+                        viewModel.joinTrip(joinCode) { success, message ->
+                            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                            if (success) {
+                                onDone()
+                                showAddTripSheet = false
+                            }
+                        }
+                    },
+                    isJoining = state.isJoining,
+                    joinErrorMessage = state.errorMessage
                 )
             }
         }
@@ -374,8 +387,13 @@ fun PastMemoryCard(place: String, date: String) {
 }
 
 @Composable
-fun AddTripOptionsContent(onDismiss: () -> Unit, onCreateNew: () -> Unit) {
-    val context = androidx.compose.ui.platform.LocalContext.current
+fun AddTripOptionsContent(
+    onDismiss: () -> Unit,
+    onCreateNew: () -> Unit,
+    onJoinTrip: (String, () -> Unit) -> Unit,
+    isJoining: Boolean,
+    joinErrorMessage: String?
+) {
     var showJoinInput by remember { mutableStateOf(false) }
     var joinCode by remember { mutableStateOf("") }
 
@@ -408,11 +426,7 @@ fun AddTripOptionsContent(onDismiss: () -> Unit, onCreateNew: () -> Unit) {
                 desc = "Nhập mã để tham gia nhóm có sẵn",
                 color = SunsetOrange,
                 onClick = {
-                    Toast.makeText(
-                        context,
-                        "Luồng tham gia bằng mã chưa có endpoint BE",
-                        Toast.LENGTH_SHORT
-                    ).show()
+                    showJoinInput = true
                 }
             )
             Spacer(modifier = Modifier.height(16.dp))
@@ -438,6 +452,16 @@ fun AddTripOptionsContent(onDismiss: () -> Unit, onCreateNew: () -> Unit) {
             )
             Spacer(modifier = Modifier.height(24.dp))
 
+            if (!joinErrorMessage.isNullOrBlank()) {
+                Text(
+                    text = joinErrorMessage,
+                    color = SunsetOrange,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+            }
+
             OutlinedTextField(
                 value = joinCode,
                 onValueChange = { joinCode = it.uppercase().take(6) },
@@ -452,14 +476,19 @@ fun AddTripOptionsContent(onDismiss: () -> Unit, onCreateNew: () -> Unit) {
             )
             Spacer(modifier = Modifier.height(24.dp))
             Button(
-                onClick = onDismiss,
+                onClick = {
+                    onJoinTrip(joinCode) {
+                        onDismiss()
+                    }
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
                 shape = RoundedCornerShape(20.dp),
+                enabled = !isJoining,
                 colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
             ) {
-                Text("Gửi yêu cầu tham gia", fontWeight = FontWeight.Bold)
+                Text(if (isJoining) "Đang gửi..." else "Gửi yêu cầu tham gia", fontWeight = FontWeight.Bold)
             }
         }
     }

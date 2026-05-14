@@ -97,8 +97,8 @@ sealed class Screen(
     data object ItineraryDayDetail : Screen("itinerary/{groupName}/day/{dayIndex}", 11) {
         fun createRoute(groupName: String, dayIndex: Int) = "itinerary/$groupName/day/$dayIndex"
     }
-    data object CostEstimate : Screen("cost_estimate/{groupName}", 12) {
-        fun createRoute(groupName: String) = "cost_estimate/$groupName"
+    data object CostEstimate : Screen("cost_estimate/{tripId}", 12) {
+        fun createRoute(tripId: Long) = "cost_estimate/$tripId"
     }
     data object GroupDiscovery : Screen("group_discovery", 13)
     data object RouteMap : Screen("route_map", 14)
@@ -476,7 +476,7 @@ fun NavGraph(
                 onNavigateToItinerary = { navController.navigate(Screen.Itinerary.createRoute(groupName)) { launchSingleTop = true } },
                 onNavigateToDiscovery = { navController.navigate(Screen.GroupDiscovery.route) { launchSingleTop = true } },
                 onNavigateToMap = { navController.navigate(Screen.RouteMap.route) { launchSingleTop = true } },
-                onNavigateToCost = { navController.navigate(Screen.CostEstimate.createRoute(groupName)) { launchSingleTop = true } }
+                onNavigateToCost = { costTripId -> navController.navigate(Screen.CostEstimate.createRoute(costTripId)) { launchSingleTop = true } }
             )
         }
 
@@ -525,12 +525,20 @@ fun NavGraph(
 
         composable(
             route = Screen.CostEstimate.route,
-            arguments = listOf(navArgument("groupName") { type = NavType.StringType })
+            arguments = listOf(navArgument("tripId") { type = NavType.LongType })
         ) { backStackEntry ->
-            val groupName = backStackEntry.arguments?.getString("groupName") ?: "Cost Estimate"
+            val tripId = backStackEntry.arguments?.getLong("tripId") ?: -1L
             CostEstimateScreen(
-                groupName = groupName,
-                onBack = { navController.popBackStack() }
+                tripId = tripId,
+                onBack = {
+                    val popped = navController.popBackStack()
+                    if (!popped) {
+                        navController.navigate(Screen.Trips.route) {
+                            popUpTo(navController.graph.findStartDestination().id) { inclusive = false }
+                            launchSingleTop = true
+                        }
+                    }
+                }
             )
         }
 

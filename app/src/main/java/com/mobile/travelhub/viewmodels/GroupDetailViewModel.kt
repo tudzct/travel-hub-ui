@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mobile.travelhub.data.TripRepository
 import com.mobile.travelhub.data.model.TripDashboardResponse
+import com.mobile.travelhub.data.model.TripDetailResponse
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,6 +21,21 @@ data class GroupDayUiModel(
     val firstStopTitles: List<String>
 )
 
+data class GroupMemberUiModel(
+    val userId: Long,
+    val name: String,
+    val avatarUrl: String? = null,
+    val role: String
+)
+
+data class GroupActivityUiModel(
+    val id: Long,
+    val title: String,
+    val description: String? = null,
+    val timestamp: String? = null,
+    val actorName: String? = null
+)
+
 data class GroupDetailUiState(
     val isLoading: Boolean = true,
     val tripId: Long = -1L,
@@ -33,6 +49,9 @@ data class GroupDetailUiState(
     val totalStops: Int = 0,
     val memberInfoLabel: String = "Dữ liệu thành viên chưa có từ BE",
     val activityLabel: String = "BE chưa có feed hoạt động nhóm",
+    val myRole: String = "",
+    val members: List<GroupMemberUiModel> = emptyList(),
+    val recentActivities: List<GroupActivityUiModel> = emptyList(),
     val errorMessage: String? = null
 )
 
@@ -74,6 +93,18 @@ class GroupDetailViewModel @Inject constructor(
                     }
                 }
 
+            tripRepository.getTripDetail(tripId)
+                .onSuccess { detail ->
+                    _uiState.update { state ->
+                        state.mergeTripDetail(detail)
+                    }
+                }
+                .onFailure { throwable ->
+                    _uiState.update {
+                        it.copy(errorMessage = throwable.message ?: "Không tải được chi tiết chuyến đi")
+                    }
+                }
+
             tripRepository.getItineraryByGroupName(groupName)
                 .onSuccess { itinerary ->
                     _uiState.update { state ->
@@ -88,9 +119,7 @@ class GroupDetailViewModel @Inject constructor(
                                     firstStopTitles = day.stops.take(3).map { stop -> stop.title }
                                 )
                             },
-                            totalStops = itinerary.days.sumOf { it.stops.size },
-                            memberInfoLabel = "Thành viên chi tiết chưa có endpoint",
-                            activityLabel = "Itinerary đã nối từ BE"
+                            totalStops = itinerary.days.sumOf { it.stops.size }
                         )
                     }
                 }
@@ -126,6 +155,36 @@ class GroupDetailViewModel @Inject constructor(
         )
     }
 
+
+    private fun GroupDetailUiState.mergeTripDetail(detail: TripDetailResponse): GroupDetailUiState {
+        return copy(
+            location = detail.tripInfo.location,
+            startDate = detail.tripInfo.startDate.orEmpty(),
+            endDate = detail.tripInfo.endDate.orEmpty(),
+            coverImageUrl = detail.tripInfo.coverImageUrl,
+            statusLabel = detail.tripInfo.status ?: statusLabel,
+            myRole = detail.myRole,
+            members = detail.members.map { member ->
+                GroupMemberUiModel(
+                    userId = member.userId,
+                    name = member.name,
+                    avatarUrl = member.avatarUrl,
+                    role = member.role
+                )
+            },
+            recentActivities = detail.recentActivities.map { activity ->
+                GroupActivityUiModel(
+                    id = activity.id,
+                    title = activity.title,
+                    description = activity.description,
+                    timestamp = activity.timestamp,
+                    actorName = activity.actorName
+                )
+            },
+            memberInfoLabel = "${detail.members.size} thành viên · Vai trò: ${detail.myRole}",
+            activityLabel = detail.recentActivities.firstOrNull()?.title ?: "Chưa có hoạt động gần đây"
+        )
+    }
     private fun com.mobile.travelhub.data.model.UpcomingTripResponse.toSnapshot(): DashboardTripSnapshot {
         return DashboardTripSnapshot(
             tripId = tripId,

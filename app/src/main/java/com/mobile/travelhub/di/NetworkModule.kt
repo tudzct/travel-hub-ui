@@ -13,6 +13,8 @@ import com.mobile.travelhub.data.api.PlaceApiService
 import com.mobile.travelhub.data.api.PostApiService
 import com.mobile.travelhub.data.api.RetrofitFactory
 import com.mobile.travelhub.data.api.TripApiService
+import com.mobile.travelhub.data.api.TripExpenseApiService
+import com.mobile.travelhub.data.api.TripMemberApiService
 import com.mobile.travelhub.data.api.TokenAuthenticator
 import com.mobile.travelhub.data.api.UploadApiService
 import com.mobile.travelhub.data.api.UserApiService
@@ -145,6 +147,18 @@ object NetworkModule {
     @Singleton
     fun provideTripApiService(@Named("authenticated") retrofit: Retrofit): TripApiService {
         return retrofit.create(TripApiService::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideTripMemberApiService(@Named("authenticated") retrofit: Retrofit): TripMemberApiService {
+        return retrofit.create(TripMemberApiService::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideTripExpenseApiService(@Named("authenticated") retrofit: Retrofit): TripExpenseApiService {
+        return retrofit.create(TripExpenseApiService::class.java)
     }
 
     @Provides

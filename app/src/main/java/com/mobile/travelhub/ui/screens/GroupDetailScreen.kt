@@ -56,7 +56,7 @@ fun GroupDetailScreen(
     onNavigateToItinerary: () -> Unit,
     onNavigateToDiscovery: () -> Unit,
     onNavigateToMap: () -> Unit,
-    onNavigateToCost: () -> Unit,
+    onNavigateToCost: (Long) -> Unit,
     viewModel: GroupDetailViewModel = hiltViewModel()
 ) {
     val scrollState = rememberScrollState()
@@ -146,7 +146,7 @@ fun GroupDetailScreen(
             ) {
                 item { FeatureCard(Icons.Default.CalendarMonth, "Lịch trình", PrimaryBlue, onNavigateToItinerary) }
                 item { FeatureCard(Icons.Default.Poll, "Bình chọn", SunsetOrange, onNavigateToDiscovery) }
-                item { FeatureCard(Icons.Default.Payments, "Chi phí", Color(0xFFE91E63), onNavigateToCost) }
+                item { FeatureCard(Icons.Default.Payments, "Chi phí", Color(0xFFE91E63), { onNavigateToCost(tripId) }) }
                 item { FeatureCard(Icons.Default.Map, "Bản đồ", Color(0xFF4CAF50), onNavigateToMap) }
                 item { FeatureCard(Icons.AutoMirrored.Filled.Chat, "Chat nhóm", PrimaryContainer, onNavigateToChat) }
             }
@@ -265,18 +265,23 @@ fun GroupDetailScreen(
                     colors = CardDefaults.cardColors(containerColor = SurfaceContainerLowest),
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Column(modifier = Modifier.padding(20.dp)) {
+                    Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         Text(
-                            text = "BE chưa có API detail/members đầy đủ cho màn này.",
+                            text = if (uiState.myRole.isBlank()) "Danh sách thành viên từ BE" else "Vai trò của bạn: ${uiState.myRole}",
                             color = OnSurface,
                             fontWeight = FontWeight.Bold
                         )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = "Hiện FE chỉ có thể đọc dashboard + itinerary theo groupName.",
-                            color = OnSurfaceVariant,
-                            fontSize = 13.sp
-                        )
+                        if (uiState.members.isEmpty()) {
+                            Text(
+                                text = "Chưa có dữ liệu thành viên từ BE.",
+                                color = OnSurfaceVariant,
+                                fontSize = 13.sp
+                            )
+                        } else {
+                            uiState.members.forEach { member ->
+                                MemberRow(member)
+                            }
+                        }
                     }
                 }
             }
@@ -292,7 +297,18 @@ fun GroupDetailScreen(
                     letterSpacing = 1.sp
                 )
                 Spacer(modifier = Modifier.height(16.dp))
-                ActivityItem(uiState.activityLabel, "BE chưa có event feed")
+                if (uiState.recentActivities.isEmpty()) {
+                    ActivityItem(uiState.activityLabel, "BE chưa có event feed")
+                } else {
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        uiState.recentActivities.take(3).forEach { activity ->
+                            ActivityItem(
+                                activity.title,
+                                activity.timestamp ?: activity.description ?: activity.actorName.orEmpty()
+                            )
+                        }
+                    }
+                }
             }
 
             Spacer(modifier = Modifier.height(32.dp))
@@ -424,6 +440,37 @@ fun ActivityItem(text: String, time: String) {
             Text(text, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = OnSurface)
             Spacer(modifier = Modifier.height(4.dp))
             Text(time, fontSize = 12.sp, color = OnSurfaceVariant)
+        }
+    }
+}
+
+@Composable
+fun MemberRow(member: com.mobile.travelhub.viewmodels.GroupMemberUiModel) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .background(SurfaceContainerLowest)
+            .padding(14.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(40.dp)
+                .clip(CircleShape)
+                .background(PrimaryBlue.copy(alpha = 0.12f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = member.name.firstOrNull()?.uppercaseChar()?.toString() ?: "?",
+                fontWeight = FontWeight.Bold,
+                color = PrimaryBlue
+            )
+        }
+        Spacer(modifier = Modifier.width(12.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(member.name, fontWeight = FontWeight.Bold, color = OnSurface)
+            Text(member.role, fontSize = 12.sp, color = OnSurfaceVariant)
         }
     }
 }
