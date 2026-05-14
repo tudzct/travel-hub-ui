@@ -1,5 +1,6 @@
 package com.mobile.travelhub.data
 
+import com.mobile.travelhub.data.api.ApiConfig
 import com.mobile.travelhub.data.model.StreamEvent
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -26,7 +27,7 @@ class ItineraryBotRepo @Inject constructor() {
             .build()
 
         val request = Request.Builder()
-            .url("http://192.168.1.105:8888/chat")
+            .url("${ApiConfig.AI_BASE_URL}/chat")
             .build()
 
         val eventSource = EventSources.createFactory(client)
