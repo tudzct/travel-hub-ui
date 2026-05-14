@@ -11,6 +11,7 @@ import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.outlined.PhotoCamera
 import androidx.compose.material3.Button
@@ -34,6 +35,10 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -75,6 +80,7 @@ fun ProfileScreen(
     onRequireLogin: (() -> Unit)? = null,
     viewingUserId: Long? = null,
     onNavigateToChat: (() -> Unit)? = null,
+    onNotificationsClick: (() -> Unit)? = null,
     onBack: (() -> Unit)? = null,
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
@@ -116,6 +122,7 @@ fun ProfileScreen(
         onBack = onBack,
         viewingUserId = viewingUserId,
         onNavigateToChat = onNavigateToChat,
+        onNotificationsClick = onNotificationsClick,
         onReloadProfile = {
             if (isViewingOwnProfile) {
                 viewModel.loadUserProfile()
@@ -147,6 +154,7 @@ private fun ProfileScreenContent(
     onBack: (() -> Unit)?,
     viewingUserId: Long?,
     onNavigateToChat: (() -> Unit)?,
+    onNotificationsClick: (() -> Unit)?,
     onReloadProfile: () -> Unit,
     onReloadOtherUserProfile: (Long) -> Unit,
     onReloadPosts: (Long?) -> Unit,
@@ -160,6 +168,7 @@ private fun ProfileScreenContent(
     val scrollState = rememberScrollState()
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val coroutineScope = rememberCoroutineScope()
+    var showNotifications by remember { mutableStateOf(false) }
 
     CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
         ModalNavigationDrawer(
@@ -223,24 +232,15 @@ private fun ProfileScreenContent(
                             ) {
                                 if (isViewingOwnProfile) {
                                     IconButton(
-                                        onClick = { coroutineScope.launch { drawerState.open() } },
+                                        onClick = {
+                                            showNotifications = true
+                                            onNotificationsClick?.invoke()
+                                        },
                                         modifier = Modifier.align(Alignment.CenterEnd)
                                     ) {
                                         Icon(
-                                            imageVector = Icons.Default.Menu,
-                                            contentDescription = "Open menu",
-                                            tint = OnSurface
-                                        )
-                                    }
-                                }
-                                if (!isViewingOwnProfile) {
-                                    IconButton(
-                                        onClick = { onBack?.invoke() },
-                                        modifier = Modifier.align(Alignment.CenterStart)
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                            contentDescription = "Back",
+                                            imageVector = Icons.Outlined.Notifications,
+                                            contentDescription = "Notifications",
                                             tint = OnSurface
                                         )
                                     }
@@ -254,6 +254,30 @@ private fun ProfileScreenContent(
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis
                                 )
+                                if (!isViewingOwnProfile) {
+                                    IconButton(
+                                        onClick = { onBack?.invoke() },
+                                        modifier = Modifier.align(Alignment.CenterStart)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                            contentDescription = "Back",
+                                            tint = OnSurface
+                                        )
+                                    }
+                                } else {
+                                    IconButton(
+                                        onClick = { coroutineScope.launch { drawerState.open() } },
+                                        modifier = Modifier.align(Alignment.CenterStart)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Menu,
+                                            contentDescription = "Open menu",
+                                            tint = OnSurface
+                                        )
+                                    }
+                                }
+
                             }
                         }
                     }
@@ -541,6 +565,9 @@ private fun ProfileScreenContent(
                             else -> {}
                         }
                     }
+                    if (showNotifications) {
+                        NotificationsPopup(onDismiss = { showNotifications = false })
+                    }
                 }
             }
         }
@@ -603,6 +630,7 @@ fun ProfileScreenPreview() {
             onBack = {},
             viewingUserId = null,
             onNavigateToChat = {},
+            onNotificationsClick = {},
             onReloadProfile = {},
             onReloadOtherUserProfile = {},
             onReloadPosts = {},
