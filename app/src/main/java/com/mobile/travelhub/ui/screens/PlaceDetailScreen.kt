@@ -67,7 +67,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil.compose.AsyncImage
-import com.mobile.travelhub.data.model.TravelPlaceDetailResponse
 import com.mobile.travelhub.data.model.TravelPlaceListItemResponse
 import com.mobile.travelhub.data.model.TravelPlaceReviewResponse
 import com.mobile.travelhub.ui.theme.OnSurface
@@ -76,6 +75,7 @@ import com.mobile.travelhub.ui.theme.PrimaryBlue
 import com.mobile.travelhub.ui.theme.SurfaceBg
 import com.mobile.travelhub.ui.theme.SurfaceContainerLow
 import com.mobile.travelhub.ui.theme.SurfaceContainerLowest
+import com.mobile.travelhub.viewmodels.PlaceDetailUiModel
 import com.mobile.travelhub.viewmodels.PlaceDetailViewModel
 import com.mobile.travelhub.viewmodels.ReviewViewModel
 import java.time.Instant
@@ -155,7 +155,7 @@ fun PlaceDetailScreen(
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                    Button(onClick = { placeDetailViewModel.loadPlace(placeId) }) {
+                    Button(onClick = { placeDetailViewModel.loadPlace(place) }) {
                         Text("Thử lại")
                     }
                 }
@@ -175,13 +175,6 @@ fun PlaceDetailScreen(
                         )
                     }
 
-                    item {
-                        PlaceImageCarousel(
-                            imageUrls = listOfNotNull(detail.mainImage),
-                            contentDescription = detail.name
-                        )
-                    }
-                    //TODO 14-05
                     stickyHeader {
                         DetailStickyHeader(
                             title = detail.name,
@@ -321,10 +314,10 @@ private fun DetailStickyHeader(
 
 @Composable
 private fun PlaceHeroSection(
-    detail: TravelPlaceDetailResponse,
+    detail: PlaceDetailUiModel,
     onBack: () -> Unit
 ) {
-    val imageUrls = detail.images.map { it.imageUrl }
+    val imageUrls = listOfNotNull(detail.mainImage)
     val displayUrls = remember(imageUrls) { imageUrls.map { it.trim() }.filter { it.isNotBlank() } }
     val hasImages = displayUrls.isNotEmpty()
     val imageCount = displayUrls.size.coerceAtLeast(1)
@@ -505,7 +498,7 @@ private fun RoundedSection(content: @Composable () -> Unit) {
 }
 
 @Composable
-private fun PlaceInfoSection(detail: TravelPlaceDetailResponse) {
+private fun PlaceInfoSection(detail: PlaceDetailUiModel) {
     Column(
         modifier = Modifier
             .fillMaxWidth(),
@@ -1101,16 +1094,12 @@ private fun PlaceBottomActions(
 
 private fun openDirections(
     context: android.content.Context,
-    detail: TravelPlaceDetailResponse
+    detail: PlaceDetailUiModel
 ) {
     val label = listOf(detail.name, detail.province.name)
         .filter { it.isNotBlank() }
         .joinToString(", ")
-    val uri = if (detail.lat != null && detail.lon != null) {
-        Uri.parse("geo:${detail.lat},${detail.lon}?q=${detail.lat},${detail.lon}(${Uri.encode(detail.name)})")
-    } else {
-        Uri.parse("geo:0,0?q=${Uri.encode(label)}")
-    }
+    val uri = Uri.parse("geo:0,0?q=${Uri.encode(label)}")
     val intent = Intent(Intent.ACTION_VIEW, uri)
 
     runCatching {

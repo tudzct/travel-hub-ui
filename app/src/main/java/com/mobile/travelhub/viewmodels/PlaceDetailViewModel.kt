@@ -70,26 +70,14 @@ class PlaceDetailViewModel @Inject constructor(
                     reviewPreviewLoading = true
                 )
             }
-            runCatching { retryTransientServerError { placeRepository.getPlaceDetail(placeId) } }
-                .onSuccess { detail ->
-                    _uiState.update {
-                        it.copy(
-                            isLoading = false,
-                            detail = detail,
-                            errorMessage = null
-                        )
-                    }
-                    loadRelatedPlaces(detail.id, detail.province.id)
-                    loadReviewPreview(placeId)
-                }
-                .onFailure { throwable ->
-                    _uiState.update {
-                        it.copy(
-                            isLoading = false,
-                            errorMessage = throwable.message ?: "Unable to load place detail"
-                        )
-                    }
-                }
+            _uiState.update {
+                it.copy(
+                    isLoading = false,
+                    errorMessage = null
+                )
+            }
+            loadRelatedPlaces(place.id, place.province.id)
+            loadReviewPreview(place.id)
         }
     }
 
