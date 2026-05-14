@@ -62,6 +62,7 @@ sealed class Screen(
     data object CreatePost : Screen("create_post", showBottomBar = true)
     data object Profile : Screen("profile", 2, true)
     data object Chat : Screen("chat", 3, true)
+    data object Notifications : Screen("notifications", 4)
     data object PlaceDetail : Screen("place/{placeId}", 10) {
         fun createRoute(placeId: Long): String = "place/$placeId"
     }
@@ -127,6 +128,7 @@ sealed class Screen(
                 "trips" -> Trips
                 "create_post" -> CreatePost
                 "profile" -> Profile
+                "notifications" -> Notifications
                 "place" -> PlaceDetail
                 "history" -> ViewHistory
                 "profile_user" -> Profile
@@ -377,6 +379,7 @@ fun NavGraph(
                 onNavigateToFollowing = { navController.navigate(Screen.FollowersFollowing.createRoute(1, null)) { launchSingleTop = true } },
                 onNavigateToHistory = { navController.navigate(Screen.ViewHistory.route) { launchSingleTop = true } },
                 onNavigateToChat = { navController.navigate(Screen.Chat.route) { launchSingleTop = true } },
+                onNotificationsClick = null,
                 onLogout = {
                     onLogout()
                     navController.navigate(Screen.Login.route) {
@@ -393,6 +396,11 @@ fun NavGraph(
                 }
             )
         }
+//        composable(Screen.Notifications.route) {
+//            NotificationsScreen(
+//                onBack = { navController.popBackStack() }
+//            )
+//        }
         composable(
             route = Screen.OtherProfile.route,
             arguments = listOf(navArgument("userId") { type = NavType.LongType })
@@ -610,3 +618,4 @@ fun NavGraph(
         }
     }
 }
+

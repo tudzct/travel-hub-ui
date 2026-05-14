@@ -11,6 +11,7 @@ import com.mobile.travelhub.data.api.FileUploadApiService
 import com.mobile.travelhub.data.api.LocationApiService
 import com.mobile.travelhub.data.api.PlaceApiService
 import com.mobile.travelhub.data.api.PostApiService
+import com.mobile.travelhub.data.api.NotificationApiService
 import com.mobile.travelhub.data.api.RetrofitFactory
 import com.mobile.travelhub.data.api.TripApiService
 import com.mobile.travelhub.data.api.TripExpenseApiService
@@ -111,6 +112,12 @@ object NetworkModule {
     @Singleton
     fun providePostApiService(@Named("authenticated") retrofit: Retrofit): PostApiService {
         return retrofit.create(PostApiService::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideNotificationApiService(@Named("authenticated") retrofit: Retrofit): NotificationApiService {
+        return retrofit.create(NotificationApiService::class.java)
     }
 
     @Provides
