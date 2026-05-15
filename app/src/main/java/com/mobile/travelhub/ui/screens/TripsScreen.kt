@@ -16,7 +16,6 @@ import androidx.compose.material.icons.filled.FlightTakeoff
 import androidx.compose.material.icons.filled.GroupAdd
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Map
-import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.filled.WbCloudy
 import androidx.compose.material3.*
@@ -26,7 +25,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -56,13 +54,14 @@ fun TripsScreen(
             ExtendedFloatingActionButton(
                 onClick = { showAddTripSheet = true },
                 containerColor = PrimaryBlue,
-                contentColor = Color.White
+                contentColor = Color.White,
+                shape = RoundedCornerShape(20.dp),
+                elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 4.dp)
             ) {
-                Icon(Icons.Default.FlightTakeoff, contentDescription = null)
-                Spacer(Modifier.width(8.dp))
-                Text("Chuyến đi mới")
+                Icon(Icons.Default.FlightTakeoff, contentDescription = "New Trip")
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Chuyến đi mới", fontWeight = FontWeight.Bold)
             }
-
         }
     ) { padding ->
         LazyColumn(
@@ -96,16 +95,29 @@ fun TripsScreen(
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = "Nhà thám hiểm!",
+                        text = "Nhà thám hiểm! \uD83C\uDF0D",
                         fontWeight = FontWeight.ExtraBold,
                         fontSize = 32.sp,
                         color = OnSurface,
                         letterSpacing = (-1).sp
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
                 }
             }
 
+            // Redesigned Stats Row
+            item {
+                LazyRow(
+                    contentPadding = PaddingValues(horizontal = 24.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    item { StatChip("5", "Quốc gia", "🗺️", PrimaryBlue) }
+                    item { StatChip("12", "Thành phố", "🏙️", SunsetOrange) }
+                    item { StatChip("8", "Hành trình", "✈️", Color(0xFF4CAF50)) }
+                }
+                Spacer(modifier = Modifier.height(32.dp))
+            }
+
+            // Current Active Trip (More immersive)
             item {
                 Column(modifier = Modifier.padding(horizontal = 24.dp)) {
                     Text(
@@ -126,7 +138,7 @@ fun TripsScreen(
                 }
                 Spacer(modifier = Modifier.height(36.dp))
             }
-
+            
             // Upcoming Trips
             item {
                 Column(modifier = Modifier.padding(horizontal = 24.dp)) {
@@ -150,25 +162,21 @@ fun TripsScreen(
                     }
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    val trips = state.upcomingTrips.ifEmpty {
-                        listOfNotNull(state.activeTrip)
-                    }
-
-                    if (trips.isEmpty()) {
+                    if (state.upcomingTrips.isEmpty()) {
                         Text(
-                            text = "Chưa có trip nào từ dashboard BE.",
+                            text = "Chưa có chuyến đi sắp tới từ BE.",
                             color = OnSurfaceVariant,
                             fontSize = 14.sp
                         )
-                    }
-
-                    trips.forEachIndexed { index, trip ->
-                        UpcomingTripItem(
-                            trip = trip,
-                            onClick = { onNavigateToGroupDetail(trip.tripId, trip.name) }
-                        )
-                        if (index < trips.size - 1) {
-                            Spacer(modifier = Modifier.height(12.dp))
+                    } else {
+                        state.upcomingTrips.forEachIndexed { index, trip ->
+                            UpcomingTripItem(
+                                trip = trip,
+                                onClick = { onNavigateToGroupDetail(trip.tripId, trip.name) }
+                            )
+                            if (index < state.upcomingTrips.lastIndex) {
+                                Spacer(modifier = Modifier.height(12.dp))
+                            }
                         }
                     }
                 }
@@ -190,8 +198,15 @@ fun TripsScreen(
                         contentPadding = PaddingValues(horizontal = 24.dp),
                         horizontalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        items(state.pastTrips) { trip ->
-                            PastMemoryCard(trip.locationName, trip.dateString)
+                        items(4) { index ->
+                            val places = listOf("Đà Lạt", "Đà Nẵng", "Sapa", "Phú Quốc")
+                            val dates = listOf(
+                                "Tháng 8, 2023",
+                                "Tháng 5, 2023",
+                                "Tháng 12, 2022",
+                                "Tháng 7, 2022"
+                            )
+                            PastMemoryCard(places[index], dates[index])
                         }
                     }
                 }
@@ -230,7 +245,7 @@ fun TripsScreen(
 }
 
 @Composable
-fun StatChip(value: String, label: String, icon: ImageVector, color: Color) {
+fun StatChip(value: String, label: String, emoji: String, color: Color) {
     Row(
         modifier = Modifier
             .clip(RoundedCornerShape(20.dp))
@@ -238,12 +253,7 @@ fun StatChip(value: String, label: String, icon: ImageVector, color: Color) {
             .padding(horizontal = 16.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = color,
-            modifier = Modifier.size(24.dp)
-        )
+        Text(emoji, fontSize = 24.sp)
         Spacer(modifier = Modifier.width(12.dp))
         Column {
             Text(value, fontWeight = FontWeight.ExtraBold, fontSize = 18.sp, color = color)
@@ -300,19 +310,9 @@ fun ActiveJourneyCardV2(
                     .padding(horizontal = 12.dp, vertical = 8.dp)
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        Icons.Default.WbCloudy,
-                        null,
-                        tint = Color.White,
-                        modifier = Modifier.size(16.dp)
-                    )
+                    Icon(Icons.Default.WbCloudy, null, tint = Color.White, modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        "22°C",
-                        color = Color.White,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 12.sp
-                    )
+                    Text("22°C", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp)
                 }
             }
 
@@ -328,12 +328,7 @@ fun ActiveJourneyCardV2(
                         .background(SunsetOrange)
                         .padding(horizontal = 8.dp, vertical = 4.dp)
                 ) {
-                    Text(
-                        "Ngày 3 / 8",
-                        fontWeight = FontWeight.ExtraBold,
-                        fontSize = 10.sp,
-                        color = Color.White
-                    )
+                    Text("Ngày 3 / 8", fontWeight = FontWeight.ExtraBold, fontSize = 10.sp, color = Color.White)
                 }
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
@@ -345,12 +340,7 @@ fun ActiveJourneyCardV2(
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        Icons.Default.LocationOn,
-                        null,
-                        tint = Color.White.copy(alpha = 0.8f),
-                        modifier = Modifier.size(14.dp)
-                    )
+                    Icon(Icons.Default.LocationOn, null, tint = Color.White.copy(alpha = 0.8f), modifier = Modifier.size(14.dp))
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
                         trip?.location ?: "Dashboard BE chưa trả location",
@@ -375,9 +365,7 @@ fun PastMemoryCard(place: String, date: String) {
                 painter = painterResource(id = R.drawable.ic_launcher_foreground),
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(SurfaceContainerLow)
+                modifier = Modifier.fillMaxSize().background(SurfaceContainerLow)
             )
         }
         Spacer(modifier = Modifier.height(12.dp))
@@ -411,7 +399,7 @@ fun AddTripOptionsContent(
                 color = OnSurface
             )
             Spacer(modifier = Modifier.height(24.dp))
-
+            
             TripOptionItem(
                 icon = Icons.Default.Add,
                 title = "Tạo chuyến đi mới",
@@ -452,16 +440,6 @@ fun AddTripOptionsContent(
             )
             Spacer(modifier = Modifier.height(24.dp))
 
-            if (!joinErrorMessage.isNullOrBlank()) {
-                Text(
-                    text = joinErrorMessage,
-                    color = SunsetOrange,
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.SemiBold
-                )
-                Spacer(modifier = Modifier.height(12.dp))
-            }
-
             OutlinedTextField(
                 value = joinCode,
                 onValueChange = { joinCode = it.uppercase().take(6) },
@@ -476,11 +454,7 @@ fun AddTripOptionsContent(
             )
             Spacer(modifier = Modifier.height(24.dp))
             Button(
-                onClick = {
-                    onJoinTrip(joinCode) {
-                        onDismiss()
-                    }
-                },
+                onClick = onDismiss,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
@@ -496,9 +470,9 @@ fun AddTripOptionsContent(
 
 @Composable
 fun TripOptionItem(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    title: String,
-    desc: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector, 
+    title: String, 
+    desc: String, 
     color: Color,
     onClick: () -> Unit
 ) {
@@ -565,12 +539,7 @@ fun UpcomingTripItem(
             )
             Spacer(modifier = Modifier.height(6.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    Icons.Default.Timer,
-                    null,
-                    modifier = Modifier.size(14.dp),
-                    tint = SunsetOrange
-                )
+                Icon(Icons.Default.Timer, null, modifier = Modifier.size(14.dp), tint = SunsetOrange)
                 Spacer(modifier = Modifier.width(4.dp))
                 Text(
                     text = if (trip.daysLeft > 0) {

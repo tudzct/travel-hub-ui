@@ -10,6 +10,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+
+
 import androidx.compose.material.icons.filled.ConfirmationNumber
 import androidx.compose.material.icons.filled.Hotel
 import androidx.compose.material.icons.filled.Restaurant
@@ -21,7 +23,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+
+
 import androidx.compose.ui.graphics.vector.ImageVector
+
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -377,6 +382,7 @@ fun MemberExpenseCircle(name: String, amount: Double, color: Color) {
                 .size(40.dp)
                 .clip(CircleShape)
                 .background(color.copy(alpha = 0.1f)),
+
             contentAlignment = Alignment.Center
         ) {
             Image(painterResource(id = R.drawable.ic_launcher_foreground), null, modifier = Modifier.size(24.dp))
@@ -437,5 +443,6 @@ private fun expenseCategoryIcon(category: String): ImageVector {
         "STAY" -> Icons.Default.Hotel
         "TRANSPORT" -> Icons.Default.Train
         else -> Icons.Default.ConfirmationNumber
+
     }
 }
