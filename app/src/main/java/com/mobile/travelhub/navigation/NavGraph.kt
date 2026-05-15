@@ -554,12 +554,14 @@ fun NavGraph(
             route = Screen.PlaceDetail.route,
             arguments = listOf(navArgument("placeId") { type = NavType.LongType })
         ) { backStackEntry ->
-            val place = backStackEntry.savedStateHandle.get<TravelPlaceListItemResponse>(PLACE_DETAIL_PLACE_KEY)
+            val placeId = backStackEntry.arguments?.getLong("placeId") ?: return@composable
+            val place = (backStackEntry.savedStateHandle.get<TravelPlaceListItemResponse>(PLACE_DETAIL_PLACE_KEY)
                 ?: navController.previousBackStackEntry?.savedStateHandle?.get<TravelPlaceListItemResponse>(PLACE_DETAIL_PLACE_KEY)
-                    ?.also { backStackEntry.savedStateHandle[PLACE_DETAIL_PLACE_KEY] = it }
-                ?: return@composable
+                    ?.also { backStackEntry.savedStateHandle[PLACE_DETAIL_PLACE_KEY] = it })
+                ?.takeIf { it.id == placeId }
             PlaceDetailScreen(
-                place = place,
+                placeId = placeId,
+                initialPlace = place,
                 onBack = { navController.navigateUp() },
                 onPlaceClick = ::navigateToPlaceDetail,
                 onShowAllReviews = { id -> navController.navigate(Screen.PlaceReviews.createRoute(id)) },
@@ -596,6 +598,11 @@ fun NavGraph(
             }
             ViewHistoryScreen(
                 onBack = { navController.navigateUp() },
+                onPlaceClick = { placeId ->
+                    navController.navigate(Screen.PlaceDetail.createRoute(placeId)) {
+                        launchSingleTop = true
+                    }
+                },
                 onRequireLogin = {
                     onLogout()
                     navController.navigate(Screen.Login.route) {
@@ -618,4 +625,3 @@ fun NavGraph(
         }
     }
 }
-

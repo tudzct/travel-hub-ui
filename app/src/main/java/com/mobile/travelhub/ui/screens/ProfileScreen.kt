@@ -11,6 +11,7 @@ import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.outlined.PhotoCamera
@@ -118,6 +119,7 @@ fun ProfileScreen(
         onNavigateToEditProfile = onNavigateToEditProfile,
         onNavigateToFollowers = onNavigateToFollowers,
         onNavigateToFollowing = onNavigateToFollowing,
+        onNavigateToHistory = onNavigateToHistory,
         onLogout = onLogout,
         onBack = onBack,
         viewingUserId = viewingUserId,
@@ -150,6 +152,7 @@ private fun ProfileScreenContent(
     onNavigateToEditProfile: () -> Unit,
     onNavigateToFollowers: () -> Unit,
     onNavigateToFollowing: () -> Unit,
+    onNavigateToHistory: (() -> Unit)?,
     onLogout: (() -> Unit)?,
     onBack: (() -> Unit)?,
     viewingUserId: Long?,
@@ -194,6 +197,24 @@ private fun ProfileScreenContent(
                                         contentDescription = "Close menu"
                                     )
                                 }
+                            }
+                            val navigateToHistory = onNavigateToHistory
+                            if (navigateToHistory != null) {
+                                NavigationDrawerItem(
+                                    label = { Text("Recently viewed places") },
+                                    selected = false,
+                                    onClick = {
+                                        coroutineScope.launch { drawerState.close() }
+                                        navigateToHistory()
+                                    },
+                                    icon = {
+                                        Icon(
+                                            imageVector = Icons.Outlined.History,
+                                            contentDescription = null
+                                        )
+                                    },
+                                    modifier = Modifier.padding(horizontal = 12.dp)
+                                )
                             }
                             NavigationDrawerItem(
                                 label = { Text("Logout") },
@@ -626,6 +647,7 @@ fun ProfileScreenPreview() {
             onNavigateToEditProfile = {},
             onNavigateToFollowers = {},
             onNavigateToFollowing = {},
+            onNavigateToHistory = {},
             onLogout = {},
             onBack = {},
             viewingUserId = null,

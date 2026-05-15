@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.mobile.travelhub.data.PlaceRepository
 import com.mobile.travelhub.data.httpStatusCode
 import com.mobile.travelhub.data.model.ProvinceResponse
+import com.mobile.travelhub.data.model.TravelPlaceDetailResponse
 import com.mobile.travelhub.data.model.TravelPlaceListItemResponse
 import com.mobile.travelhub.data.model.TravelPlaceReviewResponse
 import com.mobile.travelhub.data.model.TravelPlaceReviewSummaryResponse
@@ -78,6 +79,53 @@ class PlaceDetailViewModel @Inject constructor(
             }
             loadRelatedPlaces(place.id, place.province.id)
             loadReviewPreview(place.id)
+        }
+    }
+
+    fun loadPlaceById(placeId: Long) {
+        if (loadedPlaceId == placeId && uiState.value.detail != null) {
+            return
+        }
+        loadedPlaceId = placeId
+        viewModelScope.launch {
+            _uiState.update {
+                it.copy(
+                    isLoading = true,
+                    detail = null,
+                    errorMessage = null,
+                    relatedPlaces = emptyList(),
+                    relatedPlacesLoading = false,
+                    relatedPlacesErrorMessage = null,
+                    reviewErrorMessage = null,
+                    reviewPreview = emptyList(),
+                    reviewPreviewLoading = false
+                )
+            }
+            runCatching {
+                retryTransientServerError {
+                    placeRepository.getPlaceDetail(placeId)
+                }
+            }.onSuccess { response ->
+                val detail = response.toDetailUiModel()
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        detail = detail,
+                        errorMessage = null,
+                        relatedPlacesLoading = true,
+                        reviewPreviewLoading = true
+                    )
+                }
+                loadRelatedPlaces(detail.id, detail.province.id)
+                loadReviewPreview(detail.id)
+            }.onFailure { throwable ->
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        errorMessage = throwable.message ?: "Unable to load place"
+                    )
+                }
+            }
         }
     }
 
@@ -203,6 +251,22 @@ class PlaceDetailViewModel @Inject constructor(
                 averageRating = averageRating,
                 reviewCount = reviewCount
             )
+        )
+    }
+
+    private fun TravelPlaceDetailResponse.toDetailUiModel(): PlaceDetailUiModel {
+        val mainImage = images.firstOrNull { it.main }?.imageUrl
+            ?: images.firstOrNull()?.imageUrl
+        return PlaceDetailUiModel(
+            id = id,
+            name = name,
+            description = description,
+            province = province,
+            mainImage = mainImage,
+            views = views,
+            openingTime = openingTime,
+            reviewSummary = reviewSummary,
+            myReview = myReview
         )
     }
 
