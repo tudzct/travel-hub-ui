@@ -34,7 +34,7 @@ fun ReviewListScreenContent(
             Text("Back")
         }
         Text(
-            text = "Tất cả review",
+            text = "Tất cả đánh giá",
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold
         )
@@ -53,7 +53,7 @@ fun ReviewListScreenContent(
 
             uiState.items.isEmpty() -> {
                 Text(
-                    text = "Chưa có review nào.",
+                    text = "Chưa có đánh giá nào.",
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }

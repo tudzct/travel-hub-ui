@@ -3,12 +3,14 @@ package com.mobile.travelhub.viewmodels
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mobile.travelhub.data.PlaceRepository
+import com.mobile.travelhub.data.httpStatusCode
 import com.mobile.travelhub.data.model.ProvinceResponse
 import com.mobile.travelhub.data.model.TravelPlaceListItemResponse
 import com.mobile.travelhub.data.model.TravelPlaceReviewResponse
 import com.mobile.travelhub.data.model.TravelPlaceReviewSummaryResponse
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -92,11 +94,13 @@ class PlaceDetailViewModel @Inject constructor(
                 )
             }
             runCatching {
-                placeRepository.getPlaces(
-                    page = 0,
-                    pageSize = 12,
-                    provinceId = provinceId
-                ).data
+                retryTransientServerError {
+                    placeRepository.getPlaces(
+                        page = 0,
+                        pageSize = 12,
+                        provinceId = provinceId
+                    ).data
+                }
                     .filterNot { item -> item.id == placeId }
                     .take(6)
             }.onSuccess { places ->
@@ -121,7 +125,11 @@ class PlaceDetailViewModel @Inject constructor(
     fun loadReviewPreview(placeId: Long) {
         viewModelScope.launch {
             _uiState.update { it.copy(reviewPreviewLoading = true, reviewErrorMessage = null) }
-            runCatching { placeRepository.getReviews(placeId = placeId, page = 0, pageSize = 3) }
+            runCatching {
+                retryTransientServerError {
+                    placeRepository.getReviews(placeId = placeId, page = 0, pageSize = 3)
+                }
+            }
                 .onSuccess { response ->
                     _uiState.update {
                         it.copy(
@@ -196,5 +204,30 @@ class PlaceDetailViewModel @Inject constructor(
                 reviewCount = reviewCount
             )
         )
+    }
+
+    private suspend fun <T> retryTransientServerError(
+        attempts: Int = 3,
+        initialDelayMillis: Long = 350,
+        block: suspend () -> T
+    ): T {
+        var nextDelay = initialDelayMillis
+        var lastError: Throwable? = null
+
+        repeat(attempts) { attempt ->
+            try {
+                return block()
+            } catch (throwable: Throwable) {
+                lastError = throwable
+                val shouldRetry = throwable.httpStatusCode() == 500 && attempt < attempts - 1
+                if (!shouldRetry) {
+                    throw throwable
+                }
+                delay(nextDelay)
+                nextDelay *= 2
+            }
+        }
+
+        throw lastError ?: IllegalStateException("Request failed")
     }
 }

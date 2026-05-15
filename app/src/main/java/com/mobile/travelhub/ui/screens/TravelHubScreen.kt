@@ -1,14 +1,15 @@
 package com.mobile.travelhub.ui.screens
 
-import androidx.activity.compose.LocalOnBackPressedDispatcherOwner
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.DirectionsWalk
 import androidx.compose.material.icons.automirrored.outlined.DirectionsWalk
+import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.TravelExplore
 import androidx.compose.material.icons.outlined.AccountCircle
 import androidx.compose.material.icons.outlined.Add
-import androidx.compose.material.icons.outlined.AutoAwesome
-import androidx.compose.material.icons.outlined.CalendarMonth
-import androidx.compose.material.icons.outlined.DirectionsWalk
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.TravelExplore
 import androidx.compose.material3.Scaffold
@@ -39,26 +40,31 @@ fun TravelHubScreen(
         BottomNavItem(
             screen = Screen.Home,
             icon = Icons.Outlined.Home,
+            selectedIcon = Icons.Filled.Home,
             label = "Home"
         ),
         BottomNavItem(
-            screen = Screen.Trips,
+            screen = Screen.Explore,
             icon = Icons.Outlined.TravelExplore,
+            selectedIcon = Icons.Filled.TravelExplore,
             label = "Explore"
         ),
         BottomNavItem(
             screen = Screen.Trips,
             icon = Icons.AutoMirrored.Outlined.DirectionsWalk,
+            selectedIcon = Icons.AutoMirrored.Filled.DirectionsWalk,
             label = "Itinerary"
         ),
         BottomNavItem(
             screen = Screen.CreatePost,
             icon = Icons.Outlined.Add,
+            selectedIcon = Icons.Filled.Add,
             label = "Create"
         ),
         BottomNavItem(
             screen = Screen.Profile,
             icon = Icons.Outlined.AccountCircle,
+            selectedIcon = Icons.Filled.AccountCircle,
             label = "Profile"
         )
     )

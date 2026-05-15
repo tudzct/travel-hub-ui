@@ -1,28 +1,37 @@
 package com.mobile.travelhub.ui.components
 
-import android.net.Uri
-import android.util.Log
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
@@ -30,29 +39,32 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Send
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material.icons.outlined.ChatBubbleOutline
 import androidx.compose.material.icons.outlined.FavoriteBorder
-import androidx.compose.material.icons.outlined.MoreHoriz
 import androidx.compose.material.icons.outlined.Place
+import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -66,10 +78,12 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.mobile.travelhub.R
 import com.mobile.travelhub.data.model.TravelPlaceListItemResponse
+import com.mobile.travelhub.ui.components.modifiers.shimmerEffect
 import com.mobile.travelhub.viewmodels.HomePostUiModel
 import com.mobile.travelhub.viewmodels.HomeUiState
 import com.mobile.travelhub.viewmodels.PlaceListUiState
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.tooling.preview.Preview
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -77,6 +91,8 @@ fun PlaceListScreenContent(
     placeUiState: PlaceListUiState,
     homeUiState: HomeUiState,
     onPlaceClick: (TravelPlaceListItemResponse) -> Unit,
+    onMenuClick: () -> Unit,
+    onSearchClick: () -> Unit,
     onRetryPlaces: () -> Unit,
     onRetryPosts: () -> Unit,
     onLikeClick: (Long) -> Unit,
@@ -89,32 +105,62 @@ fun PlaceListScreenContent(
     val activeComments = homeUiState.activeCommentPostId
         ?.let { homeUiState.commentsByPostId[it] }
         .orEmpty()
+    val listState = rememberLazyListState()
+    var previousScrollIndex by remember { mutableIntStateOf(0) }
+    var previousScrollOffset by remember { mutableIntStateOf(0) }
+    var isTopBarVisible by remember { mutableStateOf(true) }
+    val statusBarTopPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+    val topBarContentHeight = 52.dp
+
+    LaunchedEffect(listState) {
+        snapshotFlow { listState.firstVisibleItemIndex to listState.firstVisibleItemScrollOffset }
+            .collect { (index, offset) ->
+                val isAtTop = index == 0 && offset < 8
+                val isScrollingDown = index > previousScrollIndex ||
+                    (index == previousScrollIndex && offset > previousScrollOffset)
+
+                isTopBarVisible = isAtTop || !isScrollingDown
+                previousScrollIndex = index
+                previousScrollOffset = offset
+            }
+    }
 
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.White)
     ) {
+        AnimatedVisibility(
+            visible = isTopBarVisible,
+            enter = slideInVertically(
+                animationSpec = tween(durationMillis = 180),
+                initialOffsetY = { -it }
+            ) + fadeIn(animationSpec = tween(durationMillis = 180)),
+            exit = slideOutVertically(
+                animationSpec = tween(durationMillis = 180),
+                targetOffsetY = { -it }
+            ) + fadeOut(animationSpec = tween(durationMillis = 180)),
+            modifier = Modifier.align(Alignment.TopCenter)
+        ) {
+            FeedTopBar(
+                onMenuClick = onMenuClick,
+                onSearchClick = onSearchClick
+            )
+        }
+
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(top = 18.dp, bottom = 112.dp),
+            state = listState,
+            contentPadding = PaddingValues(
+                top = statusBarTopPadding + topBarContentHeight + 18.dp,
+                bottom = 112.dp
+            ),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            item {
-                FeedHeader()
-            }
-
             when {
                 placeUiState.isLoading && placeUiState.items.isEmpty() -> {
                     item {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(top = 40.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            CircularProgressIndicator(color = VerdantPrimary)
-                        }
+                        LocationsRailSkeleton()
                     }
                 }
 
@@ -151,15 +197,8 @@ fun PlaceListScreenContent(
             }
             when {
                 homeUiState.isLoading && homeUiState.posts.isEmpty() -> {
-                    item {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 24.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            CircularProgressIndicator(color = VerdantPrimary)
-                        }
+                    items(3) {
+                        FeedPostCardSkeleton()
                     }
                 }
 
@@ -188,6 +227,7 @@ fun PlaceListScreenContent(
                 }
             }
         }
+
 
         if (activeCommentPost != null) {
             ModalBottomSheet(
@@ -251,22 +291,19 @@ fun PlaceListScreenContent(
                         .padding(horizontal = 16.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    OutlinedTextField(
+                    SimpleFormTextField(
                         value = homeUiState.commentInput,
                         onValueChange = onCommentInputChanged,
-                        placeholder = { Text("Add a comment") },
+                        placeholder = "Add a comment",
                         modifier = Modifier.weight(1f),
                         enabled = !homeUiState.isCommentSubmitting,
+                        singleLine = false,
                         maxLines = 3,
                         shape = RoundedCornerShape(24.dp),
-                        colors = TextFieldDefaults.colors(
-                            focusedContainerColor = Color.White,
-                            unfocusedContainerColor = Color.White,
-                            disabledContainerColor = Color(0xFFF4F4F4),
-                            focusedIndicatorColor = VerdantPrimary,
-                            unfocusedIndicatorColor = Color.Transparent,
-                            disabledIndicatorColor = Color.Transparent
-                        )
+                        focusedContainerColor = Color.White,
+                        unfocusedContainerColor = Color.White,
+                        disabledContainerColor = Color(0xFFF4F4F4),
+                        focusedIndicatorColor = VerdantPrimary
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     IconButton(
@@ -311,33 +348,63 @@ fun PlaceListScreenContent(
 }
 
 @Composable
-private fun FeedHeader(
+private fun FeedTopBar(
+    onMenuClick: () -> Unit,
+    onSearchClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
-    Column(
-        modifier = Modifier.padding(horizontal = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp)
+    val statusBarTopPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+    val topBarContentHeight = 52.dp
+
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(statusBarTopPadding + topBarContentHeight)
+            .background(Color.White)
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(topBarContentHeight)
+                .align(Alignment.BottomCenter)
+                .padding(horizontal = 6.dp)
         ) {
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(
-                    text = "TRAVEL HUB",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = VerdantPrimary,
-                    fontWeight = FontWeight.SemiBold
+            IconButton(
+                onClick = onMenuClick,
+                modifier = Modifier.align(Alignment.CenterStart)
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Menu,
+                    contentDescription = "Open menu",
+                    tint = VerdantOnSurface
                 )
-                Text(
-                    text = "Discovery Feed",
-                    style = MaterialTheme.typography.headlineMedium,
-                    color = VerdantOnSurface,
-                    fontWeight = FontWeight.Bold
+            }
+            Text(
+                text = "Travel Hub",
+                modifier = Modifier.align(Alignment.Center),
+                style = MaterialTheme.typography.titleMedium,
+                color = VerdantOnSurface,
+                fontWeight = FontWeight.ExtraBold
+            )
+
+            IconButton(
+                onClick = onSearchClick,
+                modifier = Modifier.align(Alignment.CenterEnd)
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.Search,
+                    contentDescription = "Search",
+                    tint = VerdantOnSurface
                 )
             }
         }
     }
+}
+
+@Preview
+@Composable
+fun FeedTopBarPreview(){
+    FeedTopBar(onMenuClick = {}, onSearchClick = {})
 }
 
 @Composable
@@ -345,92 +412,78 @@ private fun LocationsRail(
     places: List<TravelPlaceListItemResponse>,
     onPlaceClick: (TravelPlaceListItemResponse) -> Unit
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "Locations",
-                style = MaterialTheme.typography.titleMedium,
-                color = VerdantOnSurface,
-                fontWeight = FontWeight.Bold
+    LazyRow(
+        contentPadding = PaddingValues(horizontal = 12.dp),
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        items(places, key = { it.id }) { place ->
+            FeaturedLocationCard(
+                country = place.province.name,
+                city = place.name,
+                imageUrl = place.mainImage,
+                modifier = Modifier
+                    .width(220.dp)
+                    .height(270.dp),
+                onClick = { onPlaceClick(place) }
             )
         }
+    }
 
-        LazyRow(
-            contentPadding = PaddingValues(horizontal = 16.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            items(places, key = { it.id }) { place ->
-                LocationCard(
-                    place = place,
-                    onClick = { onPlaceClick(place) }
-                )
-            }
+}
+
+@Composable
+private fun LocationsRailSkeleton() {
+    LazyRow(
+        contentPadding = PaddingValues(horizontal = 12.dp),
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        items(4) {
+            FeaturedLocationCardSkeleton(
+                modifier = Modifier
+                    .width(220.dp)
+                    .height(270.dp)
+            )
         }
     }
 }
 
 @Composable
-private fun LocationCard(
-    place: TravelPlaceListItemResponse,
-    onClick: () -> Unit
+private fun FeaturedLocationCardSkeleton(
+    modifier: Modifier = Modifier
 ) {
-    Surface(
-        modifier = Modifier
-            .width(104.dp)
-            .height(172.dp)
-            .clickable(onClick = onClick),
-        shape = RoundedCornerShape(8.dp),
-        color = VerdantSurfaceContainerLowest,
-        shadowElevation = 8.dp
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(10.dp))
+            .shimmerEffect()
     ) {
-        Box {
-            AsyncImage(
-                model = place.mainImage,
-                contentDescription = place.name,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop
+        Box(
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(14.dp)
+                .size(42.dp)
+                .clip(CircleShape)
+                .shimmerEffect()
+        )
+        Column(
+            modifier = Modifier
+                .align(Alignment.BottomStart)
+                .padding(start = 14.dp, end = 56.dp, bottom = 14.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .width(76.dp)
+                    .height(10.dp)
+                    .clip(RoundedCornerShape(50))
+                    .shimmerEffect()
             )
             Box(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        Brush.verticalGradient(
-                            colors = listOf(
-                                VerdantPrimary.copy(alpha = 0.08f),
-                                Color.Transparent,
-                                VerdantOnSurface.copy(alpha = 0.76f)
-                            )
-                        )
-                    )
+                    .width(124.dp)
+                    .height(20.dp)
+                    .clip(RoundedCornerShape(50))
+                    .shimmerEffect()
             )
-            Column(
-                modifier = Modifier
-                    .align(Alignment.BottomStart)
-                    .padding(10.dp),
-                verticalArrangement = Arrangement.spacedBy(3.dp)
-            ) {
-                Text(
-                    text = place.name,
-                    style = MaterialTheme.typography.labelLarge,
-                    color = Color.White,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Text(
-                    text = place.province.name,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = Color.White.copy(alpha = 0.82f),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
         }
     }
 }
@@ -486,6 +539,7 @@ private fun FeedEmptyState(
 }
 
 @Composable
+@OptIn(ExperimentalFoundationApi::class)
 fun FeedPostCard(
     post: HomePostUiModel,
     onLikeClick: () -> Unit,
@@ -517,7 +571,8 @@ fun FeedPostCard(
     val imageCount = post.imageUrls.size.coerceAtLeast(1)
     val pagerState = rememberPagerState(pageCount = { imageCount })
 
-    Column {
+    Column (modifier = Modifier.background(Color.White)) {
+
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -525,7 +580,10 @@ fun FeedPostCard(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                modifier = Modifier.weight(1f),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 Image(
                     painter = painterResource(R.drawable.female_avatar_maker),
                     contentDescription = post.username,
@@ -535,14 +593,22 @@ fun FeedPostCard(
                     contentScale = ContentScale.Crop
                 )
                 Spacer(modifier = Modifier.width(10.dp))
-                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(2.dp)
+                ) {
                     Text(
                         text = post.username,
                         style = MaterialTheme.typography.titleSmall,
                         color = VerdantOnSurface,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
                         Icon(
                             imageVector = Icons.Outlined.Place,
                             contentDescription = null,
@@ -552,12 +618,18 @@ fun FeedPostCard(
                         Spacer(modifier = Modifier.width(2.dp))
                         Text(
                             text = post.subtitle,
+                            modifier = Modifier
+                                .weight(1f)
+                                .basicMarquee(),
                             style = MaterialTheme.typography.bodySmall,
-                            color = VerdantOnSurfaceVariant
+                            color = VerdantOnSurfaceVariant,
+                            maxLines = 1
                         )
                     }
                 }
             }
+            Spacer(modifier = Modifier.width(4.dp))
+
             Text(
                 text = post.timeAgoLabel,
                 style = MaterialTheme.typography.labelSmall,
@@ -565,22 +637,33 @@ fun FeedPostCard(
             )
         }
 
+        Text(
+            modifier = Modifier.padding(horizontal = 16.dp),
+            text = post.description,
+            style = MaterialTheme.typography.bodyMedium,
+            maxLines = 3,
+            overflow = TextOverflow.Ellipsis,
+            color = VerdantOnSurface
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
+
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .aspectRatio(4f / 5f)
+                .aspectRatio(5f / 3f)
                 .background(Color(0xFFF5F5F5))
         ) {
             if (post.imageUrls.isNotEmpty()) {
                 HorizontalPager(
                     state = pagerState,
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier.fillMaxWidth()
                 ) { page ->
                     val resolvedUrl = toDisplayUrl(post.imageUrls[page])
                     AsyncImage(
                         model = resolvedUrl,
                         contentDescription = post.description,
-                        modifier = Modifier.fillMaxSize(),
+                        modifier = Modifier.fillMaxWidth(),
                         contentScale = ContentScale.Crop
                     )
                 }
@@ -612,13 +695,37 @@ fun FeedPostCard(
             }
         }
 
+
         Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
             Row(
+                modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = "${post.likeCount} likes",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = VerdantOnSurface
+                )
+                Text(
+                    text = "${post.commentCount} comments",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = VerdantOnSurface
+                )
+            }
+//            Spacer(
+//                modifier = Modifier
+//                    .fillMaxWidth()
+//                    .height(1.dp)
+//                    .background(Color(0xFFE0E0E0))
+//            )
+            Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier.weight(1f),
+                    contentAlignment = Alignment.Center
+                ) {
                     IconButton(
                         onClick = onLikeClick,
                         enabled = actionsEnabled && !post.isLikeLoading,
@@ -631,20 +738,39 @@ fun FeedPostCard(
                             modifier = Modifier.size(26.dp)
                         )
                     }
-                    Spacer(modifier = Modifier.width(16.dp))
+                }
+                Box(
+                    modifier = Modifier.weight(1f),
+                    contentAlignment = Alignment.Center
+                ) {
                     IconButton(
                         onClick = onCommentClick,
                         enabled = actionsEnabled,
                         modifier = Modifier.size(28.dp)
                     ) {
                         Icon(
-                            imageVector = Icons.Outlined.ChatBubbleOutline,
+                            painter = painterResource(R.drawable.message_circle),
                             contentDescription = "Comment",
                             modifier = Modifier.size(24.dp),
                             tint = VerdantOnSurface
                         )
                     }
-                    Spacer(modifier = Modifier.width(16.dp))
+                }
+                Box(
+                    modifier = Modifier.weight(1f),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.BookmarkBorder,
+                        contentDescription = "Save",
+                        modifier = Modifier.size(26.dp),
+                        tint = VerdantOnSurface
+                    )
+                }
+                Box(
+                    modifier = Modifier.weight(1f),
+                    contentAlignment = Alignment.Center
+                ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Outlined.Send,
                         contentDescription = "Share",
@@ -652,49 +778,161 @@ fun FeedPostCard(
                         tint = VerdantOnSurface
                     )
                 }
-                Icon(
-                    imageVector = Icons.Outlined.BookmarkBorder,
-                    contentDescription = "Save",
-                    modifier = Modifier.size(26.dp),
-                    tint = VerdantOnSurface
+            }
+        }
+
+        Spacer(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(4.dp)
+                .background(Color(0xFFE0E0E0))
+        )
+    }
+}
+
+@Composable
+fun FeedPostCardSkeleton(
+    modifier: Modifier = Modifier
+) {
+    Column(modifier = modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(
+                modifier = Modifier.weight(1f),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(CircleShape)
+                        .shimmerEffect()
+                )
+                Spacer(modifier = Modifier.width(10.dp))
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(7.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .width(112.dp)
+                            .height(13.dp)
+                            .clip(RoundedCornerShape(50))
+                            .shimmerEffect()
+                    )
+                    Box(
+                        modifier = Modifier
+                            .width(156.dp)
+                            .height(10.dp)
+                            .clip(RoundedCornerShape(50))
+                            .shimmerEffect()
+                    )
+                }
+            }
+            Box(
+                modifier = Modifier
+                    .width(44.dp)
+                    .height(10.dp)
+                    .clip(RoundedCornerShape(50))
+                    .shimmerEffect()
+            )
+        }
+
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(5f / 3f)
+                .shimmerEffect()
+        )
+
+        Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    repeat(3) {
+                        Box(
+                            modifier = Modifier
+                                .size(26.dp)
+                                .clip(CircleShape)
+                                .shimmerEffect()
+                        )
+                    }
+                }
+                Box(
+                    modifier = Modifier
+                        .size(26.dp)
+                        .clip(CircleShape)
+                        .shimmerEffect()
                 )
             }
-            Spacer(modifier = Modifier.height(10.dp))
-            Text(
-                text = "${post.likeCount} likes",
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.Bold,
-                color = VerdantOnSurface
+            Spacer(modifier = Modifier.height(12.dp))
+            Box(
+                modifier = Modifier
+                    .width(84.dp)
+                    .height(12.dp)
+                    .clip(RoundedCornerShape(50))
+                    .shimmerEffect()
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(0.92f)
+                    .height(12.dp)
+                    .clip(RoundedCornerShape(50))
+                    .shimmerEffect()
             )
             Spacer(modifier = Modifier.height(6.dp))
-            Text(
-                text = buildAnnotatedString {
-                    withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
-                        append(post.username)
-                    }
-                    append(" ")
-                    append(post.description)
-                },
-                style = MaterialTheme.typography.bodyMedium,
-                maxLines = 3,
-                overflow = TextOverflow.Ellipsis,
-                color = VerdantOnSurface
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(0.62f)
+                    .height(12.dp)
+                    .clip(RoundedCornerShape(50))
+                    .shimmerEffect()
             )
         }
 
         Spacer(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(1.dp)
+                .height(3.dp)
                 .background(Color(0xFFE0E0E0))
         )
     }
 }
 
+@Preview
+@Composable
+fun FeedPostCardPreview() {
+    FeedPostCard(
+        post = HomePostUiModel(
+            id = 1L,
+            username = "Duc Duong Hoang",
+            subtitle = "Da Nang, Viet Nam",
+            description = "A calm afternoon by the river.",
+            imageUrls = listOf("sample.jpg"),
+            likeCount = 142,
+            commentCount = 4,
+            isLiked = true,
+            isLikeLoading = false,
+            timeAgoLabel = "2h"
+        ),
+        onLikeClick = {},
+        onCommentClick = {}
+    )
+}
+
 
 private val VerdantPrimary = Color(0xFF60B2E5)
 private val VerdantSurfaceContainer = Color(0xFFEFF6EA)
-private val VerdantSurfaceContainerHighest = Color(0xFFDDE5D9)
-private val VerdantSurfaceContainerLowest = Color(0xFFFFFFFF)
 private val VerdantOnSurface = Color(0xFF171D16)
 private val VerdantOnSurfaceVariant = Color(0xFF3E4A3D)

@@ -1,5 +1,9 @@
 package com.mobile.travelhub.ui.screens
 
+import android.content.Intent
+import android.net.Uri
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -11,9 +15,10 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -21,14 +26,19 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.GenericShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.OpenInNew
+import androidx.compose.material.icons.filled.AccessTime
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -48,8 +58,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -57,13 +69,20 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.mobile.travelhub.data.model.TravelPlaceListItemResponse
 import com.mobile.travelhub.data.model.TravelPlaceReviewResponse
+import com.mobile.travelhub.ui.theme.OnSurface
+import com.mobile.travelhub.ui.theme.OnSurfaceVariant
+import com.mobile.travelhub.ui.theme.PrimaryBlue
+import com.mobile.travelhub.ui.theme.SurfaceBg
+import com.mobile.travelhub.ui.theme.SurfaceContainerLow
+import com.mobile.travelhub.ui.theme.SurfaceContainerLowest
+import com.mobile.travelhub.viewmodels.PlaceDetailUiModel
 import com.mobile.travelhub.viewmodels.PlaceDetailViewModel
 import com.mobile.travelhub.viewmodels.ReviewViewModel
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun PlaceDetailScreen(
     place: TravelPlaceListItemResponse,
@@ -76,6 +95,7 @@ fun PlaceDetailScreen(
 ) {
     val uiState by placeDetailViewModel.uiState.collectAsState()
     val reviewUiState by reviewViewModel.uiState.collectAsState()
+    val context = LocalContext.current
     var showReviewSheet by remember { mutableStateOf(false) }
 
     LaunchedEffect(place.id) {
@@ -106,7 +126,7 @@ fun PlaceDetailScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+            .background(SurfaceBg)
     ) {
         when {
             uiState.isLoading && uiState.detail == null -> {
@@ -135,6 +155,9 @@ fun PlaceDetailScreen(
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+                    Button(onClick = { placeDetailViewModel.loadPlace(place) }) {
+                        Text("Thử lại")
+                    }
                 }
             }
 
@@ -142,81 +165,58 @@ fun PlaceDetailScreen(
                 val detail = uiState.detail ?: return
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                    contentPadding = PaddingValues(bottom = 112.dp),
+                    verticalArrangement = Arrangement.spacedBy(18.dp)
                 ) {
                     item {
-                        DetailTopBar(
+                        PlaceHeroSection(
+                            detail = detail,
+                            onBack = onBack
+                        )
+                    }
+
+                    stickyHeader {
+                        DetailStickyHeader(
                             title = detail.name,
+                            province = detail.province.name,
                             onBack = onBack
                         )
                     }
 
                     item {
-                        PlaceImageCarousel(
-                            imageUrls = listOfNotNull(detail.mainImage),
-                            contentDescription = detail.name
-                        )
+                        RoundedSection {
+                            PlaceInfoSection(detail = detail)
+                        }
                     }
 
                     item {
-                        Column(
-                            modifier = Modifier.padding(horizontal = 16.dp),
-                            verticalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            Text(
-                                text = detail.name,
-                                style = MaterialTheme.typography.headlineMedium,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Text(
-                                text = detail.province.name,
-                                style = MaterialTheme.typography.titleMedium,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                            detail.openingTime?.takeIf { it.isNotBlank() }?.let {
-                                Text(
-                                    text = "Giờ mở cửa: $it",
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                            Text(
-                                text = "Lượt xem: ${detail.views ?: 0}",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                        RoundedSection {
+                            DescriptionSection(
+                                description = detail.description.orEmpty().ifBlank { "Chưa có mô tả." }
                             )
                         }
                     }
 
                     item {
-                        Surface(
-                            modifier = Modifier.padding(horizontal = 16.dp),
-                            shape = RoundedCornerShape(24.dp),
-                            color = MaterialTheme.colorScheme.surfaceContainerLow
-                        ) {
-                            Column(
-                                modifier = Modifier.padding(16.dp),
-                                verticalArrangement = Arrangement.spacedBy(10.dp)
-                            ) {
-                                Text(
-                                    text = "Mô tả",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.SemiBold
-                                )
-                                ExpandableDescription(
-                                    description = detail.description.orEmpty().ifBlank { "Chưa có mô tả." }
-                                )
-                            }
+                        RoundedSection {
+                            ReviewSummarySection(
+                                averageRating = detail.reviewSummary.averageRating,
+                                reviewCount = detail.reviewSummary.reviewCount,
+                                myReview = detail.myReview,
+                                onWriteReview = { showReviewSheet = true }
+                            )
                         }
                     }
 
                     item {
-                        ReviewSummaryCard(
-                            averageRating = detail.reviewSummary.averageRating,
-                            reviewCount = detail.reviewSummary.reviewCount,
-                            myReview = detail.myReview,
-                            onWriteReview = { showReviewSheet = true }
-                        )
+                        RoundedSection {
+                            ReviewPreviewSection(
+                                reviews = uiState.reviewPreview,
+                                isLoading = uiState.reviewPreviewLoading,
+                                errorMessage = uiState.reviewErrorMessage,
+                                onShowAll = { onShowAllReviews(detail.id) }
+                            )
+                        }
                     }
 
                     item {
@@ -229,18 +229,16 @@ fun PlaceDetailScreen(
                     }
 
                     item {
-                        ReviewPreviewSection(
-                            reviews = uiState.reviewPreview,
-                            isLoading = uiState.reviewPreviewLoading,
-                            errorMessage = uiState.reviewErrorMessage,
-                            onShowAll = { onShowAllReviews(detail.id) }
-                        )
-                    }
-
-                    item {
-                        Spacer(modifier = Modifier.height(96.dp))
+                        Spacer(modifier = Modifier.height(18.dp))
                     }
                 }
+
+                PlaceBottomActions(
+                    myReview = detail.myReview,
+                    onWriteReview = { showReviewSheet = true },
+                    onDirections = { openDirections(context, detail) },
+                    modifier = Modifier.align(Alignment.BottomCenter)
+                )
             }
         }
 
@@ -257,38 +255,104 @@ fun PlaceDetailScreen(
 }
 
 @Composable
-private fun PlaceImageCarousel(
-    imageUrls: List<String>,
-    contentDescription: String
+private fun DetailStickyHeader(
+    title: String,
+    province: String,
+    onBack: () -> Unit
 ) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(SurfaceBg)
+            .statusBarsPadding()
+            .padding(horizontal = 24.dp, vertical = 8.dp)
+    ) {
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(24.dp),
+            color = SurfaceContainerLowest,
+            shadowElevation = 4.dp
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(58.dp)
+                    .padding(start = 6.dp, end = 18.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(onClick = onBack) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Back",
+                        tint = OnSurface
+                    )
+                }
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.titleMedium,
+                        color = OnSurface,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        text = province,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = OnSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun PlaceHeroSection(
+    detail: PlaceDetailUiModel,
+    onBack: () -> Unit
+) {
+    val imageUrls = listOfNotNull(detail.mainImage)
     val displayUrls = remember(imageUrls) { imageUrls.map { it.trim() }.filter { it.isNotBlank() } }
     val hasImages = displayUrls.isNotEmpty()
     val imageCount = displayUrls.size.coerceAtLeast(1)
     val pagerState = rememberPagerState(pageCount = { imageCount })
 
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(10.dp)
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 24.dp, vertical = 24.dp),
+        shape = RoundedCornerShape(32.dp),
+        color = SurfaceContainerLowest,
+        shadowElevation = 8.dp
     ) {
-        Surface(
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .heightIn(min = 240.dp, max = 320.dp),
-            shape = PlaceImageArcShape,
-            color = MaterialTheme.colorScheme.surfaceContainerLow
+                .height(280.dp)
         ) {
             if (!hasImages) {
-                Box(contentAlignment = Alignment.Center) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(SurfaceContainerLow),
+                    contentAlignment = Alignment.Center
+                ) {
                     Text(
                         text = "No image",
                         style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = OnSurfaceVariant
                     )
                 }
             } else if (displayUrls.size == 1) {
                 AsyncImage(
                     model = displayUrls.first(),
-                    contentDescription = contentDescription,
+                    contentDescription = detail.name,
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop
                 )
@@ -299,36 +363,229 @@ private fun PlaceImageCarousel(
                 ) { page ->
                     AsyncImage(
                         model = displayUrls[page],
-                        contentDescription = contentDescription,
+                        contentDescription = detail.name,
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Crop
                     )
                 }
             }
-        }
 
-        if (displayUrls.size > 1) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.Center
-            ) {
-                repeat(displayUrls.size) { index ->
-                    Box(
-                        modifier = Modifier
-                            .padding(horizontal = 3.dp)
-                            .size(8.dp)
-                            .clip(CircleShape)
-                            .background(
-                                if (pagerState.currentPage == index) {
-                                    MaterialTheme.colorScheme.primary
-                                } else {
-                                    MaterialTheme.colorScheme.surfaceContainerHighest
-                                }
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(
+                                Color.Transparent,
+                                Color.Black.copy(alpha = 0.82f)
                             )
+                        )
+                    )
+            )
+
+            Surface(
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(16.dp),
+                shape = CircleShape,
+                color = Color.Black.copy(alpha = 0.4f)
+            ) {
+                IconButton(onClick = onBack) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Back",
+                        tint = Color.White
                     )
                 }
             }
+
+            Column(
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .fillMaxWidth()
+                    .padding(24.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(
+                    text = detail.name,
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = Color.White,
+                    fontWeight = FontWeight.ExtraBold,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = detail.province.name,
+                        modifier = Modifier.weight(1f),
+                        style = MaterialTheme.typography.titleSmall,
+                        color = Color.White.copy(alpha = 0.9f),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Surface(
+                        shape = RoundedCornerShape(16.dp),
+                        color = Color.White.copy(alpha = 0.18f)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Star,
+                                contentDescription = null,
+                                tint = Color(0xFFFFC247),
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = String.format("%.1f", detail.reviewSummary.averageRating),
+                                style = MaterialTheme.typography.labelLarge,
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                }
+            }
+
+            if (displayUrls.size > 1) {
+                Row(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = 8.dp),
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    repeat(displayUrls.size) { index ->
+                        Box(
+                            modifier = Modifier
+                                .padding(horizontal = 3.dp)
+                                .size(8.dp)
+                                .clip(CircleShape)
+                                .background(
+                                    if (pagerState.currentPage == index) {
+                                        Color.White
+                                    } else {
+                                        Color.White.copy(alpha = 0.34f)
+                                    }
+                                )
+                        )
+                    }
+                }
+            }
         }
+    }
+}
+
+@Composable
+private fun RoundedSection(content: @Composable () -> Unit) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 24.dp),
+        shape = RoundedCornerShape(24.dp),
+        color = SurfaceContainerLowest,
+        shadowElevation = 2.dp
+    ) {
+        Box(modifier = Modifier.padding(horizontal = 24.dp, vertical = 22.dp)) {
+            content()
+        }
+    }
+}
+
+@Composable
+private fun PlaceInfoSection(detail: PlaceDetailUiModel) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(14.dp)
+    ) {
+        InfoRow(
+            icon = Icons.Default.LocationOn,
+            label = "Khu vực",
+            value = detail.province.name
+        )
+        detail.openingTime?.takeIf { it.isNotBlank() }?.let {
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f))
+            InfoRow(
+                icon = Icons.Default.AccessTime,
+                label = "Giờ mở cửa",
+                value = it
+            )
+        }
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f))
+        InfoRow(
+            icon = Icons.Default.Visibility,
+            label = "Lượt xem",
+            value = "${detail.views ?: 0} lượt xem"
+        )
+    }
+}
+
+@Composable
+private fun InfoRow(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
+    value: String
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Surface(
+            shape = CircleShape,
+            color = PrimaryBlue.copy(alpha = 0.1f)
+        ) {
+            Box(
+                modifier = Modifier.size(40.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = PrimaryBlue,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+        }
+        Spacer(modifier = Modifier.width(12.dp))
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(2.dp)
+        ) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelMedium,
+                color = OnSurfaceVariant
+            )
+            Text(
+                text = value,
+                style = MaterialTheme.typography.bodyLarge,
+                color = OnSurface,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+    }
+}
+
+@Composable
+private fun DescriptionSection(description: String) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        Text(
+            text = "Mô tả",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold
+        )
+        ExpandableDescription(description = description)
     }
 }
 
@@ -344,7 +601,7 @@ private fun RelatedPlacesSection(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 16.dp),
+            modifier = Modifier.padding(horizontal = 24.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
@@ -379,8 +636,8 @@ private fun RelatedPlacesSection(
 
             else -> {
                 LazyRow(
-                    contentPadding = PaddingValues(horizontal = 16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    contentPadding = PaddingValues(horizontal = 24.dp),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     items(places, key = { it.id }) { place ->
                         RelatedPlaceCard(
@@ -401,66 +658,90 @@ private fun RelatedPlaceCard(
 ) {
     Surface(
         modifier = Modifier
-            .width(220.dp)
+            .width(196.dp)
+            .height(146.dp)
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(22.dp),
-        color = MaterialTheme.colorScheme.surfaceContainerLow
+        shape = RoundedCornerShape(24.dp),
+        color = SurfaceContainerLowest,
+        shadowElevation = 4.dp
     ) {
-        Column {
-            AsyncImage(
-                model = place.mainImage,
-                contentDescription = place.name,
+        Box {
+            if (place.mainImage.isNullOrBlank()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(MaterialTheme.colorScheme.surfaceContainerHighest),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = place.province.name.take(1).uppercase(),
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            } else {
+                AsyncImage(
+                    model = place.mainImage,
+                    contentDescription = place.name,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+            }
+            Box(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .height(140.dp),
-                contentScale = ContentScale.Crop
+                    .fillMaxSize()
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(
+                                Color.Transparent,
+                                Color.Black.copy(alpha = 0.76f)
+                            )
+                        )
+                    )
             )
-
             Column(
-                modifier = Modifier.padding(14.dp),
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .fillMaxWidth()
+                    .padding(12.dp),
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 Text(
                     text = place.name,
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.SemiBold,
-                    maxLines = 1,
+                    color = Color.White,
+                    maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
-                Text(
-                    text = place.province.name,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.primary,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                place.description?.takeIf { it.isNotBlank() }?.let { description ->
+                Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        text = description,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 2,
+                        text = place.province.name,
+                        modifier = Modifier.weight(1f),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color.White.copy(alpha = 0.84f),
+                        maxLines = 1,
                         overflow = TextOverflow.Ellipsis
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Icon(
+                        imageVector = Icons.Default.Star,
+                        contentDescription = null,
+                        tint = Color(0xFFFFB800),
+                        modifier = Modifier.size(14.dp)
+                    )
+                    Spacer(modifier = Modifier.width(3.dp))
+                    Text(
+                        text = String.format("%.1f", place.averageRating),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color.White,
+                        fontWeight = FontWeight.SemiBold
                     )
                 }
             }
         }
     }
-}
-
-private val PlaceImageArcShape = GenericShape { size, _ ->
-    val bottomArcDepth = size.height * 0.1f
-
-    moveTo(0f, 0f)
-    lineTo(size.width, 0f)
-    lineTo(size.width, size.height - bottomArcDepth)
-    quadraticTo(
-        size.width / 2f,
-        size.height,
-        0f,
-        size.height - bottomArcDepth
-    )
-    close()
 }
 
 @Composable
@@ -497,60 +778,38 @@ private fun ExpandableDescription(
 }
 
 @Composable
-private fun DetailTopBar(
-    title: String,
-    onBack: () -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 8.dp, vertical = 8.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = onBack) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Back"
-                )
-            }
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-        }
-    }
-}
-
-@Composable
-private fun ReviewSummaryCard(
+private fun ReviewSummarySection(
     averageRating: Double,
     reviewCount: Long,
     myReview: TravelPlaceReviewResponse?,
     onWriteReview: () -> Unit
 ) {
-    Surface(
-        modifier = Modifier.padding(horizontal = 16.dp),
-        shape = RoundedCornerShape(24.dp),
-        color = MaterialTheme.colorScheme.surfaceContainerLow
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+        Text(
+            text = "Đánh giá",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold
+        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Default.Star,
+                    contentDescription = null,
+                    tint = Color(0xFFFFB800),
+                    modifier = Modifier.size(28.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
                 Column {
                     Text(
                         text = String.format("%.1f", averageRating),
-                        style = MaterialTheme.typography.headlineMedium,
+                        style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold
                     )
                     Text(
@@ -559,16 +818,22 @@ private fun ReviewSummaryCard(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-                Button(onClick = onWriteReview) {
-                    Text(if (myReview == null) "Viết đánh giá" else "Sửa đánh giá")
-                }
             }
+            TextButton(onClick = onWriteReview) {
+                Text(if (myReview == null) "Viết đánh giá" else "Sửa đánh giá")
+            }
+        }
 
-            if (myReview != null) {
+        if (myReview != null) {
+            Surface(
+                shape = RoundedCornerShape(14.dp),
+                color = PrimaryBlue.copy(alpha = 0.08f)
+            ) {
                 Text(
                     text = "Đánh giá của bạn: ${myReview.rating} sao",
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.primary
+                    color = PrimaryBlue
                 )
             }
         }
@@ -583,7 +848,7 @@ private fun ReviewPreviewSection(
     onShowAll: () -> Unit
 ) {
     Column(
-        modifier = Modifier.padding(horizontal = 16.dp),
+        modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Row(
@@ -592,7 +857,7 @@ private fun ReviewPreviewSection(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "Review gần đây",
+                text = "Đánh giá gần đây",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold
             )
@@ -619,59 +884,57 @@ private fun ReviewPreviewSection(
 
             reviews.isEmpty() -> {
                 Text(
-                    text = "Chưa có review nào cho địa điểm này.",
+                    text = "Chưa có đánh giá nào cho địa điểm này.",
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 
             else -> {
-                reviews.forEach { review ->
-                    Surface(
-                        shape = RoundedCornerShape(20.dp),
-                        color = MaterialTheme.colorScheme.surfaceContainerLow
+                reviews.forEachIndexed { index, review ->
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Column(
-                            modifier = Modifier.padding(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Column {
-                                    Text(
-                                        text = review.user.name.ifBlank { review.user.username },
-                                        style = MaterialTheme.typography.titleMedium,
-                                        fontWeight = FontWeight.SemiBold
-                                    )
-                                    Text(
-                                        text = formatBackendInstant(review.updatedAt ?: review.createdAt),
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(
-                                        imageVector = Icons.Default.Star,
-                                        contentDescription = null,
-                                        tint = Color(0xFFFFB800),
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(4.dp))
-                                    Text(
-                                        text = review.rating.toString(),
-                                        style = MaterialTheme.typography.labelLarge,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                }
+                            Column {
+                                Text(
+                                    text = review.user.name.ifBlank { review.user.username },
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                                Text(
+                                    text = formatBackendInstant(review.updatedAt ?: review.createdAt),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
                             }
-                            Text(
-                                text = review.content,
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = Icons.Default.Star,
+                                    contentDescription = null,
+                                    tint = Color(0xFFFFB800),
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = review.rating.toString(),
+                                    style = MaterialTheme.typography.labelLarge,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                        Text(
+                            text = review.content,
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        if (index < reviews.lastIndex) {
+                            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f))
                         }
                     }
                 }
@@ -699,7 +962,7 @@ private fun ReviewBottomSheet(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Text(
-                text = "Review địa điểm",
+                text = "Đánh giá địa điểm",
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold
             )
@@ -719,7 +982,7 @@ private fun ReviewBottomSheet(
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Star,
-                                contentDescription = "$star star",
+                                contentDescription = "$star sao",
                                 tint = if (star <= uiState.rating) Color(0xFFFFB800) else MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
@@ -731,7 +994,7 @@ private fun ReviewBottomSheet(
                 value = uiState.content,
                 onValueChange = onContentChange,
                 modifier = Modifier.fillMaxWidth(),
-                label = { Text("Nội dung review") },
+                label = { Text("Nội dung đánh giá") },
                 minLines = 4
             )
 
@@ -755,12 +1018,99 @@ private fun ReviewBottomSheet(
                         strokeWidth = 2.dp
                     )
                 } else {
-                    Text("Gửi review")
+                    Text("Gửi đánh giá")
                 }
             }
 
             Spacer(modifier = Modifier.height(12.dp))
         }
+    }
+}
+
+@Composable
+private fun PlaceBottomActions(
+    myReview: TravelPlaceReviewResponse?,
+    onWriteReview: () -> Unit,
+    onDirections: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 24.dp, vertical = 12.dp)
+            .navigationBarsPadding(),
+        shape = RoundedCornerShape(24.dp),
+        color = SurfaceContainerLowest,
+        shadowElevation = 6.dp
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(10.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Button(
+                onClick = onWriteReview,
+                modifier = Modifier
+                    .weight(1f)
+                    .height(52.dp),
+                shape = RoundedCornerShape(18.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = PrimaryBlue
+                )
+            ) {
+                Text(
+                    text = if (myReview == null) "Viết đánh giá" else "Sửa đánh giá",
+                    fontWeight = FontWeight.Bold
+                )
+            }
+            OutlinedButton(
+                onClick = onDirections,
+                modifier = Modifier
+                    .weight(1f)
+                    .height(52.dp),
+                shape = RoundedCornerShape(18.dp),
+                border = BorderStroke(1.dp, PrimaryBlue.copy(alpha = 0.35f)),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = PrimaryBlue,
+                    containerColor = SurfaceContainerLowest
+                )
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.OpenInNew,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = "Chỉ đường",
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+    }
+}
+
+private fun openDirections(
+    context: android.content.Context,
+    detail: PlaceDetailUiModel
+) {
+    val label = listOf(detail.name, detail.province.name)
+        .filter { it.isNotBlank() }
+        .joinToString(", ")
+    val uri = Uri.parse("geo:0,0?q=${Uri.encode(label)}")
+    val intent = Intent(Intent.ACTION_VIEW, uri)
+
+    runCatching {
+        context.startActivity(intent)
+    }.recoverCatching {
+        context.startActivity(
+            Intent(
+                Intent.ACTION_VIEW,
+                Uri.parse("https://www.google.com/maps/search/?api=1&query=${Uri.encode(label)}")
+            )
+        )
     }
 }
 

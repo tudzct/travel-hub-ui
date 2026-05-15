@@ -1,5 +1,6 @@
 package com.mobile.travelhub.navigation
 
+import android.net.Uri
 import androidx.compose.animation.AnimatedContentTransitionScope.SlideDirection
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.PaddingValues
@@ -30,22 +31,49 @@ import com.mobile.travelhub.ui.screens.RegisterScreen
 import com.mobile.travelhub.ui.screens.ViewHistoryScreen
 import com.mobile.travelhub.viewmodels.AuthUiState
 import androidx.navigation.navArgument
-import com.mobile.travelhub.ui.screens.CostEstimateScreen
-import com.mobile.travelhub.ui.screens.CreateGroupScreen
-import com.mobile.travelhub.ui.screens.EditProfileScreen
-import com.mobile.travelhub.ui.screens.FollowersFollowingScreen
-import com.mobile.travelhub.ui.screens.GroupChatScreen
-import com.mobile.travelhub.ui.screens.GroupDetailScreen
-import com.mobile.travelhub.ui.screens.GroupDiscoveryScreen
-import com.mobile.travelhub.ui.screens.HomeScreen
-import com.mobile.travelhub.ui.screens.ItineraryBotScreen
-import com.mobile.travelhub.ui.screens.ItineraryScreen
-import com.mobile.travelhub.ui.screens.ProfileScreen
+import com.mobile.travelhub.ui.screens.*
+import com.mobile.travelhub.viewmodels.OnboardingViewModel
 
-sealed class Screen(val route: String, val index: Int) {
-    data object Home : Screen("home", 0)
-    data object Trips : Screen("trips", 1)
-    data object Profile : Screen("profile", 2)
+private const val PLACE_DETAIL_PLACE_KEY = "place_detail_place"
+
+sealed class Screen(
+    val route: String,
+    val index: Int = -1,
+    val showBottomBar: Boolean = false
+) {
+    data object OnboardingTripType : Screen("onboarding-trip-type", -5)
+    data object OnboardingIntro : Screen("onboarding-intro", -4)
+    data object OnboardingDestination : Screen("onboarding-destination", -3)
+    data object OnboardingFinish : Screen("onboarding-finish", -2)
+    data object Home : Screen("home", 0, true)
+    data object Explore : Screen("explore", 1, true) {
+        const val ACTIVATE_SEARCH_ARG = "activateSearch"
+        const val ROUTE_WITH_ARGS = "explore?activateSearch={activateSearch}"
+
+        fun createRoute(activateSearch: Boolean = false): String {
+            return if (activateSearch) {
+                "explore?activateSearch=true"
+            } else {
+                route
+            }
+        }
+    }
+    data object Trips : Screen("trips", 1, true)
+    data object CreatePost : Screen("create_post", showBottomBar = true)
+    data object Profile : Screen("profile", 2, true)
+    data object Chat : Screen("chat", 3, true)
+    data object Notifications : Screen("notifications", 4)
+    data object PlaceDetail : Screen("place/{placeId}", 10) {
+        fun createRoute(placeId: Long): String = "place/$placeId"
+    }
+    data object PlaceReviews : Screen("place/{placeId}/reviews", 11) {
+        fun createRoute(placeId: Long): String = "place/$placeId/reviews"
+    }
+    data object ViewHistory : Screen("history/places", 14)
+
+    data object Login : Screen("login")
+    data object Register : Screen("register")
+    //merge from truong
     data object OtherProfile : Screen("profile_user/{userId}", 2) {
         fun createRoute(userId: Long) = "profile_user/$userId"
     }
@@ -58,8 +86,8 @@ sealed class Screen(val route: String, val index: Int) {
     }
 
     data object CreateGroup : Screen("create_group", 7)
-    data object GroupDetail : Screen("group_detail/{groupName}", 8) {
-        fun createRoute(groupName: String) = "group_detail/$groupName"
+    data object GroupDetail : Screen("group_detail/{tripId}/{groupName}", 8) {
+        fun createRoute(tripId: Long, groupName: String): String = "group_detail/$tripId/${Uri.encode(groupName)}"
     }
     data object GroupChat : Screen("group_chat/{groupName}", 9) {
         fun createRoute(groupName: String) = "group_chat/$groupName"
@@ -70,20 +98,21 @@ sealed class Screen(val route: String, val index: Int) {
     data object ItineraryDayDetail : Screen("itinerary/{groupName}/day/{dayIndex}", 11) {
         fun createRoute(groupName: String, dayIndex: Int) = "itinerary/$groupName/day/$dayIndex"
     }
-    data object CostEstimate : Screen("cost_estimate/{groupName}", 12) {
-        fun createRoute(groupName: String) = "cost_estimate/$groupName"
+    data object CostEstimate : Screen("cost_estimate/{tripId}", 12) {
+        fun createRoute(tripId: Long) = "cost_estimate/$tripId"
     }
     data object GroupDiscovery : Screen("group_discovery", 13)
     data object RouteMap : Screen("route_map", 14)
 
     companion object {
         fun fromRoute(route: String?): Screen? {
-            return when (route?.substringBefore("/")) {
+            return when (route?.substringBefore("?")?.substringBefore("/")) {
                 OnboardingIntro.route -> OnboardingIntro
                 OnboardingTripType.route -> OnboardingTripType
                 OnboardingDestination.route -> OnboardingDestination
                 OnboardingFinish.route -> OnboardingFinish
                 Home.route -> Home
+                Explore.route -> Explore
                 Trips.route -> Trips
                 CreatePost.route -> CreatePost
                 Profile.route -> Profile
@@ -95,9 +124,11 @@ sealed class Screen(val route: String, val index: Int) {
                 Register.route -> Register
                 //mẻge from trường
                 "home" -> Home
+                "explore" -> Explore
                 "trips" -> Trips
                 "create_post" -> CreatePost
                 "profile" -> Profile
+                "notifications" -> Notifications
                 "place" -> PlaceDetail
                 "history" -> ViewHistory
                 "profile_user" -> Profile
@@ -142,7 +173,9 @@ fun NavGraph(
     onboardingViewModel: OnboardingViewModel
 ) {
     val onboardingUiState by onboardingViewModel.uiState.collectAsState()
-    val currentRoute = navController.currentBackStackEntry?.destination?.route?.substringBefore("/")
+    val currentRoute = navController.currentBackStackEntry?.destination?.route
+        ?.substringBefore("?")
+        ?.substringBefore("/")
 
     fun navigateToPlaceDetail(place: TravelPlaceListItemResponse) {
         navController.currentBackStackEntry?.savedStateHandle?.set(PLACE_DETAIL_PLACE_KEY, place)
@@ -287,16 +320,48 @@ fun NavGraph(
         }
         composable(Screen.Home.route) {
             PlaceListScreen(
-                onPlaceClick = ::navigateToPlaceDetail
+                onPlaceClick = ::navigateToPlaceDetail,
+                onSearchClick = {
+                    navController.navigate(Screen.Explore.createRoute(activateSearch = true)) {
+                        launchSingleTop = true
+                    }
+                }
+            )
+        }
+        composable(
+            route = Screen.Explore.ROUTE_WITH_ARGS,
+            arguments = listOf(
+                navArgument(Screen.Explore.ACTIVATE_SEARCH_ARG) {
+                    type = NavType.BoolType
+                    defaultValue = false
+                }
+            )
+        ) { backStackEntry ->
+            ExploreScreen(
+                activateSearch = backStackEntry.arguments
+                    ?.getBoolean(Screen.Explore.ACTIVATE_SEARCH_ARG)
+                    ?: false
             )
         }
         composable(Screen.Trips.route) {
-            GroupDiscoveryScreen(
-                onNavigateToCreateGroup = { navController.navigate(Screen.CreateGroup.route) { launchSingleTop = true } },
-                onNavigateToGroupDetail = { groupName -> 
-                    navController.navigate(Screen.GroupDetail.createRoute(groupName)) { launchSingleTop = true } 
+            TripsScreen(
+                onNavigateToGroupDetail = { groupName ->
+                    navController.navigate(Screen.GroupDetail.createRoute(groupName)) { launchSingleTop = true }
+                },
+                onNavigateToCreateGroup = {
+                    navController.navigate(Screen.CreateGroup.route) { launchSingleTop = true }
                 }
             )
+//            GroupDiscoveryScreen(
+//                onNavigateToCreateGroup = { navController.navigate(Screen.CreateGroup.route) { launchSingleTop = true } },
+//                onNavigateToGroupDetail = { groupName ->
+//                    navController.navigate(Screen.GroupDetail.createRoute(groupName)) { launchSingleTop = true }
+//                }
+//            )
+
+        }
+        composable(Screen.CreatePost.route) {
+            CreatePostScreen()
         }
         composable(Screen.Profile.route) {
             if (!authUiState.isAuthenticated) {
@@ -315,6 +380,7 @@ fun NavGraph(
                 onNavigateToFollowing = { navController.navigate(Screen.FollowersFollowing.createRoute(1, null)) { launchSingleTop = true } },
                 onNavigateToHistory = { navController.navigate(Screen.ViewHistory.route) { launchSingleTop = true } },
                 onNavigateToChat = { navController.navigate(Screen.Chat.route) { launchSingleTop = true } },
+                onNotificationsClick = null,
                 onLogout = {
                     onLogout()
                     navController.navigate(Screen.Login.route) {
@@ -331,6 +397,11 @@ fun NavGraph(
                 }
             )
         }
+//        composable(Screen.Notifications.route) {
+//            NotificationsScreen(
+//                onBack = { navController.popBackStack() }
+//            )
+//        }
         composable(
             route = Screen.OtherProfile.route,
             arguments = listOf(navArgument("userId") { type = NavType.LongType })
@@ -391,23 +462,30 @@ fun NavGraph(
         composable(Screen.CreateGroup.route) {
             CreateGroupScreen(
                 onBack = { navController.popBackStack() },
-                onCreate = { navController.popBackStack() }
+                onCreate = { tripId, groupName ->
+                    navController.navigate(Screen.GroupDetail.createRoute(tripId, groupName)) { launchSingleTop = true }
+                }
             )
         }
 
         composable(
             route = Screen.GroupDetail.route,
-            arguments = listOf(navArgument("groupName") { type = NavType.StringType })
+            arguments = listOf(
+                navArgument("tripId") { type = NavType.LongType },
+                navArgument("groupName") { type = NavType.StringType }
+            )
         ) { backStackEntry ->
+            val tripId = backStackEntry.arguments?.getLong("tripId") ?: -1L
             val groupName = backStackEntry.arguments?.getString("groupName") ?: "Group"
             GroupDetailScreen(
+                tripId = tripId,
                 groupName = groupName,
                 onBack = { navController.popBackStack() },
                 onNavigateToChat = { navController.navigate(Screen.GroupChat.createRoute(groupName)) { launchSingleTop = true } },
                 onNavigateToItinerary = { navController.navigate(Screen.Itinerary.createRoute(groupName)) { launchSingleTop = true } },
                 onNavigateToDiscovery = { navController.navigate(Screen.GroupDiscovery.route) { launchSingleTop = true } },
                 onNavigateToMap = { navController.navigate(Screen.RouteMap.route) { launchSingleTop = true } },
-                onNavigateToCost = { navController.navigate(Screen.CostEstimate.createRoute(groupName)) { launchSingleTop = true } }
+                onNavigateToCost = { costTripId -> navController.navigate(Screen.CostEstimate.createRoute(costTripId)) { launchSingleTop = true } }
             )
         }
 
@@ -455,12 +533,20 @@ fun NavGraph(
 
         composable(
             route = Screen.CostEstimate.route,
-            arguments = listOf(navArgument("groupName") { type = NavType.StringType })
+            arguments = listOf(navArgument("tripId") { type = NavType.LongType })
         ) { backStackEntry ->
-            val groupName = backStackEntry.arguments?.getString("groupName") ?: "Cost Estimate"
+            val tripId = backStackEntry.arguments?.getLong("tripId") ?: -1L
             CostEstimateScreen(
-                groupName = groupName,
-                onBack = { navController.popBackStack() }
+                tripId = tripId,
+                onBack = {
+                    val popped = navController.popBackStack()
+                    if (!popped) {
+                        navController.navigate(Screen.Trips.route) {
+                            popUpTo(navController.graph.findStartDestination().id) { inclusive = false }
+                            launchSingleTop = true
+                        }
+                    }
+                }
             )
         }
 
@@ -532,3 +618,4 @@ fun NavGraph(
         }
     }
 }
+

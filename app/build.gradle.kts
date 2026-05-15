@@ -78,6 +78,7 @@ dependencies {
     implementation("androidx.compose.material:material-icons-extended")
     implementation(libs.androidx.navigation.compose)
     implementation("androidx.compose.ui:ui-text-google-fonts:1.7.8")
+    implementation(libs.androidx.compose.foundation.layout)
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")
 
     // Retrofit & Gson

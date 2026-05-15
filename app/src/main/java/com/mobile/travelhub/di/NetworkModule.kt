@@ -5,11 +5,17 @@ import com.mobile.travelhub.data.api.ApiConfig
 import com.mobile.travelhub.data.api.AiRecommendationApiService
 import com.mobile.travelhub.data.api.AuthApiService
 import com.mobile.travelhub.data.api.AuthHeaderInterceptor
+import com.mobile.travelhub.data.api.DeviceApiService
+import com.mobile.travelhub.data.api.ItineraryApiService
 import com.mobile.travelhub.data.api.FileUploadApiService
 import com.mobile.travelhub.data.api.LocationApiService
 import com.mobile.travelhub.data.api.PlaceApiService
 import com.mobile.travelhub.data.api.PostApiService
+import com.mobile.travelhub.data.api.NotificationApiService
 import com.mobile.travelhub.data.api.RetrofitFactory
+import com.mobile.travelhub.data.api.TripApiService
+import com.mobile.travelhub.data.api.TripExpenseApiService
+import com.mobile.travelhub.data.api.TripMemberApiService
 import com.mobile.travelhub.data.api.TokenAuthenticator
 import com.mobile.travelhub.data.api.UploadApiService
 import com.mobile.travelhub.data.api.UserApiService
@@ -98,8 +104,20 @@ object NetworkModule {
 
     @Provides
     @Singleton
+    fun provideDeviceApiService(@Named("authenticated") retrofit: Retrofit): DeviceApiService {
+        return retrofit.create(DeviceApiService::class.java)
+    }
+
+    @Provides
+    @Singleton
     fun providePostApiService(@Named("authenticated") retrofit: Retrofit): PostApiService {
         return retrofit.create(PostApiService::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideNotificationApiService(@Named("authenticated") retrofit: Retrofit): NotificationApiService {
+        return retrofit.create(NotificationApiService::class.java)
     }
 
     @Provides
@@ -122,8 +140,32 @@ object NetworkModule {
 
     @Provides
     @Singleton
+    fun provideItineraryApiService(@Named("authenticated") retrofit: Retrofit): ItineraryApiService {
+        return retrofit.create(ItineraryApiService::class.java)
+    }
+
+    @Provides
+    @Singleton
     fun provideAiRecommendationApiService(@Named("ai-public") retrofit: Retrofit): AiRecommendationApiService {
         return retrofit.create(AiRecommendationApiService::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideTripApiService(@Named("authenticated") retrofit: Retrofit): TripApiService {
+        return retrofit.create(TripApiService::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideTripMemberApiService(@Named("authenticated") retrofit: Retrofit): TripMemberApiService {
+        return retrofit.create(TripMemberApiService::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideTripExpenseApiService(@Named("authenticated") retrofit: Retrofit): TripExpenseApiService {
+        return retrofit.create(TripExpenseApiService::class.java)
     }
 
     @Provides

@@ -16,12 +16,14 @@ data class ItineraryUiState(
     val selectedChangeIds: Set<String> = emptySet(),
     val chatMessages: List<ItineraryChatMessage> = emptyList(),
     val chatInput: String = "",
+    val chatInputType: String = "TEXT",
     val thinking: String = "",
     val isStreaming: Boolean = false,
     val isChatSheetOpen: Boolean = false,
     val editingDay: ItineraryDay? = null,
     val editingEvent: ItineraryEvent? = null,
     val isCreatingEvent: Boolean = false,
+    val isEditMode: Boolean = false,
     val errorMessage: String? = null
 ) {
     val isLeader: Boolean

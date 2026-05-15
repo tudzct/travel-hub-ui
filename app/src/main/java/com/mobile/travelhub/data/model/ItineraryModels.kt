@@ -1,4 +1,8 @@
 package com.mobile.travelhub.data.model
+ 
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
+import androidx.compose.runtime.Composable
 
 enum class ItineraryUserRole {
     LEADER,
@@ -17,7 +21,8 @@ data class ItineraryDay(
     val dayIndex: Int,
     val label: String,
     val dateLabel: String,
-    val events: List<ItineraryEvent>
+    val events: List<ItineraryEvent>,
+    val dayId: Long? = null
 )
 
 data class ItineraryEvent(
@@ -30,8 +35,10 @@ data class ItineraryEvent(
     val note: String,
     val transportToNext: String,
     val estimatedCost: String,
-    val isHighlighted: Boolean = false,
-    val colorHex: Long = ItineraryEventColors.Default
+    val colorHex: Long = ItineraryEventColors.Default,
+    val iconName: String = "Place",
+    val dayId: Long? = null,
+    val stopId: Long? = null
 )
 
 data class ItineraryProposal(
@@ -42,6 +49,9 @@ data class ItineraryProposal(
 )
 
 enum class ItineraryChangeType {
+    ADD_DAY,
+    UPDATE_DAY,
+    DELETE_DAY,
     ADD_EVENT,
     UPDATE_EVENT,
     DELETE_EVENT,
@@ -57,8 +67,8 @@ enum class ItineraryField(val label: String) {
     NOTE("Note"),
     TRANSPORT("Transport"),
     ESTIMATED_COST("Cost"),
-    HIGHLIGHT("Highlight"),
-    COLOR("Color")
+    COLOR("Color"),
+    ICON("Icon")
 }
 
 object ItineraryEventColors {
@@ -75,6 +85,47 @@ object ItineraryEventColors {
     )
 }
 
+@Composable
+fun getItineraryIcon(name: String) = when (name) {
+    "Restaurant" -> Icons.Default.Restaurant
+    "Flight" -> Icons.Default.Flight
+    "Hotel" -> Icons.Default.Hotel
+    "PhotoCamera" -> Icons.Default.PhotoCamera
+    "ShoppingBag" -> Icons.Default.ShoppingBag
+    "Museum" -> Icons.Default.Museum
+    "DirectionsBus" -> Icons.Default.DirectionsBus
+    "DirectionsWalk" -> Icons.Default.DirectionsWalk
+    "DirectionsCar" -> Icons.Default.DirectionsCar
+    "Train" -> Icons.Default.Train
+    "LocalDrink" -> Icons.Default.LocalDrink
+    "LocalPark" -> Icons.Default.Park
+    "BeachAccess" -> Icons.Default.BeachAccess
+    "Nightlife" -> Icons.Default.Nightlife
+    "AutoAwesome" -> Icons.Default.AutoAwesome
+    else -> Icons.Default.Place
+}
+
+object ItineraryIcons {
+    val Palette: List<String> = listOf(
+        "Place",
+        "Restaurant",
+        "Flight",
+        "Hotel",
+        "PhotoCamera",
+        "ShoppingBag",
+        "Museum",
+        "DirectionsBus",
+        "DirectionsWalk",
+        "DirectionsCar",
+        "Train",
+        "LocalDrink",
+        "LocalPark",
+        "BeachAccess",
+        "Nightlife",
+        "AutoAwesome"
+    )
+}
+
 data class FieldDiff(
     val field: ItineraryField,
     val before: String?,
@@ -87,6 +138,32 @@ sealed interface ItineraryChange {
     val changeId: String
     val type: ItineraryChangeType
     val reason: String
+}
+
+data class AddDayChange(
+    override val changeId: String,
+    override val reason: String,
+    val insertAt: Int,
+    val dayAfter: ItineraryDay
+) : ItineraryChange {
+    override val type: ItineraryChangeType = ItineraryChangeType.ADD_DAY
+}
+
+data class UpdateDayChange(
+    override val changeId: String,
+    override val reason: String,
+    val dayBefore: ItineraryDay,
+    val dayAfter: ItineraryDay
+) : ItineraryChange {
+    override val type: ItineraryChangeType = ItineraryChangeType.UPDATE_DAY
+}
+
+data class DeleteDayChange(
+    override val changeId: String,
+    override val reason: String,
+    val dayBefore: ItineraryDay
+) : ItineraryChange {
+    override val type: ItineraryChangeType = ItineraryChangeType.DELETE_DAY
 }
 
 data class AddEventChange(
