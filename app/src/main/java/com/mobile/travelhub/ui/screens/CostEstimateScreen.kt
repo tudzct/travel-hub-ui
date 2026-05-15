@@ -390,14 +390,6 @@ fun MemberExpenseCircle(name: String, amount: Double, color: Color) {
         Spacer(modifier = Modifier.height(8.dp))
         Text(name, fontWeight = FontWeight.Bold, fontSize = 12.sp, color = OnSurface)
         Text("$${amount.toInt()}", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = color)
-
-            contentAlignment = Alignment.Center
-        ) {
-            Image(painterResource(id = R.drawable.ic_launcher_foreground), null, modifier = Modifier.size(24.dp))
-        }
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(name, fontWeight = FontWeight.Bold, fontSize = 12.sp, color = OnSurface)
-        Text("$${amount.toInt()}", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = color)
     }
 }
 
@@ -454,44 +446,3 @@ private fun expenseCategoryIcon(category: String): ImageVector {
 
     }
 }
-
-@Composable
-fun ExpenseRow(expense: ExpenseItemData) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(20.dp))
-            .background(SurfaceContainerLowest)
-            .padding(16.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Box(
-            modifier = Modifier
-                .size(44.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .background(SurfaceContainerLow),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                when(expense.category) {
-                    "Food" -> "🍱"
-                    "Stay" -> "🏨"
-                    "Transport" -> "🚄"
-                    else -> "🎟️"
-                },
-                fontSize = 20.sp
-            )
-        }
-        
-        Spacer(modifier = Modifier.width(16.dp))
-        
-        Column(modifier = Modifier.weight(1f)) {
-            Text(expense.title, fontWeight = FontWeight.Bold, fontSize = 15.sp, color = OnSurface)
-            Text("Trả bởi ${expense.paidBy}", fontSize = 12.sp, color = OnSurfaceVariant)
-        }
-        
-        Text("$${expense.amount.toInt()}", fontWeight = FontWeight.ExtraBold, fontSize = 16.sp, color = PrimaryBlue)
-    }
-}
-
-data class ExpenseItemData(val title: String, val paidBy: String, val amount: Double, val category: String)

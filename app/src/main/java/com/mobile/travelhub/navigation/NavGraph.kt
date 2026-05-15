@@ -345,8 +345,8 @@ fun NavGraph(
         }
         composable(Screen.Trips.route) {
             TripsScreen(
-                onNavigateToGroupDetail = { groupName ->
-                    navController.navigate(Screen.GroupDetail.createRoute(groupName)) { launchSingleTop = true }
+                onNavigateToGroupDetail = { tripId, groupName ->
+                    navController.navigate(Screen.GroupDetail.createRoute(tripId, groupName)) { launchSingleTop = true }
                 },
                 onNavigateToCreateGroup = {
                     navController.navigate(Screen.CreateGroup.route) { launchSingleTop = true }
@@ -380,7 +380,6 @@ fun NavGraph(
                 onNavigateToFollowing = { navController.navigate(Screen.FollowersFollowing.createRoute(1, null)) { launchSingleTop = true } },
                 onNavigateToHistory = { navController.navigate(Screen.ViewHistory.route) { launchSingleTop = true } },
                 onNavigateToChat = { navController.navigate(Screen.Chat.route) { launchSingleTop = true } },
-                onNotificationsClick = null,
                 onLogout = {
                     onLogout()
                     navController.navigate(Screen.Login.route) {
@@ -503,7 +502,8 @@ fun NavGraph(
         composable(
             route = Screen.Itinerary.route,
             arguments = listOf(navArgument("groupName") { type = NavType.StringType })
-        ) {
+        ) { backStackEntry ->
+            val groupName = backStackEntry.arguments?.getString("groupName") ?: "Itinerary"
             ItineraryScreen(
                 groupName = groupName,
                 onBack = { navController.popBackStack() },

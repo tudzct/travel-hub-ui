@@ -162,16 +162,21 @@ fun TripsScreen(
                     }
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    val tripNames = listOf("Kyoto Blossoms", "Seoul Foodie Tour", "Bali Retreat")
-                    val daysLeft = listOf(12, 35, 60)
-
-                    tripNames.forEachIndexed { index, name ->
-                        UpcomingTripItem(
-                            trip = trip,
-                            onClick = { onNavigateToGroupDetail(trip.tripId, trip.name) }
+                    if (state.upcomingTrips.isEmpty()) {
+                        Text(
+                            text = "Chưa có chuyến đi sắp tới từ BE.",
+                            color = OnSurfaceVariant,
+                            fontSize = 14.sp
                         )
-                        if (index < trips.size - 1) {
-                            Spacer(modifier = Modifier.height(12.dp))
+                    } else {
+                        state.upcomingTrips.forEachIndexed { index, trip ->
+                            UpcomingTripItem(
+                                trip = trip,
+                                onClick = { onNavigateToGroupDetail(trip.tripId, trip.name) }
+                            )
+                            if (index < state.upcomingTrips.lastIndex) {
+                                Spacer(modifier = Modifier.height(12.dp))
+                            }
                         }
                     }
                 }
@@ -527,7 +532,7 @@ fun UpcomingTripItem(
         Spacer(modifier = Modifier.width(16.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = name,
+                text = trip.name,
                 fontWeight = FontWeight.ExtraBold,
                 fontSize = 16.sp,
                 color = OnSurface
