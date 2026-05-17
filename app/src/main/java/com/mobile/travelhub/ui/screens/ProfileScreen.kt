@@ -85,7 +85,7 @@ fun ProfileScreen(
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
     val isViewingOwnProfile = viewingUserId == null
-    
+
     val profileState by if (isViewingOwnProfile) {
         viewModel.profileState.collectAsState()
     } else {

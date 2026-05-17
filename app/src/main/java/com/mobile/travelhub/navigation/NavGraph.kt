@@ -358,6 +358,7 @@ fun NavGraph(
 //                    navController.navigate(Screen.GroupDetail.createRoute(groupName)) { launchSingleTop = true }
 //                }
 //            )
+
         }
         composable(Screen.CreatePost.route) {
             CreatePostScreen()
@@ -379,7 +380,6 @@ fun NavGraph(
                 onNavigateToFollowing = { navController.navigate(Screen.FollowersFollowing.createRoute(1, null)) { launchSingleTop = true } },
                 onNavigateToHistory = { navController.navigate(Screen.ViewHistory.route) { launchSingleTop = true } },
                 onNavigateToChat = { navController.navigate(Screen.Chat.route) { launchSingleTop = true } },
-                onNotificationsClick = null,
                 onLogout = {
                     onLogout()
                     navController.navigate(Screen.Login.route) {
