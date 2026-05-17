@@ -9,9 +9,6 @@ import com.mobile.travelhub.data.api.ItineraryAiDayDraftDto
 import com.mobile.travelhub.data.api.ItineraryAiProposalResponseDto
 import com.mobile.travelhub.data.api.ItineraryAiStopDraftDto
 import com.mobile.travelhub.data.api.ItineraryApiService
-import com.mobile.travelhub.data.api.ItineraryDayResponseDto
-import com.mobile.travelhub.data.api.ItineraryResponseDto
-import com.mobile.travelhub.data.api.ItineraryStopResponseDto
 import com.mobile.travelhub.data.api.UpdateItineraryDayRequestDto
 import com.mobile.travelhub.data.api.UpsertItineraryStopRequestDto
 import com.mobile.travelhub.data.model.AddDayChange
@@ -22,10 +19,13 @@ import com.mobile.travelhub.data.model.FieldDiff
 import com.mobile.travelhub.data.model.ItineraryAssistantEvent
 import com.mobile.travelhub.data.model.ItineraryChange
 import com.mobile.travelhub.data.model.ItineraryDay
+import com.mobile.travelhub.data.model.ItineraryDayResponse
 import com.mobile.travelhub.data.model.ItineraryEvent
 import com.mobile.travelhub.data.model.ItineraryEventColors
 import com.mobile.travelhub.data.model.ItineraryField
 import com.mobile.travelhub.data.model.ItineraryProposal
+import com.mobile.travelhub.data.model.ItineraryResponse
+import com.mobile.travelhub.data.model.ItineraryStopResponse
 import com.mobile.travelhub.data.model.ItineraryUserRole
 import com.mobile.travelhub.data.model.ItineraryWorkspace
 import com.mobile.travelhub.data.model.MoveEventChange
@@ -205,18 +205,18 @@ class ItineraryRepository @Inject constructor(
         }
     }
 
-    private suspend fun loadOrCreateItinerary(groupName: String): ItineraryResponseDto {
+    private suspend fun loadOrCreateItinerary(groupName: String): ItineraryResponse {
         return try {
             itineraryApiService.getByGroupName(groupName)
         } catch (error: HttpException) {
             if (error.code() != 404) throw error
             itineraryApiService.createItinerary(CreateItineraryRequestDto(groupName = groupName))
-        } as ItineraryResponseDto // TODO:  cần xem lại
+        }
     }
 
     private fun cacheItinerary(
         groupName: String,
-        itinerary: ItineraryResponseDto,
+        itinerary: ItineraryResponse,
         pendingProposal: ItineraryProposal? = workspaceState(groupName).value.pendingProposal
     ) {
         itineraryIdsByGroup[groupName] = itinerary.id
@@ -235,7 +235,7 @@ class ItineraryRepository @Inject constructor(
         } ?: error("Day not found")
     }
 
-    private fun ItineraryResponseDto.toWorkspace(pendingProposal: ItineraryProposal?): ItineraryWorkspace {
+    private fun ItineraryResponse.toWorkspace(pendingProposal: ItineraryProposal?): ItineraryWorkspace {
         return ItineraryWorkspace(
             groupName = groupName,
             version = version,
@@ -245,7 +245,7 @@ class ItineraryRepository @Inject constructor(
         )
     }
 
-    private fun ItineraryDayResponseDto.toDomain(): ItineraryDay {
+    private fun ItineraryDayResponse.toDomain(): ItineraryDay {
         return ItineraryDay(
             dayIndex = dayIndex,
             label = label,
@@ -255,7 +255,7 @@ class ItineraryRepository @Inject constructor(
         )
     }
 
-    private fun ItineraryStopResponseDto.toDomain(dayId: Long, dayIndex: Int): ItineraryEvent {
+    private fun ItineraryStopResponse.toDomain(dayId: Long, dayIndex: Int): ItineraryEvent {
         return ItineraryEvent(
             eventId = id.toString(),
             dayIndex = dayIndex,

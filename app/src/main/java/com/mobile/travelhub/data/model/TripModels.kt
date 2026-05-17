@@ -71,9 +71,9 @@ data class ItineraryStopResponse(
     @SerializedName("sort_order")
     val sortOrder: Int,
     @SerializedName("start_time")
-    val startTime: String,
+    val startTime: String? = null,
     @SerializedName("end_time")
-    val endTime: String,
+    val endTime: String? = null,
     val title: String,
     @SerializedName("place_name")
     val placeName: String,
@@ -82,7 +82,10 @@ data class ItineraryStopResponse(
     val transportToNext: String? = null,
     @SerializedName("estimated_cost")
     val estimatedCost: String? = null,
-    val highlighted: Boolean = false
+    @SerializedName("color_hex")
+    val colorHex: Long? = null,
+    @SerializedName("icon_name")
+    val iconName: String? = null
 )
 
 // Trip Detail APIs

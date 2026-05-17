@@ -10,50 +10,49 @@ import retrofit2.http.PUT
 import retrofit2.http.Path
 
 interface ItineraryApiService {
-    //TODO: có vấn đ, response cass cần xem lại
     @GET("/api/itineraries/by-group/{groupName}")
     suspend fun getByGroupName(@Path("groupName") groupName: String): ItineraryResponse
 
     @POST("/api/itineraries")
-    suspend fun createItinerary(@Body request: CreateItineraryRequestDto): ItineraryResponseDto
+    suspend fun createItinerary(@Body request: CreateItineraryRequestDto): ItineraryResponse
 
     @POST("/api/itineraries/{itineraryId}/days")
     suspend fun createDay(
         @Path("itineraryId") itineraryId: Long,
         @Body request: CreateItineraryDayRequestDto
-    ): ItineraryResponseDto
+    ): ItineraryResponse
 
     @PUT("/api/itineraries/{itineraryId}/days/{dayId}")
     suspend fun updateDay(
         @Path("itineraryId") itineraryId: Long,
         @Path("dayId") dayId: Long,
         @Body request: UpdateItineraryDayRequestDto
-    ): ItineraryResponseDto
+    ): ItineraryResponse
 
     @DELETE("/api/itineraries/{itineraryId}/days/{dayId}")
     suspend fun deleteDay(
         @Path("itineraryId") itineraryId: Long,
         @Path("dayId") dayId: Long
-    ): ItineraryResponseDto
+    ): ItineraryResponse
 
     @POST("/api/itineraries/{itineraryId}/stops")
     suspend fun createStop(
         @Path("itineraryId") itineraryId: Long,
         @Body request: UpsertItineraryStopRequestDto
-    ): ItineraryResponseDto
+    ): ItineraryResponse
 
     @PUT("/api/itineraries/{itineraryId}/stops/{stopId}")
     suspend fun updateStop(
         @Path("itineraryId") itineraryId: Long,
         @Path("stopId") stopId: Long,
         @Body request: UpsertItineraryStopRequestDto
-    ): ItineraryResponseDto
+    ): ItineraryResponse
 
     @DELETE("/api/itineraries/{itineraryId}/stops/{stopId}")
     suspend fun deleteStop(
         @Path("itineraryId") itineraryId: Long,
         @Path("stopId") stopId: Long
-    ): ItineraryResponseDto
+    ): ItineraryResponse
 
     @POST("/api/itineraries/{itineraryId}/ai/proposals")
     suspend fun createAiProposal(
@@ -66,7 +65,7 @@ interface ItineraryApiService {
         @Path("itineraryId") itineraryId: Long,
         @Path("proposalId") proposalId: String,
         @Body request: ApplyItineraryAiProposalRequestDto
-    ): ItineraryResponseDto
+    ): ItineraryResponse
 }
 
 data class CreateItineraryRequestDto(
@@ -127,52 +126,6 @@ data class ApplyItineraryAiProposalRequestDto(
     val selectedChangeIds: List<String>,
     @SerializedName("base_version")
     val baseVersion: Int
-)
-
-data class ItineraryResponseDto(
-    val id: Long,
-    @SerializedName("group_name")
-    val groupName: String,
-    val version: Int,
-    @SerializedName("owner_id")
-    val ownerId: Long,
-    val days: List<ItineraryDayResponseDto>,
-    @SerializedName("created_at")
-    val createdAt: String?,
-    @SerializedName("updated_at")
-    val updatedAt: String?
-)
-
-data class ItineraryDayResponseDto(
-    val id: Long,
-    @SerializedName("day_index")
-    val dayIndex: Int,
-    val label: String,
-    @SerializedName("date_label")
-    val dateLabel: String,
-    val stops: List<ItineraryStopResponseDto>
-)
-
-data class ItineraryStopResponseDto(
-    val id: Long,
-    @SerializedName("sort_order")
-    val sortOrder: Int,
-    @SerializedName("start_time")
-    val startTime: String?,
-    @SerializedName("end_time")
-    val endTime: String?,
-    val title: String,
-    @SerializedName("place_name")
-    val placeName: String,
-    val note: String?,
-    @SerializedName("transport_to_next")
-    val transportToNext: String?,
-    @SerializedName("estimated_cost")
-    val estimatedCost: String?,
-    @SerializedName("color_hex")
-    val colorHex: Long?,
-    @SerializedName("icon_name")
-    val iconName: String?
 )
 
 data class ItineraryAiProposalResponseDto(
