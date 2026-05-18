@@ -58,6 +58,7 @@ sealed class Screen(
             }
         }
     }
+    data object Search : Screen("search", 2)
     data object Trips : Screen("trips", 1, true)
     data object CreatePost : Screen("create_post", showBottomBar = true)
     data object Profile : Screen("profile", 2, true)
@@ -114,6 +115,7 @@ sealed class Screen(
                 OnboardingFinish.route -> OnboardingFinish
                 Home.route -> Home
                 Explore.route -> Explore
+                Search.route -> Search
                 Trips.route -> Trips
                 CreatePost.route -> CreatePost
                 Profile.route -> Profile
@@ -126,6 +128,7 @@ sealed class Screen(
                 //mẻge from trường
                 "home" -> Home
                 "explore" -> Explore
+                "search" -> Search
                 "trips" -> Trips
                 "create_post" -> CreatePost
                 "profile" -> Profile
@@ -323,7 +326,7 @@ fun NavGraph(
             PlaceListScreen(
                 onPlaceClick = ::navigateToPlaceDetail,
                 onSearchClick = {
-                    navController.navigate(Screen.Explore.createRoute(activateSearch = true)) {
+                    navController.navigate(Screen.Search.route) {
                         launchSingleTop = true
                     }
                 }
@@ -341,7 +344,22 @@ fun NavGraph(
             ExploreScreen(
                 activateSearch = backStackEntry.arguments
                     ?.getBoolean(Screen.Explore.ACTIVATE_SEARCH_ARG)
-                    ?: false
+                    ?: false,
+                onSearchClick = {
+                    navController.navigate(Screen.Search.route) {
+                        launchSingleTop = true
+                    }
+                }
+            )
+        }
+        composable(Screen.Search.route) {
+            SearchPage(
+                onBack = { navController.navigateUp() },
+                onUserClick = { userId ->
+                    navController.navigate(Screen.OtherProfile.createRoute(userId)) {
+                        launchSingleTop = true
+                    }
+                }
             )
         }
         composable(Screen.Trips.route) {
@@ -627,4 +645,3 @@ fun NavGraph(
         }
     }
 }
-

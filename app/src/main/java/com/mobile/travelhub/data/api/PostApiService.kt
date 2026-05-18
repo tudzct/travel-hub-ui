@@ -21,6 +21,13 @@ interface PostApiService {
         @Query("pageSize") pageSize: Int = 10
     ): GetPostsResponse
 
+    @GET("api/posts/search")
+    suspend fun searchPosts(
+        @Query("description") description: String,
+        @Query("page") page: Int = 0,
+        @Query("pageSize") pageSize: Int = 10
+    ): GetPostsResponse
+
     @POST("api/posts")
     suspend fun createPost(
         @Body request: PostCreateRequest
