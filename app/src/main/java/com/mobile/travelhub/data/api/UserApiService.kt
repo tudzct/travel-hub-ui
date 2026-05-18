@@ -1,6 +1,7 @@
 package com.mobile.travelhub.data.api
 
 import com.mobile.travelhub.data.model.PageResponse
+import com.mobile.travelhub.data.model.PaginationResponse
 import com.mobile.travelhub.data.model.PreferenceResponse
 import com.mobile.travelhub.data.model.PreferenceUpdateRequest
 import com.mobile.travelhub.data.model.ProfileUpdateRequest
@@ -21,6 +22,13 @@ interface UserApiService {
 
     @GET("api/users/{id}")
     suspend fun getUserProfile(@Path("id") id: Long): UserProfileResponse
+
+    @GET("api/users/search")
+    suspend fun searchUsers(
+        @Query("username") username: String,
+        @Query("page") page: Int = 0,
+        @Query("pageSize") pageSize: Int = 10
+    ): PaginationResponse<UserProfileResponse>
 
     @GET("api/users/{id}/followers")
     suspend fun getFollowers(

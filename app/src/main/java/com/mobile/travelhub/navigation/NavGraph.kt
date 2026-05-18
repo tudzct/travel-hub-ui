@@ -353,7 +353,12 @@ fun NavGraph(
         }
         composable(Screen.Search.route) {
             SearchPage(
-                onBack = { navController.navigateUp() }
+                onBack = { navController.navigateUp() },
+                onUserClick = { userId ->
+                    navController.navigate(Screen.OtherProfile.createRoute(userId)) {
+                        launchSingleTop = true
+                    }
+                }
             )
         }
         composable(Screen.Trips.route) {
