@@ -8,6 +8,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -20,6 +22,8 @@ import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.filled.WbCloudy
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -39,12 +43,41 @@ import com.mobile.travelhub.viewmodels.TripsViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TripsScreen(
+    createdTripId: Long? = null,
+    createdGroupName: String? = null,
     onNavigateToGroupDetail: (Long, String) -> Unit = { _, _ -> },
     onNavigateToCreateGroup: () -> Unit = {}
 ) {
     val viewModel: TripsViewModel = hiltViewModel()
     val state by viewModel.uiState.collectAsState()
     val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
+                viewModel.refreshDashboard()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
+    val listState = rememberLazyListState()
+    LaunchedEffect(state.upcomingTrips, state.activeTrip, createdTripId) {
+        if (createdTripId != null) {
+            val tripsList = state.upcomingTrips.ifEmpty { listOfNotNull(state.activeTrip) }
+            val indexInTrips = tripsList.indexOfFirst { it.tripId == createdTripId }
+            if (indexInTrips >= 0) {
+                val baseOffset = (if (state.errorMessage != null) 1 else 0) + 1 + 1 + 1
+                val targetIndex = baseOffset + indexInTrips
+                try {
+                    listState.animateScrollToItem(targetIndex)
+                } catch (_: Exception) {
+                }
+            }
+        }
+    }
     var showAddTripSheet by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
@@ -65,6 +98,7 @@ fun TripsScreen(
         }
     ) { padding ->
         LazyColumn(
+            state = listState,
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding),
@@ -104,19 +138,6 @@ fun TripsScreen(
                 }
             }
 
-            // Redesigned Stats Row
-            item {
-                LazyRow(
-                    contentPadding = PaddingValues(horizontal = 24.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    item { StatChip("5", "Quốc gia", "🗺️", PrimaryBlue) }
-                    item { StatChip("12", "Thành phố", "🏙️", SunsetOrange) }
-                    item { StatChip("8", "Hành trình", "✈️", Color(0xFF4CAF50)) }
-                }
-                Spacer(modifier = Modifier.height(32.dp))
-            }
-
             // Current Active Trip (More immersive)
             item {
                 Column(modifier = Modifier.padding(horizontal = 24.dp)) {
@@ -140,6 +161,7 @@ fun TripsScreen(
             }
             
             // Upcoming Trips
+            // Upcoming Trips header
             item {
                 Column(modifier = Modifier.padding(horizontal = 24.dp)) {
                     Row(
@@ -161,7 +183,11 @@ fun TripsScreen(
                         )
                     }
                     Spacer(modifier = Modifier.height(16.dp))
+                }
+            }
 
+            item {
+                Column(modifier = Modifier.padding(horizontal = 24.dp)) {
                     if (state.upcomingTrips.isEmpty()) {
                         Text(
                             text = "Chưa có chuyến đi sắp tới từ BE.",
@@ -180,8 +206,8 @@ fun TripsScreen(
                         }
                     }
                 }
-                Spacer(modifier = Modifier.height(36.dp))
             }
+            item { Spacer(modifier = Modifier.height(36.dp)) }
 
             // Past Memories Section
             item {
@@ -299,22 +325,6 @@ fun ActiveJourneyCardV2(
                         )
                     )
             )
-
-            // Weather/Status Badge top right
-            Box(
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(16.dp)
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(Color.Black.copy(alpha = 0.4f))
-                    .padding(horizontal = 12.dp, vertical = 8.dp)
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.WbCloudy, null, tint = Color.White, modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text("22°C", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                }
-            }
 
             // Info bottom left
             Column(
@@ -434,7 +444,7 @@ fun AddTripOptionsContent(
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "Nhập mã gồm 6 ký tự được chia sẻ bởi Trưởng nhóm.",
+                text = "Nhập mã gồm 8 ký tự được chia sẻ bởi Trưởng nhóm.",
                 fontSize = 14.sp,
                 color = OnSurfaceVariant
             )
@@ -442,7 +452,7 @@ fun AddTripOptionsContent(
 
             OutlinedTextField(
                 value = joinCode,
-                onValueChange = { joinCode = it.uppercase().take(6) },
+                onValueChange = { joinCode = it.uppercase().take(8) },
                 label = { Text("Mã chuyến đi") },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),

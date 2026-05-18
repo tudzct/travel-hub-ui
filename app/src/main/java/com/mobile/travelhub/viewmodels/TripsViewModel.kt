@@ -3,6 +3,7 @@ package com.mobile.travelhub.viewmodels
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mobile.travelhub.data.TripRepository
+import com.mobile.travelhub.data.httpStatusCode
 import com.mobile.travelhub.data.model.PastTripResponse
 import com.mobile.travelhub.data.model.TripDashboardResponse
 import com.mobile.travelhub.data.model.UpcomingTripResponse
@@ -86,6 +87,11 @@ class TripsViewModel @Inject constructor(
             return
         }
 
+        if (normalizedCode.length != 8) {
+            onResult(false, "Mã tham gia phải gồm đúng 8 ký tự")
+            return
+        }
+
         viewModelScope.launch {
             _uiState.update { it.copy(isJoining = true, errorMessage = null) }
             tripRepository.joinTrip(com.mobile.travelhub.data.model.JoinTripRequest(inviteCode = normalizedCode))
@@ -95,7 +101,7 @@ class TripsViewModel @Inject constructor(
                     onResult(true, response.message.ifBlank { "Đã gửi yêu cầu tham gia" })
                 }
                 .onFailure { throwable ->
-                    val message = throwable.message ?: "Không tham gia được chuyến đi"
+                    val message = joinTripErrorMessage(throwable)
                     _uiState.update {
                         it.copy(
                             isJoining = false,
@@ -136,5 +142,13 @@ class TripsViewModel @Inject constructor(
             dateString = dateString,
             imageUrl = imageUrl
         )
+    }
+
+    private fun joinTripErrorMessage(throwable: Throwable): String {
+        return when (throwable.httpStatusCode()) {
+            400 -> "Bạn nhập sai mã mời, vui lòng kiểm tra lại"
+            409 -> "Yêu cầu của bạn đã được gửi cho trưởng nhóm, hãy kiểm tra"
+            else -> throwable.message ?: "Không tham gia được chuyến đi"
+        }
     }
 }

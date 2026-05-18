@@ -149,7 +149,7 @@ data class TripMemberResponse(
 
 data class TripActivityItemResponse(
     val id: Long,
-    val title: String,
+    val title: String? = null,
     val description: String? = null,
     val timestamp: String? = null,
     val actorName: String? = null

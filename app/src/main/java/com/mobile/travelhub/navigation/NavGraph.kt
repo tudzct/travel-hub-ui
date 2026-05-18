@@ -362,8 +362,15 @@ fun NavGraph(
                 }
             )
         }
-        composable(Screen.Trips.route) {
+        composable(Screen.Trips.route) { backStackEntry ->
+            val createdTripId = backStackEntry.savedStateHandle.get<Long>("created_trip_id")
+            val createdGroupName = backStackEntry.savedStateHandle.get<String>("created_group_name")
+            backStackEntry.savedStateHandle.remove<Long>("created_trip_id")
+            backStackEntry.savedStateHandle.remove<String>("created_group_name")
+
             TripsScreen(
+                createdTripId = createdTripId,
+                createdGroupName = createdGroupName,
                 onNavigateToGroupDetail = { tripId, groupName ->
                     navController.navigate(Screen.GroupDetail.createRoute(tripId, groupName)) { launchSingleTop = true }
                 },
@@ -481,7 +488,21 @@ fun NavGraph(
             CreateGroupScreen(
                 onBack = { navController.popBackStack() },
                 onCreate = { tripId, groupName ->
-                    navController.navigate(Screen.GroupDetail.createRoute(tripId, groupName)) { launchSingleTop = true }
+                    val poppedToTrips = navController.popBackStack(Screen.Trips.route, false)
+                    if (!poppedToTrips) {
+                        navController.navigate(Screen.Trips.route) { launchSingleTop = true }
+                    }
+                    // set created trip info so TripsScreen can highlight/scroll to it
+                    try {
+                        val tripsEntry = navController.getBackStackEntry(Screen.Trips.route)
+                        tripsEntry.savedStateHandle.set("created_trip_id", tripId)
+                        tripsEntry.savedStateHandle.set("created_group_name", groupName)
+                    } catch (e: Exception) {
+                        // ignore if entry not available
+                    }
+                    navController.navigate(Screen.GroupDetail.createRoute(tripId, groupName)) {
+                        launchSingleTop = true
+                    }
                 }
             )
         }

@@ -36,6 +36,13 @@ data class GroupActivityUiModel(
     val actorName: String? = null
 )
 
+data class GroupJoinRequestUiModel(
+    val userId: Long,
+    val name: String,
+    val avatarUrl: String? = null,
+    val requestedAt: String? = null
+)
+
 data class GroupDetailUiState(
     val isLoading: Boolean = true,
     val tripId: Long = -1L,
@@ -50,6 +57,12 @@ data class GroupDetailUiState(
     val memberInfoLabel: String = "Dữ liệu thành viên chưa có từ BE",
     val activityLabel: String = "BE chưa có feed hoạt động nhóm",
     val myRole: String = "",
+    val inviteCode: String? = null,
+    val inviteLink: String? = null,
+    val inviteExpiredAt: String? = null,
+    val isInviteCodeLoading: Boolean = false,
+    val joinRequests: List<GroupJoinRequestUiModel> = emptyList(),
+    val isJoinRequestsLoading: Boolean = false,
     val members: List<GroupMemberUiModel> = emptyList(),
     val recentActivities: List<GroupActivityUiModel> = emptyList(),
     val errorMessage: String? = null
@@ -98,6 +111,17 @@ class GroupDetailViewModel @Inject constructor(
                     _uiState.update { state ->
                         state.mergeTripDetail(detail)
                     }
+                    loadInviteCode(tripId)
+                    if (detail.myRole == "LEADER") {
+                        loadJoinRequests(tripId)
+                    } else {
+                        _uiState.update { state ->
+                            state.copy(
+                                joinRequests = emptyList(),
+                                isJoinRequestsLoading = false
+                            )
+                        }
+                    }
                 }
                 .onFailure { throwable ->
                     _uiState.update {
@@ -136,6 +160,70 @@ class GroupDetailViewModel @Inject constructor(
         }
     }
 
+    private fun loadInviteCode(tripId: Long) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isInviteCodeLoading = true) }
+            tripRepository.getInviteCode(tripId)
+                .onSuccess { response ->
+                    _uiState.update {
+                        it.copy(
+                            isInviteCodeLoading = false,
+                            inviteCode = response.inviteCode,
+                            inviteLink = response.inviteLink,
+                            inviteExpiredAt = response.expiredAt?.toString()
+                        )
+                    }
+                }
+                .onFailure {
+                    _uiState.update { state ->
+                        state.copy(isInviteCodeLoading = false)
+                    }
+                }
+        }
+    }
+
+    private fun loadJoinRequests(tripId: Long) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isJoinRequestsLoading = true) }
+            tripRepository.getJoinRequests(tripId)
+                .onSuccess { requests ->
+                    _uiState.update {
+                        it.copy(
+                            joinRequests = requests.map { request ->
+                                GroupJoinRequestUiModel(
+                                    userId = request.userId,
+                                    name = request.name,
+                                    avatarUrl = request.avatarUrl,
+                                    requestedAt = request.requestedAt
+                                )
+                            },
+                            isJoinRequestsLoading = false
+                        )
+                    }
+                }
+                .onFailure {
+                    _uiState.update {
+                        it.copy(
+                            joinRequests = emptyList(),
+                            isJoinRequestsLoading = false
+                        )
+                    }
+                }
+        }
+    }
+
+    fun deleteGroup(tripId: Long, onDone: (Boolean, String) -> Unit) {
+        viewModelScope.launch {
+            tripRepository.deleteTrip(tripId)
+                .onSuccess {
+                    onDone(true, "Đã xóa nhóm")
+                }
+                .onFailure { throwable ->
+                    onDone(false, throwable.message ?: "Không xóa được nhóm")
+                }
+        }
+    }
+
     private fun TripDashboardResponse.findTripById(tripId: Long): DashboardTripSnapshot? {
         activeTrip?.takeIf { it.tripId == tripId }?.let { return it.toSnapshot() }
         upcomingTrips.firstOrNull { it.tripId == tripId }?.let { return it.toSnapshot() }
@@ -164,6 +252,7 @@ class GroupDetailViewModel @Inject constructor(
             coverImageUrl = detail.tripInfo.coverImageUrl,
             statusLabel = detail.tripInfo.status ?: statusLabel,
             myRole = detail.myRole,
+            inviteCode = detail.tripInfo.inviteCode ?: inviteCode,
             members = detail.members.map { member ->
                 GroupMemberUiModel(
                     userId = member.userId,
@@ -175,13 +264,13 @@ class GroupDetailViewModel @Inject constructor(
             recentActivities = detail.recentActivities.map { activity ->
                 GroupActivityUiModel(
                     id = activity.id,
-                    title = activity.title,
+                    title = activity.title ?: "",
                     description = activity.description,
                     timestamp = activity.timestamp,
                     actorName = activity.actorName
                 )
             },
-            memberInfoLabel = "${detail.members.size} thành viên · Vai trò: ${detail.myRole}",
+            memberInfoLabel = "${detail.members.size} thành viên",
             activityLabel = detail.recentActivities.firstOrNull()?.title ?: "Chưa có hoạt động gần đây"
         )
     }
