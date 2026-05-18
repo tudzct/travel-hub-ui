@@ -35,9 +35,6 @@ fun ItineraryOverviewContent(
     state: ItineraryUiState,
     paddingValues: PaddingValues,
     onOpenDayDetail: (Int) -> Unit,
-    onAddDay: () -> Unit,
-    onEditDay: (ItineraryDay) -> Unit,
-    onDeleteDay: (Int) -> Unit,
     onToggleChange: (String) -> Unit,
     onApplySelected: () -> Unit,
     onDiscardProposal: () -> Unit
@@ -71,18 +68,10 @@ fun ItineraryOverviewContent(
             items(state.days, key = { it.dayIndex }) { day ->
                 ItineraryDayCard(
                     day = day,
-                    isEditMode = state.isEditMode,
+                    isEditMode = false,
                     onClick = { onOpenDayDetail(day.dayIndex) },
-                    onEdit = { onEditDay(day) },
-                    onDelete = { onDeleteDay(day.dayIndex) }
-                )
-            }
-        }
-        if (state.isEditMode) {
-            item {
-                AddActionCard(
-                    title = "Add day",
-                    onClick = onAddDay
+                    onEdit = {},
+                    onDelete = {}
                 )
             }
         }

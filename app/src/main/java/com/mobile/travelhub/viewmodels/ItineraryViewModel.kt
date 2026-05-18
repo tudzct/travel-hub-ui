@@ -28,11 +28,13 @@ class ItineraryViewModel @Inject constructor(
 
     private var workspaceJob: Job? = null
     private var boundGroupName: String? = null
+    private var boundTripId: Long? = null
     private var lastProposalId: String? = null
 
-    fun bindGroup(groupName: String, openChatOnLaunch: Boolean = false) {
-        if (boundGroupName == groupName && !openChatOnLaunch) return
+    fun bindGroup(groupName: String, tripId: Long? = null, openChatOnLaunch: Boolean = false) {
+        if (boundGroupName == groupName && boundTripId == tripId && !openChatOnLaunch) return
         boundGroupName = groupName
+        boundTripId = tripId
         workspaceJob?.cancel()
         _uiState.update {
             it.copy(
@@ -42,7 +44,7 @@ class ItineraryViewModel @Inject constructor(
             )
         }
         workspaceJob = viewModelScope.launch {
-            runCatching { repository.refreshWorkspace(groupName) }
+            runCatching { repository.refreshWorkspace(groupName, tripId) }
                 .onFailure { throwable ->
                     _uiState.update { it.copy(errorMessage = throwable.message ?: "Unable to load itinerary") }
                 }
@@ -119,6 +121,7 @@ class ItineraryViewModel @Inject constructor(
             var assistantMessageId: String? = null
             repository.streamProposal(
                 groupName = groupName,
+                tripId = boundTripId,
                 prompt = prompt,
                 selectedDayIndex = _uiState.value.selectedDayIndex,
                 inputType = _uiState.value.chatInputType

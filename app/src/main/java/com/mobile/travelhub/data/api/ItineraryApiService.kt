@@ -69,7 +69,9 @@ interface ItineraryApiService {
 }
 
 data class CreateItineraryRequestDto(
-    val groupName: String
+    val groupName: String,
+    @SerializedName("trip_id")
+    val tripId: Long? = null
 )
 
 data class CreateItineraryDayRequestDto(

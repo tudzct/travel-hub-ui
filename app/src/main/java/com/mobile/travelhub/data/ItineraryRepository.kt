@@ -51,20 +51,21 @@ class ItineraryRepository @Inject constructor(
         return workspaceState(groupName)
     }
 
-    suspend fun refreshWorkspace(groupName: String) {
-        val itinerary = loadOrCreateItinerary(groupName)
+    suspend fun refreshWorkspace(groupName: String, tripId: Long? = null) {
+        val itinerary = loadOrCreateItinerary(groupName, tripId)
         cacheItinerary(groupName, itinerary, pendingProposal = workspaceState(groupName).value.pendingProposal)
     }
 
     fun streamProposal(
         groupName: String,
+        tripId: Long? = null,
         prompt: String,
         selectedDayIndex: Int,
         inputType: String = "TEXT"
     ): Flow<ItineraryAssistantEvent> = flow {
         try {
             emit(ItineraryAssistantEvent.Thinking("Preparing itinerary context..."))
-            val itinerary = loadOrCreateItinerary(groupName)
+            val itinerary = loadOrCreateItinerary(groupName, tripId)
             cacheItinerary(groupName, itinerary)
             val workspace = workspaceState(groupName).value
             val selectedDay = workspace.days.firstOrNull { it.dayIndex == selectedDayIndex }
@@ -205,12 +206,12 @@ class ItineraryRepository @Inject constructor(
         }
     }
 
-    private suspend fun loadOrCreateItinerary(groupName: String): ItineraryResponse {
+    private suspend fun loadOrCreateItinerary(groupName: String, tripId: Long? = null): ItineraryResponse {
         return try {
             itineraryApiService.getByGroupName(groupName)
         } catch (error: HttpException) {
             if (error.code() != 404) throw error
-            itineraryApiService.createItinerary(CreateItineraryRequestDto(groupName = groupName))
+            itineraryApiService.createItinerary(CreateItineraryRequestDto(groupName = groupName, tripId = tripId))
         }
     }
 

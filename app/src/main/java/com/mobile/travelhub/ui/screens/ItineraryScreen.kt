@@ -121,6 +121,7 @@ import sh.calvin.reorderable.rememberReorderableLazyListState
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ItineraryScreen(
+    tripId: Long? = null,
     groupName: String,
     onBack: () -> Unit,
     onOpenDayDetail: (Int) -> Unit,
@@ -131,8 +132,8 @@ fun ItineraryScreen(
     val state by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
 
-    LaunchedEffect(groupName, openChatOnLaunch) {
-        viewModel.bindGroup(groupName = groupName, openChatOnLaunch = openChatOnLaunch)
+    LaunchedEffect(tripId, groupName, openChatOnLaunch) {
+        viewModel.bindGroup(groupName = groupName, tripId = tripId, openChatOnLaunch = openChatOnLaunch)
     }
 
     LaunchedEffect(state.errorMessage) {
@@ -163,9 +164,6 @@ fun ItineraryScreen(
             state = state,
             paddingValues = paddingValues,
             onOpenDayDetail = onOpenDayDetail,
-            onAddDay = viewModel::addDay,
-            onEditDay = viewModel::startEditingDay,
-            onDeleteDay = viewModel::deleteDay,
             onToggleChange = viewModel::toggleChangeSelection,
             onApplySelected = viewModel::applySelectedChanges,
             onDiscardProposal = viewModel::discardPendingProposal
@@ -190,6 +188,7 @@ fun ItineraryScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ItineraryDayDetailScreen(
+    tripId: Long? = null,
     groupName: String,
     dayIndex: Int,
     onBack: () -> Unit,
@@ -200,8 +199,8 @@ fun ItineraryDayDetailScreen(
     val state by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
 
-    LaunchedEffect(groupName, openChatOnLaunch) {
-        viewModel.bindGroup(groupName = groupName, openChatOnLaunch = openChatOnLaunch)
+    LaunchedEffect(tripId, groupName, openChatOnLaunch) {
+        viewModel.bindGroup(groupName = groupName, tripId = tripId, openChatOnLaunch = openChatOnLaunch)
     }
 
     LaunchedEffect(dayIndex) {

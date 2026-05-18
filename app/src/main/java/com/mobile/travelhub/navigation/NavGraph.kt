@@ -92,11 +92,12 @@ sealed class Screen(
     data object GroupChat : Screen("group_chat/{groupName}", 9) {
         fun createRoute(groupName: String) = "group_chat/$groupName"
     }
-    data object Itinerary : Screen("itinerary/{groupName}", 10) {
-        fun createRoute(groupName: String) = "itinerary/$groupName"
+    data object Itinerary : Screen("itinerary/{tripId}/{groupName}", 10) {
+        fun createRoute(tripId: Long, groupName: String) = "itinerary/$tripId/${Uri.encode(groupName)}"
     }
-    data object ItineraryDayDetail : Screen("itinerary/{groupName}/day/{dayIndex}", 11) {
-        fun createRoute(groupName: String, dayIndex: Int) = "itinerary/$groupName/day/$dayIndex"
+    data object ItineraryDayDetail : Screen("itinerary/{tripId}/{groupName}/day/{dayIndex}", 11) {
+        fun createRoute(tripId: Long, groupName: String, dayIndex: Int) =
+            "itinerary/$tripId/${Uri.encode(groupName)}/day/$dayIndex"
     }
     data object CostEstimate : Screen("cost_estimate/{tripId}", 12) {
         fun createRoute(tripId: Long) = "cost_estimate/$tripId"
@@ -481,7 +482,7 @@ fun NavGraph(
                 groupName = groupName,
                 onBack = { navController.popBackStack() },
                 onNavigateToChat = { navController.navigate(Screen.GroupChat.createRoute(groupName)) { launchSingleTop = true } },
-                onNavigateToItinerary = { navController.navigate(Screen.Itinerary.createRoute(groupName)) { launchSingleTop = true } },
+                onNavigateToItinerary = { navController.navigate(Screen.Itinerary.createRoute(tripId, groupName)) { launchSingleTop = true } },
                 onNavigateToDiscovery = { navController.navigate(Screen.GroupDiscovery.route) { launchSingleTop = true } },
                 onNavigateToMap = { navController.navigate(Screen.RouteMap.route) { launchSingleTop = true } },
                 onNavigateToCost = { costTripId -> navController.navigate(Screen.CostEstimate.createRoute(costTripId)) { launchSingleTop = true } }
@@ -501,14 +502,19 @@ fun NavGraph(
 
         composable(
             route = Screen.Itinerary.route,
-            arguments = listOf(navArgument("groupName") { type = NavType.StringType })
+            arguments = listOf(
+                navArgument("tripId") { type = NavType.LongType },
+                navArgument("groupName") { type = NavType.StringType }
+            )
         ) { backStackEntry ->
+            val tripId = backStackEntry.arguments?.getLong("tripId") ?: -1L
             val groupName = backStackEntry.arguments?.getString("groupName") ?: "Itinerary"
             ItineraryScreen(
+                tripId = tripId,
                 groupName = groupName,
                 onBack = { navController.popBackStack() },
                 onOpenDayDetail = { dayIndex ->
-                    navController.navigate(Screen.ItineraryDayDetail.createRoute(groupName, dayIndex)) {
+                    navController.navigate(Screen.ItineraryDayDetail.createRoute(tripId, groupName, dayIndex)) {
                         launchSingleTop = true
                     }
                 }
@@ -518,13 +524,16 @@ fun NavGraph(
         composable(
             route = Screen.ItineraryDayDetail.route,
             arguments = listOf(
+                navArgument("tripId") { type = NavType.LongType },
                 navArgument("groupName") { type = NavType.StringType },
                 navArgument("dayIndex") { type = NavType.IntType }
             )
         ) { backStackEntry ->
+            val tripId = backStackEntry.arguments?.getLong("tripId") ?: -1L
             val groupName = backStackEntry.arguments?.getString("groupName") ?: "Itinerary"
             val dayIndex = backStackEntry.arguments?.getInt("dayIndex") ?: 1
             ItineraryDayDetailScreen(
+                tripId = tripId,
                 groupName = groupName,
                 dayIndex = dayIndex,
                 onBack = { navController.popBackStack() }
