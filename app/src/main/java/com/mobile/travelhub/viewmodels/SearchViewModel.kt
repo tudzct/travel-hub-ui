@@ -39,6 +39,7 @@ class SearchViewModel @Inject constructor(
     val uiState: StateFlow<SearchUiState> = _uiState.asStateFlow()
     private var searchJob: Job? = null
     private var searchRequestId: Int = 0
+    private var lastLoadedQuery: String? = null
     private val sessionUserId: Long
         get() = authRepository.getSavedSession()?.userId?.toLong() ?: -1L
 
@@ -47,6 +48,7 @@ class SearchViewModel @Inject constructor(
             _uiState.update { it.copy(query = query) }
             searchJob?.cancel()
             searchRequestId += 1
+            lastLoadedQuery = null
             _uiState.update {
                 it.copy(
                     posts = emptyList(),
@@ -77,6 +79,7 @@ class SearchViewModel @Inject constructor(
             updateQuery("")
             return
         }
+        if (hasLoadedSearchResults(trimmedQuery)) return
 
         searchJob?.cancel()
         val requestId = ++searchRequestId
@@ -154,7 +157,25 @@ class SearchViewModel @Inject constructor(
                         )
                     }
                 }
+
+            if (
+                postsSearchResult.isSuccess &&
+                usersSearchResult.isSuccess &&
+                requestId == searchRequestId
+            ) {
+                lastLoadedQuery = trimmedQuery
+            }
         }
+    }
+
+    private fun hasLoadedSearchResults(query: String): Boolean {
+        val state = _uiState.value
+        return lastLoadedQuery == query &&
+            state.query.trim() == query &&
+            !state.isLoadingPosts &&
+            !state.isLoadingUsers &&
+            state.postsErrorMessage == null &&
+            state.usersErrorMessage == null
     }
 
     fun toggleFollow(user: UserProfileResponse) {

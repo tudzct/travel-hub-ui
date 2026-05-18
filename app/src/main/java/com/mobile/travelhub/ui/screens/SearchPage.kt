@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -44,8 +45,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -66,6 +68,7 @@ import com.mobile.travelhub.data.model.FeedPostResponse
 import com.mobile.travelhub.data.model.UserProfileResponse
 import com.mobile.travelhub.ui.components.FeedPostCard
 import com.mobile.travelhub.ui.components.FeedPostCardSkeleton
+import com.mobile.travelhub.ui.components.modifiers.shimmerEffect
 import com.mobile.travelhub.ui.theme.OnSurface
 import com.mobile.travelhub.ui.theme.OnSurfaceVariant
 import com.mobile.travelhub.ui.theme.OutlineVariant
@@ -84,7 +87,7 @@ fun SearchPage(
     viewModel: SearchViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    var selectedTabIndex by remember { mutableIntStateOf(0) }
+    var selectedTabIndex by rememberSaveable { mutableStateOf(0) }
     val focusRequester = remember { FocusRequester() }
     val keyboardController = LocalSoftwareKeyboardController.current
     val recentSearches = listOf("Bali", "Paris", "Tokyo", "New York")
@@ -343,7 +346,7 @@ private fun UserResults(
 ) {
     SearchResultList {
         when {
-            isLoading -> item { LoadingSearchState() }
+            isLoading -> items(8) { UserSearchResultRowSkeleton() }
             errorMessage != null -> item { SearchErrorState(message = errorMessage, onRetry = onRetry) }
             users.isEmpty() -> item { EmptySearchState(query = query, resultType = "users") }
             else -> items(users, key = { it.id }) { user ->
@@ -355,6 +358,51 @@ private fun UserResults(
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun UserSearchResultRowSkeleton() {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 8.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(66.dp)
+                .clip(CircleShape)
+                .shimmerEffect()
+        )
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .padding(start = 14.dp, end = 12.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(0.62f)
+                    .height(18.dp)
+                    .clip(RoundedCornerShape(6.dp))
+                    .shimmerEffect()
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(0.42f)
+                    .height(14.dp)
+                    .clip(RoundedCornerShape(6.dp))
+                    .shimmerEffect()
+            )
+        }
+        Box(
+            modifier = Modifier
+                .width(104.dp)
+                .height(38.dp)
+                .clip(RoundedCornerShape(18.dp))
+                .shimmerEffect()
+        )
     }
 }
 
