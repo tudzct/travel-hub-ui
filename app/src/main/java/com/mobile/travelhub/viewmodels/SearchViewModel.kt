@@ -166,9 +166,10 @@ class SearchViewModel @Inject constructor(
 
             usersSearchResult
                 .onSuccess { users ->
+                    val currentUserId = sessionUserId
                     _uiState.update {
                         it.copy(
-                            users = users,
+                            users = users.filter { user -> user.id != currentUserId },
                             isLoadingUsers = false,
                             usersErrorMessage = null
                         )

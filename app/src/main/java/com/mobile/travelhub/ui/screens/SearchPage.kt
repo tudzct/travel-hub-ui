@@ -500,9 +500,7 @@ private fun UserCarouselSection(
                 actionLabel = "Retry",
                 onActionClick = onRetry
             )
-            users.isEmpty() -> UserCarouselStatusCard(
-                message = "No users for \"$query\""
-            )
+            users.isEmpty() -> EmptySearchState(query = query, resultType = "users")
             else -> {
                 LazyRow(
                     contentPadding = PaddingValues(horizontal = 16.dp),
