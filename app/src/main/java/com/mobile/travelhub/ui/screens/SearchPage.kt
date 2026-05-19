@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -35,20 +36,13 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
-import androidx.compose.material3.TabRowDefaults
-import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -87,7 +81,6 @@ fun SearchPage(
     viewModel: SearchViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    var selectedTabIndex by rememberSaveable { mutableStateOf(0) }
     val focusRequester = remember { FocusRequester() }
     val keyboardController = LocalSoftwareKeyboardController.current
     val recentSearches = listOf("Bali", "Paris", "Tokyo", "New York")
@@ -139,30 +132,19 @@ fun SearchPage(
                 onSuggestionClick = viewModel::updateQuery
             )
         } else {
-            SearchTabs(
-                selectedTabIndex = selectedTabIndex,
-                onTabSelected = { selectedTabIndex = it }
+            CombinedSearchResults(
+                query = uiState.query,
+                users = uiState.users,
+                posts = uiState.posts,
+                followingRequestUserIds = uiState.followingRequestUserIds,
+                isLoadingUsers = uiState.isLoadingUsers,
+                isLoadingPosts = uiState.isLoadingPosts,
+                usersErrorMessage = uiState.usersErrorMessage,
+                postsErrorMessage = uiState.postsErrorMessage,
+                onRetry = { viewModel.search(uiState.query) },
+                onToggleFollow = viewModel::toggleFollow,
+                onUserClick = onUserClick
             )
-
-            when (selectedTabIndex) {
-                0 -> PostResults(
-                    query = uiState.query,
-                    posts = uiState.posts,
-                    isLoading = uiState.isLoadingPosts,
-                    errorMessage = uiState.postsErrorMessage,
-                    onRetry = { viewModel.search(uiState.query) }
-                )
-                else -> UserResults(
-                    query = uiState.query,
-                    users = uiState.users,
-                    followingRequestUserIds = uiState.followingRequestUserIds,
-                    isLoading = uiState.isLoadingUsers,
-                    errorMessage = uiState.usersErrorMessage,
-                    onRetry = { viewModel.search(uiState.query) },
-                    onToggleFollow = viewModel::toggleFollow,
-                    onUserClick = onUserClick
-                )
-            }
         }
     }
 }
@@ -271,57 +253,57 @@ private fun SearchSuggestions(
 }
 
 @Composable
-private fun SearchTabs(
-    selectedTabIndex: Int,
-    onTabSelected: (Int) -> Unit
-) {
-    val tabs = listOf("Posts", "Users")
-    TabRow(
-        selectedTabIndex = selectedTabIndex,
-        containerColor = SurfaceBg,
-        contentColor = PrimaryBlue,
-        indicator = { tabPositions ->
-            TabRowDefaults.SecondaryIndicator(
-                modifier = Modifier.tabIndicatorOffset(tabPositions[selectedTabIndex]),
-                color = PrimaryBlue
-            )
-        },
-        divider = {}
-    ) {
-        tabs.forEachIndexed { index, title ->
-            Tab(
-                selected = selectedTabIndex == index,
-                onClick = { onTabSelected(index) },
-                text = {
-                    Text(
-                        text = title.uppercase(),
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = if (selectedTabIndex == index) FontWeight.Bold else FontWeight.Normal,
-                        color = if (selectedTabIndex == index) PrimaryBlue else OnSurfaceVariant
-                    )
-                }
-            )
-        }
-    }
-}
-
-@Composable
-private fun PostResults(
+private fun CombinedSearchResults(
     query: String,
+    users: List<UserProfileResponse>,
     posts: List<FeedPostResponse>,
-    isLoading: Boolean,
-    errorMessage: String?,
-    onRetry: () -> Unit
+    followingRequestUserIds: Set<Long>,
+    isLoadingUsers: Boolean,
+    isLoadingPosts: Boolean,
+    usersErrorMessage: String?,
+    postsErrorMessage: String?,
+    onRetry: () -> Unit,
+    onToggleFollow: (UserProfileResponse) -> Unit,
+    onUserClick: (Long) -> Unit
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(top = 12.dp, bottom = 24.dp)
+        contentPadding = PaddingValues(top = 12.dp, bottom = 24.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
+        item(contentType = "users-carousel") {
+            UserCarouselSection(
+                query = query,
+                users = users,
+                followingRequestUserIds = followingRequestUserIds,
+                isLoading = isLoadingUsers,
+                errorMessage = usersErrorMessage,
+                onRetry = onRetry,
+                onToggleFollow = onToggleFollow,
+                onUserClick = onUserClick
+            )
+        }
+
+        item(contentType = "posts-title") {
+            SearchSectionTitle(
+                text = "Posts",
+                modifier = Modifier.padding(start = 16.dp, top = 6.dp, end = 16.dp)
+            )
+        }
+
         when {
-            isLoading -> items(3) { FeedPostCardSkeleton() }
-            errorMessage != null -> item { SearchErrorState(message = errorMessage, onRetry = onRetry) }
-            posts.isEmpty() -> item { EmptySearchState(query = query, resultType = "posts") }
-            else -> items(posts, key = { it.id }) { post ->
+            isLoadingPosts -> items(3, contentType = { "post-skeleton" }) { FeedPostCardSkeleton() }
+            postsErrorMessage != null -> item(contentType = "posts-error") {
+                SearchErrorState(message = postsErrorMessage, onRetry = onRetry)
+            }
+            posts.isEmpty() -> item(contentType = "posts-empty") {
+                EmptySearchState(query = query, resultType = "posts")
+            }
+            else -> items(
+                items = posts,
+                key = { it.id },
+                contentType = { "post" }
+            ) { post ->
                 FeedPostCard(
                     post = post.toHomePostUiModel(),
                     onLikeClick = {},
@@ -334,7 +316,7 @@ private fun PostResults(
 }
 
 @Composable
-private fun UserResults(
+private fun UserCarouselSection(
     query: String,
     users: List<UserProfileResponse>,
     followingRequestUserIds: Set<Long>,
@@ -344,30 +326,99 @@ private fun UserResults(
     onToggleFollow: (UserProfileResponse) -> Unit,
     onUserClick: (Long) -> Unit
 ) {
-    SearchResultList {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        SearchSectionTitle(
+            text = "Users",
+            modifier = Modifier.padding(horizontal = 16.dp)
+        )
+
         when {
-            isLoading -> items(8) { UserSearchResultRowSkeleton() }
-            errorMessage != null -> item { SearchErrorState(message = errorMessage, onRetry = onRetry) }
-            users.isEmpty() -> item { EmptySearchState(query = query, resultType = "users") }
-            else -> items(users, key = { it.id }) { user ->
-                UserSearchResultRow(
-                    user = user,
-                    isFollowLoading = user.id in followingRequestUserIds,
-                    onFollowClick = { onToggleFollow(user) },
-                    onClick = { onUserClick(user.id) }
-                )
+            isLoading -> {
+                LazyRow(
+                    contentPadding = PaddingValues(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    items(4, contentType = { "user-skeleton" }) {
+                        UserCarouselCardSkeleton()
+                    }
+                }
+            }
+            errorMessage != null -> UserCarouselStatusCard(
+                message = errorMessage,
+                actionLabel = "Retry",
+                onActionClick = onRetry
+            )
+            users.isEmpty() -> UserCarouselStatusCard(
+                message = "No users for \"$query\""
+            )
+            else -> {
+                LazyRow(
+                    contentPadding = PaddingValues(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    items(
+                        items = users,
+                        key = { it.id },
+                        contentType = { "user" }
+                    ) { user ->
+                        UserCarouselCard(
+                            user = user,
+                            isFollowLoading = user.id in followingRequestUserIds,
+                            onFollowClick = { onToggleFollow(user) },
+                            onClick = { onUserClick(user.id) }
+                        )
+                    }
+                }
             }
         }
     }
 }
 
 @Composable
-private fun UserSearchResultRowSkeleton() {
+private fun UserCarouselStatusCard(
+    message: String,
+    actionLabel: String? = null,
+    onActionClick: (() -> Unit)? = null
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 8.dp, vertical = 8.dp),
+            .height(96.dp)
+            .padding(horizontal = 16.dp)
+            .clip(RoundedCornerShape(8.dp))
+            .background(Color.White)
+            .padding(horizontal = 16.dp),
         verticalAlignment = Alignment.CenterVertically
+    ) {
+        SearchIconBubble(type = SearchLeadingIcon.User)
+        Text(
+            text = message,
+            modifier = Modifier
+                .weight(1f)
+                .padding(start = 12.dp, end = 8.dp),
+            color = OnSurfaceVariant,
+            style = MaterialTheme.typography.bodyMedium,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis
+        )
+        if (actionLabel != null && onActionClick != null) {
+            TextButton(onClick = onActionClick) {
+                Text(text = actionLabel, color = PrimaryBlue)
+            }
+        }
+    }
+}
+
+@Composable
+private fun UserCarouselCardSkeleton() {
+    Column(
+        modifier = Modifier
+            .width(156.dp)
+            .height(188.dp)
+            .clip(RoundedCornerShape(8.dp))
+            .background(Color.White)
+            .padding(horizontal = 12.dp, vertical = 14.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Box(
             modifier = Modifier
@@ -375,31 +426,27 @@ private fun UserSearchResultRowSkeleton() {
                 .clip(CircleShape)
                 .shimmerEffect()
         )
-        Column(
-            modifier = Modifier
-                .weight(1f)
-                .padding(start = 14.dp, end = 12.dp)
-        ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth(0.62f)
-                    .height(18.dp)
-                    .clip(RoundedCornerShape(6.dp))
-                    .shimmerEffect()
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth(0.42f)
-                    .height(14.dp)
-                    .clip(RoundedCornerShape(6.dp))
-                    .shimmerEffect()
-            )
-        }
+        Spacer(modifier = Modifier.height(12.dp))
         Box(
             modifier = Modifier
-                .width(104.dp)
-                .height(38.dp)
+                .fillMaxWidth(0.78f)
+                .height(16.dp)
+                .clip(RoundedCornerShape(6.dp))
+                .shimmerEffect()
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Box(
+            modifier = Modifier
+                .fillMaxWidth(0.58f)
+                .height(13.dp)
+                .clip(RoundedCornerShape(6.dp))
+                .shimmerEffect()
+        )
+        Spacer(modifier = Modifier.height(14.dp))
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(34.dp)
                 .clip(RoundedCornerShape(18.dp))
                 .shimmerEffect()
         )
@@ -407,25 +454,16 @@ private fun UserSearchResultRowSkeleton() {
 }
 
 @Composable
-private fun SearchResultList(
-    content: androidx.compose.foundation.lazy.LazyListScope.() -> Unit
+private fun SearchSectionTitle(
+    text: String,
+    modifier: Modifier = Modifier
 ) {
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 24.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
-        content = content
-    )
-}
-
-@Composable
-private fun SearchSectionTitle(text: String) {
     Text(
         text = text,
         color = OnSurfaceVariant,
         style = MaterialTheme.typography.labelLarge,
         fontWeight = FontWeight.Bold,
-        modifier = Modifier.padding(top = 4.dp, bottom = 4.dp)
+        modifier = modifier.padding(top = 4.dp, bottom = 4.dp)
     )
 }
 
@@ -456,7 +494,7 @@ private fun SearchSuggestionRow(
 }
 
 @Composable
-private fun UserSearchResultRow(
+private fun UserCarouselCard(
     user: UserProfileResponse,
     isFollowLoading: Boolean,
     onFollowClick: () -> Unit,
@@ -469,40 +507,38 @@ private fun UserSearchResultRow(
         if (user.followersCount != 1) append("s")
     }
 
-    Row(
+    Column(
         modifier = Modifier
-            .fillMaxWidth()
+            .width(156.dp)
+            .height(188.dp)
             .clip(RoundedCornerShape(8.dp))
+            .background(Color.White)
             .clickable(onClick = onClick)
-            .padding(horizontal = 8.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically
+            .padding(horizontal = 12.dp, vertical = 14.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
         UserResultAvatar(
             avatarUrl = user.avatarUrl,
             name = title
         )
-        Column(
-            modifier = Modifier
-                .weight(1f)
-                .padding(start = 14.dp, end = 12.dp)
-        ) {
-            Text(
-                text = title,
-                color = OnSurface,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = metadata,
-                color = OnSurfaceVariant,
-                style = MaterialTheme.typography.bodySmall,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-        }
+        Spacer(modifier = Modifier.height(10.dp))
+        Text(
+            text = title,
+            color = OnSurface,
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.Bold,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+        Spacer(modifier = Modifier.height(3.dp))
+        Text(
+            text = metadata,
+            color = OnSurfaceVariant,
+            style = MaterialTheme.typography.bodySmall,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+        Spacer(modifier = Modifier.weight(1f))
         FollowButton(
             isFollowing = user.isFollowing,
             isLoading = isFollowLoading,
