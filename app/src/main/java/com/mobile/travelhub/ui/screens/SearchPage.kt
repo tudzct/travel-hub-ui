@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -25,6 +26,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
+import androidx.compose.material.icons.automirrored.outlined.Send
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Person
@@ -33,9 +35,11 @@ import androidx.compose.material.icons.outlined.Tag
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -58,10 +62,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil.compose.AsyncImage
+import com.mobile.travelhub.R
 import com.mobile.travelhub.data.model.FeedPostResponse
 import com.mobile.travelhub.data.model.UserProfileResponse
+import com.mobile.travelhub.ui.components.CommentItem
 import com.mobile.travelhub.ui.components.FeedPostCard
 import com.mobile.travelhub.ui.components.FeedPostCardSkeleton
+import com.mobile.travelhub.ui.components.SimpleFormTextField
 import com.mobile.travelhub.ui.components.modifiers.shimmerEffect
 import com.mobile.travelhub.ui.theme.OnSurface
 import com.mobile.travelhub.ui.theme.OnSurfaceVariant
@@ -70,6 +77,7 @@ import com.mobile.travelhub.ui.theme.PrimaryBlue
 import com.mobile.travelhub.ui.theme.SurfaceBg
 import com.mobile.travelhub.ui.theme.SurfaceContainer
 import com.mobile.travelhub.utils.PostsUtils
+import com.mobile.travelhub.viewmodels.HomeCommentUiModel
 import com.mobile.travelhub.viewmodels.HomePostUiModel
 import com.mobile.travelhub.viewmodels.SearchViewModel
 import kotlinx.coroutines.delay
@@ -137,15 +145,32 @@ fun SearchPage(
                 users = uiState.users,
                 posts = uiState.posts,
                 followingRequestUserIds = uiState.followingRequestUserIds,
+                likingPostIds = uiState.likingPostIds,
                 isLoadingUsers = uiState.isLoadingUsers,
                 isLoadingPosts = uiState.isLoadingPosts,
                 usersErrorMessage = uiState.usersErrorMessage,
                 postsErrorMessage = uiState.postsErrorMessage,
                 onRetry = { viewModel.search(uiState.query) },
                 onToggleFollow = viewModel::toggleFollow,
-                onUserClick = onUserClick
+                onUserClick = onUserClick,
+                onLikeClick = viewModel::onLikeClicked,
+                onCommentClick = viewModel::onCommentClicked
             )
         }
+    }
+
+    if (uiState.activeCommentPostId != null) {
+        SearchCommentsSheet(
+            comments = uiState.commentsByPostId[uiState.activeCommentPostId].orEmpty(),
+            commentInput = uiState.commentInput,
+            isCommentsLoading = uiState.isCommentsLoading,
+            isCommentSubmitting = uiState.isCommentSubmitting,
+            commentsErrorMessage = uiState.commentsErrorMessage,
+            commentErrorMessage = uiState.commentErrorMessage,
+            onDismiss = viewModel::onCommentDismissed,
+            onCommentInputChanged = viewModel::onCommentInputChanged,
+            onCommentSubmit = viewModel::submitComment
+        )
     }
 }
 
@@ -258,13 +283,16 @@ private fun CombinedSearchResults(
     users: List<UserProfileResponse>,
     posts: List<FeedPostResponse>,
     followingRequestUserIds: Set<Long>,
+    likingPostIds: Set<Long>,
     isLoadingUsers: Boolean,
     isLoadingPosts: Boolean,
     usersErrorMessage: String?,
     postsErrorMessage: String?,
     onRetry: () -> Unit,
     onToggleFollow: (UserProfileResponse) -> Unit,
-    onUserClick: (Long) -> Unit
+    onUserClick: (Long) -> Unit,
+    onLikeClick: (Long) -> Unit,
+    onCommentClick: (Long) -> Unit
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -305,13 +333,137 @@ private fun CombinedSearchResults(
                 contentType = { "post" }
             ) { post ->
                 FeedPostCard(
-                    post = post.toHomePostUiModel(),
-                    onLikeClick = {},
-                    onCommentClick = {},
-                    actionsEnabled = false
+                    post = post.toHomePostUiModel(isLikeLoading = post.id in likingPostIds),
+                    onLikeClick = { onLikeClick(post.id) },
+                    onCommentClick = { onCommentClick(post.id) }
                 )
             }
         }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SearchCommentsSheet(
+    comments: List<HomeCommentUiModel>,
+    commentInput: String,
+    isCommentsLoading: Boolean,
+    isCommentSubmitting: Boolean,
+    commentsErrorMessage: String?,
+    commentErrorMessage: String?,
+    onDismiss: () -> Unit,
+    onCommentInputChanged: (String) -> Unit,
+    onCommentSubmit: () -> Unit
+) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        containerColor = Color.White
+    ) {
+        Text(
+            text = "Comments",
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.padding(horizontal = 24.dp)
+        )
+        Spacer(modifier = Modifier.height(12.dp))
+
+        when {
+            isCommentsLoading -> Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 24.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(color = PrimaryBlue)
+            }
+            !commentsErrorMessage.isNullOrBlank() -> Text(
+                text = commentsErrorMessage,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.padding(horizontal = 24.dp)
+            )
+            comments.isEmpty() -> Text(
+                text = "No comments yet",
+                style = MaterialTheme.typography.bodyMedium,
+                color = OnSurfaceVariant,
+                modifier = Modifier.padding(horizontal = 24.dp)
+            )
+            else -> LazyColumn(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 320.dp)
+            ) {
+                items(
+                    items = comments,
+                    key = { it.id }
+                ) { comment ->
+                    CommentItem(
+                        name = comment.username,
+                        comment = comment.content,
+                        time = comment.timeAgoLabel,
+                        avatarRes = R.drawable.female_avatar_maker
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            SimpleFormTextField(
+                value = commentInput,
+                onValueChange = onCommentInputChanged,
+                placeholder = "Add a comment",
+                modifier = Modifier.weight(1f),
+                enabled = !isCommentSubmitting,
+                singleLine = false,
+                maxLines = 3,
+                shape = RoundedCornerShape(24.dp),
+                focusedContainerColor = Color.White,
+                unfocusedContainerColor = Color.White,
+                disabledContainerColor = Color(0xFFF4F4F4),
+                focusedIndicatorColor = PrimaryBlue
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            IconButton(
+                onClick = onCommentSubmit,
+                enabled = !isCommentSubmitting && commentInput.isNotBlank(),
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(PrimaryBlue)
+            ) {
+                if (isCommentSubmitting) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(16.dp),
+                        strokeWidth = 2.dp,
+                        color = Color.White
+                    )
+                } else {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Outlined.Send,
+                        modifier = Modifier.size(16.dp),
+                        contentDescription = "Send comment",
+                        tint = Color.White
+                    )
+                }
+            }
+        }
+
+        if (!commentErrorMessage.isNullOrBlank()) {
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = commentErrorMessage,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.padding(horizontal = 16.dp)
+            )
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
     }
 }
 
@@ -348,9 +500,7 @@ private fun UserCarouselSection(
                 actionLabel = "Retry",
                 onActionClick = onRetry
             )
-            users.isEmpty() -> UserCarouselStatusCard(
-                message = "No users for \"$query\""
-            )
+            users.isEmpty() -> EmptySearchState(query = query, resultType = "users")
             else -> {
                 LazyRow(
                     contentPadding = PaddingValues(horizontal = 16.dp),
@@ -752,7 +902,7 @@ private fun formatFollowerCount(count: Int): String {
     }
 }
 
-private fun FeedPostResponse.toHomePostUiModel(): HomePostUiModel {
+private fun FeedPostResponse.toHomePostUiModel(isLikeLoading: Boolean): HomePostUiModel {
     val safeCreatedAt = createdAt ?: updatedAt
 
     return HomePostUiModel(
@@ -764,7 +914,7 @@ private fun FeedPostResponse.toHomePostUiModel(): HomePostUiModel {
         likeCount = likeCount?.coerceAtLeast(0) ?: 0,
         commentCount = commentCount?.coerceAtLeast(0) ?: 0,
         isLiked = likedByCurrentUser == true,
-        isLikeLoading = false,
+        isLikeLoading = isLikeLoading,
         timeAgoLabel = PostsUtils.formatTimeAgo(safeCreatedAt)
     )
 }
