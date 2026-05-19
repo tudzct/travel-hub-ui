@@ -63,7 +63,6 @@ fun GroupDetailScreen(
     groupName: String,
     onBack: () -> Unit,
     onNavigateToChat: () -> Unit,
-    onNavigateToItinerary: () -> Unit,
     onNavigateToDiscovery: () -> Unit,
     onNavigateToMap: () -> Unit,
     onNavigateToCost: (Long) -> Unit,
@@ -75,6 +74,7 @@ fun GroupDetailScreen(
     val uiState by viewModel.uiState.collectAsState()
     var showInviteMenu by remember { mutableStateOf(false) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
+    var showItinerarySheet by remember { mutableStateOf(false) }
     val isLeader = uiState.myRole == "LEADER"
     val pendingRequestCount = uiState.joinRequests.size
 
@@ -163,7 +163,7 @@ fun GroupDetailScreen(
                 contentPadding = PaddingValues(horizontal = 24.dp, vertical = 24.dp),
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                item { FeatureCard(Icons.Default.CalendarMonth, "Lịch trình", PrimaryBlue, onNavigateToItinerary) }
+                item { FeatureCard(Icons.Default.CalendarMonth, "Lịch trình", PrimaryBlue) { showItinerarySheet = true } }
                 item { FeatureCard(Icons.Default.Poll, "Bình chọn", SunsetOrange, onNavigateToDiscovery) }
                 item { FeatureCard(Icons.Default.Payments, "Chi phí", Color(0xFFE91E63), { onNavigateToCost(tripId) }) }
                 item { FeatureCard(Icons.Default.Map, "Bản đồ", Color(0xFF4CAF50), onNavigateToMap) }
@@ -544,6 +544,14 @@ fun GroupDetailScreen(
                     }
                 }
             }
+        }
+
+        if (showItinerarySheet) {
+            ItineraryPopupSheet(
+                tripId = tripId,
+                groupName = groupName,
+                onDismiss = { showItinerarySheet = false }
+            )
         }
     }
 }

@@ -82,9 +82,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
@@ -95,6 +93,7 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -112,6 +111,7 @@ import com.mobile.travelhub.ui.theme.SurfaceBg
 import com.mobile.travelhub.ui.theme.SurfaceContainerLow
 import com.mobile.travelhub.ui.theme.SurfaceContainerLowest
 import com.mobile.travelhub.ui.theme.SunsetOrange
+import com.mobile.travelhub.ui.theme.TravelHubTheme
 import com.mobile.travelhub.viewmodels.ItineraryUiState
 import com.mobile.travelhub.viewmodels.ItineraryViewModel
 import kotlin.math.max
@@ -259,6 +259,201 @@ fun ItineraryDayDetailScreen(
     )
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ItineraryPopupSheet(
+    tripId: Long? = null,
+    groupName: String,
+    onDismiss: () -> Unit,
+    viewModel: ItineraryViewModel = hiltViewModel()
+) {
+    val state by viewModel.uiState.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(tripId, groupName) {
+        viewModel.bindGroup(groupName = groupName, tripId = tripId)
+    }
+
+    LaunchedEffect(state.errorMessage) {
+        val message = state.errorMessage ?: return@LaunchedEffect
+        snackbarHostState.showSnackbar(message)
+        viewModel.clearError()
+    }
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        containerColor = SurfaceBg
+    ) {
+        ItineraryPopupContent(
+            state = state,
+            groupName = groupName,
+            snackbarHostState = snackbarHostState,
+            onDismiss = onDismiss,
+            onToggleEditMode = viewModel::toggleEditMode,
+            onOpenChat = viewModel::openChat,
+            onOpenDayDetail = viewModel::selectDay,
+            onToggleChange = viewModel::toggleChangeSelection,
+            onApplySelected = viewModel::applySelectedChanges,
+            onDiscardProposal = viewModel::discardPendingProposal,
+            modifier = Modifier
+                .fillMaxWidth()
+                .fillMaxHeight(0.92f)
+        )
+    }
+
+    ItinerarySharedOverlays(
+        state = state,
+        onCloseChat = viewModel::closeChat,
+        onChatInputChange = viewModel::updateChatInput,
+        onVoiceInputChange = viewModel::updateVoiceChatInput,
+        onSendChat = viewModel::sendChatPrompt,
+        onDismissDayEditor = viewModel::cancelEditingDay,
+        onSaveDay = viewModel::saveDay,
+        onDeleteEditingDay = viewModel::deleteEditingDay,
+        onDismissEventEditor = viewModel::cancelEditing,
+        onSaveEvent = viewModel::saveEvent,
+        onDeleteEditingEvent = viewModel::deleteEditingEvent
+    )
+}
+
+@Composable
+private fun ItineraryPopupContent(
+    state: ItineraryUiState,
+    groupName: String,
+    snackbarHostState: SnackbarHostState,
+    onDismiss: () -> Unit,
+    onToggleEditMode: () -> Unit,
+    onOpenChat: () -> Unit,
+    onOpenDayDetail: (Int) -> Unit,
+    onToggleChange: (String) -> Unit,
+    onApplySelected: () -> Unit,
+    onDiscardProposal: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Scaffold(
+        modifier = modifier,
+        containerColor = SurfaceBg,
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
+        topBar = {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 20.dp, end = 12.dp, top = 4.dp, bottom = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = if (state.groupName.isBlank()) groupName else state.groupName,
+                        fontWeight = FontWeight.ExtraBold,
+                        fontSize = 20.sp,
+                        color = OnSurface
+                    )
+                    Text(
+                        text = "Version ${state.version}",
+                        fontSize = 12.sp,
+                        color = OnSurfaceVariant
+                    )
+                }
+                if (state.isLeader) {
+                    ItineraryEditButton(
+                        isEditMode = state.isEditMode,
+                        onToggleEditMode = onToggleEditMode
+                    )
+                }
+                IconButton(onClick = onDismiss) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "Close itinerary",
+                        tint = OnSurface
+                    )
+                }
+            }
+        },
+        floatingActionButton = {
+            GeminiItineraryFab(onClick = onOpenChat)
+        }
+    ) { paddingValues ->
+        ItineraryOverviewContent(
+            state = state,
+            paddingValues = paddingValues,
+            onOpenDayDetail = onOpenDayDetail,
+            onToggleChange = onToggleChange,
+            onApplySelected = onApplySelected,
+            onDiscardProposal = onDiscardProposal
+        )
+    }
+}
+
+@Preview(showBackground = true, widthDp = 390, heightDp = 720)
+@Composable
+private fun ItineraryPopupPreview() {
+    TravelHubTheme {
+        Surface(color = SurfaceBg) {
+            ItineraryPopupContent(
+                state = previewItineraryState(),
+                groupName = "New test trip",
+                snackbarHostState = remember { SnackbarHostState() },
+                onDismiss = {},
+                onToggleEditMode = {},
+                onOpenChat = {},
+                onOpenDayDetail = {},
+                onToggleChange = {},
+                onApplySelected = {},
+                onDiscardProposal = {},
+                modifier = Modifier.fillMaxSize()
+            )
+        }
+    }
+}
+
+private fun previewItineraryState(): ItineraryUiState {
+    return ItineraryUiState(
+        groupName = "New test trip",
+        version = 2,
+        role = ItineraryUserRole.LEADER,
+        days = listOf(
+            ItineraryDay(
+                dayIndex = 1,
+                label = "Day 1",
+                dateLabel = "Tuesday, 05/05",
+                events = listOf(
+                    ItineraryEvent(
+                        eventId = "preview-1",
+                        dayIndex = 1,
+                        startTime = "09:00",
+                        endTime = "10:00",
+                        title = "Gh",
+                        placeName = "Ha Noi",
+                        note = "",
+                        transportToNext = "",
+                        estimatedCost = "",
+                        colorHex = ItineraryEventColors.Default
+                    )
+                )
+            ),
+            ItineraryDay(
+                dayIndex = 2,
+                label = "Day 2",
+                dateLabel = "Wednesday, 06/05",
+                events = listOf(
+                    ItineraryEvent(
+                        eventId = "preview-2",
+                        dayIndex = 2,
+                        startTime = "09:00",
+                        endTime = "10:00",
+                        title = "Cà phê",
+                        placeName = "Old Quarter",
+                        note = "",
+                        transportToNext = "",
+                        estimatedCost = "",
+                        colorHex = ItineraryEventColors.Default
+                    )
+                )
+            )
+        )
+    )
+}
+
 @Composable
 private fun GeminiItineraryFab(onClick: () -> Unit) {
     val infiniteTransition = rememberInfiniteTransition(label = "ai-fab-rainbow")
@@ -314,11 +509,6 @@ private fun GeminiItineraryFab(onClick: () -> Unit) {
         }
     }
 }
-
-
-
-
-
 
 
 
