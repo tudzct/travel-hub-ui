@@ -52,6 +52,7 @@ import com.mobile.travelhub.viewmodels.GroupDetailViewModel
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.tooling.preview.Preview
 import coil.compose.AsyncImage
 
 enum class GroupRole { LEADER, NON_MEMBER, PENDING }
@@ -550,30 +551,46 @@ fun GroupDetailScreen(
 @Composable
 
 fun FeatureCard(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, color: Color, onClick: () -> Unit) {
-    Card(
-        onClick = onClick,
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = SurfaceContainerLowest),
-        modifier = Modifier.size(width = 110.dp, height = 120.dp)
+    Column(
+        modifier = Modifier
+            .width(90.dp)
+            .clickable(onClick = onClick)
+            .padding(vertical = 12.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        Column(
+        Box(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.SpaceBetween
+                .size(48.dp)
+                .clip(CircleShape)
+                .background(color.copy(alpha = 0.1f)),
+            contentAlignment = Alignment.Center
         ) {
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(CircleShape)
-                    .background(color.copy(alpha = 0.1f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(icon, null, tint = color, modifier = Modifier.size(20.dp))
-            }
-            Text(label, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = OnSurface)
+            Icon(
+                icon,
+                contentDescription = null,
+                tint = color,
+                modifier = Modifier.size(24.dp)
+            )
         }
+
+        Text(
+            text = label,
+            textAlign = TextAlign.Center,
+            fontWeight = FontWeight.Medium,
+            fontSize = 14.sp,
+            color = OnSurface,
+            maxLines = 2
+
+        )
     }
+}
+
+@Preview
+@Composable
+fun FeatureCardPreview(){
+    FeatureCard(Icons.Default.CalendarMonth, "Lịch trình", PrimaryBlue, {})
+
 }
 
 @Composable
