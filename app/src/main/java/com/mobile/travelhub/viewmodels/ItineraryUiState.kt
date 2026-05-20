@@ -9,7 +9,8 @@ import com.mobile.travelhub.data.model.ItineraryUserRole
 data class ItineraryDayOption(
     val dayIndex: Int,
     val label: String,
-    val dateLabel: String
+    val dateLabel: String,
+    val epochDay: Long? = null
 )
 
 data class ItineraryUiState(

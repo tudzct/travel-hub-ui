@@ -16,13 +16,19 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material3.FilterChip
+import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.SelectableDates
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.foundation.layout.FlowRow
@@ -53,8 +59,11 @@ import com.mobile.travelhub.ui.theme.SunsetOrange
 import com.mobile.travelhub.data.model.ItineraryIcons
 import com.mobile.travelhub.data.model.getItineraryIcon
 import com.mobile.travelhub.viewmodels.ItineraryDayOption
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
 
-@OptIn(ExperimentalLayoutApi::class)
+@OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun ItineraryEventEditorDialog(
     event: ItineraryEvent,
@@ -73,10 +82,21 @@ fun ItineraryEventEditorDialog(
                 ItineraryDayOption(
                     dayIndex = day,
                     label = "Day $day",
-                    dateLabel = ""
+                    dateLabel = "",
+                    epochDay = null
                 )
             }
         }
+    }
+    var showDatePicker by remember { mutableStateOf(false) }
+    var datePickerErrorMessage by remember { mutableStateOf<String?>(null) }
+    val selectedDayOption = effectiveDayOptions.firstOrNull { it.dayIndex == selectedDay }
+        ?: effectiveDayOptions.firstOrNull()
+    val zoneId = remember { ZoneId.systemDefault() }
+    val selectedDateMillis = selectedDayOption?.epochDay
+        ?.let { LocalDate.ofEpochDay(it).atStartOfDay(zoneId).toInstant().toEpochMilli() }
+    val selectableEpochDays = remember(effectiveDayOptions) {
+        effectiveDayOptions.mapNotNull { it.epochDay }.toSet()
     }
     var startTime by remember(event.eventId) { mutableStateOf(event.startTime) }
     var endTime by remember(event.eventId) { mutableStateOf(event.endTime) }
@@ -120,23 +140,26 @@ fun ItineraryEventEditorDialog(
                         fontWeight = FontWeight.Bold,
                         color = OnSurfaceVariant
                     )
-                    FlowRow(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    OutlinedButton(
+                        onClick = {
+                            datePickerErrorMessage = null
+                            showDatePicker = true
+                        },
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        effectiveDayOptions.forEach { option ->
-                            FilterChip(
-                                selected = selectedDay == option.dayIndex,
-                                onClick = { selectedDay = option.dayIndex },
-                                label = {
-                                    Text(
-                                        listOf(option.label, option.dateLabel)
-                                            .filter { it.isNotBlank() }
-                                            .joinToString(" - ")
-                                    )
-                                }
-                            )
-                        }
+                        Icon(
+                            imageVector = Icons.Default.CalendarMonth,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.size(8.dp))
+                        Text(
+                            text = selectedDayOption?.let { option ->
+                                listOf(option.label, option.dateLabel)
+                                    .filter { it.isNotBlank() }
+                                    .joinToString(" - ")
+                            } ?: "Chọn ngày"
+                        )
                     }
                 }
 
@@ -261,6 +284,78 @@ fun ItineraryEventEditorDialog(
                     ) {
                         Text(if (isCreating) "Add" else "Save changes")
                     }
+                }
+            }
+        }
+    }
+
+    if (showDatePicker) {
+        val yearRange = remember(effectiveDayOptions) {
+            val dates = effectiveDayOptions.mapNotNull { it.epochDay?.let(LocalDate::ofEpochDay) }
+            val first = dates.minOrNull()
+            val last = dates.maxOrNull()
+            if (first != null && last != null) first.year..last.year else 1900..2100
+        }
+        val selectableDates = remember(selectableEpochDays, yearRange, zoneId) {
+            object : SelectableDates {
+                override fun isSelectableDate(utcTimeMillis: Long): Boolean {
+                    if (selectableEpochDays.isEmpty()) return true
+                    val epochDay = Instant.ofEpochMilli(utcTimeMillis)
+                        .atZone(zoneId)
+                        .toLocalDate()
+                        .toEpochDay()
+                    return epochDay in selectableEpochDays
+                }
+
+                override fun isSelectableYear(year: Int): Boolean {
+                    return year in yearRange
+                }
+            }
+        }
+        val datePickerState = rememberDatePickerState(
+            initialSelectedDateMillis = selectedDateMillis,
+            yearRange = yearRange,
+            selectableDates = selectableDates
+        )
+
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        val selectedMillis = datePickerState.selectedDateMillis
+                        val selectedDate = selectedMillis
+                            ?.let { Instant.ofEpochMilli(it).atZone(zoneId).toLocalDate() }
+                        val option = selectedDate?.let { date ->
+                            effectiveDayOptions.firstOrNull { it.epochDay == date.toEpochDay() }
+                        }
+                        if (option != null) {
+                            selectedDay = option.dayIndex
+                            datePickerErrorMessage = null
+                            showDatePicker = false
+                        } else {
+                            datePickerErrorMessage = "Vui lòng chọn ngày trong khoảng thời gian của trip"
+                        }
+                    }
+                ) {
+                    Text("Chọn")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDatePicker = false }) {
+                    Text("Hủy")
+                }
+            }
+        ) {
+            Column {
+                DatePicker(state = datePickerState)
+                datePickerErrorMessage?.let { message ->
+                    Text(
+                        text = message,
+                        color = MaterialTheme.colorScheme.error,
+                        fontSize = 12.sp,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                    )
                 }
             }
         }

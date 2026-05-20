@@ -13,7 +13,6 @@ import com.mobile.travelhub.data.model.ItineraryEventColors
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
-import java.time.format.DateTimeParseException
 import java.time.temporal.ChronoUnit
 import java.util.Locale
 import javax.inject.Inject
@@ -246,15 +245,21 @@ class ItineraryViewModel @Inject constructor(
 
     fun startAddingStop() {
         val state = _uiState.value
-        val selectedDay = state.selectedDay ?: state.days.firstOrNull()
-        if (selectedDay == null) {
-            _uiState.update { it.copy(errorMessage = "Create a day before adding an itinerary item") }
+        if (state.dayOptions.isEmpty()) {
+            _uiState.update { it.copy(errorMessage = "Không tải được danh sách ngày của trip") }
             return
         }
-        val anchorEvent = selectedDay.events.lastOrNull()
+        val selectedOption = state.dayOptions.firstOrNull { it.dayIndex == state.selectedDayIndex }
+            ?: state.dayOptions.firstOrNull()
+        val selectedDay = state.days.firstOrNull { it.dayIndex == selectedOption?.dayIndex }
+            ?: state.selectedDay
+            ?: state.days.firstOrNull()
+        val selectedDayIndex = selectedOption?.dayIndex ?: selectedDay?.dayIndex ?: 1
+        val anchorEvent = selectedDay?.events?.lastOrNull()
+        val eventCount = selectedDay?.events?.size ?: 0
         val draftEvent = ItineraryEvent(
             eventId = "manual-${System.currentTimeMillis()}",
-            dayIndex = selectedDay.dayIndex,
+            dayIndex = selectedDayIndex,
             startTime = anchorEvent?.endTime ?: "09:00",
             endTime = nextHour(anchorEvent?.endTime ?: "09:00"),
             title = "",
@@ -262,13 +267,13 @@ class ItineraryViewModel @Inject constructor(
             note = "",
             transportToNext = "",
             estimatedCost = "",
-            colorHex = ItineraryEventColors.Palette[selectedDay.events.size % ItineraryEventColors.Palette.size],
+            colorHex = ItineraryEventColors.Palette[eventCount % ItineraryEventColors.Palette.size],
             iconName = "Place",
-            dayId = selectedDay.dayId
+            dayId = selectedDay?.dayId
         )
         _uiState.update {
             it.copy(
-                selectedDayIndex = selectedDay.dayIndex,
+                selectedDayIndex = selectedDayIndex,
                 editingEvent = draftEvent,
                 isCreatingEvent = true,
                 errorMessage = null
@@ -289,12 +294,17 @@ class ItineraryViewModel @Inject constructor(
         launchMutation {
             val selectedOption = _uiState.value.dayOptions.firstOrNull { it.dayIndex == updatedEvent.dayIndex }
             if (_uiState.value.isCreatingEvent && selectedOption != null) {
-                repository.ensureDay(
-                    groupName = groupName,
-                    dayIndex = selectedOption.dayIndex,
-                    label = selectedOption.label,
-                    dateLabel = selectedOption.dateLabel
-                )
+                _uiState.value.dayOptions
+                    .filter { it.dayIndex <= selectedOption.dayIndex }
+                    .sortedBy { it.dayIndex }
+                    .forEach { option ->
+                        repository.ensureDay(
+                            groupName = groupName,
+                            dayIndex = option.dayIndex,
+                            label = option.label,
+                            dateLabel = option.dateLabel
+                        )
+                    }
             }
             repository.updateEvent(groupName, updatedEvent)
             _uiState.update { it.copy(editingEvent = null, isCreatingEvent = false) }
@@ -427,18 +437,23 @@ class ItineraryViewModel @Inject constructor(
             ItineraryDayOption(
                 dayIndex = index + 1,
                 label = "Day ${index + 1}",
-                dateLabel = date.format(displayFormatter)
+                dateLabel = date.format(displayFormatter),
+                epochDay = date.toEpochDay()
             )
         }
     }
 
     private fun parseTripDate(value: String?): LocalDate? {
         if (value.isNullOrBlank()) return null
-        return try {
-            LocalDate.parse(value.substringBefore("T"))
-        } catch (_: DateTimeParseException) {
-            null
-        }
+        val normalized = value.substringBefore("T")
+        return runCatching { LocalDate.parse(normalized) }
+            .recoverCatching {
+                LocalDate.parse(
+                    normalized,
+                    DateTimeFormatter.ofPattern("dd/MM/yyyy", Locale.getDefault())
+                )
+            }
+            .getOrNull()
     }
 
     private fun launchMutation(block: suspend () -> Unit) {
