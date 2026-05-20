@@ -16,13 +16,21 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material3.FilterChip
+import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.SelectableDates
+import androidx.compose.material3.TimePicker
+import androidx.compose.material3.rememberDatePickerState
+import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.foundation.layout.FlowRow
@@ -52,18 +60,47 @@ import com.mobile.travelhub.ui.theme.SurfaceContainerLowest
 import com.mobile.travelhub.ui.theme.SunsetOrange
 import com.mobile.travelhub.data.model.ItineraryIcons
 import com.mobile.travelhub.data.model.getItineraryIcon
+import com.mobile.travelhub.viewmodels.ItineraryDayOption
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
 
+@OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun ItineraryEventEditorDialog(
     event: ItineraryEvent,
     dayCount: Int,
+    dayOptions: List<ItineraryDayOption> = emptyList(),
     isCreating: Boolean,
     onDismiss: () -> Unit,
     onSave: (ItineraryEvent) -> Unit,
     onDelete: () -> Unit
 ) {
     var selectedDay by remember(event.eventId) { mutableStateOf(event.dayIndex) }
-    val effectiveDayCount = maxOf(dayCount, event.dayIndex)
+    val effectiveDayOptions = remember(dayOptions, dayCount, event.dayIndex) {
+        dayOptions.ifEmpty {
+            val effectiveDayCount = maxOf(dayCount, event.dayIndex)
+            (1..effectiveDayCount).map { day ->
+                ItineraryDayOption(
+                    dayIndex = day,
+                    label = "Day $day",
+                    dateLabel = "",
+                    epochDay = null
+                )
+            }
+        }
+    }
+    var showDatePicker by remember { mutableStateOf(false) }
+    var timePickerTarget by remember { mutableStateOf<TimePickerTarget?>(null) }
+    var datePickerErrorMessage by remember { mutableStateOf<String?>(null) }
+    val selectedDayOption = effectiveDayOptions.firstOrNull { it.dayIndex == selectedDay }
+        ?: effectiveDayOptions.firstOrNull()
+    val zoneId = remember { ZoneId.systemDefault() }
+    val selectedDateMillis = selectedDayOption?.epochDay
+        ?.let { LocalDate.ofEpochDay(it).atStartOfDay(zoneId).toInstant().toEpochMilli() }
+    val selectableEpochDays = remember(effectiveDayOptions) {
+        effectiveDayOptions.mapNotNull { it.epochDay }.toSet()
+    }
     var startTime by remember(event.eventId) { mutableStateOf(event.startTime) }
     var endTime by remember(event.eventId) { mutableStateOf(event.endTime) }
     var title by remember(event.eventId) { mutableStateOf(event.title) }
@@ -93,7 +130,7 @@ fun ItineraryEventEditorDialog(
             ) {
 
                 Text(
-                    text = if (isCreating) "Add stop" else "Edit stop",
+                    text = if (isCreating) "Add itinerary" else "Edit stop",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.ExtraBold,
                     color = OnSurface
@@ -101,34 +138,46 @@ fun ItineraryEventEditorDialog(
                 
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text(
-                        text = "Day",
+                        text = "Ngày",
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.Bold,
                         color = OnSurfaceVariant
                     )
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        for (day in 1..effectiveDayCount) {
-                            FilterChip(
-                                selected = selectedDay == day,
-                                onClick = { selectedDay = day },
-                                label = { Text("Day $day") }
-                            )
-                        }
+                    OutlinedButton(
+                        onClick = {
+                            datePickerErrorMessage = null
+                            showDatePicker = true
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.CalendarMonth,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.size(8.dp))
+                        Text(
+                            text = selectedDayOption?.let { option ->
+                                listOf(option.label, option.dateLabel)
+                                    .filter { it.isNotBlank() }
+                                    .joinToString(" - ")
+                            } ?: "Chọn ngày"
+                        )
                     }
                 }
 
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    ItineraryEditorField(
+                    TimePickerField(
                         value = startTime,
-                        onValueChange = { startTime = it },
                         label = "Start",
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f),
+                        onClick = { timePickerTarget = TimePickerTarget.START }
                     )
-                    ItineraryEditorField(
+                    TimePickerField(
                         value = endTime,
-                        onValueChange = { endTime = it },
                         label = "End",
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f),
+                        onClick = { timePickerTarget = TimePickerTarget.END }
                     )
                 }
 
@@ -140,61 +189,64 @@ fun ItineraryEventEditorDialog(
                 ItineraryEditorField(
                     value = placeName,
                     onValueChange = { placeName = it },
-                    label = "Place"
-                )
-                ItineraryEditorField(
-                    value = note,
-                    onValueChange = { note = it },
-                    label = "Note",
-                    minLines = 3
-                )
-                ItineraryEditorField(
-                    value = transport,
-                    onValueChange = { transport = it },
-                    label = "Transport to next"
+                    label = "Địa điểm"
                 )
                 ItineraryEditorField(
                     value = cost,
                     onValueChange = { cost = it },
-                    label = "Estimated cost"
+                    label = "Estimate cost"
                 )
 
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Text(
-                        text = "Color",
-                        style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = OnSurfaceVariant
+                if (!isCreating) {
+                    ItineraryEditorField(
+                        value = note,
+                        onValueChange = { note = it },
+                        label = "Note",
+                        minLines = 3
                     )
-                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        ItineraryEventColors.Palette.forEach { option ->
-                            EventColorSwatch(
-                                colorHex = option,
-                                selected = colorHex == option,
-                                onClick = { colorHex = option }
-                            )
+                    ItineraryEditorField(
+                        value = transport,
+                        onValueChange = { transport = it },
+                        label = "Transport to next"
+                    )
+
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Text(
+                            text = "Color",
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = OnSurfaceVariant
+                        )
+                        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                            ItineraryEventColors.Palette.forEach { option ->
+                                EventColorSwatch(
+                                    colorHex = option,
+                                    selected = colorHex == option,
+                                    onClick = { colorHex = option }
+                                )
+                            }
                         }
                     }
-                }
 
-                @OptIn(ExperimentalLayoutApi::class)
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Text(
-                        text = "Icon",
-                        style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = OnSurfaceVariant
-                    )
-                    FlowRow(
-                        horizontalArrangement = Arrangement.spacedBy(10.dp),
-                        verticalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        ItineraryIcons.Palette.forEach { option ->
-                            EventIconSwatch(
-                                iconName = option,
-                                selected = iconName == option,
-                                onClick = { iconName = option }
-                            )
+                    @OptIn(ExperimentalLayoutApi::class)
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Text(
+                            text = "Icon",
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = OnSurfaceVariant
+                        )
+                        FlowRow(
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            ItineraryIcons.Palette.forEach { option ->
+                                EventIconSwatch(
+                                    iconName = option,
+                                    selected = iconName == option,
+                                    onClick = { iconName = option }
+                                )
+                            }
                         }
                     }
                 }
@@ -231,12 +283,139 @@ fun ItineraryEventEditorDialog(
                             )
                         }
                     ) {
-                        Text(if (isCreating) "Add stop" else "Save changes")
+                        Text(if (isCreating) "Add" else "Save changes")
                     }
                 }
             }
         }
     }
+
+    if (showDatePicker) {
+        val yearRange = remember(effectiveDayOptions) {
+            val dates = effectiveDayOptions.mapNotNull { it.epochDay?.let(LocalDate::ofEpochDay) }
+            val first = dates.minOrNull()
+            val last = dates.maxOrNull()
+            if (first != null && last != null) first.year..last.year else 1900..2100
+        }
+        val selectableDates = remember(selectableEpochDays, yearRange, zoneId) {
+            object : SelectableDates {
+                override fun isSelectableDate(utcTimeMillis: Long): Boolean {
+                    if (selectableEpochDays.isEmpty()) return true
+                    val epochDay = Instant.ofEpochMilli(utcTimeMillis)
+                        .atZone(zoneId)
+                        .toLocalDate()
+                        .toEpochDay()
+                    return epochDay in selectableEpochDays
+                }
+
+                override fun isSelectableYear(year: Int): Boolean {
+                    return year in yearRange
+                }
+            }
+        }
+        val datePickerState = rememberDatePickerState(
+            initialSelectedDateMillis = selectedDateMillis,
+            yearRange = yearRange,
+            selectableDates = selectableDates
+        )
+
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        val selectedMillis = datePickerState.selectedDateMillis
+                        val selectedDate = selectedMillis
+                            ?.let { Instant.ofEpochMilli(it).atZone(zoneId).toLocalDate() }
+                        val option = selectedDate?.let { date ->
+                            effectiveDayOptions.firstOrNull { it.epochDay == date.toEpochDay() }
+                        }
+                        if (option != null) {
+                            selectedDay = option.dayIndex
+                            datePickerErrorMessage = null
+                            showDatePicker = false
+                        } else {
+                            datePickerErrorMessage = "Vui lòng chọn ngày trong khoảng thời gian của trip"
+                        }
+                    }
+                ) {
+                    Text("Chọn")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDatePicker = false }) {
+                    Text("Hủy")
+                }
+            }
+        ) {
+            Column {
+                DatePicker(state = datePickerState)
+                datePickerErrorMessage?.let { message ->
+                    Text(
+                        text = message,
+                        color = MaterialTheme.colorScheme.error,
+                        fontSize = 12.sp,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                    )
+                }
+            }
+        }
+    }
+
+    timePickerTarget?.let { target ->
+        val initialTime = parseEditorTime(if (target == TimePickerTarget.START) startTime else endTime)
+        val timePickerState = rememberTimePickerState(
+            initialHour = initialTime.first,
+            initialMinute = initialTime.second,
+            is24Hour = true
+        )
+        Dialog(onDismissRequest = { timePickerTarget = null }) {
+            Surface(
+                shape = RoundedCornerShape(28.dp),
+                color = SurfaceContainerLowest
+            ) {
+                Column(
+                    modifier = Modifier.padding(20.dp),
+                    verticalArrangement = Arrangement.spacedBy(18.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = if (target == TimePickerTarget.START) "Chọn giờ bắt đầu" else "Chọn giờ kết thúc",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = OnSurface
+                    )
+                    TimePicker(state = timePickerState)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End
+                    ) {
+                        TextButton(onClick = { timePickerTarget = null }) {
+                            Text("Hủy")
+                        }
+                        TextButton(
+                            onClick = {
+                                val selected = "%02d:%02d".format(timePickerState.hour, timePickerState.minute)
+                                if (target == TimePickerTarget.START) {
+                                    startTime = selected
+                                } else {
+                                    endTime = selected
+                                }
+                                timePickerTarget = null
+                            }
+                        ) {
+                            Text("Chọn")
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+private enum class TimePickerTarget {
+    START,
+    END
 }
 
 @Composable
@@ -288,6 +467,45 @@ private fun ItineraryEditorField(
 }
 
 @Composable
+private fun TimePickerField(
+    value: String,
+    label: String,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelMedium,
+            color = OnSurfaceVariant,
+            fontWeight = FontWeight.Bold
+        )
+        OutlinedButton(
+            onClick = onClick,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Icon(
+                imageVector = Icons.Default.Schedule,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp)
+            )
+            Spacer(modifier = Modifier.size(8.dp))
+            Text(value.ifBlank { "--:--" })
+        }
+    }
+}
+
+private fun parseEditorTime(value: String): Pair<Int, Int> {
+    val parts = value.split(":")
+    val hour = parts.getOrNull(0)?.toIntOrNull()?.coerceIn(0, 23) ?: 9
+    val minute = parts.getOrNull(1)?.toIntOrNull()?.coerceIn(0, 59) ?: 0
+    return hour to minute
+}
+
+@Composable
 private fun EventIconSwatch(
     iconName: String,
     selected: Boolean,
@@ -314,4 +532,3 @@ private fun EventIconSwatch(
         )
     }
 }
-

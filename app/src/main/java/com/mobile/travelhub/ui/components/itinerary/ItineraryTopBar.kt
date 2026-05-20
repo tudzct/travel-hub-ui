@@ -37,8 +37,7 @@ fun ItineraryTopBar(
     subtitle: String,
     isLeader: Boolean,
     showBackButton: Boolean,
-    isEditMode: Boolean = false,
-    onToggleEditMode: (() -> Unit)? = null,
+    onAddItinerary: (() -> Unit)? = null,
     onBack: () -> Unit
 ) {
     TopAppBar(
@@ -69,11 +68,8 @@ fun ItineraryTopBar(
             }
         },
         actions = {
-            if (isLeader && onToggleEditMode != null) {
-                ItineraryEditButton(
-                    isEditMode = isEditMode,
-                    onToggleEditMode = onToggleEditMode
-                )
+            if (isLeader && onAddItinerary != null) {
+                ItineraryAddButton(onAddItinerary = onAddItinerary)
             }
             Spacer(modifier = Modifier.width(8.dp))
         },

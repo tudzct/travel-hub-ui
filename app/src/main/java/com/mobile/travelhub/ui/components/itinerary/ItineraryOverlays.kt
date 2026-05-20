@@ -82,6 +82,7 @@ fun ItinerarySharedOverlays(
         ItineraryEventEditorDialog(
             event = event,
             dayCount = state.days.size,
+            dayOptions = state.dayOptions,
             isCreating = state.isCreatingEvent,
             onDismiss = onDismissEventEditor,
             onSave = onSaveEvent,
