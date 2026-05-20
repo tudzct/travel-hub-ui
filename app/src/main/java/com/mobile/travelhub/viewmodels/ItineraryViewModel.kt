@@ -3,6 +3,7 @@ package com.mobile.travelhub.viewmodels
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mobile.travelhub.data.ItineraryRepository
+import com.mobile.travelhub.data.TripRepository
 import com.mobile.travelhub.data.model.ItineraryAssistantEvent
 import com.mobile.travelhub.data.model.ItineraryChatMessage
 import com.mobile.travelhub.data.model.ItineraryChatRole
@@ -10,6 +11,11 @@ import com.mobile.travelhub.data.model.ItineraryDay
 import com.mobile.travelhub.data.model.ItineraryEvent
 import com.mobile.travelhub.data.model.ItineraryEventColors
 import dagger.hilt.android.lifecycle.HiltViewModel
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import java.time.format.DateTimeParseException
+import java.time.temporal.ChronoUnit
+import java.util.Locale
 import javax.inject.Inject
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,7 +26,8 @@ import kotlinx.coroutines.launch
 
 @HiltViewModel
 class ItineraryViewModel @Inject constructor(
-    private val repository: ItineraryRepository
+    private val repository: ItineraryRepository,
+    private val tripRepository: TripRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ItineraryUiState())
@@ -48,6 +55,7 @@ class ItineraryViewModel @Inject constructor(
                 .onFailure { throwable ->
                     _uiState.update { it.copy(errorMessage = throwable.message ?: "Unable to load itinerary") }
                 }
+            loadTripDayOptions(tripId)
             repository.observeWorkspace(groupName).collect { workspace ->
                 val selectedDayIndex = _uiState.value.selectedDayIndex
                     .takeIf { value -> workspace.days.any { it.dayIndex == value } }
@@ -238,7 +246,11 @@ class ItineraryViewModel @Inject constructor(
 
     fun startAddingStop() {
         val state = _uiState.value
-        val selectedDay = state.selectedDay ?: return
+        val selectedDay = state.selectedDay ?: state.days.firstOrNull()
+        if (selectedDay == null) {
+            _uiState.update { it.copy(errorMessage = "Create a day before adding an itinerary item") }
+            return
+        }
         val anchorEvent = selectedDay.events.lastOrNull()
         val draftEvent = ItineraryEvent(
             eventId = "manual-${System.currentTimeMillis()}",
@@ -256,6 +268,7 @@ class ItineraryViewModel @Inject constructor(
         )
         _uiState.update {
             it.copy(
+                selectedDayIndex = selectedDay.dayIndex,
                 editingEvent = draftEvent,
                 isCreatingEvent = true,
                 errorMessage = null
@@ -274,6 +287,15 @@ class ItineraryViewModel @Inject constructor(
     fun saveEvent(updatedEvent: ItineraryEvent) {
         val groupName = boundGroupName ?: return
         launchMutation {
+            val selectedOption = _uiState.value.dayOptions.firstOrNull { it.dayIndex == updatedEvent.dayIndex }
+            if (_uiState.value.isCreatingEvent && selectedOption != null) {
+                repository.ensureDay(
+                    groupName = groupName,
+                    dayIndex = selectedOption.dayIndex,
+                    label = selectedOption.label,
+                    dateLabel = selectedOption.dateLabel
+                )
+            }
             repository.updateEvent(groupName, updatedEvent)
             _uiState.update { it.copy(editingEvent = null, isCreatingEvent = false) }
         }
@@ -374,6 +396,49 @@ class ItineraryViewModel @Inject constructor(
         val minute = parts[1].toIntOrNull() ?: return time
         val nextHour = (hour + 1).coerceAtMost(23)
         return "%02d:%02d".format(nextHour, minute)
+    }
+
+    private suspend fun loadTripDayOptions(tripId: Long?) {
+        if (tripId == null || tripId <= 0) return
+        tripRepository.getTripDetail(tripId)
+            .onSuccess { detail ->
+                val options = buildDayOptions(
+                    startDateText = detail.tripInfo.startDate,
+                    endDateText = detail.tripInfo.endDate
+                )
+                if (options.isNotEmpty()) {
+                    _uiState.update { it.copy(dayOptions = options) }
+                }
+            }
+    }
+
+    private fun buildDayOptions(
+        startDateText: String?,
+        endDateText: String?
+    ): List<ItineraryDayOption> {
+        val startDate = parseTripDate(startDateText) ?: return emptyList()
+        val endDate = parseTripDate(endDateText) ?: return emptyList()
+        if (endDate.isBefore(startDate)) return emptyList()
+
+        val displayFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy", Locale.getDefault())
+        val dayCount = ChronoUnit.DAYS.between(startDate, endDate).toInt() + 1
+        return List(dayCount) { index ->
+            val date = startDate.plusDays(index.toLong())
+            ItineraryDayOption(
+                dayIndex = index + 1,
+                label = "Day ${index + 1}",
+                dateLabel = date.format(displayFormatter)
+            )
+        }
+    }
+
+    private fun parseTripDate(value: String?): LocalDate? {
+        if (value.isNullOrBlank()) return null
+        return try {
+            LocalDate.parse(value.substringBefore("T"))
+        } catch (_: DateTimeParseException) {
+            null
+        }
     }
 
     private fun launchMutation(block: suspend () -> Unit) {

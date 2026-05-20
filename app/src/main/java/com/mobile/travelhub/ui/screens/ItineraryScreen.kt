@@ -101,7 +101,6 @@ import com.mobile.travelhub.data.model.*
 
 import com.mobile.travelhub.ui.components.itinerary.*
 import com.mobile.travelhub.ui.components.itinerary.ItineraryDayEditorDialog
-import com.mobile.travelhub.ui.components.itinerary.ItineraryEditButton
 import com.mobile.travelhub.ui.components.itinerary.ItineraryEventEditorDialog
 import com.mobile.travelhub.ui.components.itinerary.toItineraryColor
 import com.mobile.travelhub.ui.theme.OnSurface
@@ -151,8 +150,7 @@ fun ItineraryScreen(
                 subtitle = "Version ${state.version}",
                 isLeader = state.isLeader,
                 showBackButton = showBackButton,
-                isEditMode = state.isEditMode,
-                onToggleEditMode = viewModel::toggleEditMode,
+                onAddItinerary = viewModel::startAddingStop,
                 onBack = onBack
             )
         },
@@ -224,8 +222,7 @@ fun ItineraryDayDetailScreen(
                 subtitle = selectedDay?.dateLabel ?: state.groupName,
                 isLeader = state.isLeader,
                 showBackButton = showBackButton,
-                isEditMode = state.isEditMode,
-                onToggleEditMode = viewModel::toggleEditMode,
+                onAddItinerary = viewModel::startAddingStop,
                 onBack = onBack
             )
         },
@@ -289,7 +286,7 @@ fun ItineraryPopupSheet(
             groupName = groupName,
             snackbarHostState = snackbarHostState,
             onDismiss = onDismiss,
-            onToggleEditMode = viewModel::toggleEditMode,
+            onAddItinerary = viewModel::startAddingStop,
             onOpenChat = viewModel::openChat,
             onOpenDayDetail = viewModel::selectDay,
             onToggleChange = viewModel::toggleChangeSelection,
@@ -322,7 +319,7 @@ private fun ItineraryPopupContent(
     groupName: String,
     snackbarHostState: SnackbarHostState,
     onDismiss: () -> Unit,
-    onToggleEditMode: () -> Unit,
+    onAddItinerary: () -> Unit,
     onOpenChat: () -> Unit,
     onOpenDayDetail: (Int) -> Unit,
     onToggleChange: (String) -> Unit,
@@ -355,10 +352,7 @@ private fun ItineraryPopupContent(
                     )
                 }
                 if (state.isLeader) {
-                    ItineraryEditButton(
-                        isEditMode = state.isEditMode,
-                        onToggleEditMode = onToggleEditMode
-                    )
+                    ItineraryAddButton(onAddItinerary = onAddItinerary)
                 }
                 IconButton(onClick = onDismiss) {
                     Icon(
@@ -394,7 +388,7 @@ private fun ItineraryPopupPreview() {
                 groupName = "New test trip",
                 snackbarHostState = remember { SnackbarHostState() },
                 onDismiss = {},
-                onToggleEditMode = {},
+                onAddItinerary = {},
                 onOpenChat = {},
                 onOpenDayDetail = {},
                 onToggleChange = {},
@@ -509,8 +503,6 @@ private fun GeminiItineraryFab(onClick: () -> Unit) {
         }
     }
 }
-
-
 
 
 

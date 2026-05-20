@@ -6,11 +6,18 @@ import com.mobile.travelhub.data.model.ItineraryEvent
 import com.mobile.travelhub.data.model.ItineraryProposal
 import com.mobile.travelhub.data.model.ItineraryUserRole
 
+data class ItineraryDayOption(
+    val dayIndex: Int,
+    val label: String,
+    val dateLabel: String
+)
+
 data class ItineraryUiState(
     val groupName: String = "",
     val version: Int = 0,
     val role: ItineraryUserRole = ItineraryUserRole.MEMBER,
     val days: List<ItineraryDay> = emptyList(),
+    val dayOptions: List<ItineraryDayOption> = emptyList(),
     val selectedDayIndex: Int = 1,
     val pendingProposal: ItineraryProposal? = null,
     val selectedChangeIds: Set<String> = emptySet(),

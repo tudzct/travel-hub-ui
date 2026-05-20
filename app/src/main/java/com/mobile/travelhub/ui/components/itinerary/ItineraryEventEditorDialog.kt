@@ -52,18 +52,32 @@ import com.mobile.travelhub.ui.theme.SurfaceContainerLowest
 import com.mobile.travelhub.ui.theme.SunsetOrange
 import com.mobile.travelhub.data.model.ItineraryIcons
 import com.mobile.travelhub.data.model.getItineraryIcon
+import com.mobile.travelhub.viewmodels.ItineraryDayOption
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun ItineraryEventEditorDialog(
     event: ItineraryEvent,
     dayCount: Int,
+    dayOptions: List<ItineraryDayOption> = emptyList(),
     isCreating: Boolean,
     onDismiss: () -> Unit,
     onSave: (ItineraryEvent) -> Unit,
     onDelete: () -> Unit
 ) {
     var selectedDay by remember(event.eventId) { mutableStateOf(event.dayIndex) }
-    val effectiveDayCount = maxOf(dayCount, event.dayIndex)
+    val effectiveDayOptions = remember(dayOptions, dayCount, event.dayIndex) {
+        dayOptions.ifEmpty {
+            val effectiveDayCount = maxOf(dayCount, event.dayIndex)
+            (1..effectiveDayCount).map { day ->
+                ItineraryDayOption(
+                    dayIndex = day,
+                    label = "Day $day",
+                    dateLabel = ""
+                )
+            }
+        }
+    }
     var startTime by remember(event.eventId) { mutableStateOf(event.startTime) }
     var endTime by remember(event.eventId) { mutableStateOf(event.endTime) }
     var title by remember(event.eventId) { mutableStateOf(event.title) }
@@ -93,7 +107,7 @@ fun ItineraryEventEditorDialog(
             ) {
 
                 Text(
-                    text = if (isCreating) "Add stop" else "Edit stop",
+                    text = if (isCreating) "Add itinerary" else "Edit stop",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.ExtraBold,
                     color = OnSurface
@@ -101,35 +115,46 @@ fun ItineraryEventEditorDialog(
                 
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text(
-                        text = "Day",
+                        text = "Ngày",
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.Bold,
                         color = OnSurfaceVariant
                     )
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        for (day in 1..effectiveDayCount) {
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        effectiveDayOptions.forEach { option ->
                             FilterChip(
-                                selected = selectedDay == day,
-                                onClick = { selectedDay = day },
-                                label = { Text("Day $day") }
+                                selected = selectedDay == option.dayIndex,
+                                onClick = { selectedDay = option.dayIndex },
+                                label = {
+                                    Text(
+                                        listOf(option.label, option.dateLabel)
+                                            .filter { it.isNotBlank() }
+                                            .joinToString(" - ")
+                                    )
+                                }
                             )
                         }
                     }
                 }
 
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    ItineraryEditorField(
-                        value = startTime,
-                        onValueChange = { startTime = it },
-                        label = "Start",
-                        modifier = Modifier.weight(1f)
-                    )
-                    ItineraryEditorField(
-                        value = endTime,
-                        onValueChange = { endTime = it },
-                        label = "End",
-                        modifier = Modifier.weight(1f)
-                    )
+                if (!isCreating) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        ItineraryEditorField(
+                            value = startTime,
+                            onValueChange = { startTime = it },
+                            label = "Start",
+                            modifier = Modifier.weight(1f)
+                        )
+                        ItineraryEditorField(
+                            value = endTime,
+                            onValueChange = { endTime = it },
+                            label = "End",
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
                 }
 
                 ItineraryEditorField(
@@ -140,61 +165,64 @@ fun ItineraryEventEditorDialog(
                 ItineraryEditorField(
                     value = placeName,
                     onValueChange = { placeName = it },
-                    label = "Place"
-                )
-                ItineraryEditorField(
-                    value = note,
-                    onValueChange = { note = it },
-                    label = "Note",
-                    minLines = 3
-                )
-                ItineraryEditorField(
-                    value = transport,
-                    onValueChange = { transport = it },
-                    label = "Transport to next"
+                    label = "Địa điểm"
                 )
                 ItineraryEditorField(
                     value = cost,
                     onValueChange = { cost = it },
-                    label = "Estimated cost"
+                    label = "Estimate cost"
                 )
 
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Text(
-                        text = "Color",
-                        style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = OnSurfaceVariant
+                if (!isCreating) {
+                    ItineraryEditorField(
+                        value = note,
+                        onValueChange = { note = it },
+                        label = "Note",
+                        minLines = 3
                     )
-                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        ItineraryEventColors.Palette.forEach { option ->
-                            EventColorSwatch(
-                                colorHex = option,
-                                selected = colorHex == option,
-                                onClick = { colorHex = option }
-                            )
+                    ItineraryEditorField(
+                        value = transport,
+                        onValueChange = { transport = it },
+                        label = "Transport to next"
+                    )
+
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Text(
+                            text = "Color",
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = OnSurfaceVariant
+                        )
+                        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                            ItineraryEventColors.Palette.forEach { option ->
+                                EventColorSwatch(
+                                    colorHex = option,
+                                    selected = colorHex == option,
+                                    onClick = { colorHex = option }
+                                )
+                            }
                         }
                     }
-                }
 
-                @OptIn(ExperimentalLayoutApi::class)
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Text(
-                        text = "Icon",
-                        style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = OnSurfaceVariant
-                    )
-                    FlowRow(
-                        horizontalArrangement = Arrangement.spacedBy(10.dp),
-                        verticalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        ItineraryIcons.Palette.forEach { option ->
-                            EventIconSwatch(
-                                iconName = option,
-                                selected = iconName == option,
-                                onClick = { iconName = option }
-                            )
+                    @OptIn(ExperimentalLayoutApi::class)
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Text(
+                            text = "Icon",
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = OnSurfaceVariant
+                        )
+                        FlowRow(
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            ItineraryIcons.Palette.forEach { option ->
+                                EventIconSwatch(
+                                    iconName = option,
+                                    selected = iconName == option,
+                                    onClick = { iconName = option }
+                                )
+                            }
                         }
                     }
                 }
@@ -231,7 +259,7 @@ fun ItineraryEventEditorDialog(
                             )
                         }
                     ) {
-                        Text(if (isCreating) "Add stop" else "Save changes")
+                        Text(if (isCreating) "Add" else "Save changes")
                     }
                 }
             }
@@ -314,4 +342,3 @@ private fun EventIconSwatch(
         )
     }
 }
-

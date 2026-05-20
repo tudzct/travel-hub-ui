@@ -411,14 +411,14 @@ private fun ItineraryTimelineEventCard(
                 Box(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
-                        .size(15.dp)
+                        .size(22.dp)
                         .background(PrimaryBlue, CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = badge.toString(),
                         color = Color.White,
-                        fontSize = 8.sp,
+                        fontSize = 10.sp,
                         fontWeight = FontWeight.ExtraBold
                     )
                 }

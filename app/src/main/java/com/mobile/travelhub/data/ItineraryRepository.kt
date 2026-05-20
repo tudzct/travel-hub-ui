@@ -122,7 +122,7 @@ class ItineraryRepository @Inject constructor(
 
     suspend fun updateEvent(groupName: String, updatedEvent: ItineraryEvent) {
         val itineraryId = itineraryId(groupName)
-        val targetDay = findDay(groupName, updatedEvent.dayId, updatedEvent.dayIndex)
+        val targetDay = findDay(groupName, dayId = null, dayIndex = updatedEvent.dayIndex)
         val request = updatedEvent.toUpsertRequest(targetDay.dayId ?: error("Day id is missing"))
         val updatedItinerary = updatedEvent.stopId?.let { stopId ->
             itineraryApiService.updateStop(itineraryId, stopId, request)
@@ -171,6 +171,37 @@ class ItineraryRepository @Inject constructor(
         )
         cacheItinerary(groupName, updatedItinerary, pendingProposal = null)
         return nextIndex
+    }
+
+    suspend fun ensureDay(
+        groupName: String,
+        dayIndex: Int,
+        label: String,
+        dateLabel: String
+    ): ItineraryDay {
+        workspaceState(groupName).value.days.firstOrNull { it.dayIndex == dayIndex }?.let { return it }
+
+        var workspace = workspaceState(groupName).value
+        while (workspace.days.none { it.dayIndex == dayIndex }) {
+            val nextIndex = (workspace.days.maxOfOrNull { it.dayIndex } ?: 0) + 1
+            val nextLabel = if (nextIndex == dayIndex) label else "Day $nextIndex"
+            val nextDateLabel = if (nextIndex == dayIndex) {
+                dateLabel
+            } else {
+                nextDateLabel(workspace.days.maxByOrNull { it.dayIndex }?.dateLabel, nextIndex)
+            }
+            val updatedItinerary = itineraryApiService.createDay(
+                itineraryId = itineraryId(groupName),
+                request = CreateItineraryDayRequestDto(
+                    label = nextLabel,
+                    dateLabel = nextDateLabel
+                )
+            )
+            cacheItinerary(groupName, updatedItinerary, pendingProposal = null)
+            workspace = workspaceState(groupName).value
+        }
+
+        return workspaceState(groupName).value.days.first { it.dayIndex == dayIndex }
     }
 
     suspend fun reorderEvent(groupName: String, dayIndex: Int, eventId: String, moveUp: Boolean) {
