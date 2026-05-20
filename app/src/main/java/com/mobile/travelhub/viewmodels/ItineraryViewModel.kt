@@ -45,6 +45,7 @@ class ItineraryViewModel @Inject constructor(
         _uiState.update {
             it.copy(
                 groupName = groupName,
+                isLoadingActivities = true,
                 isChatSheetOpen = it.isChatSheetOpen || openChatOnLaunch,
                 errorMessage = null
             )
@@ -52,7 +53,12 @@ class ItineraryViewModel @Inject constructor(
         workspaceJob = viewModelScope.launch {
             runCatching { repository.refreshWorkspace(groupName, tripId) }
                 .onFailure { throwable ->
-                    _uiState.update { it.copy(errorMessage = throwable.message ?: "Unable to load itinerary") }
+                    _uiState.update {
+                        it.copy(
+                            isLoadingActivities = false,
+                            errorMessage = throwable.message ?: "Unable to load itinerary"
+                        )
+                    }
                 }
             loadTripDayOptions(tripId)
             repository.observeWorkspace(groupName).collect { workspace ->
@@ -74,6 +80,7 @@ class ItineraryViewModel @Inject constructor(
                         version = workspace.version,
                         role = workspace.role,
                         days = workspace.days,
+                        isLoadingActivities = false,
                         selectedDayIndex = selectedDayIndex,
                         pendingProposal = workspace.pendingProposal,
                         selectedChangeIds = nextSelectedIds

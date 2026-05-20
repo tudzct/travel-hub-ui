@@ -129,21 +129,21 @@ class GroupDetailViewModel @Inject constructor(
                     }
                 }
 
-            tripRepository.getItineraryByGroupName(groupName)
-                .onSuccess { itinerary ->
+            tripRepository.listTripDays(tripId)
+                .onSuccess { tripDays ->
                     _uiState.update { state ->
                         state.copy(
                             isLoading = false,
-                            days = itinerary.days.map { day ->
+                            days = tripDays.map { day ->
                                 GroupDayUiModel(
-                                    dayIndex = day.dayIndex,
-                                    label = day.label,
-                                    dateLabel = day.dateLabel,
-                                    stopCount = day.stops.size,
-                                    firstStopTitles = day.stops.take(3).map { stop -> stop.title }
+                                    dayIndex = day.dayNumber,
+                                    label = "Day ${day.dayNumber}",
+                                    dateLabel = day.date,
+                                    stopCount = day.activities.size,
+                                    firstStopTitles = day.activities.take(3).map { activity -> activity.title }
                                 )
                             },
-                            totalStops = itinerary.days.sumOf { it.stops.size }
+                            totalStops = tripDays.sumOf { it.activities.size }
                         )
                     }
                 }

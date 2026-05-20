@@ -28,6 +28,7 @@ import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
+import com.mobile.travelhub.ui.components.modifiers.shimmerEffect
 import com.mobile.travelhub.viewmodels.ItineraryUiState
 
 
@@ -69,7 +70,11 @@ fun ItineraryOverviewContent(
                 )
             }
         }
-        if (state.days.isEmpty()) {
+        if (state.isLoadingActivities) {
+            item {
+                ItineraryOverviewSkeleton()
+            }
+        } else if (state.days.isEmpty()) {
             item {
                 EmptyOverviewCard()
             }
@@ -467,6 +472,25 @@ private fun ItineraryTimelineEventCard(
                             fontWeight = FontWeight.Medium
                         )
                     }
+
+                    Row(
+                        modifier = Modifier.padding(horizontal = 9.dp),
+                        horizontalArrangement = Arrangement.spacedBy(5.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Schedule,
+                            contentDescription = null,
+                            tint = PrimaryBlue,
+                            modifier = Modifier.size(12.dp)
+                        )
+                        Text(
+                            text = timeRange,
+                            color = PrimaryBlue,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
                 }
             }
         }
@@ -476,6 +500,7 @@ private fun ItineraryTimelineEventCard(
 @Composable
 fun ItineraryDayDetailContent(
     day: ItineraryDay?,
+    isLoading: Boolean,
     isEditMode: Boolean,
     paddingValues: PaddingValues,
     onAddStop: () -> Unit,
@@ -504,16 +529,20 @@ fun ItineraryDayDetailContent(
         contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 120.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        if (day != null) {
+        if (isLoading) {
+            item {
+                ItineraryDayDetailSkeleton()
+            }
+        } else if (day != null) {
             item {
                 DayContinuousTimelineCard(day = day)
             }
         }
-        if (day == null || day.events.isEmpty()) {
+        if (!isLoading && (day == null || day.events.isEmpty())) {
             item {
                 EmptyDayCard()
             }
-        } else {
+        } else if (!isLoading && day != null) {
             itemsIndexed(day.events, key = { _, it -> it.eventId }) { index, event ->
                 ReorderableItem(reorderableState, key = event.eventId) { isDragging ->
                     Row(
@@ -599,11 +628,83 @@ fun ItineraryDayDetailContent(
                 }
             }
         }
-        if (day != null && isEditMode) {
+        if (!isLoading && day != null && isEditMode) {
             item {
                 AddActionCard(
                     title = "Add stop",
                     onClick = onAddStop
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ItineraryOverviewSkeleton() {
+    Column(verticalArrangement = Arrangement.spacedBy(18.dp)) {
+        repeat(3) { index ->
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.Top
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(32.dp)
+                        .background(SurfaceContainerLow, CircleShape)
+                        .shimmerEffect()
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth(if (index == 0) 0.55f else 0.42f)
+                            .height(16.dp)
+                            .background(SurfaceContainerLow, RoundedCornerShape(6.dp))
+                            .shimmerEffect()
+                    )
+                    repeat(2) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(58.dp)
+                                .background(SurfaceContainerLowest, RoundedCornerShape(20.dp))
+                                .shimmerEffect()
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ItineraryDayDetailSkeleton() {
+    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(150.dp)
+                .background(SurfaceContainerLowest, RoundedCornerShape(24.dp))
+                .shimmerEffect()
+        )
+        repeat(4) {
+            Row(modifier = Modifier.fillMaxWidth()) {
+                Box(
+                    modifier = Modifier
+                        .size(32.dp)
+                        .background(SurfaceContainerLow, CircleShape)
+                        .shimmerEffect()
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(92.dp)
+                        .background(SurfaceContainerLowest, RoundedCornerShape(22.dp))
+                        .shimmerEffect()
                 )
             }
         }

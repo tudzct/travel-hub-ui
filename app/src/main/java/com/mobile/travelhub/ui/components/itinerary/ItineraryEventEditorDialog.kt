@@ -28,7 +28,9 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.SelectableDates
+import androidx.compose.material3.TimePicker
 import androidx.compose.material3.rememberDatePickerState
+import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.foundation.layout.FlowRow
@@ -89,6 +91,7 @@ fun ItineraryEventEditorDialog(
         }
     }
     var showDatePicker by remember { mutableStateOf(false) }
+    var timePickerTarget by remember { mutableStateOf<TimePickerTarget?>(null) }
     var datePickerErrorMessage by remember { mutableStateOf<String?>(null) }
     val selectedDayOption = effectiveDayOptions.firstOrNull { it.dayIndex == selectedDay }
         ?: effectiveDayOptions.firstOrNull()
@@ -163,21 +166,19 @@ fun ItineraryEventEditorDialog(
                     }
                 }
 
-                if (!isCreating) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        ItineraryEditorField(
-                            value = startTime,
-                            onValueChange = { startTime = it },
-                            label = "Start",
-                            modifier = Modifier.weight(1f)
-                        )
-                        ItineraryEditorField(
-                            value = endTime,
-                            onValueChange = { endTime = it },
-                            label = "End",
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    TimePickerField(
+                        value = startTime,
+                        label = "Start",
+                        modifier = Modifier.weight(1f),
+                        onClick = { timePickerTarget = TimePickerTarget.START }
+                    )
+                    TimePickerField(
+                        value = endTime,
+                        label = "End",
+                        modifier = Modifier.weight(1f),
+                        onClick = { timePickerTarget = TimePickerTarget.END }
+                    )
                 }
 
                 ItineraryEditorField(
@@ -360,6 +361,61 @@ fun ItineraryEventEditorDialog(
             }
         }
     }
+
+    timePickerTarget?.let { target ->
+        val initialTime = parseEditorTime(if (target == TimePickerTarget.START) startTime else endTime)
+        val timePickerState = rememberTimePickerState(
+            initialHour = initialTime.first,
+            initialMinute = initialTime.second,
+            is24Hour = true
+        )
+        Dialog(onDismissRequest = { timePickerTarget = null }) {
+            Surface(
+                shape = RoundedCornerShape(28.dp),
+                color = SurfaceContainerLowest
+            ) {
+                Column(
+                    modifier = Modifier.padding(20.dp),
+                    verticalArrangement = Arrangement.spacedBy(18.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = if (target == TimePickerTarget.START) "Chọn giờ bắt đầu" else "Chọn giờ kết thúc",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = OnSurface
+                    )
+                    TimePicker(state = timePickerState)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End
+                    ) {
+                        TextButton(onClick = { timePickerTarget = null }) {
+                            Text("Hủy")
+                        }
+                        TextButton(
+                            onClick = {
+                                val selected = "%02d:%02d".format(timePickerState.hour, timePickerState.minute)
+                                if (target == TimePickerTarget.START) {
+                                    startTime = selected
+                                } else {
+                                    endTime = selected
+                                }
+                                timePickerTarget = null
+                            }
+                        ) {
+                            Text("Chọn")
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+private enum class TimePickerTarget {
+    START,
+    END
 }
 
 @Composable
@@ -408,6 +464,45 @@ private fun ItineraryEditorField(
         modifier = modifier.fillMaxWidth(),
         minLines = minLines
     )
+}
+
+@Composable
+private fun TimePickerField(
+    value: String,
+    label: String,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelMedium,
+            color = OnSurfaceVariant,
+            fontWeight = FontWeight.Bold
+        )
+        OutlinedButton(
+            onClick = onClick,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Icon(
+                imageVector = Icons.Default.Schedule,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp)
+            )
+            Spacer(modifier = Modifier.size(8.dp))
+            Text(value.ifBlank { "--:--" })
+        }
+    }
+}
+
+private fun parseEditorTime(value: String): Pair<Int, Int> {
+    val parts = value.split(":")
+    val hour = parts.getOrNull(0)?.toIntOrNull()?.coerceIn(0, 23) ?: 9
+    val minute = parts.getOrNull(1)?.toIntOrNull()?.coerceIn(0, 59) ?: 0
+    return hour to minute
 }
 
 @Composable

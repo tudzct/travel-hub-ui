@@ -27,6 +27,7 @@ data class ItineraryUiState(
     val chatInputType: String = "TEXT",
     val thinking: String = "",
     val isStreaming: Boolean = false,
+    val isLoadingActivities: Boolean = false,
     val isChatSheetOpen: Boolean = false,
     val editingDay: ItineraryDay? = null,
     val editingEvent: ItineraryEvent? = null,

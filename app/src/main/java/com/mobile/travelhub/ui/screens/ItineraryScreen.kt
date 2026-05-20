@@ -232,6 +232,7 @@ fun ItineraryDayDetailScreen(
     ) { paddingValues ->
         ItineraryDayDetailContent(
             day = selectedDay,
+            isLoading = state.isLoadingActivities,
             isEditMode = state.isEditMode,
             paddingValues = paddingValues,
             onAddStop = viewModel::startAddingStop,
@@ -335,7 +336,7 @@ private fun ItineraryPopupContent(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(start = 20.dp, end = 12.dp, top = 4.dp, bottom = 8.dp),
+                    .padding(start = 16.dp, end = 12.dp, top = 4.dp, bottom = 8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(modifier = Modifier.weight(1f)) {
@@ -344,11 +345,6 @@ private fun ItineraryPopupContent(
                         fontWeight = FontWeight.ExtraBold,
                         fontSize = 20.sp,
                         color = OnSurface
-                    )
-                    Text(
-                        text = "Version ${state.version}",
-                        fontSize = 12.sp,
-                        color = OnSurfaceVariant
                     )
                 }
                 if (state.isLeader) {
@@ -503,7 +499,6 @@ private fun GeminiItineraryFab(onClick: () -> Unit) {
         }
     }
 }
-
 
 
 
