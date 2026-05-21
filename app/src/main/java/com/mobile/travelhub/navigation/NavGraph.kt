@@ -523,7 +523,8 @@ fun NavGraph(
                 onNavigateToChat = { navController.navigate(Screen.GroupChat.createRoute(groupName)) { launchSingleTop = true } },
                 onNavigateToDiscovery = { navController.navigate(Screen.GroupDiscovery.route) { launchSingleTop = true } },
                 onNavigateToMap = { navController.navigate(Screen.RouteMap.route) { launchSingleTop = true } },
-                onNavigateToCost = { costTripId -> navController.navigate(Screen.CostEstimate.createRoute(costTripId)) { launchSingleTop = true } }
+                onNavigateToCost = { costTripId -> navController.navigate(Screen.CostEstimate.createRoute(costTripId)) { launchSingleTop = true } },
+                onNavigateToProfile = { userId -> navController.navigate(Screen.OtherProfile.createRoute(userId)) { launchSingleTop = true } }
             )
         }
 

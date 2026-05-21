@@ -99,8 +99,15 @@ class GroupDetailViewModel @Inject constructor(
                     _uiState.update { state ->
                         state.mergeTripDetail(detail)
                     }
-                    loadInviteCode(tripId)
-                    if (detail.myRole == "LEADER") {
+                    val hasInviteCode = _uiState.value.inviteCode?.isNotBlank() == true
+                    if (!hasInviteCode) {
+                        loadInviteCode(tripId)
+                    } else {
+                        _uiState.update { state ->
+                            state.copy(isInviteCodeLoading = false)
+                        }
+                    }
+                    if (detail.myRole.equals("LEADER", ignoreCase = true)) {
                         loadJoinRequests(tripId)
                     } else {
                         _uiState.update { state ->
@@ -145,11 +152,13 @@ class GroupDetailViewModel @Inject constructor(
             _uiState.update { it.copy(isInviteCodeLoading = true) }
             tripRepository.getInviteCode(tripId)
                 .onSuccess { response ->
+                    val inviteCode = response.inviteCode.takeIf { it.isNotBlank() }
+                    val inviteLink = response.inviteLink.takeIf { it.isNotBlank() }
                     _uiState.update {
                         it.copy(
                             isInviteCodeLoading = false,
-                            inviteCode = response.inviteCode,
-                            inviteLink = response.inviteLink,
+                            inviteCode = inviteCode ?: it.inviteCode,
+                            inviteLink = inviteLink ?: it.inviteLink,
                             inviteExpiredAt = response.expiredAt
                         )
                     }
@@ -195,7 +204,7 @@ class GroupDetailViewModel @Inject constructor(
     fun approveJoinRequest(userId: Long) {
         val tripId = uiState.value.tripId
         if (tripId == -1L) return
-        
+
         viewModelScope.launch {
             tripRepository.approveJoinRequest(tripId, userId)
                 .onSuccess {
@@ -203,6 +212,14 @@ class GroupDetailViewModel @Inject constructor(
                     // Reload members list
                     tripRepository.getTripDetail(tripId).onSuccess { detail ->
                         _uiState.update { it.mergeTripDetail(detail) }
+                    }
+                }
+                .onFailure { throwable ->
+                    _uiState.update { state ->
+                        state.copy(
+                            isJoinRequestsLoading = false,
+                            errorMessage = throwable.message ?: "Không thể chấp nhận yêu cầu vào nhóm"
+                        )
                     }
                 }
         }
@@ -216,6 +233,14 @@ class GroupDetailViewModel @Inject constructor(
             tripRepository.rejectJoinRequest(tripId, userId)
                 .onSuccess {
                     loadJoinRequests(tripId)
+                }
+                .onFailure { throwable ->
+                    _uiState.update { state ->
+                        state.copy(
+                            isJoinRequestsLoading = false,
+                            errorMessage = throwable.message ?: "Không thể từ chối yêu cầu vào nhóm"
+                        )
+                    }
                 }
         }
     }
@@ -299,7 +324,7 @@ class GroupDetailViewModel @Inject constructor(
             coverImageUrl = detail.tripInfo.coverImageUrl,
             statusLabel = detail.tripInfo.status ?: statusLabel,
             myRole = detail.myRole,
-            inviteCode = detail.tripInfo.inviteCode ?: inviteCode,
+            inviteCode = detail.tripInfo.inviteCode?.takeIf { it.isNotBlank() } ?: inviteCode,
             members = detail.members.map { member ->
                 GroupMemberUiModel(
                     userId = member.userId,

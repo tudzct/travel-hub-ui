@@ -14,8 +14,10 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Chat
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Map
@@ -66,6 +68,7 @@ fun GroupDetailScreen(
     onNavigateToDiscovery: () -> Unit,
     onNavigateToMap: () -> Unit,
     onNavigateToCost: (Long) -> Unit,
+    onNavigateToProfile: (Long) -> Unit = {},
     viewModel: GroupDetailViewModel = hiltViewModel()
 ) {
     val scrollState = rememberScrollState()
@@ -75,7 +78,7 @@ fun GroupDetailScreen(
     var showInviteMenu by remember { mutableStateOf(false) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
     var showItinerarySheet by remember { mutableStateOf(false) }
-    val isLeader = uiState.myRole == "LEADER"
+    val isLeader = uiState.myRole.equals("LEADER", ignoreCase = true)
     val pendingRequestCount = uiState.joinRequests.size
 
     LaunchedEffect(tripId, groupName) {
@@ -386,10 +389,13 @@ fun GroupDetailScreen(
                     modifier = Modifier.widthIn(min = 260.dp, max = 340.dp),
                     offset = DpOffset((-8).dp, 4.dp)
                 ) {
-                    val inviteCode = if (uiState.isInviteCodeLoading) {
+                    val inviteCode = uiState.inviteCode?.takeIf { it.isNotBlank() }
+                    val inviteCodeText = if (uiState.isInviteCodeLoading) {
                         "Đang tải..."
+                    } else if (inviteCode != null) {
+                        inviteCode
                     } else {
-                        uiState.inviteCode ?: "Chưa có mã"
+                        "Chưa có mã"
                     }
 
                     Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
@@ -407,7 +413,7 @@ fun GroupDetailScreen(
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Text(
-                                text = inviteCode,
+                                text = inviteCodeText,
                                 fontWeight = FontWeight.ExtraBold,
                                 fontSize = 18.sp,
                                 color = OnSurface,
@@ -417,14 +423,14 @@ fun GroupDetailScreen(
                             )
                             IconButton(
                                 onClick = {
-                                    val currentInviteCode = uiState.inviteCode.orEmpty()
+                                    val currentInviteCode = inviteCode.orEmpty()
                                     if (currentInviteCode.isNotBlank()) {
                                         clipboardManager.setText(AnnotatedString(currentInviteCode))
                                         Toast.makeText(context, "Đã sao chép mã tham gia", Toast.LENGTH_SHORT).show()
                                         showInviteMenu = false
                                     }
                                 },
-                                enabled = uiState.inviteCode != null && !uiState.isInviteCodeLoading
+                                enabled = inviteCode != null && !uiState.isInviteCodeLoading
                             ) {
                                 Icon(Icons.Default.ContentCopy, contentDescription = "Copy mã tham gia")
                             }
@@ -446,12 +452,17 @@ fun GroupDetailScreen(
 
                             when {
                                 uiState.isJoinRequestsLoading -> {
-                                    Text(
-                                        text = "Đang tải yêu cầu...",
-                                        fontSize = 14.sp,
-                                        color = OnSurfaceVariant
-                                    )
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text(
+                                            text = "Đang tải yêu cầu...",
+                                            fontSize = 14.sp,
+                                            color = OnSurfaceVariant
+                                        )
+                                    }
                                 }
+
                                 uiState.joinRequests.isEmpty() -> {
                                     Text(
                                         text = "Không có yêu cầu nào",
@@ -459,45 +470,25 @@ fun GroupDetailScreen(
                                         color = OnSurfaceVariant
                                     )
                                 }
+
                                 else -> {
-                                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                                        uiState.joinRequests.take(5).forEach { request ->
-                                            Row(
-                                                modifier = Modifier.fillMaxWidth(),
-                                                verticalAlignment = Alignment.CenterVertically,
-                                                horizontalArrangement = Arrangement.spacedBy(12.dp)
-                                            ) {
-                                                Box(
-                                                    modifier = Modifier
-                                                        .size(36.dp)
-                                                        .clip(CircleShape)
-                                                        .background(SurfaceContainerLow),
-                                                    contentAlignment = Alignment.Center
-                                                ) {
-                                                    Text(
-                                                        text = request.name.firstOrNull()?.uppercaseChar()?.toString().orEmpty(),
-                                                        fontWeight = FontWeight.Bold,
-                                                        color = OnSurface
-                                                    )
+                                    Column(modifier = Modifier.fillMaxWidth()) {
+                                        uiState.joinRequests.forEach { request ->
+                                            JoinRequestActionItem(
+                                                request = request,
+                                                onApprove = {
+                                                    viewModel.approveJoinRequest(request.userId)
+                                                    Toast.makeText(context, "Đã chấp nhận ${request.name}", Toast.LENGTH_SHORT).show()
+                                                },
+                                                onReject = {
+                                                    viewModel.rejectJoinRequest(request.userId)
+                                                    Toast.makeText(context, "Đã từ chối ${request.name}", Toast.LENGTH_SHORT).show()
+                                                },
+                                                onProfileClick = { userId ->
+                                                    onNavigateToProfile(userId)
                                                 }
-                                                Column(modifier = Modifier.weight(1f)) {
-                                                    Text(
-                                                        text = request.name,
-                                                        fontWeight = FontWeight.SemiBold,
-                                                        fontSize = 14.sp,
-                                                        color = OnSurface,
-                                                        maxLines = 1,
-                                                        overflow = TextOverflow.Ellipsis
-                                                    )
-                                                    Text(
-                                                        text = request.requestedAt?.takeIf { it.isNotBlank() } ?: "Đang chờ duyệt",
-                                                        fontSize = 12.sp,
-                                                        color = OnSurfaceVariant,
-                                                        maxLines = 1,
-                                                        overflow = TextOverflow.Ellipsis
-                                                    )
-                                                }
-                                            }
+                                            )
+                                            Spacer(modifier = Modifier.height(8.dp))
                                         }
                                     }
                                 }
@@ -505,17 +496,16 @@ fun GroupDetailScreen(
 
                             Spacer(modifier = Modifier.height(12.dp))
                             HorizontalDivider(color = SurfaceContainerLow)
-                            Spacer(modifier = Modifier.height(8.dp))
-
-                            DropdownMenuItem(
-                                text = { Text("Xóa nhóm", color = SunsetOrange) },
-                                leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null, tint = SunsetOrange) },
-                                onClick = {
-                                    showInviteMenu = false
-                                    showDeleteConfirm = true
-                                }
-                            )
                         }
+
+                        DropdownMenuItem(
+                            text = { Text("Xóa nhóm", color = SunsetOrange) },
+                            leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null, tint = SunsetOrange) },
+                            onClick = {
+                                showInviteMenu = false
+                                showDeleteConfirm = true
+                            }
+                        )
                     }
                 }
             }
@@ -602,6 +592,88 @@ fun ActivityItem(text: String, time: String) {
             Text(text, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = OnSurface)
             Spacer(modifier = Modifier.height(4.dp))
             Text(time, fontSize = 12.sp, color = OnSurfaceVariant)
+        }
+    }
+}
+
+@Composable
+fun JoinRequestActionItem(
+    request: com.mobile.travelhub.viewmodels.GroupJoinRequestUiModel,
+    onApprove: () -> Unit,
+    onReject: () -> Unit,
+    onProfileClick: (Long) -> Unit = {}
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(44.dp)
+                .clip(CircleShape)
+                .background(PrimaryBlue.copy(alpha = 0.12f))
+                .clickable { onProfileClick(request.userId) },
+            contentAlignment = Alignment.Center
+        ) {
+            if (!request.avatarUrl.isNullOrBlank()) {
+                AsyncImage(
+                    model = request.avatarUrl,
+                    contentDescription = request.name,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+            } else {
+                Text(
+                    text = request.name.firstOrNull()?.uppercaseChar()?.toString().orEmpty(),
+                    fontWeight = FontWeight.Bold,
+                    color = PrimaryBlue
+                )
+            }
+        }
+
+        Column(modifier = Modifier.weight(1f).clickable { onProfileClick(request.userId) }) {
+            Text(
+                text = request.name,
+                fontWeight = FontWeight.Bold,
+                fontSize = 15.sp,
+                color = OnSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(SurfaceContainerLowest)
+                    .clickable { onReject() },
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    Icons.Default.Close,
+                    contentDescription = "Từ chối",
+                    tint = SunsetOrange,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(PrimaryBlue.copy(alpha = 0.12f))
+                    .clickable { onApprove() },
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    Icons.Default.Check,
+                    contentDescription = "Chấp nhận",
+                    tint = PrimaryBlue,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
         }
     }
 }
