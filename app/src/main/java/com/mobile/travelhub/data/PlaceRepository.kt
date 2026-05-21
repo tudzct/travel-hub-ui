@@ -2,6 +2,7 @@ package com.mobile.travelhub.data
 
 import com.mobile.travelhub.data.api.PlaceApiService
 import com.mobile.travelhub.data.model.PaginationResponse
+import com.mobile.travelhub.data.model.TravelPlaceDetailResponse
 import com.mobile.travelhub.data.model.TravelPlaceListItemResponse
 import com.mobile.travelhub.data.model.TravelPlaceReviewResponse
 import com.mobile.travelhub.data.model.TravelPlaceViewHistoryResponse
@@ -32,6 +33,10 @@ class PlaceRepository @Inject constructor(
             pageSize = pageSize,
             provinceId = provinceId
         )
+    }
+
+    suspend fun getPlaceDetail(placeId: Long): TravelPlaceDetailResponse {
+        return placeApiService.getPlaceDetail(placeId = placeId)
     }
 
     suspend fun getReviews(
