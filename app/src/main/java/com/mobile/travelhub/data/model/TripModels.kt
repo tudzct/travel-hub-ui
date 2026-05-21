@@ -121,14 +121,6 @@ data class TripMemberResponse(
     val role: String
 )
 
-data class TripActivityItemResponse(
-    val id: Long,
-    val title: String? = null,
-    val description: String? = null,
-    val timestamp: String? = null,
-    val actorName: String? = null
-)
-
 data class TripDetailHighlightsResponse(
     val title: String? = null
 )
@@ -137,8 +129,7 @@ data class TripDetailResponse(
     val tripInfo: TripInfoResponse,
     val myRole: String,
     val members: List<TripMemberResponse> = emptyList(),
-    val highlights: TripDetailHighlightsResponse? = null,
-    val recentActivities: List<TripActivityItemResponse> = emptyList()
+    val highlights: TripDetailHighlightsResponse? = null
 )
 
 data class CreateTripExpenseRequest(

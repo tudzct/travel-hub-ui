@@ -88,7 +88,7 @@ class TripsViewModel @Inject constructor(
         }
 
         if (normalizedCode.length != 8) {
-            onResult(false, "Mã tham gia phải gồm đúng 8 ký tự")
+            onResult(false, "Mã chuyến đi không hợp lệ")
             return
         }
 
@@ -98,7 +98,7 @@ class TripsViewModel @Inject constructor(
                 .onSuccess { response ->
                     _uiState.update { it.copy(isJoining = false) }
                     refreshDashboard()
-                    onResult(true, response.message.ifBlank { "Đã gửi yêu cầu tham gia" })
+                    onResult(true, "Đã gửi yêu cầu tham gia nhóm")
                 }
                 .onFailure { throwable ->
                     val message = joinTripErrorMessage(throwable)
@@ -146,8 +146,9 @@ class TripsViewModel @Inject constructor(
 
     private fun joinTripErrorMessage(throwable: Throwable): String {
         return when (throwable.httpStatusCode()) {
-            400 -> "Bạn nhập sai mã mời, vui lòng kiểm tra lại"
-            409 -> "Yêu cầu của bạn đã được gửi cho trưởng nhóm, hãy kiểm tra"
+            400 -> "Mã chuyến đi không hợp lệ"
+            404 -> "Không tìm thấy chuyến đi"
+            409 -> "Bạn đã gửi yêu cầu hoặc đã là thành viên của nhóm này"
             else -> throwable.message ?: "Không tham gia được chuyến đi"
         }
     }

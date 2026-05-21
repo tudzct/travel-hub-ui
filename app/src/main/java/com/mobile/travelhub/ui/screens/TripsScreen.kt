@@ -464,12 +464,16 @@ fun AddTripOptionsContent(
             )
             Spacer(modifier = Modifier.height(24.dp))
             Button(
-                onClick = onDismiss,
+                onClick = {
+                    onJoinTrip(joinCode) {
+                        joinCode = ""
+                    }
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
                 shape = RoundedCornerShape(20.dp),
-                enabled = !isJoining,
+                enabled = !isJoining && joinCode.length == 8,
                 colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
             ) {
                 Text(if (isJoining) "Đang gửi..." else "Gửi yêu cầu tham gia", fontWeight = FontWeight.Bold)

@@ -309,31 +309,6 @@ fun GroupDetailScreen(
                     }
                 }
             }
-
-            Spacer(modifier = Modifier.height(32.dp))
-
-            Column(modifier = Modifier.padding(horizontal = 24.dp)) {
-                Text(
-                    text = "HOẠT ĐỘNG GẦN ĐÂY",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 13.sp,
-                    color = OnSurfaceVariant,
-                    letterSpacing = 1.sp
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-                if (uiState.recentActivities.isEmpty()) {
-                    ActivityItem(uiState.activityLabel, "BE chưa có event feed")
-                } else {
-                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        uiState.recentActivities.take(3).forEach { activity ->
-                            ActivityItem(
-                                activity.title,
-                                activity.timestamp ?: activity.description ?: activity.actorName.orEmpty()
-                            )
-                        }
-                    }
-                }
-            }
         }
 
         Row(
@@ -592,13 +567,6 @@ fun FeatureCard(icon: androidx.compose.ui.graphics.vector.ImageVector, label: St
 
         )
     }
-}
-
-@Preview
-@Composable
-fun FeatureCardPreview(){
-    FeatureCard(Icons.Default.CalendarMonth, "Lịch trình", PrimaryBlue, {})
-
 }
 
 @Composable
