@@ -134,11 +134,7 @@ fun SearchPage(
         }
 
         if (uiState.query.isBlank()) {
-            SearchSuggestions(
-                recentSearches = recentSearches,
-                trendingSearches = trendingSearches,
-                onSuggestionClick = viewModel::updateQuery
-            )
+
         } else {
             CombinedSearchResults(
                 query = uiState.query,
@@ -241,42 +237,6 @@ private fun SearchInput(
         }
     )
 }
-
-@Composable
-private fun SearchSuggestions(
-    recentSearches: List<String>,
-    trendingSearches: List<String>,
-    onSuggestionClick: (String) -> Unit
-) {
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 24.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp)
-    ) {
-        item { SearchSectionTitle("Recent Searches") }
-        items(recentSearches) { text ->
-            SearchSuggestionRow(
-                text = text,
-                subtitle = "Search again",
-                leadingIcon = SearchLeadingIcon.History,
-                onClick = { onSuggestionClick(text) }
-            )
-        }
-        item {
-            Spacer(modifier = Modifier.height(10.dp))
-            SearchSectionTitle("Trending Now")
-        }
-        items(trendingSearches) { text ->
-            SearchSuggestionRow(
-                text = text,
-                subtitle = "Explore posts and users",
-                leadingIcon = SearchLeadingIcon.Tag,
-                onClick = { onSuggestionClick(text.removePrefix("#")) }
-            )
-        }
-    }
-}
-
 @Composable
 private fun CombinedSearchResults(
     query: String,
