@@ -767,7 +767,7 @@ fun FeedPostCard(
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
-                        imageVector = Icons.AutoMirrored.Outlined.Send,
+                        painter = painterResource(R.drawable.share_fat_bold),
                         contentDescription = "Share",
                         modifier = Modifier.size(24.dp),
                         tint = VerdantOnSurface
