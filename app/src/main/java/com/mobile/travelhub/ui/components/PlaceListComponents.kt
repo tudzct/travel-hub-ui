@@ -16,15 +16,12 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.lazy.LazyColumn
@@ -109,7 +106,6 @@ fun PlaceListScreenContent(
     var previousScrollIndex by remember { mutableIntStateOf(0) }
     var previousScrollOffset by remember { mutableIntStateOf(0) }
     var isTopBarVisible by remember { mutableStateOf(true) }
-    val statusBarTopPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
     val topBarContentHeight = 52.dp
 
     LaunchedEffect(listState) {
@@ -152,7 +148,7 @@ fun PlaceListScreenContent(
             modifier = Modifier.fillMaxSize(),
             state = listState,
             contentPadding = PaddingValues(
-                top = statusBarTopPadding + topBarContentHeight + 18.dp,
+                top = topBarContentHeight + 18.dp,
                 bottom = 112.dp
             ),
             verticalArrangement = Arrangement.spacedBy(14.dp)
@@ -353,13 +349,12 @@ private fun FeedTopBar(
     onSearchClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val statusBarTopPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
     val topBarContentHeight = 52.dp
 
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .height(statusBarTopPadding + topBarContentHeight)
+            .height(topBarContentHeight)
             .background(Color.White)
     ) {
         Box(
@@ -772,7 +767,7 @@ fun FeedPostCard(
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
-                        imageVector = Icons.AutoMirrored.Outlined.Send,
+                        painter = painterResource(R.drawable.share_fat_bold),
                         contentDescription = "Share",
                         modifier = Modifier.size(24.dp),
                         tint = VerdantOnSurface
