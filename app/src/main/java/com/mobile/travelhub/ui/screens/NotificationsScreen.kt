@@ -25,6 +25,7 @@ import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.PersonAdd
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.HorizontalDivider
@@ -36,6 +37,7 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -69,10 +71,16 @@ fun NotificationsPopup(
     onFollowNotificationClick: (Long) -> Unit = {},
     viewModel: NotificationsViewModel = hiltViewModel()
 ) {
+    LaunchedEffect(Unit) {
+        viewModel.refreshNotifications()
+    }
+
     val uiState by viewModel.uiState.collectAsState()
     NotificationsPopupContent(
         activeFilter = uiState.activeFilter,
         notifications = uiState.notifications,
+        isLoading = uiState.isLoading,
+        isMarkingAllRead = uiState.isMarkingAllRead,
         onDismiss = onDismiss,
         onPostNotificationClick = onPostNotificationClick,
         onFollowNotificationClick = onFollowNotificationClick,
@@ -86,6 +94,8 @@ fun NotificationsPopup(
 private fun NotificationsPopupContent(
     activeFilter: NotificationFilter,
     notifications: List<NotificationModel>,
+    isLoading: Boolean,
+    isMarkingAllRead: Boolean,
     onDismiss: () -> Unit,
     onPostNotificationClick: (Long) -> Unit,
     onFollowNotificationClick: (Long) -> Unit,
@@ -120,6 +130,8 @@ private fun NotificationsPopupContent(
         ) {
             PopupTopBar(
                 onClose = onDismiss,
+                hasUnreadNotifications = notifications.any { !it.isRead },
+                isMarkingAllRead = isMarkingAllRead,
                 onMarkAllRead = onMarkAllRead
             )
             NotificationFilters(
@@ -132,7 +144,9 @@ private fun NotificationsPopupContent(
                     .padding(bottom = 12.dp),
                 contentAlignment = Alignment.Center
             ) {
-                if (filteredNotifications.isEmpty()) {
+                if (isLoading) {
+                    CircularProgressIndicator()
+                } else if (filteredNotifications.isEmpty()) {
                     if (isPopupVisible) {
                         EmptyNotificationsPopup(onDismiss = { isPopupVisible = false })
                     }
@@ -262,10 +276,12 @@ private fun NotificationsScreenPreview() {
                     targetId = null
                 ),
             ),
+            isLoading = false,
             onDismiss = {},
             onPostNotificationClick = {},
             onFollowNotificationClick = {},
             onFilterSelected = {},
+            isMarkingAllRead = false,
             onMarkAllRead = {}
         )
     }
@@ -274,6 +290,8 @@ private fun NotificationsScreenPreview() {
 @Composable
 private fun PopupTopBar(
     onClose: () -> Unit,
+    hasUnreadNotifications: Boolean,
+    isMarkingAllRead: Boolean,
     onMarkAllRead: () -> Unit
 ) {
     Row(
@@ -293,7 +311,10 @@ private fun PopupTopBar(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            TextButton(onClick = onMarkAllRead) {
+            TextButton(
+                onClick = onMarkAllRead,
+                enabled = hasUnreadNotifications && !isMarkingAllRead
+            ) {
                 Text(text = "Mark all read")
             }
         }

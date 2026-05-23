@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.mobile.travelhub.data.api.UserApiService
 import com.mobile.travelhub.data.model.NotificationResponse
 import com.mobile.travelhub.usecase.GetNotificationsUseCase
+import com.mobile.travelhub.usecase.MarkAllNotificationsAsReadUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import java.time.Instant
@@ -17,14 +18,11 @@ import kotlinx.coroutines.launch
 @HiltViewModel
 class NotificationsViewModel @Inject constructor(
     private val getNotificationsUseCase: GetNotificationsUseCase,
+    private val markAllNotificationsAsReadUseCase: MarkAllNotificationsAsReadUseCase,
     private val userApiService: UserApiService
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(NotificationsUiState(isLoading = true))
     val uiState: StateFlow<NotificationsUiState> = _uiState.asStateFlow()
-
-    init {
-        refreshNotifications()
-    }
 
     fun setFilter(filter: NotificationFilter) {
         _uiState.update { state ->
@@ -33,10 +31,34 @@ class NotificationsViewModel @Inject constructor(
     }
 
     fun markAllRead() {
-        _uiState.update { state ->
-            state.copy(
-                notifications = state.notifications.map { it.copy(isRead = true) }
-            )
+        val hasUnreadNotifications = _uiState.value.notifications.any { !it.isRead }
+        if (!hasUnreadNotifications || _uiState.value.isMarkingAllRead) {
+            return
+        }
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(isMarkingAllRead = true, errorMessage = null) }
+
+            markAllNotificationsAsReadUseCase()
+                .onSuccess {
+                    _uiState.update { state ->
+                        state.copy(
+                            isMarkingAllRead = false,
+                            notifications = state.notifications.map { notification ->
+                                notification.copy(isRead = true)
+                            },
+                            errorMessage = null
+                        )
+                    }
+                }
+                .onFailure { throwable ->
+                    _uiState.update {
+                        it.copy(
+                            isMarkingAllRead = false,
+                            errorMessage = throwable.message ?: "Failed to mark notifications as read"
+                        )
+                    }
+                }
         }
     }
 
@@ -63,7 +85,7 @@ class NotificationsViewModel @Inject constructor(
                         it.copy(
                             isLoading = false,
                             notifications = emptyList(),
-                            errorMessage = throwable.message ?: "Failed to load unread notifications"
+                            errorMessage = throwable.message ?: "Failed to load notifications"
                         )
                     }
                 }
@@ -99,6 +121,7 @@ data class NotificationsUiState(
     val notifications: List<NotificationModel> = emptyList(),
     val activeFilter: NotificationFilter = NotificationFilter.All,
     val isLoading: Boolean = false,
+    val isMarkingAllRead: Boolean = false,
     val errorMessage: String? = null
 )
 
