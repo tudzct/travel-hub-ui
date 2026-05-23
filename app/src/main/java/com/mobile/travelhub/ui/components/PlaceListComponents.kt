@@ -72,6 +72,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import coil.compose.AsyncImage
 import com.mobile.travelhub.R
 import com.mobile.travelhub.data.model.TravelPlaceListItemResponse
@@ -137,7 +138,9 @@ fun PlaceListScreenContent(
                 animationSpec = tween(durationMillis = 180),
                 targetOffsetY = { -it }
             ) + fadeOut(animationSpec = tween(durationMillis = 180)),
-            modifier = Modifier.align(Alignment.TopCenter)
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .zIndex(1f)
         ) {
             FeedTopBar(
                 onMenuClick = onMenuClick,

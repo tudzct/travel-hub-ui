@@ -3,13 +3,30 @@ package com.mobile.travelhub.navigation
 import android.net.Uri
 import androidx.compose.animation.AnimatedContentTransitionScope.SlideDirection
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
+import androidx.compose.material.icons.outlined.History
+import androidx.compose.material3.DrawerValue
+import androidx.compose.material3.Icon
+import androidx.compose.material3.ModalDrawerSheet
+import androidx.compose.material3.ModalNavigationDrawer
+import androidx.compose.material3.NavigationDrawerItem
+import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavHostController
@@ -33,6 +50,7 @@ import com.mobile.travelhub.viewmodels.AuthUiState
 import androidx.navigation.navArgument
 import com.mobile.travelhub.ui.screens.*
 import com.mobile.travelhub.viewmodels.OnboardingViewModel
+import kotlinx.coroutines.launch
 
 private const val PLACE_DETAIL_PLACE_KEY = "place_detail_place"
 
@@ -164,6 +182,72 @@ fun getDirection(
         SlideDirection.Left
     } else {
         SlideDirection.Right
+    }
+}
+
+@Composable
+private fun HomeDrawerScaffold(
+    onNavigateToHistory: () -> Unit,
+    onLogout: () -> Unit,
+    content: @Composable (openMenu: () -> Unit) -> Unit
+) {
+    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+    val coroutineScope = rememberCoroutineScope()
+    var hideDrawerContentForNavigation by remember { mutableStateOf(false) }
+
+    ModalNavigationDrawer(
+        drawerState = drawerState,
+        drawerContent = {
+            if (!hideDrawerContentForNavigation) {
+                ModalDrawerSheet(
+                    modifier = Modifier.width(280.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(top = 56.dp)
+                    ) {
+                        NavigationDrawerItem(
+                            label = { androidx.compose.material3.Text("Recently viewed places") },
+                            selected = false,
+                            onClick = {
+                                hideDrawerContentForNavigation = true
+                                coroutineScope.launch {
+                                    drawerState.snapTo(DrawerValue.Closed)
+                                    withFrameNanos { }
+                                    onNavigateToHistory()
+                                }
+                            },
+                            icon = {
+                                Icon(
+                                    imageVector = Icons.Outlined.History,
+                                    contentDescription = null
+                                )
+                            },
+                            modifier = Modifier.padding(horizontal = 12.dp)
+                        )
+                        NavigationDrawerItem(
+                            label = { androidx.compose.material3.Text("Logout") },
+                            selected = false,
+                            onClick = {
+                                coroutineScope.launch { drawerState.close() }
+                                onLogout()
+                            },
+                            icon = {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.ExitToApp,
+                                    contentDescription = null
+                                )
+                            },
+                            modifier = Modifier.padding(horizontal = 12.dp)
+                        )
+                    }
+                }
+            }
+        }
+    ) {
+        content {
+            hideDrawerContentForNavigation = false
+            coroutineScope.launch { drawerState.open() }
+        }
     }
 }
 
@@ -327,14 +411,26 @@ fun NavGraph(
             )
         }
         composable(Screen.Home.route) {
-            PlaceListScreen(
-                onPlaceClick = ::navigateToPlaceDetail,
-                onSearchClick = {
-                    navController.navigate(Screen.Search.route) {
+            HomeDrawerScaffold(
+                onNavigateToHistory = { navController.navigate(Screen.ViewHistory.route) { launchSingleTop = true } },
+                onLogout = {
+                    onLogout()
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(navController.graph.findStartDestination().id) { inclusive = false }
                         launchSingleTop = true
                     }
                 }
-            )
+            ) { openMenu ->
+                PlaceListScreen(
+                    onPlaceClick = ::navigateToPlaceDetail,
+                    onSearchClick = {
+                        navController.navigate(Screen.Search.route) {
+                            launchSingleTop = true
+                        }
+                    },
+                    onMenuClick = openMenu
+                )
+            }
         }
         composable(
             route = Screen.Explore.ROUTE_WITH_ARGS,
