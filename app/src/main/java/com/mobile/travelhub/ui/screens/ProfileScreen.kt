@@ -9,7 +9,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.AddCircle
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Notifications
@@ -31,7 +30,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -39,15 +37,13 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.Image
@@ -106,6 +102,7 @@ fun ProfileScreen(
             }
         }
     }
+
     LaunchedEffect(unauthorized) {
         if (unauthorized && isViewingOwnProfile) {
             viewModel.clearUnauthorized()
@@ -172,85 +169,75 @@ private fun ProfileScreenContent(
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val coroutineScope = rememberCoroutineScope()
     var showNotifications by remember { mutableStateOf(false) }
+    var hideDrawerContentForNavigation by remember { mutableStateOf(false) }
 
-    CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
-        ModalNavigationDrawer(
-            drawerState = drawerState,
-            gesturesEnabled = isViewingOwnProfile,
-            drawerContent = {
-                if (isViewingOwnProfile) {
-                    ModalDrawerSheet {
-                        CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(56.dp)
-                                    .padding(horizontal = 8.dp),
-                                horizontalArrangement = Arrangement.End,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                IconButton(
-                                    onClick = { coroutineScope.launch { drawerState.close() } }
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Close,
-                                        contentDescription = "Close menu"
-                                    )
-                                }
-                            }
-                            val navigateToHistory = onNavigateToHistory
-                            if (navigateToHistory != null) {
-                                NavigationDrawerItem(
-                                    label = { Text("Recently viewed places") },
-                                    selected = false,
-                                    onClick = {
-                                        coroutineScope.launch { drawerState.close() }
-                                        navigateToHistory()
-                                    },
-                                    icon = {
-                                        Icon(
-                                            imageVector = Icons.Outlined.History,
-                                            contentDescription = null
-                                        )
-                                    },
-                                    modifier = Modifier.padding(horizontal = 12.dp)
-                                )
-                            }
+    ModalNavigationDrawer(
+        drawerState = drawerState,
+        gesturesEnabled = isViewingOwnProfile,
+        drawerContent = {
+            if (isViewingOwnProfile && !hideDrawerContentForNavigation) {
+                ModalDrawerSheet(
+                    modifier = Modifier.width(280.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(top = 56.dp)
+                    ) {
+                        val navigateToHistory = onNavigateToHistory
+                        if (navigateToHistory != null) {
                             NavigationDrawerItem(
-                                label = { Text("Logout") },
+                                label = { Text("Recently viewed places") },
                                 selected = false,
                                 onClick = {
-                                    coroutineScope.launch { drawerState.close() }
-                                    onLogout?.invoke()
+                                    hideDrawerContentForNavigation = true
+                                    coroutineScope.launch {
+                                        drawerState.snapTo(DrawerValue.Closed)
+                                        withFrameNanos { }
+                                        navigateToHistory()
+                                    }
                                 },
                                 icon = {
                                     Icon(
-                                        imageVector = Icons.AutoMirrored.Filled.ExitToApp,
+                                        imageVector = Icons.Outlined.History,
                                         contentDescription = null
                                     )
                                 },
                                 modifier = Modifier.padding(horizontal = 12.dp)
                             )
                         }
+                        NavigationDrawerItem(
+                            label = { Text("Logout") },
+                            selected = false,
+                            onClick = {
+                                coroutineScope.launch { drawerState.close() }
+                                onLogout?.invoke()
+                            },
+                            icon = {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.ExitToApp,
+                                    contentDescription = null
+                                )
+                            },
+                            modifier = Modifier.padding(horizontal = 12.dp)
+                        )
                     }
                 }
             }
-        ) {
-            CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
-                Scaffold(
-                    modifier = Modifier.fillMaxSize(),
-                    containerColor = MaterialTheme.colorScheme.background,
-                    topBar = {
-                        Surface(
-                            color = MaterialTheme.colorScheme.background
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(56.dp)
-                                    .padding(horizontal = 4.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
+        }
+    ) {
+        Scaffold(
+            modifier = Modifier.fillMaxSize(),
+            containerColor = MaterialTheme.colorScheme.background,
+            topBar = {
+                Surface(
+                    color = MaterialTheme.colorScheme.background
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(56.dp)
+                            .padding(horizontal = 4.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
                                 if (isViewingOwnProfile) {
                                     IconButton(
                                         onClick = {
@@ -288,7 +275,10 @@ private fun ProfileScreenContent(
                                     }
                                 } else {
                                     IconButton(
-                                        onClick = { coroutineScope.launch { drawerState.open() } },
+                                        onClick = {
+                                            hideDrawerContentForNavigation = false
+                                            coroutineScope.launch { drawerState.open() }
+                                        },
                                         modifier = Modifier.align(Alignment.CenterStart)
                                     ) {
                                         Icon(
@@ -592,8 +582,6 @@ private fun ProfileScreenContent(
                 }
             }
         }
-    }
-}
 
 @Composable
 fun ErrorLayout(message: String, onRetry: () -> Unit) {

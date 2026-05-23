@@ -24,6 +24,7 @@ data class PlaceDetailUiModel(
     val description: String?,
     val province: ProvinceResponse,
     val mainImage: String?,
+    val imageUrls: List<String>,
     val views: Int?,
     val openingTime: String?,
     val reviewSummary: TravelPlaceReviewSummaryResponse,
@@ -51,9 +52,10 @@ class PlaceDetailViewModel @Inject constructor(
     val uiState: StateFlow<PlaceDetailUiState> = _uiState.asStateFlow()
 
     private var loadedPlaceId: Long? = null
+    private var loadedDetailPlaceId: Long? = null
 
     fun loadPlace(place: TravelPlaceListItemResponse) {
-        if (loadedPlaceId == place.id && uiState.value.detail != null) {
+        if (loadedPlaceId == place.id && loadedDetailPlaceId == place.id && uiState.value.detail != null) {
             return
         }
         loadedPlaceId = place.id
@@ -71,14 +73,36 @@ class PlaceDetailViewModel @Inject constructor(
                     reviewPreviewLoading = true
                 )
             }
-            _uiState.update {
-                it.copy(
-                    isLoading = false,
-                    errorMessage = null
-                )
+            runCatching {
+                retryTransientServerError {
+                    placeRepository.getPlaceDetail(place.id)
+                }
+            }.onSuccess { response ->
+                val detail = response.toDetailUiModel()
+                loadedDetailPlaceId = detail.id
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        detail = detail,
+                        errorMessage = null,
+                        relatedPlacesLoading = true,
+                        reviewPreviewLoading = true
+                    )
+                }
+                loadRelatedPlaces(detail.id, detail.province.id)
+                loadReviewPreview(detail.id)
+            }.onFailure { throwable ->
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        errorMessage = throwable.message ?: "Unable to load place detail",
+                        relatedPlacesLoading = true,
+                        reviewPreviewLoading = true
+                    )
+                }
+                loadRelatedPlaces(place.id, place.province.id)
+                loadReviewPreview(place.id)
             }
-            loadRelatedPlaces(place.id, place.province.id)
-            loadReviewPreview(place.id)
         }
     }
 
@@ -107,6 +131,7 @@ class PlaceDetailViewModel @Inject constructor(
                 }
             }.onSuccess { response ->
                 val detail = response.toDetailUiModel()
+                loadedDetailPlaceId = detail.id
                 _uiState.update {
                     it.copy(
                         isLoading = false,
@@ -245,6 +270,10 @@ class PlaceDetailViewModel @Inject constructor(
             description = description,
             province = province,
             mainImage = mainImage,
+            imageUrls = listOfNotNull(mainImage)
+                .map { it.trim() }
+                .filter { it.isNotBlank() }
+                .distinct(),
             views = views,
             openingTime = openingTime,
             reviewSummary = TravelPlaceReviewSummaryResponse(
@@ -255,14 +284,19 @@ class PlaceDetailViewModel @Inject constructor(
     }
 
     private fun TravelPlaceDetailResponse.toDetailUiModel(): PlaceDetailUiModel {
-        val mainImage = images.firstOrNull { it.main }?.imageUrl
-            ?: images.firstOrNull()?.imageUrl
+        val imageUrls = images
+            .sortedByDescending { it.main }
+            .map { it.imageUrl.trim() }
+            .filter { it.isNotBlank() }
+            .distinct()
+        val mainImage = imageUrls.firstOrNull()
         return PlaceDetailUiModel(
             id = id,
             name = name,
             description = description,
             province = province,
             mainImage = mainImage,
+            imageUrls = imageUrls,
             views = views,
             openingTime = openingTime,
             reviewSummary = reviewSummary,
