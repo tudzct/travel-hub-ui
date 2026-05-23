@@ -1,6 +1,7 @@
 package com.mobile.travelhub.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -64,6 +65,8 @@ import com.mobile.travelhub.viewmodels.NotificationsViewModel
 @Composable
 fun NotificationsPopup(
     onDismiss: () -> Unit,
+    onPostNotificationClick: (Long) -> Unit = {},
+    onFollowNotificationClick: (Long) -> Unit = {},
     viewModel: NotificationsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -71,6 +74,8 @@ fun NotificationsPopup(
         activeFilter = uiState.activeFilter,
         notifications = uiState.notifications,
         onDismiss = onDismiss,
+        onPostNotificationClick = onPostNotificationClick,
+        onFollowNotificationClick = onFollowNotificationClick,
         onFilterSelected = viewModel::setFilter,
         onMarkAllRead = viewModel::markAllRead
     )
@@ -82,6 +87,8 @@ private fun NotificationsPopupContent(
     activeFilter: NotificationFilter,
     notifications: List<NotificationModel>,
     onDismiss: () -> Unit,
+    onPostNotificationClick: (Long) -> Unit,
+    onFollowNotificationClick: (Long) -> Unit,
     onFilterSelected: (NotificationFilter) -> Unit,
     onMarkAllRead: () -> Unit
 ) {
@@ -137,7 +144,11 @@ private fun NotificationsPopupContent(
                     ) {
                         if (unreadNotifications.isNotEmpty()) {
                             items(unreadNotifications, key = { "${it.createdAt}-${it.title}" }) { notification ->
-                                NotificationCard(notification = notification)
+                                NotificationCard(
+                                    notification = notification,
+                                    onPostNotificationClick = onPostNotificationClick,
+                                    onFollowNotificationClick = onFollowNotificationClick
+                                )
                             }
                         }
                         if (unreadNotifications.isNotEmpty() && readNotifications.isNotEmpty()) {
@@ -165,7 +176,11 @@ private fun NotificationsPopupContent(
                         }
                         if (readNotifications.isNotEmpty()) {
                             items(readNotifications, key = { "${it.createdAt}-${it.title}" }) { notification ->
-                                NotificationCard(notification = notification)
+                                NotificationCard(
+                                    notification = notification,
+                                    onPostNotificationClick = onPostNotificationClick,
+                                    onFollowNotificationClick = onFollowNotificationClick
+                                )
                             }
                         }
                     }
@@ -187,59 +202,69 @@ private fun NotificationsScreenPreview() {
                     body = "Your Hanoi weekend trip starts in 2 days.",
                     isRead = false,
                     createdAt = Instant.parse("2026-05-12T09:15:00Z"),
-                    type = NotificationType.COMMENT
+                    type = NotificationType.COMMENT,
+                    targetId = 10
                 ),
                 NotificationModel(
                     title = "New follower",
                     body = "Linh Nguyen started following you.",
                     isRead = false,
                     createdAt = Instant.parse("2026-05-12T08:40:00Z"),
-                    type = NotificationType.FOLLOW
+                    type = NotificationType.FOLLOW,
+                    targetId = null
                 ),
                 NotificationModel(
                     title = "System",
                     body = "Your profile is 90% complete. Add a bio to finish it.",
                     isRead = true,
                     createdAt = Instant.parse("2026-05-11T15:30:00Z"),
-                    type = NotificationType.LIKE
+                    type = NotificationType.LIKE,
+                    targetId = 11
                 ),
                 NotificationModel(
                     title = "New follower 2",
                     body = "Your profile is 90% complete. Add a bio to finish it.",
                     isRead = true,
                     createdAt = Instant.parse("2026-05-11T15:30:00Z"),
-                    type = NotificationType.FOLLOW
+                    type = NotificationType.FOLLOW,
+                    targetId = null
                 ),
                 NotificationModel(
                     title = "New follower 3",
                     body = "Your profile is 90% complete. Add a bio to finish it.",
                     isRead = true,
                     createdAt = Instant.parse("2026-05-11T15:30:00Z"),
-                    type = NotificationType.FOLLOW
+                    type = NotificationType.FOLLOW,
+                    targetId = null
                 ),
                 NotificationModel(
                     title = "New follower 4",
                     body = "Your profile is 90% complete. Add a bio to finish it.",
                     isRead = true,
                     createdAt = Instant.parse("2026-05-11T15:30:00Z"),
-                    type = NotificationType.FOLLOW
+                    type = NotificationType.FOLLOW,
+                    targetId = null
                 ),
                 NotificationModel(
                     title = "New follower 5",
                     body = "Your profile is 90% complete. Add a bio to finish it.",
                     isRead = true,
                     createdAt = Instant.parse("2026-05-11T15:30:00Z"),
-                    type = NotificationType.FOLLOW
+                    type = NotificationType.FOLLOW,
+                    targetId = null
                 ),
                 NotificationModel(
                     title = "New follower 6",
                     body = "Your profile is 90% complete. Add a bio to finish it.",
                     isRead = true,
                     createdAt = Instant.parse("2026-05-11T15:30:00Z"),
-                    type = NotificationType.FOLLOW
+                    type = NotificationType.FOLLOW,
+                    targetId = null
                 ),
             ),
             onDismiss = {},
+            onPostNotificationClick = {},
+            onFollowNotificationClick = {},
             onFilterSelected = {},
             onMarkAllRead = {}
         )
@@ -324,7 +349,23 @@ private fun SectionHeader(title: String) {
 }
 
 @Composable
-private fun NotificationCard(notification: NotificationModel) {
+private fun NotificationCard(
+    notification: NotificationModel,
+    onPostNotificationClick: (Long) -> Unit,
+    onFollowNotificationClick: (Long) -> Unit
+) {
+    val onNotificationClick: (() -> Unit)? = notification.targetId?.let { targetId ->
+        when (notification.type) {
+            NotificationType.COMMENT,
+            NotificationType.LIKE -> {
+                { onPostNotificationClick(targetId) }
+            }
+            NotificationType.FOLLOW -> {
+                { onFollowNotificationClick(targetId) }
+            }
+            null -> null
+        }
+    }
     val containerColor = if (!notification.isRead) {
         MaterialTheme.colorScheme.primary.copy(alpha = 0.08f)
     } else {
@@ -347,7 +388,11 @@ private fun NotificationCard(notification: NotificationModel) {
         shape = RoundedCornerShape(18.dp),
         color = containerColor,
         tonalElevation = if (!notification.isRead) 2.dp else 0.dp,
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier
+            .fillMaxWidth()
+            .then(
+                onNotificationClick?.let { Modifier.clickable(onClick = it) } ?: Modifier
+            )
     ) {
         Row(
             modifier = Modifier

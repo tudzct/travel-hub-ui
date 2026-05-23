@@ -76,6 +76,7 @@ import coil.compose.AsyncImage
 import com.mobile.travelhub.R
 import com.mobile.travelhub.data.model.TravelPlaceListItemResponse
 import com.mobile.travelhub.ui.components.modifiers.shimmerEffect
+import com.mobile.travelhub.viewmodels.HomeCommentUiModel
 import com.mobile.travelhub.viewmodels.HomePostUiModel
 import com.mobile.travelhub.viewmodels.HomeUiState
 import com.mobile.travelhub.viewmodels.PlaceListUiState
@@ -226,120 +227,146 @@ fun PlaceListScreenContent(
 
 
         if (activeCommentPost != null) {
-            ModalBottomSheet(
-                onDismissRequest = onDismissCommentSheet,
-                containerColor = Color.White
+            HomeCommentsBottomSheet(
+                comments = activeComments,
+                commentInput = homeUiState.commentInput,
+                isCommentsLoading = homeUiState.isCommentsLoading,
+                isCommentSubmitting = homeUiState.isCommentSubmitting,
+                commentsErrorMessage = homeUiState.commentsErrorMessage,
+                commentErrorMessage = homeUiState.commentErrorMessage,
+                onDismiss = onDismissCommentSheet,
+                onCommentInputChanged = onCommentInputChanged,
+                onCommentSubmit = onCommentSubmit
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun HomeCommentsBottomSheet(
+    comments: List<HomeCommentUiModel>,
+    commentInput: String,
+    isCommentsLoading: Boolean,
+    isCommentSubmitting: Boolean,
+    commentsErrorMessage: String?,
+    commentErrorMessage: String?,
+    onDismiss: () -> Unit,
+    onCommentInputChanged: (String) -> Unit,
+    onCommentSubmit: () -> Unit
+) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        containerColor = Color.White
+    ) {
+        Text(
+            text = "Comments",
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.padding(horizontal = 24.dp)
+        )
+        Spacer(modifier = Modifier.height(12.dp))
+
+        if (isCommentsLoading) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 24.dp),
+                contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = "Comments",
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.padding(horizontal = 24.dp)
-                )
-                Spacer(modifier = Modifier.height(12.dp))
-
-                if (homeUiState.isCommentsLoading) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 24.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator()
-                    }
-                } else if (!homeUiState.commentsErrorMessage.isNullOrBlank()) {
-                    Text(
-                        text = homeUiState.commentsErrorMessage,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.padding(horizontal = 24.dp)
-                    )
-                } else if (activeComments.isEmpty()) {
-                    Text(
-                        text = "No comments yet",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(horizontal = 24.dp)
-                    )
-                } else {
-                    LazyColumn(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .heightIn(max = 320.dp)
-                    ) {
-                        items(
-                            items = activeComments,
-                            key = { it.id }
-                        ) { comment ->
-                            CommentItem(
-                                name = comment.username,
-                                comment = comment.content,
-                                time = comment.timeAgoLabel,
-                                avatarRes = R.drawable.female_avatar_maker
-                            )
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(12.dp))
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    SimpleFormTextField(
-                        value = homeUiState.commentInput,
-                        onValueChange = onCommentInputChanged,
-                        placeholder = "Add a comment",
-                        modifier = Modifier.weight(1f),
-                        enabled = !homeUiState.isCommentSubmitting,
-                        singleLine = false,
-                        maxLines = 3,
-                        shape = RoundedCornerShape(24.dp),
-                        focusedContainerColor = Color.White,
-                        unfocusedContainerColor = Color.White,
-                        disabledContainerColor = Color(0xFFF4F4F4),
-                        focusedIndicatorColor = VerdantPrimary
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    IconButton(
-                        onClick = onCommentSubmit,
-                        enabled = !homeUiState.isCommentSubmitting && homeUiState.commentInput.isNotBlank(),
-                        modifier = Modifier
-                            .size(40.dp)
-                            .clip(CircleShape)
-                            .background(VerdantPrimary)
-                    ) {
-                        if (homeUiState.isCommentSubmitting) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(16.dp),
-                                strokeWidth = 2.dp,
-                                color = Color.White
-                            )
-                        } else {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Outlined.Send,
-                                modifier = Modifier.size(16.dp),
-                                contentDescription = "Send comment",
-                                tint = Color.White
-                            )
-                        }
-                    }
-                }
-
-                if (!homeUiState.commentErrorMessage.isNullOrBlank()) {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = homeUiState.commentErrorMessage,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.padding(horizontal = 16.dp)
+                CircularProgressIndicator()
+            }
+        } else if (!commentsErrorMessage.isNullOrBlank()) {
+            Text(
+                text = commentsErrorMessage,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.padding(horizontal = 24.dp)
+            )
+        } else if (comments.isEmpty()) {
+            Text(
+                text = "No comments yet",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = 24.dp)
+            )
+        } else {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 320.dp)
+            ) {
+                items(
+                    items = comments,
+                    key = { it.id }
+                ) { comment ->
+                    CommentItem(
+                        name = comment.username,
+                        comment = comment.content,
+                        time = comment.timeAgoLabel,
+                        avatarRes = R.drawable.female_avatar_maker
                     )
                 }
-
-                Spacer(modifier = Modifier.height(16.dp))
             }
         }
+
+        Spacer(modifier = Modifier.height(12.dp))
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            SimpleFormTextField(
+                value = commentInput,
+                onValueChange = onCommentInputChanged,
+                placeholder = "Add a comment",
+                modifier = Modifier.weight(1f),
+                enabled = !isCommentSubmitting,
+                singleLine = false,
+                maxLines = 3,
+                shape = RoundedCornerShape(24.dp),
+                focusedContainerColor = Color.White,
+                unfocusedContainerColor = Color.White,
+                disabledContainerColor = Color(0xFFF4F4F4),
+                focusedIndicatorColor = VerdantPrimary
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            IconButton(
+                onClick = onCommentSubmit,
+                enabled = !isCommentSubmitting && commentInput.isNotBlank(),
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(VerdantPrimary)
+            ) {
+                if (isCommentSubmitting) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(16.dp),
+                        strokeWidth = 2.dp,
+                        color = Color.White
+                    )
+                } else {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Outlined.Send,
+                        modifier = Modifier.size(16.dp),
+                        contentDescription = "Send comment",
+                        tint = Color.White
+                    )
+                }
+            }
+        }
+
+        if (!commentErrorMessage.isNullOrBlank()) {
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = commentErrorMessage,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.padding(horizontal = 16.dp)
+            )
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
     }
 }
 

@@ -64,6 +64,9 @@ sealed class Screen(
     data object Profile : Screen("profile", 2, true)
     data object Chat : Screen("chat", 3, true)
     data object Notifications : Screen("notifications", 4)
+    data object PostDetail : Screen("post/{postId}", 6) {
+        fun createRoute(postId: Long): String = "post/$postId"
+    }
     data object PlaceDetail : Screen("place/{placeId}", 10) {
         fun createRoute(placeId: Long): String = "place/$placeId"
     }
@@ -133,6 +136,7 @@ sealed class Screen(
                 "create_post" -> CreatePost
                 "profile" -> Profile
                 "notifications" -> Notifications
+                "post" -> PostDetail
                 "place" -> PlaceDetail
                 "history" -> ViewHistory
                 "profile_user" -> Profile
@@ -389,6 +393,14 @@ fun NavGraph(
         composable(Screen.CreatePost.route) {
             CreatePostScreen()
         }
+        composable(
+            route = Screen.PostDetail.route,
+            arguments = listOf(navArgument("postId") { type = NavType.LongType })
+        ) {
+            PostDetailScreen(
+                onBack = { navController.popBackStack() }
+            )
+        }
         composable(Screen.Profile.route) {
             if (!authUiState.isAuthenticated) {
                 LaunchedEffect(Unit) {
@@ -406,6 +418,16 @@ fun NavGraph(
                 onNavigateToFollowing = { navController.navigate(Screen.FollowersFollowing.createRoute(1, null)) { launchSingleTop = true } },
                 onNavigateToHistory = { navController.navigate(Screen.ViewHistory.route) { launchSingleTop = true } },
                 onNavigateToChat = { navController.navigate(Screen.Chat.route) { launchSingleTop = true } },
+                onPostNotificationClick = { postId ->
+                    navController.navigate(Screen.PostDetail.createRoute(postId)) {
+                        launchSingleTop = true
+                    }
+                },
+                onFollowNotificationClick = { userId ->
+                    navController.navigate(Screen.OtherProfile.createRoute(userId)) {
+                        launchSingleTop = true
+                    }
+                },
                 onLogout = {
                     onLogout()
                     navController.navigate(Screen.Login.route) {
