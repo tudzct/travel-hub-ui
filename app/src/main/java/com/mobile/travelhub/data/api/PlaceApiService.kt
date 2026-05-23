@@ -1,6 +1,7 @@
 package com.mobile.travelhub.data.api
 
 import com.mobile.travelhub.data.model.PaginationResponse
+import com.mobile.travelhub.data.model.TravelPlaceDetailResponse
 import com.mobile.travelhub.data.model.TravelPlaceListItemResponse
 import com.mobile.travelhub.data.model.TravelPlaceReviewResponse
 import com.mobile.travelhub.data.model.TravelPlaceViewHistoryResponse
@@ -27,6 +28,11 @@ interface PlaceApiService {
         @Query("pageSize") pageSize: Int = 10,
         @Query("provinceId") provinceId: Long? = null
     ): PaginationResponse<TravelPlaceListItemResponse>
+
+    @GET("api/places/{placeId}")
+    suspend fun getPlaceDetail(
+        @Path("placeId") placeId: Long
+    ): TravelPlaceDetailResponse
 
     @GET("api/places/{placeId}/reviews")
     suspend fun getReviews(

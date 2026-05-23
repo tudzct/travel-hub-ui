@@ -28,6 +28,20 @@ data class TravelPlaceListItemResponse(
     val reviewCount: Long
 ) : Serializable
 
+data class TravelPlaceDetailResponse(
+    val id: Long,
+    val name: String,
+    val description: String?,
+    val lat: Double?,
+    val lon: Double?,
+    val views: Int?,
+    val openingTime: String?,
+    val province: ProvinceResponse,
+    val images: List<TravelPlaceImageResponse> = emptyList(),
+    val reviewSummary: TravelPlaceReviewSummaryResponse,
+    val myReview: TravelPlaceReviewResponse?
+) : Serializable
+
 data class TravelPlaceImageResponse(
     val id: Long,
     val imageUrl: String,

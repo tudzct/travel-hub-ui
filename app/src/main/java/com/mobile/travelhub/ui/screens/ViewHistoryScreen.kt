@@ -1,5 +1,6 @@
 package com.mobile.travelhub.ui.screens
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -25,7 +26,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import coil.compose.AsyncImage
+import coil3.compose.AsyncImage
 import com.mobile.travelhub.viewmodels.HistoryViewModel
 import java.time.Instant
 import java.time.ZoneId
@@ -34,6 +35,7 @@ import java.time.format.DateTimeFormatter
 @Composable
 fun ViewHistoryScreen(
     onBack: () -> Unit,
+    onPlaceClick: (Long) -> Unit,
     onRequireLogin: () -> Unit,
     historyViewModel: HistoryViewModel = hiltViewModel()
 ) {
@@ -84,7 +86,9 @@ fun ViewHistoryScreen(
                 LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     items(uiState.items, key = { "${it.placeId}-${it.viewedAt}" }) { item ->
                         Surface(
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { onPlaceClick(item.placeId) },
                             shape = RoundedCornerShape(24.dp),
                             color = MaterialTheme.colorScheme.surfaceContainerLow
                         ) {

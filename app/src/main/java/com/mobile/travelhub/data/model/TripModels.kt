@@ -1,7 +1,5 @@
 package com.mobile.travelhub.data.model
 
-import com.google.gson.annotations.SerializedName
-
 data class CreateTripRequest(
     val name: String,
     val destination: String,
@@ -42,47 +40,26 @@ data class PastTripResponse(
     val imageUrl: String? = null
 )
 
-data class ItineraryResponse(
+data class TripDayResponse(
     val id: Long,
-    @SerializedName("group_name")
-    val groupName: String,
-    val version: Int,
-    @SerializedName("owner_id")
-    val ownerId: Long,
-    val days: List<ItineraryDayResponse> = emptyList(),
-    @SerializedName("created_at")
-    val createdAt: String? = null,
-    @SerializedName("updated_at")
-    val updatedAt: String? = null
+    val tripId: Long,
+    val date: String,
+    val dayNumber: Int,
+    val activities: List<TripActivityResponse> = emptyList()
 )
 
-data class ItineraryDayResponse(
+data class TripActivityResponse(
     val id: Long,
-    @SerializedName("day_index")
-    val dayIndex: Int,
-    val label: String,
-    @SerializedName("date_label")
-    val dateLabel: String,
-    val stops: List<ItineraryStopResponse> = emptyList()
-)
-
-data class ItineraryStopResponse(
-    val id: Long,
-    @SerializedName("sort_order")
-    val sortOrder: Int,
-    @SerializedName("start_time")
-    val startTime: String,
-    @SerializedName("end_time")
-    val endTime: String,
+    val tripDayId: Long,
     val title: String,
-    @SerializedName("place_name")
-    val placeName: String,
-    val note: String? = null,
-    @SerializedName("transport_to_next")
-    val transportToNext: String? = null,
-    @SerializedName("estimated_cost")
-    val estimatedCost: String? = null,
-    val highlighted: Boolean = false
+    val description: String? = null,
+    val startTime: String? = null,
+    val endTime: String? = null,
+    val locationName: String? = null,
+    val address: String? = null,
+    val type: String? = null,
+    val orderIndex: Int? = null,
+    val estimatedCost: Double? = null
 )
 
 // Trip Detail APIs
@@ -144,14 +121,6 @@ data class TripMemberResponse(
     val role: String
 )
 
-data class TripActivityItemResponse(
-    val id: Long,
-    val title: String,
-    val description: String? = null,
-    val timestamp: String? = null,
-    val actorName: String? = null
-)
-
 data class TripDetailHighlightsResponse(
     val title: String? = null
 )
@@ -160,8 +129,7 @@ data class TripDetailResponse(
     val tripInfo: TripInfoResponse,
     val myRole: String,
     val members: List<TripMemberResponse> = emptyList(),
-    val highlights: TripDetailHighlightsResponse? = null,
-    val recentActivities: List<TripActivityItemResponse> = emptyList()
+    val highlights: TripDetailHighlightsResponse? = null
 )
 
 data class CreateTripExpenseRequest(

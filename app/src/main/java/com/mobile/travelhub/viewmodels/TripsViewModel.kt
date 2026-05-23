@@ -3,6 +3,7 @@ package com.mobile.travelhub.viewmodels
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mobile.travelhub.data.TripRepository
+import com.mobile.travelhub.data.httpStatusCode
 import com.mobile.travelhub.data.model.PastTripResponse
 import com.mobile.travelhub.data.model.TripDashboardResponse
 import com.mobile.travelhub.data.model.UpcomingTripResponse
@@ -86,16 +87,21 @@ class TripsViewModel @Inject constructor(
             return
         }
 
+        if (normalizedCode.length != 8) {
+            onResult(false, "Mã chuyến đi không hợp lệ")
+            return
+        }
+
         viewModelScope.launch {
             _uiState.update { it.copy(isJoining = true, errorMessage = null) }
             tripRepository.joinTrip(com.mobile.travelhub.data.model.JoinTripRequest(inviteCode = normalizedCode))
                 .onSuccess { response ->
                     _uiState.update { it.copy(isJoining = false) }
                     refreshDashboard()
-                    onResult(true, response.message.ifBlank { "Đã gửi yêu cầu tham gia" })
+                    onResult(true, "Đã gửi yêu cầu tham gia nhóm")
                 }
                 .onFailure { throwable ->
-                    val message = throwable.message ?: "Không tham gia được chuyến đi"
+                    val message = joinTripErrorMessage(throwable)
                     _uiState.update {
                         it.copy(
                             isJoining = false,
@@ -136,5 +142,14 @@ class TripsViewModel @Inject constructor(
             dateString = dateString,
             imageUrl = imageUrl
         )
+    }
+
+    private fun joinTripErrorMessage(throwable: Throwable): String {
+        return when (throwable.httpStatusCode()) {
+            400 -> "Mã chuyến đi không hợp lệ"
+            404 -> "Không tìm thấy chuyến đi"
+            409 -> "Bạn đã gửi yêu cầu hoặc đã là thành viên của nhóm này"
+            else -> throwable.message ?: "Không tham gia được chuyến đi"
+        }
     }
 }

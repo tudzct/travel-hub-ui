@@ -9,6 +9,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -20,7 +22,9 @@ fun EditProfileField(
     value: String,
     onValueChange: (String) -> Unit,
     modifier: Modifier = Modifier,
-    enabled: Boolean = true
+    enabled: Boolean = true,
+    keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
+    keyboardActions: KeyboardActions = KeyboardActions.Default
 ) {
     Column(modifier = modifier.fillMaxWidth().padding(vertical = 12.dp)) {
         Text(
@@ -35,6 +39,8 @@ fun EditProfileField(
             onValueChange = onValueChange,
             enabled = enabled,
             modifier = Modifier.fillMaxWidth(),
+            keyboardOptions = keyboardOptions,
+            keyboardActions = keyboardActions,
             shape = RoundedCornerShape(12.dp),
             colors = TextFieldDefaults.colors(
                 focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLowest,

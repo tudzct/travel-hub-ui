@@ -66,7 +66,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import coil.compose.AsyncImage
+import coil3.compose.AsyncImage
 import com.mobile.travelhub.data.model.TravelPlaceListItemResponse
 import com.mobile.travelhub.data.model.TravelPlaceReviewResponse
 import com.mobile.travelhub.ui.theme.OnSurface
@@ -85,7 +85,8 @@ import java.time.format.DateTimeFormatter
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun PlaceDetailScreen(
-    place: TravelPlaceListItemResponse,
+    placeId: Long,
+    initialPlace: TravelPlaceListItemResponse?,
     onBack: () -> Unit,
     onPlaceClick: (TravelPlaceListItemResponse) -> Unit,
     onShowAllReviews: (Long) -> Unit,
@@ -98,8 +99,12 @@ fun PlaceDetailScreen(
     val context = LocalContext.current
     var showReviewSheet by remember { mutableStateOf(false) }
 
-    LaunchedEffect(place.id) {
-        placeDetailViewModel.loadPlace(place)
+    LaunchedEffect(placeId, initialPlace?.id) {
+        if (initialPlace != null) {
+            placeDetailViewModel.loadPlace(initialPlace)
+        } else {
+            placeDetailViewModel.loadPlaceById(placeId)
+        }
     }
 
     LaunchedEffect(showReviewSheet, uiState.detail?.myReview?.id) {
@@ -155,7 +160,15 @@ fun PlaceDetailScreen(
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                    Button(onClick = { placeDetailViewModel.loadPlace(place) }) {
+                    Button(
+                        onClick = {
+                            if (initialPlace != null) {
+                                placeDetailViewModel.loadPlace(initialPlace)
+                            } else {
+                                placeDetailViewModel.loadPlaceById(placeId)
+                            }
+                        }
+                    ) {
                         Text("Thử lại")
                     }
                 }
@@ -901,7 +914,9 @@ private fun ReviewPreviewSection(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Column {
+                            Column(
+                                verticalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
                                 Text(
                                     text = review.user.name.ifBlank { review.user.username },
                                     style = MaterialTheme.typography.titleMedium,
