@@ -78,6 +78,8 @@ fun ProfileScreen(
     viewingUserId: Long? = null,
     onNavigateToChat: (() -> Unit)? = null,
     onNotificationsClick: (() -> Unit)? = null,
+    onPostNotificationClick: (Long) -> Unit = {},
+    onFollowNotificationClick: (Long) -> Unit = {},
     onBack: (() -> Unit)? = null,
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
@@ -122,6 +124,8 @@ fun ProfileScreen(
         viewingUserId = viewingUserId,
         onNavigateToChat = onNavigateToChat,
         onNotificationsClick = onNotificationsClick,
+        onPostNotificationClick = onPostNotificationClick,
+        onFollowNotificationClick = onFollowNotificationClick,
         onReloadProfile = {
             if (isViewingOwnProfile) {
                 viewModel.loadUserProfile()
@@ -155,6 +159,8 @@ private fun ProfileScreenContent(
     viewingUserId: Long?,
     onNavigateToChat: (() -> Unit)?,
     onNotificationsClick: (() -> Unit)?,
+    onPostNotificationClick: (Long) -> Unit,
+    onFollowNotificationClick: (Long) -> Unit,
     onReloadProfile: () -> Unit,
     onReloadOtherUserProfile: (Long) -> Unit,
     onReloadPosts: (Long?) -> Unit,
@@ -577,7 +583,17 @@ private fun ProfileScreenContent(
                         }
                     }
                     if (showNotifications) {
-                        NotificationsPopup(onDismiss = { showNotifications = false })
+                        NotificationsPopup(
+                            onDismiss = { showNotifications = false },
+                            onPostNotificationClick = { postId ->
+                                showNotifications = false
+                                onPostNotificationClick(postId)
+                            },
+                            onFollowNotificationClick = { userId ->
+                                showNotifications = false
+                                onFollowNotificationClick(userId)
+                            }
+                        )
                     }
                 }
             }
@@ -641,6 +657,8 @@ fun ProfileScreenPreview() {
             viewingUserId = null,
             onNavigateToChat = {},
             onNotificationsClick = {},
+            onPostNotificationClick = {},
+            onFollowNotificationClick = {},
             onReloadProfile = {},
             onReloadOtherUserProfile = {},
             onReloadPosts = {},

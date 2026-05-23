@@ -73,15 +73,24 @@ class PostRepository @Inject constructor(
     suspend fun getAllPosts(page: Int = 0, pageSize: Int = 10): Result<List<FeedPostResponse>> {
         return withContext(Dispatchers.IO) {
             runCatching {
-                val likedPostIds = getLikedPostIds()
                 postApiService.getAllPosts(
                     page = page,
                     pageSize = pageSize
-                ).data.map { post ->
-                    val localLiked = likedPostIds.contains(post.id.toString())
-                    val mergedLiked = (post.likedByCurrentUser == true) || localLiked
-                    post.copy(likedByCurrentUser = mergedLiked)
-                }
+                ).data.map(::mergeLocalLikedState)
+            }
+        }
+    }
+
+    suspend fun getPost(postId: Long): Result<FeedPostResponse> {
+        return withContext(Dispatchers.IO) {
+            runCatching {
+                require(postId > 0) { "Invalid post id" }
+                mergeLocalLikedState(postApiService.getPost(postId = postId))
+            }.recoverCatching {
+                getAllPosts(page = 0, pageSize = 100)
+                    .getOrThrow()
+                    .firstOrNull { post -> post.id == postId }
+                    ?: throw IOException("Post not found")
             }
         }
     }
@@ -89,16 +98,11 @@ class PostRepository @Inject constructor(
     suspend fun getPostsByUser(userId: Long, page: Int = 0, pageSize: Int = 20): Result<List<FeedPostResponse>> {
         return withContext(Dispatchers.IO) {
             runCatching {
-                val likedPostIds = getLikedPostIds()
                 userApiService.getUserPosts(
                     id = userId,
                     page = page,
                     pageSize = pageSize
-                ).data.map { post ->
-                    val localLiked = likedPostIds.contains(post.id.toString())
-                    val mergedLiked = (post.likedByCurrentUser == true) || localLiked
-                    post.copy(likedByCurrentUser = mergedLiked)
-                }
+                ).data.map(::mergeLocalLikedState)
             }
         }
     }
@@ -207,6 +211,12 @@ class PostRepository @Inject constructor(
 
     private fun getLikedPostIds(): Set<String> {
         return prefs.getStringSet(KEY_LIKED_POST_IDS, emptySet()) ?: emptySet()
+    }
+
+    private fun mergeLocalLikedState(post: FeedPostResponse): FeedPostResponse {
+        val localLiked = getLikedPostIds().contains(post.id.toString())
+        val mergedLiked = (post.likedByCurrentUser == true) || localLiked
+        return post.copy(likedByCurrentUser = mergedLiked)
     }
 
     private fun updateLikedPost(postId: Long, liked: Boolean) {

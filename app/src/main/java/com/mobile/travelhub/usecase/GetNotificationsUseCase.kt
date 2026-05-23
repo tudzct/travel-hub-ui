@@ -8,7 +8,7 @@ class GetNotificationsUseCase @Inject constructor(
     private val notificationRepository: NotificationRepository
 ) {
     suspend operator fun invoke(pageNumber: Int = 0, pageSize: Int = 10): Result<List<NotificationResponse>> {
-        return notificationRepository.getUnreadNotifications(
+        return notificationRepository.getNotifications(
             pageNumber = pageNumber,
             pageSize = pageSize
         )

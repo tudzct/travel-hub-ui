@@ -1,6 +1,7 @@
 package com.mobile.travelhub.data.api
 
 import com.mobile.travelhub.data.model.CreateCommentRequest
+import com.mobile.travelhub.data.model.FeedPostResponse
 import com.mobile.travelhub.data.model.GetPostsResponse
 import com.mobile.travelhub.data.model.LikePostResponse
 import com.mobile.travelhub.data.model.PostCommentResponse
@@ -27,6 +28,11 @@ interface PostApiService {
         @Query("page") page: Int = 0,
         @Query("pageSize") pageSize: Int = 10
     ): GetPostsResponse
+
+    @GET("api/posts/{postId}")
+    suspend fun getPost(
+        @Path("postId") postId: Long
+    ): FeedPostResponse
 
     @POST("api/posts")
     suspend fun createPost(

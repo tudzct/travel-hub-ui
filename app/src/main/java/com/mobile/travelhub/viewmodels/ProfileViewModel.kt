@@ -226,22 +226,59 @@ class ProfileViewModel @Inject constructor(
 
     fun toggleFollowOtherUser(targetUserId: Long, isCurrentlyFollowing: Boolean) {
         viewModelScope.launch {
-            try {
-                if (targetUserId == sessionUserId) return@launch
+            if (targetUserId == sessionUserId) return@launch
 
+            val previousOtherProfileState = _otherUserProfileState.value
+            val previousOwnProfileState = _profileState.value
+            val nextFollowingState = !isCurrentlyFollowing
+
+            updateOtherProfileFollowState(targetUserId, nextFollowingState)
+            updateOwnFollowingCount(if (nextFollowingState) 1 else -1)
+
+            try {
                 if (isCurrentlyFollowing) {
                     userApiService.unfollowUser(targetUserId)
                 } else {
                     userApiService.followUser(targetUserId)
                 }
-
-                loadOtherUserProfile(targetUserId)
-                loadUserProfile()
-                loadFollowers()
-                loadFollowing()
             } catch (e: Exception) {
+                _otherUserProfileState.value = previousOtherProfileState
+                _profileState.value = previousOwnProfileState
                 Log.e("API_ERROR", "Lỗi follow/unfollow other profile: ${e.localizedMessage}", e)
             }
+        }
+    }
+
+    private fun updateOtherProfileFollowState(targetUserId: Long, isFollowing: Boolean) {
+        _otherUserProfileState.update { state ->
+            val currentProfile = (state as? UiState.Success)?.data ?: return@update state
+            if (currentProfile.id != targetUserId) return@update state
+
+            val followerDelta = when {
+                isFollowing && !currentProfile.isFollowing -> 1
+                !isFollowing && currentProfile.isFollowing -> -1
+                else -> 0
+            }
+
+            UiState.Success(
+                currentProfile.copy(
+                    isFollowing = isFollowing,
+                    followersCount = (currentProfile.followersCount + followerDelta).coerceAtLeast(0)
+                )
+            )
+        }
+    }
+
+    private fun updateOwnFollowingCount(delta: Int) {
+        if (delta == 0) return
+
+        _profileState.update { state ->
+            val currentProfile = (state as? UiState.Success)?.data ?: return@update state
+            UiState.Success(
+                currentProfile.copy(
+                    followingCount = (currentProfile.followingCount + delta).coerceAtLeast(0)
+                )
+            )
         }
     }
 
