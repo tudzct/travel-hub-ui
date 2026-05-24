@@ -34,6 +34,7 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.mobile.travelhub.data.model.TravelPlaceListItemResponse
+import com.mobile.travelhub.data.model.TopTravelerPeriod
 import com.mobile.travelhub.ui.screens.OnboardingInterestsScreen
 import com.mobile.travelhub.ui.screens.OnboardingIntroScreen
 import com.mobile.travelhub.ui.screens.ProfileScreen
@@ -92,6 +93,9 @@ sealed class Screen(
         fun createRoute(placeId: Long): String = "place/$placeId/reviews"
     }
     data object ViewHistory : Screen("history/places", 14)
+    data object TopTravelers : Screen("top-travelers/{period}", 12) {
+        fun createRoute(period: TopTravelerPeriod): String = "top-travelers/${period.name}"
+    }
 
     data object Login : Screen("login")
     data object Register : Screen("register")
@@ -157,6 +161,7 @@ sealed class Screen(
                 "post" -> PostDetail
                 "place" -> PlaceDetail
                 "history" -> ViewHistory
+                "top-travelers" -> TopTravelers
                 "profile_user" -> Profile
                 "edit_profile" -> EditProfile
                 "followers_following" -> FollowersFollowing
@@ -455,14 +460,56 @@ fun NavGraph(
                 }
             )
         ) { backStackEntry ->
+            val topTravelersRefreshKey by backStackEntry.savedStateHandle
+                .getStateFlow("top_travelers_refresh", 0)
+                .collectAsState()
             ExploreScreen(
                 activateSearch = backStackEntry.arguments
                     ?.getBoolean(Screen.Explore.ACTIVATE_SEARCH_ARG)
                     ?: false,
+                refreshTopTravelersKey = topTravelersRefreshKey,
                 onSearchClick = {
                     navController.navigate(Screen.Search.route) {
                         launchSingleTop = true
                     }
+                },
+                onTravelerClick = { userId, currentUser ->
+                    val route = if (currentUser) {
+                        Screen.Profile.route
+                    } else {
+                        Screen.OtherProfile.createRoute(userId)
+                    }
+                    navController.navigate(route) { launchSingleTop = true }
+                },
+                onSeeAllTopTravelers = { period ->
+                    navController.navigate(Screen.TopTravelers.createRoute(period)) {
+                        launchSingleTop = true
+                    }
+                }
+            )
+        }
+        composable(
+            route = Screen.TopTravelers.route,
+            arguments = listOf(navArgument("period") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val period = runCatching {
+                TopTravelerPeriod.valueOf(backStackEntry.arguments?.getString("period") ?: "WEEK")
+            }.getOrDefault(TopTravelerPeriod.WEEK)
+            TopTravelersScreen(
+                initialPeriod = period,
+                onBack = {
+                    val handle = navController.previousBackStackEntry?.savedStateHandle
+                    val nextRefreshKey = (handle?.get<Int>("top_travelers_refresh") ?: 0) + 1
+                    handle?.set("top_travelers_refresh", nextRefreshKey)
+                    navController.popBackStack()
+                },
+                onTravelerClick = { userId, currentUser ->
+                    val route = if (currentUser) {
+                        Screen.Profile.route
+                    } else {
+                        Screen.OtherProfile.createRoute(userId)
+                    }
+                    navController.navigate(route) { launchSingleTop = true }
                 }
             )
         }

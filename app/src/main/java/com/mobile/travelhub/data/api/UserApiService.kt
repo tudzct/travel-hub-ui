@@ -8,6 +8,8 @@ import com.mobile.travelhub.data.model.ProfileUpdateRequest
 import com.mobile.travelhub.data.model.GetPostsResponse
 import com.mobile.travelhub.data.model.UserProfileResponse
 import com.mobile.travelhub.data.model.UserSummaryResponse
+import com.mobile.travelhub.data.model.TopTravelerPeriod
+import com.mobile.travelhub.data.model.TopTravelerResponse
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
@@ -29,6 +31,13 @@ interface UserApiService {
         @Query("page") page: Int = 0,
         @Query("pageSize") pageSize: Int = 10
     ): PaginationResponse<UserProfileResponse>
+
+    @GET("api/users/top-travelers")
+    suspend fun getTopTravelers(
+        @Query("period") period: TopTravelerPeriod,
+        @Query("page") page: Int = 0,
+        @Query("pageSize") pageSize: Int = 4
+    ): PaginationResponse<TopTravelerResponse>
 
     @GET("api/users/{id}/followers")
     suspend fun getFollowers(

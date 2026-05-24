@@ -24,9 +24,12 @@ import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -42,20 +45,29 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil.compose.AsyncImage
+import com.mobile.travelhub.data.model.TopTravelerPeriod
+import com.mobile.travelhub.data.model.TopTravelerResponse
 import com.mobile.travelhub.ui.components.FeaturedLocationCard
 import com.mobile.travelhub.ui.theme.OnSurface
 import com.mobile.travelhub.ui.theme.OnSurfaceVariant
 import com.mobile.travelhub.ui.theme.PrimaryBlue
 import com.mobile.travelhub.ui.theme.SurfaceBg
 import com.mobile.travelhub.viewmodels.ExploreViewModel
+import com.mobile.travelhub.viewmodels.TopTravelersUiState
+import com.mobile.travelhub.viewmodels.TopTravelersViewModel
 
 @Composable
 fun ExploreScreen(
     activateSearch: Boolean = false,
+    refreshTopTravelersKey: Int = 0,
     onSearchClick: () -> Unit = {},
-    viewModel: ExploreViewModel = hiltViewModel()
+    onTravelerClick: (Long, Boolean) -> Unit = { _, _ -> },
+    onSeeAllTopTravelers: (TopTravelerPeriod) -> Unit = {},
+    topTravelersViewModel: TopTravelersViewModel = hiltViewModel(),
+    exploreViewModel: ExploreViewModel = hiltViewModel()
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val topTravelersState by topTravelersViewModel.uiState.collectAsState()
+    val uiState by exploreViewModel.uiState.collectAsState()
     val featuredLocations = listOf(
         FeaturedLocation(
             country = "INDONESIA",
@@ -74,12 +86,9 @@ fun ExploreScreen(
         )
     )
 
-    val travelers = listOf(
-        TopTraveler("Elena R.", "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=200&q=80", true),
-        TopTraveler("Marcus T.", "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=200&q=80", false),
-        TopTraveler("Sarah J.", "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80", false),
-        TopTraveler("Daniel K.", "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=200&q=80", false)
-    )
+    LaunchedEffect(refreshTopTravelersKey) {
+        topTravelersViewModel.loadPreview()
+    }
 
     Column(
         modifier = Modifier
@@ -141,22 +150,14 @@ fun ExploreScreen(
             }
         }
 
-        SectionTitleRow(
-            title = "Top Travelers",
-            action = "See All",
-            topPadding = 36.dp
+        TopTravelersPreview(
+            state = topTravelersState,
+            onPeriodSelected = topTravelersViewModel::loadPreview,
+            onRetry = topTravelersViewModel::refresh,
+            onTravelerClick = onTravelerClick,
+            onToggleFollow = topTravelersViewModel::toggleFollow,
+            onSeeAll = { onSeeAllTopTravelers(topTravelersState.period) }
         )
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .horizontalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp),
-            horizontalArrangement = Arrangement.spacedBy(26.dp)
-        ) {
-            travelers.forEach { traveler ->
-                TravelerItem(traveler = traveler)
-            }
-        }
     }
 }
 
@@ -217,7 +218,12 @@ private fun SectionTitle(text: String, topPadding: androidx.compose.ui.unit.Dp =
 }
 
 @Composable
-private fun SectionTitleRow(title: String, action: String, topPadding: androidx.compose.ui.unit.Dp) {
+private fun SectionTitleRow(
+    title: String,
+    action: String,
+    topPadding: androidx.compose.ui.unit.Dp,
+    onActionClick: () -> Unit = {}
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -231,12 +237,14 @@ private fun SectionTitleRow(title: String, action: String, topPadding: androidx.
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.ExtraBold
         )
-        Text(
-            text = action,
-            color = PrimaryBlue,
-            style = MaterialTheme.typography.labelLarge,
-            fontWeight = FontWeight.Bold
-        )
+        TextButton(onClick = onActionClick) {
+            Text(
+                text = action,
+                color = PrimaryBlue,
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold
+            )
+        }
     }
 }
 
@@ -314,49 +322,164 @@ private fun SectionDivider() {
 }
 
 @Composable
-private fun TravelerItem(traveler: TopTraveler) {
+private fun TopTravelersPreview(
+    state: TopTravelersUiState,
+    onPeriodSelected: (TopTravelerPeriod) -> Unit,
+    onRetry: () -> Unit,
+    onTravelerClick: (Long, Boolean) -> Unit,
+    onToggleFollow: (TopTravelerResponse) -> Unit,
+    onSeeAll: () -> Unit
+) {
+    SectionTitleRow(
+        title = "Top Travelers",
+        action = "See All",
+        topPadding = 36.dp,
+        onActionClick = onSeeAll
+    )
+    TopTravelerPeriodSelector(
+        selectedPeriod = state.period,
+        onPeriodSelected = onPeriodSelected,
+        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+    )
+    when {
+        state.isLoading -> {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 18.dp),
+                horizontalArrangement = Arrangement.Center
+            ) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(28.dp),
+                    color = PrimaryBlue,
+                    strokeWidth = 2.dp
+                )
+            }
+        }
+
+        state.errorMessage != null -> {
+            Column(
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = "Unable to load top travelers.",
+                    color = OnSurfaceVariant,
+                    fontSize = 13.sp
+                )
+                TextButton(onClick = onRetry) {
+                    Text("Retry", color = PrimaryBlue)
+                }
+            }
+        }
+
+        state.items.isEmpty() -> {
+            Text(
+                text = "No ranked travelers in this period.",
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp),
+                color = OnSurfaceVariant,
+                fontSize = 13.sp
+            )
+        }
+
+        else -> {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState())
+                    .padding(horizontal = 16.dp, vertical = 14.dp),
+                horizontalArrangement = Arrangement.spacedBy(26.dp)
+            ) {
+                state.items.forEach { traveler ->
+                    TravelerItem(
+                        traveler = traveler,
+                        followRequestInProgress = traveler.id in state.requestingFollowIds,
+                        onClick = { onTravelerClick(traveler.id, traveler.currentUser) },
+                        onToggleFollow = { onToggleFollow(traveler) }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun TopTravelerPeriodSelector(
+    selectedPeriod: TopTravelerPeriod,
+    onPeriodSelected: (TopTravelerPeriod) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        TopTravelerPeriod.entries.forEach { period ->
+            FilterChip(
+                selected = selectedPeriod == period,
+                onClick = { if (selectedPeriod != period) onPeriodSelected(period) },
+                label = {
+                    Text(if (period == TopTravelerPeriod.WEEK) "Week" else "Month")
+                }
+            )
+        }
+    }
+}
+
+@Composable
+private fun TravelerItem(
+    traveler: TopTravelerResponse,
+    followRequestInProgress: Boolean,
+    onClick: () -> Unit,
+    onToggleFollow: () -> Unit
+) {
+    val displayName = traveler.name?.takeIf { it.isNotBlank() } ?: traveler.username
     Column(
-        modifier = Modifier.width(66.dp),
+        modifier = Modifier
+            .width(72.dp)
+            .clickable(onClick = onClick),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         AsyncImage(
             model = traveler.avatarUrl,
-            contentDescription = traveler.name,
+            contentDescription = displayName,
             contentScale = ContentScale.Crop,
             modifier = Modifier
                 .size(54.dp)
                 .clip(CircleShape)
                 .border(
-                    width = if (traveler.isFollowing) 2.dp else 0.dp,
-                    color = if (traveler.isFollowing) PrimaryBlue else Color.Transparent,
+                    width = if (traveler.following) 2.dp else 0.dp,
+                    color = if (traveler.following) PrimaryBlue else Color.Transparent,
                     shape = CircleShape
                 )
         )
         Text(
-            text = traveler.name,
+            text = if (traveler.currentUser) "You" else displayName,
             modifier = Modifier.padding(top = 7.dp),
             color = OnSurface,
             fontSize = 11.sp,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
         )
-        Button(
-            onClick = {},
-            modifier = Modifier
-                .padding(top = 6.dp)
-                .height(24.dp),
-            shape = RoundedCornerShape(14.dp),
-            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 0.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = if (traveler.isFollowing) PrimaryBlue else Color(0xFFF3F5FA),
-                contentColor = if (traveler.isFollowing) Color.White else OnSurfaceVariant
-            )
-        ) {
-            Text(
-                text = if (traveler.isFollowing) "Follow" else "Follow",
-                fontSize = 10.sp,
-                fontWeight = FontWeight.Bold
-            )
+        if (!traveler.currentUser) {
+            Button(
+                onClick = onToggleFollow,
+                enabled = !followRequestInProgress,
+                modifier = Modifier
+                    .padding(top = 6.dp)
+                    .height(24.dp),
+                shape = RoundedCornerShape(14.dp),
+                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = if (traveler.following) PrimaryBlue else Color(0xFFF3F5FA),
+                    contentColor = if (traveler.following) Color.White else OnSurfaceVariant
+                )
+            ) {
+                Text(
+                    text = if (traveler.following) "Following" else "Follow",
+                    fontSize = 9.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
         }
     }
 }
@@ -365,10 +488,4 @@ private data class FeaturedLocation(
     val country: String,
     val city: String,
     val imageUrl: String
-)
-
-private data class TopTraveler(
-    val name: String,
-    val avatarUrl: String,
-    val isFollowing: Boolean
 )
