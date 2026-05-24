@@ -36,6 +36,22 @@ class SearchHistoryRepository @Inject constructor(
         _recentSearches.value = updatedSearches
     }
 
+    fun removeRecentSearch(query: String) {
+        val trimmedQuery = query.trim()
+        if (trimmedQuery.isBlank()) return
+
+        val updatedSearches = _recentSearches.value.filterNot {
+            it.equals(trimmedQuery, ignoreCase = true)
+        }
+        saveRecentSearches(updatedSearches)
+        _recentSearches.value = updatedSearches
+    }
+
+    fun clearRecentSearches() {
+        saveRecentSearches(emptyList())
+        _recentSearches.value = emptyList()
+    }
+
     private fun loadRecentSearches(): List<String> {
         val rawSearches = prefs.getString(recentSearchesKey, null) ?: return emptyList()
         return runCatching {
@@ -51,6 +67,11 @@ class SearchHistoryRepository @Inject constructor(
     }
 
     private fun saveRecentSearches(searches: List<String>) {
+        if (searches.isEmpty()) {
+            prefs.edit().remove(recentSearchesKey).apply()
+            return
+        }
+
         val jsonArray = JSONArray()
         searches.forEach { jsonArray.put(it) }
         prefs.edit()

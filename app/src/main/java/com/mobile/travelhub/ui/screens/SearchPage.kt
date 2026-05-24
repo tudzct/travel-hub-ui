@@ -137,6 +137,8 @@ fun SearchPage(
                 recentSearches = uiState.recentSearches,
                 trendingSearches = trendingSearches,
                 onRecentSearchClick = viewModel::applyRecentSearch,
+                onRecentSearchRemove = viewModel::removeRecentSearch,
+                onClearRecentSearches = viewModel::clearRecentSearches,
                 onTrendingSearchClick = viewModel::applyRecentSearch
             )
         } else {
@@ -179,6 +181,8 @@ private fun SearchSuggestionsContent(
     recentSearches: List<String>,
     trendingSearches: List<String>,
     onRecentSearchClick: (String) -> Unit,
+    onRecentSearchRemove: (String) -> Unit,
+    onClearRecentSearches: () -> Unit,
     onTrendingSearchClick: (String) -> Unit
 ) {
     LazyColumn(
@@ -188,7 +192,11 @@ private fun SearchSuggestionsContent(
     ) {
         if (recentSearches.isNotEmpty()) {
             item(contentType = "recent-title") {
-                SearchSectionTitle(text = "Recent Searches")
+                SearchSectionHeader(
+                    text = "Recent Searches",
+                    actionText = "Clear",
+                    onActionClick = onClearRecentSearches
+                )
             }
             items(
                 items = recentSearches,
@@ -199,7 +207,8 @@ private fun SearchSuggestionsContent(
                     text = search,
                     subtitle = "",
                     leadingIcon = SearchLeadingIcon.History,
-                    onClick = { onRecentSearchClick(search) }
+                    onClick = { onRecentSearchClick(search) },
+                    onRemoveClick = { onRecentSearchRemove(search) }
                 )
             }
         }
@@ -633,11 +642,47 @@ private fun SearchSectionTitle(
 }
 
 @Composable
+private fun SearchSectionHeader(
+    text: String,
+    actionText: String,
+    onActionClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(top = 4.dp, bottom = 4.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = text,
+            color = OnSurfaceVariant,
+            style = MaterialTheme.typography.labelLarge,
+            fontWeight = FontWeight.Bold
+        )
+        TextButton(
+            onClick = onActionClick,
+            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
+            modifier = Modifier.height(32.dp)
+        ) {
+            Text(
+                text = actionText,
+                color = PrimaryBlue,
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold
+            )
+        }
+    }
+}
+
+@Composable
 private fun SearchSuggestionRow(
     text: String,
     subtitle: String,
     leadingIcon: SearchLeadingIcon,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onRemoveClick: (() -> Unit)? = null
 ) {
     SearchRowContainer(onClick = onClick) {
         SearchIconBubble(type = leadingIcon)
@@ -654,6 +699,19 @@ private fun SearchSuggestionRow(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
+        }
+        if (onRemoveClick != null) {
+            IconButton(
+                onClick = onRemoveClick,
+                modifier = Modifier.size(32.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.Close,
+                    contentDescription = "Remove recent search",
+                    tint = OnSurfaceVariant,
+                    modifier = Modifier.size(17.dp)
+                )
+            }
         }
     }
 }
@@ -787,7 +845,7 @@ private fun SearchRowContainer(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .height(32.dp)
+            .height(40.dp)
             .clip(RoundedCornerShape(8.dp))
             .clickable(onClick = onClick)
             .padding(horizontal = 12.dp),

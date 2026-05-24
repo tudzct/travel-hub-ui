@@ -225,6 +225,14 @@ class SearchViewModel @Inject constructor(
         search(trimmedQuery)
     }
 
+    fun removeRecentSearch(query: String) {
+        searchHistoryRepository.removeRecentSearch(query)
+    }
+
+    fun clearRecentSearches() {
+        searchHistoryRepository.clearRecentSearches()
+    }
+
     private fun hasLoadedSearchResults(query: String): Boolean {
         val state = _uiState.value
         return lastLoadedQuery == query &&
