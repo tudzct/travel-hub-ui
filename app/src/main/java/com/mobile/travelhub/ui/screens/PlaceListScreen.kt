@@ -30,6 +30,7 @@ fun PlaceListScreen(
         onRetryPlaces = placeListViewModel::refresh,
         onRetryPosts = homeViewModel::refreshPosts,
         onLikeClick = homeViewModel::onLikeClicked,
+        onSaveClick = homeViewModel::onSaveClicked,
         onCommentClick = homeViewModel::onCommentClicked,
         onAuthorClick = onAuthorClick,
         onDismissCommentSheet = homeViewModel::onCommentDismissed,

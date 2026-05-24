@@ -72,6 +72,7 @@ fun PostDetailScreen(
                             FeedPostCard(
                                 post = post,
                                 onLikeClick = viewModel::onLikeClicked,
+                                onSaveClick = viewModel::onSaveClicked,
                                 onCommentClick = viewModel::onCommentClicked,
                                 onAuthorClick = { onAuthorClick(post.ownerId) }
                             )

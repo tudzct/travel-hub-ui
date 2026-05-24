@@ -36,6 +36,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Send
+import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.outlined.BookmarkBorder
@@ -84,6 +85,7 @@ import com.mobile.travelhub.viewmodels.HomeUiState
 import com.mobile.travelhub.viewmodels.PlaceListUiState
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
+import com.mobile.travelhub.ui.theme.PrimaryBlue
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -96,6 +98,7 @@ fun PlaceListScreenContent(
     onRetryPlaces: () -> Unit,
     onRetryPosts: () -> Unit,
     onLikeClick: (Long) -> Unit,
+    onSaveClick: (Long) -> Unit,
     onCommentClick: (Long) -> Unit,
     onAuthorClick: (Long) -> Unit,
     onDismissCommentSheet: () -> Unit,
@@ -223,6 +226,7 @@ fun PlaceListScreenContent(
                         FeedPostCard(
                             post = post,
                             onLikeClick = { onLikeClick(post.id) },
+                            onSaveClick = { onSaveClick(post.id) },
                             onCommentClick = { onCommentClick(post.id) },
                             onAuthorClick = { onAuthorClick(post.ownerId) }
                         )
@@ -571,6 +575,7 @@ private fun FeedEmptyState(
 fun FeedPostCard(
     post: HomePostUiModel,
     onLikeClick: () -> Unit,
+    onSaveClick: () -> Unit,
     onCommentClick: () -> Unit,
     onAuthorClick: (() -> Unit)? = null,
     actionsEnabled: Boolean = true
@@ -798,12 +803,18 @@ fun FeedPostCard(
                     modifier = Modifier.weight(1f),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        imageVector = Icons.Outlined.BookmarkBorder,
-                        contentDescription = "Save",
-                        modifier = Modifier.size(26.dp),
-                        tint = VerdantOnSurface
-                    )
+                    IconButton(
+                        onClick = onSaveClick,
+                        enabled = actionsEnabled && !post.isSaveLoading && !post.isSaved,
+                        modifier = Modifier.size(28.dp)
+                    ) {
+                        Icon(
+                            imageVector = if (post.isSaved) Icons.Filled.Bookmark else Icons.Outlined.BookmarkBorder,
+                            contentDescription = "Save",
+                            modifier = Modifier.size(26.dp),
+                            tint = if (post.isSaved) PrimaryBlue else VerdantOnSurface
+                        )
+                    }
                 }
                 Box(
                     modifier = Modifier.weight(1f),
@@ -963,9 +974,12 @@ fun FeedPostCardPreview() {
             commentCount = 4,
             isLiked = true,
             isLikeLoading = false,
+            isSaved = false,
+            isSaveLoading = false,
             timeAgoLabel = "2h"
         ),
         onLikeClick = {},
+        onSaveClick = {},
         onCommentClick = {}
     )
 }

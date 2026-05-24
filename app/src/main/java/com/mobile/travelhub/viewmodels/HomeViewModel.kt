@@ -8,6 +8,7 @@ import com.mobile.travelhub.usecase.AddCommentUseCase
 import com.mobile.travelhub.usecase.GetAllPostsUseCase
 import com.mobile.travelhub.usecase.GetPostCommentsUseCase
 import com.mobile.travelhub.usecase.LikePostUseCase
+import com.mobile.travelhub.usecase.SavePostUseCase
 import com.mobile.travelhub.usecase.UnlikePostUseCase
 import com.mobile.travelhub.utils.PostsUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -33,6 +34,8 @@ data class HomePostUiModel(
     val commentCount: Int,
     val isLiked: Boolean,
     val isLikeLoading: Boolean,
+    val isSaved: Boolean,
+    val isSaveLoading: Boolean,
     val timeAgoLabel: String
 )
 
@@ -61,6 +64,7 @@ class HomeViewModel @Inject constructor(
     private val getAllPostsUseCase: GetAllPostsUseCase,
     private val likePostUseCase: LikePostUseCase,
     private val unlikePostUseCase: UnlikePostUseCase,
+    private val savePostUseCase: SavePostUseCase,
     private val addCommentUseCase: AddCommentUseCase,
     private val getPostCommentsUseCase: GetPostCommentsUseCase
 ) : ViewModel() {
@@ -143,6 +147,41 @@ class HomeViewModel @Inject constructor(
                     }
                     _uiState.update {
                         it.copy(errorMessage = throwable.message ?: "Failed to update like")
+                    }
+                }
+        }
+    }
+
+    fun onSaveClicked(postId: Long) {
+        val currentPost = _uiState.value.posts.firstOrNull { it.id == postId } ?: return
+        if (currentPost.isSaveLoading || currentPost.isSaved) return
+
+        updatePost(postId) {
+            it.copy(
+                isSaved = true,
+                isSaveLoading = true
+            )
+        }
+
+        viewModelScope.launch {
+            savePostUseCase(postId)
+                .onSuccess { response ->
+                    updatePost(postId) {
+                        it.copy(
+                            isSaved = response.saved,
+                            isSaveLoading = false
+                        )
+                    }
+                }
+                .onFailure { throwable ->
+                    updatePost(postId) {
+                        it.copy(
+                            isSaved = currentPost.isSaved,
+                            isSaveLoading = false
+                        )
+                    }
+                    _uiState.update {
+                        it.copy(errorMessage = throwable.message ?: "Failed to save post")
                     }
                 }
         }
@@ -286,6 +325,8 @@ class HomeViewModel @Inject constructor(
             commentCount = post.commentCount?.coerceAtLeast(0) ?: 0,
             isLiked = post.likedByCurrentUser == true,
             isLikeLoading = false,
+            isSaved = post.savedByCurrentUser == true,
+            isSaveLoading = false,
             timeAgoLabel = PostsUtils.formatTimeAgo(safeCreatedAt)
         )
     }

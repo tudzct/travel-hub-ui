@@ -84,29 +84,55 @@ class ProfileViewModel @Inject constructor(
     }
 
     fun loadUserPosts(userId: Long = sessionUserId) {
+        loadProfilePosts(userId = userId, tab = ProfilePostsTab.POSTS)
+    }
+
+    fun loadUserLikedPosts(userId: Long = sessionUserId) {
+        loadProfilePosts(userId = userId, tab = ProfilePostsTab.LIKED)
+    }
+
+    fun loadUserSavedPosts(userId: Long = sessionUserId) {
+        loadProfilePosts(userId = userId, tab = ProfilePostsTab.SAVED)
+    }
+
+    fun selectProfilePostsTab(tab: ProfilePostsTab, userId: Long = sessionUserId) {
+        if (_profilePostsState.value.selectedTab == tab && !_profilePostsState.value.isLoading) return
+        loadProfilePosts(userId = userId, tab = tab)
+    }
+
+    private fun loadProfilePosts(userId: Long, tab: ProfilePostsTab) {
         viewModelScope.launch {
             if (userId <= 0L) {
                 _profilePostsState.value = ProfilePostsUiState(
                     isLoading = false,
+                    selectedTab = tab,
                     errorMessage = "Bạn cần đăng nhập để xem bài viết"
                 )
                 return@launch
             }
 
-            _profilePostsState.value = ProfilePostsUiState(isLoading = true)
-            postRepository.getPostsByUser(userId = userId, page = 0, pageSize = 20)
+            val currentComments = _profilePostsState.value.commentsByPostId
+            _profilePostsState.value = ProfilePostsUiState(isLoading = true, selectedTab = tab)
+            val result = when (tab) {
+                ProfilePostsTab.POSTS -> postRepository.getPostsByUser(userId = userId, page = 0, pageSize = 20)
+                ProfilePostsTab.SAVED -> postRepository.getSavedPostsByUser(userId = userId, page = 0, pageSize = 20)
+                ProfilePostsTab.LIKED -> postRepository.getLikedPostsByUser(userId = userId, page = 0, pageSize = 20)
+            }
+            result
                 .onSuccess { posts ->
                     _profilePostsState.value = ProfilePostsUiState(
                         isLoading = false,
+                        selectedTab = tab,
                         posts = posts.mapNotNull { post ->
                             runCatching { toHomePostUiModel(post) }.getOrNull()
                         },
-                        commentsByPostId = _profilePostsState.value.commentsByPostId
+                        commentsByPostId = currentComments
                     )
                 }
                 .onFailure { throwable ->
                     _profilePostsState.value = ProfilePostsUiState(
                         isLoading = false,
+                        selectedTab = tab,
                         errorMessage = throwable.message ?: "Không thể tải bài viết"
                     )
                 }
@@ -154,6 +180,41 @@ class ProfileViewModel @Inject constructor(
                     }
                     _profilePostsState.update {
                         it.copy(errorMessage = throwable.message ?: "Không thể cập nhật lượt thích")
+                    }
+                }
+        }
+    }
+
+    fun onSaveClicked(postId: Long) {
+        val currentPost = _profilePostsState.value.posts.firstOrNull { it.id == postId } ?: return
+        if (currentPost.isSaveLoading || currentPost.isSaved) return
+
+        updatePost(postId) {
+            it.copy(
+                isSaved = true,
+                isSaveLoading = true
+            )
+        }
+
+        viewModelScope.launch {
+            postRepository.savePost(postId)
+                .onSuccess { response ->
+                    updatePost(postId) {
+                        it.copy(
+                            isSaved = response.saved,
+                            isSaveLoading = false
+                        )
+                    }
+                }
+                .onFailure { throwable ->
+                    updatePost(postId) {
+                        it.copy(
+                            isSaved = currentPost.isSaved,
+                            isSaveLoading = false
+                        )
+                    }
+                    _profilePostsState.update {
+                        it.copy(errorMessage = throwable.message ?: "Không thể lưu bài viết")
                     }
                 }
         }
@@ -486,6 +547,8 @@ class ProfileViewModel @Inject constructor(
             commentCount = post.commentCount?.coerceAtLeast(0) ?: 0,
             isLiked = post.likedByCurrentUser == true,
             isLikeLoading = false,
+            isSaved = post.savedByCurrentUser == true,
+            isSaveLoading = false,
             timeAgoLabel = PostsUtils.formatTimeAgo(safeCreatedAt)
         )
     }
@@ -508,6 +571,7 @@ class ProfileViewModel @Inject constructor(
 
 data class ProfilePostsUiState(
     val isLoading: Boolean = false,
+    val selectedTab: ProfilePostsTab = ProfilePostsTab.POSTS,
     val posts: List<HomePostUiModel> = emptyList(),
     val errorMessage: String? = null,
     val activeCommentPostId: Long? = null,
@@ -518,6 +582,12 @@ data class ProfilePostsUiState(
     val commentErrorMessage: String? = null,
     val commentsByPostId: Map<Long, List<HomeCommentUiModel>> = emptyMap()
 )
+
+enum class ProfilePostsTab {
+    POSTS,
+    SAVED,
+    LIKED
+}
 
 sealed class UiState<out T> {
     data object Idle : UiState<Nothing>()

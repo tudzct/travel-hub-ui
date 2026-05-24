@@ -14,6 +14,7 @@ import com.mobile.travelhub.data.model.LikePostResponse
 import com.mobile.travelhub.data.model.PostCommentResponse
 import com.mobile.travelhub.data.model.PostCommentsPageResponse
 import com.mobile.travelhub.data.model.PostCreateRequest
+import com.mobile.travelhub.data.model.SavePostResponse
 import dagger.hilt.android.qualifiers.ApplicationContext
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.storage.storage
@@ -76,7 +77,7 @@ class PostRepository @Inject constructor(
                 postApiService.getAllPosts(
                     page = page,
                     pageSize = pageSize
-                ).data.map(::mergeLocalLikedState)
+                ).data.map(::mergeLocalPostState)
             }
         }
     }
@@ -85,7 +86,7 @@ class PostRepository @Inject constructor(
         return withContext(Dispatchers.IO) {
             runCatching {
                 require(postId > 0) { "Invalid post id" }
-                mergeLocalLikedState(postApiService.getPost(postId = postId))
+                mergeLocalPostState(postApiService.getPost(postId = postId))
             }.recoverCatching {
                 getAllPosts(page = 0, pageSize = 100)
                     .getOrThrow()
@@ -102,7 +103,35 @@ class PostRepository @Inject constructor(
                     id = userId,
                     page = page,
                     pageSize = pageSize
-                ).data.map(::mergeLocalLikedState)
+                ).data.map(::mergeLocalPostState)
+            }
+        }
+    }
+
+    suspend fun getLikedPostsByUser(userId: Long, page: Int = 0, pageSize: Int = 20): Result<List<FeedPostResponse>> {
+        return withContext(Dispatchers.IO) {
+            runCatching {
+                userApiService.getUserLikedPosts(
+                    id = userId,
+                    page = page,
+                    pageSize = pageSize
+                ).data.map { post ->
+                    mergeLocalPostState(post).copy(likedByCurrentUser = true)
+                }
+            }
+        }
+    }
+
+    suspend fun getSavedPostsByUser(userId: Long, page: Int = 0, pageSize: Int = 20): Result<List<FeedPostResponse>> {
+        return withContext(Dispatchers.IO) {
+            runCatching {
+                userApiService.getUserSavedPosts(
+                    id = userId,
+                    page = page,
+                    pageSize = pageSize
+                ).data.map { post ->
+                    mergeLocalPostState(post).copy(savedByCurrentUser = true)
+                }
             }
         }
     }
@@ -133,6 +162,22 @@ class PostRepository @Inject constructor(
                 if (throwable is HttpException) {
                     val errorBody = throwable.response()?.errorBody()?.string()
                     throw IOException("Failed to unlike post. Server returned ${throwable.code()}: $errorBody", throwable)
+                }
+                throw throwable
+            }
+        }
+    }
+
+    suspend fun savePost(postId: Long): Result<SavePostResponse> {
+        return withContext(Dispatchers.IO) {
+            runCatching {
+                val response = postApiService.savePost(postId = postId)
+                updateSavedPost(postId = postId, saved = response.saved)
+                response
+            }.recoverCatching { throwable ->
+                if (throwable is HttpException) {
+                    val errorBody = throwable.response()?.errorBody()?.string()
+                    throw IOException("Failed to save post. Server returned ${throwable.code()}: $errorBody", throwable)
                 }
                 throw throwable
             }
@@ -213,10 +258,19 @@ class PostRepository @Inject constructor(
         return prefs.getStringSet(KEY_LIKED_POST_IDS, emptySet()) ?: emptySet()
     }
 
-    private fun mergeLocalLikedState(post: FeedPostResponse): FeedPostResponse {
+    private fun getSavedPostIds(): Set<String> {
+        return prefs.getStringSet(KEY_SAVED_POST_IDS, emptySet()) ?: emptySet()
+    }
+
+    private fun mergeLocalPostState(post: FeedPostResponse): FeedPostResponse {
         val localLiked = getLikedPostIds().contains(post.id.toString())
+        val localSaved = getSavedPostIds().contains(post.id.toString())
         val mergedLiked = (post.likedByCurrentUser == true) || localLiked
-        return post.copy(likedByCurrentUser = mergedLiked)
+        val mergedSaved = (post.savedByCurrentUser == true) || localSaved
+        return post.copy(
+            likedByCurrentUser = mergedLiked,
+            savedByCurrentUser = mergedSaved
+        )
     }
 
     private fun updateLikedPost(postId: Long, liked: Boolean) {
@@ -232,8 +286,22 @@ class PostRepository @Inject constructor(
         prefs.edit().putStringSet(KEY_LIKED_POST_IDS, likedPosts).apply()
     }
 
+    private fun updateSavedPost(postId: Long, saved: Boolean) {
+        val savedPosts = getSavedPostIds().toMutableSet()
+        val key = postId.toString()
+
+        if (saved) {
+            savedPosts.add(key)
+        } else {
+            savedPosts.remove(key)
+        }
+
+        prefs.edit().putStringSet(KEY_SAVED_POST_IDS, savedPosts).apply()
+    }
+
     companion object {
         private const val PREFS_NAME = "travel_hub_post"
         private const val KEY_LIKED_POST_IDS = "liked_post_ids"
+        private const val KEY_SAVED_POST_IDS = "saved_post_ids"
     }
 }

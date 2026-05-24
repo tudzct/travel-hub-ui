@@ -148,6 +148,7 @@ fun SearchPage(
                 posts = uiState.posts,
                 followingRequestUserIds = uiState.followingRequestUserIds,
                 likingPostIds = uiState.likingPostIds,
+                savingPostIds = uiState.savingPostIds,
                 isLoadingUsers = uiState.isLoadingUsers,
                 isLoadingPosts = uiState.isLoadingPosts,
                 usersErrorMessage = uiState.usersErrorMessage,
@@ -156,6 +157,7 @@ fun SearchPage(
                 onToggleFollow = viewModel::toggleFollow,
                 onUserClick = onUserClick,
                 onLikeClick = viewModel::onLikeClicked,
+                onSaveClick = viewModel::onSaveClicked,
                 onCommentClick = viewModel::onCommentClicked
             )
         }
@@ -308,6 +310,7 @@ private fun CombinedSearchResults(
     posts: List<FeedPostResponse>,
     followingRequestUserIds: Set<Long>,
     likingPostIds: Set<Long>,
+    savingPostIds: Set<Long>,
     isLoadingUsers: Boolean,
     isLoadingPosts: Boolean,
     usersErrorMessage: String?,
@@ -316,6 +319,7 @@ private fun CombinedSearchResults(
     onToggleFollow: (UserProfileResponse) -> Unit,
     onUserClick: (Long) -> Unit,
     onLikeClick: (Long) -> Unit,
+    onSaveClick: (Long) -> Unit,
     onCommentClick: (Long) -> Unit
 ) {
     LazyColumn(
@@ -357,8 +361,12 @@ private fun CombinedSearchResults(
                 contentType = { "post" }
             ) { post ->
                 FeedPostCard(
-                    post = post.toHomePostUiModel(isLikeLoading = post.id in likingPostIds),
+                    post = post.toHomePostUiModel(
+                        isLikeLoading = post.id in likingPostIds,
+                        isSaveLoading = post.id in savingPostIds
+                    ),
                     onLikeClick = { onLikeClick(post.id) },
+                    onSaveClick = { onSaveClick(post.id) },
                     onCommentClick = { onCommentClick(post.id) },
                     onAuthorClick = { onUserClick(post.owner.id) }
                 )
@@ -976,7 +984,10 @@ private fun formatFollowerCount(count: Int): String {
     }
 }
 
-private fun FeedPostResponse.toHomePostUiModel(isLikeLoading: Boolean): HomePostUiModel {
+private fun FeedPostResponse.toHomePostUiModel(
+    isLikeLoading: Boolean,
+    isSaveLoading: Boolean
+): HomePostUiModel {
     val safeCreatedAt = createdAt ?: updatedAt
 
     return HomePostUiModel(
@@ -990,6 +1001,8 @@ private fun FeedPostResponse.toHomePostUiModel(isLikeLoading: Boolean): HomePost
         commentCount = commentCount?.coerceAtLeast(0) ?: 0,
         isLiked = likedByCurrentUser == true,
         isLikeLoading = isLikeLoading,
+        isSaved = savedByCurrentUser == true,
+        isSaveLoading = isSaveLoading,
         timeAgoLabel = PostsUtils.formatTimeAgo(safeCreatedAt)
     )
 }
