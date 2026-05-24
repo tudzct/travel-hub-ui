@@ -91,7 +91,6 @@ fun SearchPage(
     val uiState by viewModel.uiState.collectAsState()
     val focusRequester = remember { FocusRequester() }
     val keyboardController = LocalSoftwareKeyboardController.current
-    val recentSearches = listOf("Bali", "Paris", "Tokyo", "New York")
     val trendingSearches = listOf("#BeachVibes", "#MountainClimbing", "#CityBreaks", "#FoodTour")
 
     LaunchedEffect(Unit) {
@@ -134,7 +133,14 @@ fun SearchPage(
         }
 
         if (uiState.query.isBlank()) {
-
+            SearchSuggestionsContent(
+                recentSearches = uiState.recentSearches,
+                trendingSearches = trendingSearches,
+                onRecentSearchClick = viewModel::applyRecentSearch,
+                onRecentSearchRemove = viewModel::removeRecentSearch,
+                onClearRecentSearches = viewModel::clearRecentSearches,
+                onTrendingSearchClick = viewModel::applyRecentSearch
+            )
         } else {
             CombinedSearchResults(
                 query = uiState.query,
@@ -142,6 +148,7 @@ fun SearchPage(
                 posts = uiState.posts,
                 followingRequestUserIds = uiState.followingRequestUserIds,
                 likingPostIds = uiState.likingPostIds,
+                savingPostIds = uiState.savingPostIds,
                 isLoadingUsers = uiState.isLoadingUsers,
                 isLoadingPosts = uiState.isLoadingPosts,
                 usersErrorMessage = uiState.usersErrorMessage,
@@ -150,6 +157,7 @@ fun SearchPage(
                 onToggleFollow = viewModel::toggleFollow,
                 onUserClick = onUserClick,
                 onLikeClick = viewModel::onLikeClicked,
+                onSaveClick = viewModel::onSaveClicked,
                 onCommentClick = viewModel::onCommentClicked
             )
         }
@@ -167,6 +175,64 @@ fun SearchPage(
             onCommentInputChanged = viewModel::onCommentInputChanged,
             onCommentSubmit = viewModel::submitComment
         )
+    }
+}
+
+@Composable
+private fun SearchSuggestionsContent(
+    recentSearches: List<String>,
+    trendingSearches: List<String>,
+    onRecentSearchClick: (String) -> Unit,
+    onRecentSearchRemove: (String) -> Unit,
+    onClearRecentSearches: () -> Unit,
+    onTrendingSearchClick: (String) -> Unit
+) {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        if (recentSearches.isNotEmpty()) {
+            item(contentType = "recent-title") {
+                SearchSectionHeader(
+                    text = "Recent Searches",
+                    actionText = "Clear",
+                    onActionClick = onClearRecentSearches
+                )
+            }
+            items(
+                items = recentSearches,
+                key = { "recent-$it" },
+                contentType = { "recent-search" }
+            ) { search ->
+                SearchSuggestionRow(
+                    text = search,
+                    subtitle = "",
+                    leadingIcon = SearchLeadingIcon.History,
+                    onClick = { onRecentSearchClick(search) },
+                    onRemoveClick = { onRecentSearchRemove(search) }
+                )
+            }
+        }
+
+        item(contentType = "trending-title") {
+            SearchSectionTitle(
+                text = "Trending Searches",
+                modifier = Modifier.padding(top = if (recentSearches.isEmpty()) 0.dp else 8.dp)
+            )
+        }
+        items(
+            items = trendingSearches,
+            key = { "trending-$it" },
+            contentType = { "trending-search" }
+        ) { search ->
+            SearchSuggestionRow(
+                text = search,
+                subtitle = "",
+                leadingIcon = SearchLeadingIcon.Tag,
+                onClick = { onTrendingSearchClick(search) }
+            )
+        }
     }
 }
 
@@ -244,6 +310,7 @@ private fun CombinedSearchResults(
     posts: List<FeedPostResponse>,
     followingRequestUserIds: Set<Long>,
     likingPostIds: Set<Long>,
+    savingPostIds: Set<Long>,
     isLoadingUsers: Boolean,
     isLoadingPosts: Boolean,
     usersErrorMessage: String?,
@@ -252,6 +319,7 @@ private fun CombinedSearchResults(
     onToggleFollow: (UserProfileResponse) -> Unit,
     onUserClick: (Long) -> Unit,
     onLikeClick: (Long) -> Unit,
+    onSaveClick: (Long) -> Unit,
     onCommentClick: (Long) -> Unit
 ) {
     LazyColumn(
@@ -293,9 +361,14 @@ private fun CombinedSearchResults(
                 contentType = { "post" }
             ) { post ->
                 FeedPostCard(
-                    post = post.toHomePostUiModel(isLikeLoading = post.id in likingPostIds),
+                    post = post.toHomePostUiModel(
+                        isLikeLoading = post.id in likingPostIds,
+                        isSaveLoading = post.id in savingPostIds
+                    ),
                     onLikeClick = { onLikeClick(post.id) },
-                    onCommentClick = { onCommentClick(post.id) }
+                    onSaveClick = { onSaveClick(post.id) },
+                    onCommentClick = { onCommentClick(post.id) },
+                    onAuthorClick = { onUserClick(post.owner.id) }
                 )
             }
         }
@@ -578,11 +651,47 @@ private fun SearchSectionTitle(
 }
 
 @Composable
+private fun SearchSectionHeader(
+    text: String,
+    actionText: String,
+    onActionClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(top = 4.dp, bottom = 4.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = text,
+            color = OnSurfaceVariant,
+            style = MaterialTheme.typography.labelLarge,
+            fontWeight = FontWeight.Bold
+        )
+        TextButton(
+            onClick = onActionClick,
+            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
+            modifier = Modifier.height(32.dp)
+        ) {
+            Text(
+                text = actionText,
+                color = PrimaryBlue,
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold
+            )
+        }
+    }
+}
+
+@Composable
 private fun SearchSuggestionRow(
     text: String,
     subtitle: String,
     leadingIcon: SearchLeadingIcon,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onRemoveClick: (() -> Unit)? = null
 ) {
     SearchRowContainer(onClick = onClick) {
         SearchIconBubble(type = leadingIcon)
@@ -599,6 +708,19 @@ private fun SearchSuggestionRow(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
+        }
+        if (onRemoveClick != null) {
+            IconButton(
+                onClick = onRemoveClick,
+                modifier = Modifier.size(32.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.Close,
+                    contentDescription = "Remove recent search",
+                    tint = OnSurfaceVariant,
+                    modifier = Modifier.size(17.dp)
+                )
+            }
         }
     }
 }
@@ -732,7 +854,7 @@ private fun SearchRowContainer(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .height(32.dp)
+            .height(40.dp)
             .clip(RoundedCornerShape(8.dp))
             .clickable(onClick = onClick)
             .padding(horizontal = 12.dp),
@@ -862,11 +984,15 @@ private fun formatFollowerCount(count: Int): String {
     }
 }
 
-private fun FeedPostResponse.toHomePostUiModel(isLikeLoading: Boolean): HomePostUiModel {
+private fun FeedPostResponse.toHomePostUiModel(
+    isLikeLoading: Boolean,
+    isSaveLoading: Boolean
+): HomePostUiModel {
     val safeCreatedAt = createdAt ?: updatedAt
 
     return HomePostUiModel(
         id = id,
+        ownerId = owner.id,
         username = owner.username.takeIf { it.isNotBlank() } ?: "unknown",
         subtitle = location?.takeIf { it.isNotBlank() } ?: "STUDIO NULL",
         description = description.takeIf { it.isNotBlank() } ?: "",
@@ -875,6 +1001,8 @@ private fun FeedPostResponse.toHomePostUiModel(isLikeLoading: Boolean): HomePost
         commentCount = commentCount?.coerceAtLeast(0) ?: 0,
         isLiked = likedByCurrentUser == true,
         isLikeLoading = isLikeLoading,
+        isSaved = savedByCurrentUser == true,
+        isSaveLoading = isSaveLoading,
         timeAgoLabel = PostsUtils.formatTimeAgo(safeCreatedAt)
     )
 }

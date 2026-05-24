@@ -60,6 +60,20 @@ interface UserApiService {
         @Query("pageSize") pageSize: Int = 20
     ): GetPostsResponse
 
+    @GET("api/users/{id}/liked-posts")
+    suspend fun getUserLikedPosts(
+        @Path("id") id: Long,
+        @Query("page") page: Int = 0,
+        @Query("pageSize") pageSize: Int = 20
+    ): GetPostsResponse
+
+    @GET("api/users/{id}/saved-posts")
+    suspend fun getUserSavedPosts(
+        @Path("id") id: Long,
+        @Query("page") page: Int = 0,
+        @Query("pageSize") pageSize: Int = 20
+    ): GetPostsResponse
+
     @PUT("api/users/me")
     suspend fun updateMyProfile(
         @Body request: ProfileUpdateRequest

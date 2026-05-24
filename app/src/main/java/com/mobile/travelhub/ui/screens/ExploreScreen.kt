@@ -52,6 +52,7 @@ import com.mobile.travelhub.ui.theme.OnSurface
 import com.mobile.travelhub.ui.theme.OnSurfaceVariant
 import com.mobile.travelhub.ui.theme.PrimaryBlue
 import com.mobile.travelhub.ui.theme.SurfaceBg
+import com.mobile.travelhub.viewmodels.ExploreViewModel
 import com.mobile.travelhub.viewmodels.TopTravelersUiState
 import com.mobile.travelhub.viewmodels.TopTravelersViewModel
 
@@ -62,9 +63,11 @@ fun ExploreScreen(
     onSearchClick: () -> Unit = {},
     onTravelerClick: (Long, Boolean) -> Unit = { _, _ -> },
     onSeeAllTopTravelers: (TopTravelerPeriod) -> Unit = {},
-    viewModel: TopTravelersViewModel = hiltViewModel()
+    topTravelersViewModel: TopTravelersViewModel = hiltViewModel(),
+    exploreViewModel: ExploreViewModel = hiltViewModel()
 ) {
-    val topTravelersState by viewModel.uiState.collectAsState()
+    val topTravelersState by topTravelersViewModel.uiState.collectAsState()
+    val uiState by exploreViewModel.uiState.collectAsState()
     val featuredLocations = listOf(
         FeaturedLocation(
             country = "INDONESIA",
@@ -84,7 +87,7 @@ fun ExploreScreen(
     )
 
     LaunchedEffect(refreshTopTravelersKey) {
-        viewModel.loadPreview()
+        topTravelersViewModel.loadPreview()
     }
 
     Column(
@@ -110,13 +113,15 @@ fun ExploreScreen(
 
         SearchField(onClick = onSearchClick)
 
-        SectionLabel(text = "Recent Searches", topPadding = 18.dp)
-        HorizontalChipRow(
-            items = listOf("Bali", "Paris", "Tokyo", "New York"),
-            leadingIcon = true
-        )
+        if (uiState.recentSearches.isNotEmpty()) {
+            SectionLabel(text = "Recent Searches", topPadding = 18.dp)
+            HorizontalChipRow(
+                items = uiState.recentSearches,
+                leadingIcon = true
+            )
 
-        SectionDivider()
+            SectionDivider()
+        }
 
         SectionTitle(text = "Trending Now")
         HorizontalChipRow(
@@ -147,10 +152,10 @@ fun ExploreScreen(
 
         TopTravelersPreview(
             state = topTravelersState,
-            onPeriodSelected = viewModel::loadPreview,
-            onRetry = viewModel::refresh,
+            onPeriodSelected = topTravelersViewModel::loadPreview,
+            onRetry = topTravelersViewModel::refresh,
             onTravelerClick = onTravelerClick,
-            onToggleFollow = viewModel::toggleFollow,
+            onToggleFollow = topTravelersViewModel::toggleFollow,
             onSeeAll = { onSeeAllTopTravelers(topTravelersState.period) }
         )
     }

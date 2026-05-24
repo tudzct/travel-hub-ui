@@ -11,6 +11,17 @@ import kotlinx.coroutines.withContext
 class NotificationRepository @Inject constructor(
     private val notificationApiService: NotificationApiService
 ) {
+    suspend fun getNotifications(pageNumber: Int = 0, pageSize: Int = 10): Result<List<NotificationResponse>> {
+        return withContext(Dispatchers.IO) {
+            runCatching {
+                notificationApiService.getNotifications(
+                    pageNumber = pageNumber,
+                    pageSize = pageSize
+                ).data
+            }
+        }
+    }
+
     suspend fun getUnreadNotifications(pageNumber: Int = 0, pageSize: Int = 10): Result<List<NotificationResponse>> {
         return withContext(Dispatchers.IO) {
             runCatching {
@@ -18,6 +29,14 @@ class NotificationRepository @Inject constructor(
                     pageNumber = pageNumber,
                     pageSize = pageSize
                 ).data
+            }
+        }
+    }
+
+    suspend fun markAllNotificationsAsRead(): Result<Unit> {
+        return withContext(Dispatchers.IO) {
+            runCatching {
+                notificationApiService.markAllNotificationsAsRead()
             }
         }
     }

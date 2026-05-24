@@ -3,6 +3,7 @@ package com.mobile.travelhub.viewmodels
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mobile.travelhub.data.AuthRepository
+import com.mobile.travelhub.data.SearchHistoryRepository
 import com.mobile.travelhub.data.api.PostApiService
 import com.mobile.travelhub.data.api.UserApiService
 import com.mobile.travelhub.data.model.FeedPostResponse
@@ -11,6 +12,7 @@ import com.mobile.travelhub.data.model.UserProfileResponse
 import com.mobile.travelhub.usecase.AddCommentUseCase
 import com.mobile.travelhub.usecase.GetPostCommentsUseCase
 import com.mobile.travelhub.usecase.LikePostUseCase
+import com.mobile.travelhub.usecase.SavePostUseCase
 import com.mobile.travelhub.usecase.UnlikePostUseCase
 import com.mobile.travelhub.utils.PostsUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -25,10 +27,12 @@ import kotlinx.coroutines.launch
 
 data class SearchUiState(
     val query: String = "",
+    val recentSearches: List<String> = emptyList(),
     val posts: List<FeedPostResponse> = emptyList(),
     val users: List<UserProfileResponse> = emptyList(),
     val followingRequestUserIds: Set<Long> = emptySet(),
     val likingPostIds: Set<Long> = emptySet(),
+    val savingPostIds: Set<Long> = emptySet(),
     val isLoadingPosts: Boolean = false,
     val isLoadingUsers: Boolean = false,
     val postsErrorMessage: String? = null,
@@ -45,21 +49,34 @@ data class SearchUiState(
 @HiltViewModel
 class SearchViewModel @Inject constructor(
     private val authRepository: AuthRepository,
+    private val searchHistoryRepository: SearchHistoryRepository,
     private val postApiService: PostApiService,
     private val userApiService: UserApiService,
     private val likePostUseCase: LikePostUseCase,
     private val unlikePostUseCase: UnlikePostUseCase,
+    private val savePostUseCase: SavePostUseCase,
     private val addCommentUseCase: AddCommentUseCase,
     private val getPostCommentsUseCase: GetPostCommentsUseCase
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(SearchUiState())
+    private val _uiState = MutableStateFlow(
+        SearchUiState(recentSearches = searchHistoryRepository.recentSearches.value)
+    )
     val uiState: StateFlow<SearchUiState> = _uiState.asStateFlow()
     private var searchJob: Job? = null
     private var searchRequestId: Int = 0
     private var lastLoadedQuery: String? = null
     private val sessionUserId: Long
         get() = authRepository.getSavedSession()?.userId?.toLong() ?: -1L
+
+    init {
+        searchHistoryRepository.refresh()
+        viewModelScope.launch {
+            searchHistoryRepository.recentSearches.collect { recentSearches ->
+                _uiState.update { it.copy(recentSearches = recentSearches) }
+            }
+        }
+    }
 
     fun updateQuery(query: String) {
         if (query.isBlank()) {
@@ -73,6 +90,7 @@ class SearchViewModel @Inject constructor(
                     users = emptyList(),
                     followingRequestUserIds = emptySet(),
                     likingPostIds = emptySet(),
+                    savingPostIds = emptySet(),
                     isLoadingPosts = false,
                     isLoadingUsers = false,
                     postsErrorMessage = null,
@@ -191,8 +209,32 @@ class SearchViewModel @Inject constructor(
                 requestId == searchRequestId
             ) {
                 lastLoadedQuery = trimmedQuery
+                searchHistoryRepository.addRecentSearch(trimmedQuery)
             }
         }
+    }
+
+    fun applyRecentSearch(query: String) {
+        val trimmedQuery = query.trim()
+        if (trimmedQuery.isBlank()) return
+        _uiState.update {
+            it.copy(
+                query = trimmedQuery,
+                isLoadingPosts = true,
+                isLoadingUsers = true,
+                postsErrorMessage = null,
+                usersErrorMessage = null
+            )
+        }
+        search(trimmedQuery)
+    }
+
+    fun removeRecentSearch(query: String) {
+        searchHistoryRepository.removeRecentSearch(query)
+    }
+
+    fun clearRecentSearches() {
+        searchHistoryRepository.clearRecentSearches()
     }
 
     private fun hasLoadedSearchResults(query: String): Boolean {
@@ -239,8 +281,18 @@ class SearchViewModel @Inject constructor(
         if (postId in _uiState.value.likingPostIds) return
 
         val wasLiked = currentPost.likedByCurrentUser == true
+        val nextLiked = !wasLiked
+        val currentLikeCount = currentPost.likeCount?.coerceAtLeast(0) ?: 0
+        val nextLikeCount = (currentLikeCount + if (nextLiked) 1 else -1).coerceAtLeast(0)
+
         viewModelScope.launch {
             _uiState.update { it.copy(likingPostIds = it.likingPostIds + postId) }
+            updatePost(postId) { post ->
+                post.copy(
+                    likedByCurrentUser = nextLiked,
+                    likeCount = nextLikeCount
+                )
+            }
 
             val result = if (wasLiked) {
                 unlikePostUseCase(postId)
@@ -258,12 +310,41 @@ class SearchViewModel @Inject constructor(
                     }
                 }
                 .onFailure { throwable ->
+                    updatePost(postId) { post ->
+                        post.copy(
+                            likedByCurrentUser = wasLiked,
+                            likeCount = currentPost.likeCount
+                        )
+                    }
                     _uiState.update {
                         it.copy(postsErrorMessage = throwable.message ?: "Failed to update like")
                     }
                 }
 
             _uiState.update { it.copy(likingPostIds = it.likingPostIds - postId) }
+        }
+    }
+
+    fun onSaveClicked(postId: Long) {
+        val currentPost = _uiState.value.posts.firstOrNull { it.id == postId } ?: return
+        if (postId in _uiState.value.savingPostIds || currentPost.savedByCurrentUser == true) return
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(savingPostIds = it.savingPostIds + postId) }
+            updatePost(postId) { post -> post.copy(savedByCurrentUser = true) }
+
+            savePostUseCase(postId)
+                .onSuccess { response ->
+                    updatePost(postId) { post -> post.copy(savedByCurrentUser = response.saved) }
+                }
+                .onFailure { throwable ->
+                    updatePost(postId) { post -> post.copy(savedByCurrentUser = currentPost.savedByCurrentUser) }
+                    _uiState.update {
+                        it.copy(postsErrorMessage = throwable.message ?: "Failed to save post")
+                    }
+                }
+
+            _uiState.update { it.copy(savingPostIds = it.savingPostIds - postId) }
         }
     }
 

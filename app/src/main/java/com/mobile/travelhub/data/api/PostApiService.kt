@@ -1,12 +1,14 @@
 package com.mobile.travelhub.data.api
 
 import com.mobile.travelhub.data.model.CreateCommentRequest
+import com.mobile.travelhub.data.model.FeedPostResponse
 import com.mobile.travelhub.data.model.GetPostsResponse
 import com.mobile.travelhub.data.model.LikePostResponse
 import com.mobile.travelhub.data.model.PostCommentResponse
 import com.mobile.travelhub.data.model.PostCommentsPageResponse
 import com.mobile.travelhub.data.model.PostCreateRequest
 import com.mobile.travelhub.data.model.PostResponse
+import com.mobile.travelhub.data.model.SavePostResponse
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
@@ -28,6 +30,11 @@ interface PostApiService {
         @Query("pageSize") pageSize: Int = 10
     ): GetPostsResponse
 
+    @GET("api/posts/{postId}")
+    suspend fun getPost(
+        @Path("postId") postId: Long
+    ): FeedPostResponse
+
     @POST("api/posts")
     suspend fun createPost(
         @Body request: PostCreateRequest
@@ -42,6 +49,11 @@ interface PostApiService {
     suspend fun unlikePost(
         @Path("postId") postId: Long
     ): LikePostResponse
+
+    @POST("api/posts/{postId}/save")
+    suspend fun savePost(
+        @Path("postId") postId: Long
+    ): SavePostResponse
 
     @POST("api/posts/{postId}/comments")
     suspend fun addComment(
