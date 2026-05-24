@@ -1,5 +1,6 @@
 package com.mobile.travelhub.viewmodels
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mobile.travelhub.data.AuthRepository
@@ -13,6 +14,7 @@ import com.mobile.travelhub.usecase.GetPostCommentsUseCase
 import com.mobile.travelhub.usecase.LikePostUseCase
 import com.mobile.travelhub.usecase.UnlikePostUseCase
 import com.mobile.travelhub.utils.PostsUtils
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.Job
@@ -22,9 +24,11 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import org.json.JSONArray
 
 data class SearchUiState(
     val query: String = "",
+    val recentSearches: List<String> = emptyList(),
     val posts: List<FeedPostResponse> = emptyList(),
     val users: List<UserProfileResponse> = emptyList(),
     val followingRequestUserIds: Set<Long> = emptySet(),
@@ -44,6 +48,7 @@ data class SearchUiState(
 
 @HiltViewModel
 class SearchViewModel @Inject constructor(
+    @param:ApplicationContext context: Context,
     private val authRepository: AuthRepository,
     private val postApiService: PostApiService,
     private val userApiService: UserApiService,
@@ -53,7 +58,10 @@ class SearchViewModel @Inject constructor(
     private val getPostCommentsUseCase: GetPostCommentsUseCase
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(SearchUiState())
+    private val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+    private val _uiState = MutableStateFlow(
+        SearchUiState(recentSearches = loadRecentSearches())
+    )
     val uiState: StateFlow<SearchUiState> = _uiState.asStateFlow()
     private var searchJob: Job? = null
     private var searchRequestId: Int = 0
@@ -191,8 +199,24 @@ class SearchViewModel @Inject constructor(
                 requestId == searchRequestId
             ) {
                 lastLoadedQuery = trimmedQuery
+                addRecentSearch(trimmedQuery)
             }
         }
+    }
+
+    fun applyRecentSearch(query: String) {
+        val trimmedQuery = query.trim()
+        if (trimmedQuery.isBlank()) return
+        _uiState.update {
+            it.copy(
+                query = trimmedQuery,
+                isLoadingPosts = true,
+                isLoadingUsers = true,
+                postsErrorMessage = null,
+                usersErrorMessage = null
+            )
+        }
+        search(trimmedQuery)
     }
 
     private fun hasLoadedSearchResults(query: String): Boolean {
@@ -413,5 +437,47 @@ class SearchViewModel @Inject constructor(
             content = content,
             timeAgoLabel = PostsUtils.formatTimeAgo(createdAt)
         )
+    }
+
+    private fun addRecentSearch(query: String) {
+        val updatedSearches = (
+            listOf(query) + _uiState.value.recentSearches.filterNot {
+                it.equals(query, ignoreCase = true)
+            }
+        ).take(MAX_RECENT_SEARCHES)
+
+        saveRecentSearches(updatedSearches)
+        _uiState.update { it.copy(recentSearches = updatedSearches) }
+    }
+
+    private fun loadRecentSearches(): List<String> {
+        val rawSearches = prefs.getString(recentSearchesKey, null) ?: return emptyList()
+        return runCatching {
+            val jsonArray = JSONArray(rawSearches)
+            List(jsonArray.length()) { index -> jsonArray.optString(index) }
+                .map { it.trim() }
+                .filter { it.isNotBlank() }
+                .distinctBy { it.lowercase() }
+                .take(MAX_RECENT_SEARCHES)
+        }.getOrElse {
+            emptyList()
+        }
+    }
+
+    private fun saveRecentSearches(searches: List<String>) {
+        val jsonArray = JSONArray()
+        searches.forEach { jsonArray.put(it) }
+        prefs.edit()
+            .putString(recentSearchesKey, jsonArray.toString())
+            .apply()
+    }
+
+    private val recentSearchesKey: String
+        get() = "$KEY_RECENT_SEARCHES_PREFIX${sessionUserId}"
+
+    companion object {
+        private const val PREFS_NAME = "travel_hub_search"
+        private const val KEY_RECENT_SEARCHES_PREFIX = "recent_searches_user_"
+        private const val MAX_RECENT_SEARCHES = 10
     }
 }
