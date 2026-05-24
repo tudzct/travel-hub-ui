@@ -527,7 +527,7 @@ private fun ProfileScreenContent(
                                     Column(
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .padding(top = if (isViewingOwnProfile) 12.dp else 24.dp, bottom = 100.dp)
+                                            .padding(top = if (isViewingOwnProfile) 12.dp else 24.dp)
                                     ) {
                                         when {
                                             profilePostsState.isLoading -> {
