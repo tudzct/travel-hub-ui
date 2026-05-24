@@ -29,6 +29,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -38,18 +40,22 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.mobile.travelhub.ui.components.FeaturedLocationCard
 import com.mobile.travelhub.ui.theme.OnSurface
 import com.mobile.travelhub.ui.theme.OnSurfaceVariant
 import com.mobile.travelhub.ui.theme.PrimaryBlue
 import com.mobile.travelhub.ui.theme.SurfaceBg
+import com.mobile.travelhub.viewmodels.ExploreViewModel
 
 @Composable
 fun ExploreScreen(
     activateSearch: Boolean = false,
-    onSearchClick: () -> Unit = {}
+    onSearchClick: () -> Unit = {},
+    viewModel: ExploreViewModel = hiltViewModel()
 ) {
+    val uiState by viewModel.uiState.collectAsState()
     val featuredLocations = listOf(
         FeaturedLocation(
             country = "INDONESIA",
@@ -98,13 +104,15 @@ fun ExploreScreen(
 
         SearchField(onClick = onSearchClick)
 
-        SectionLabel(text = "Recent Searches", topPadding = 18.dp)
-        HorizontalChipRow(
-            items = listOf("Bali", "Paris", "Tokyo", "New York"),
-            leadingIcon = true
-        )
+        if (uiState.recentSearches.isNotEmpty()) {
+            SectionLabel(text = "Recent Searches", topPadding = 18.dp)
+            HorizontalChipRow(
+                items = uiState.recentSearches,
+                leadingIcon = true
+            )
 
-        SectionDivider()
+            SectionDivider()
+        }
 
         SectionTitle(text = "Trending Now")
         HorizontalChipRow(

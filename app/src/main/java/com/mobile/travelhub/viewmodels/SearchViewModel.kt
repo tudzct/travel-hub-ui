@@ -3,6 +3,7 @@ package com.mobile.travelhub.viewmodels
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mobile.travelhub.data.AuthRepository
+import com.mobile.travelhub.data.SearchHistoryRepository
 import com.mobile.travelhub.data.api.PostApiService
 import com.mobile.travelhub.data.api.UserApiService
 import com.mobile.travelhub.data.model.FeedPostResponse
@@ -25,6 +26,7 @@ import kotlinx.coroutines.launch
 
 data class SearchUiState(
     val query: String = "",
+    val recentSearches: List<String> = emptyList(),
     val posts: List<FeedPostResponse> = emptyList(),
     val users: List<UserProfileResponse> = emptyList(),
     val followingRequestUserIds: Set<Long> = emptySet(),
@@ -45,6 +47,7 @@ data class SearchUiState(
 @HiltViewModel
 class SearchViewModel @Inject constructor(
     private val authRepository: AuthRepository,
+    private val searchHistoryRepository: SearchHistoryRepository,
     private val postApiService: PostApiService,
     private val userApiService: UserApiService,
     private val likePostUseCase: LikePostUseCase,
@@ -53,13 +56,24 @@ class SearchViewModel @Inject constructor(
     private val getPostCommentsUseCase: GetPostCommentsUseCase
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(SearchUiState())
+    private val _uiState = MutableStateFlow(
+        SearchUiState(recentSearches = searchHistoryRepository.recentSearches.value)
+    )
     val uiState: StateFlow<SearchUiState> = _uiState.asStateFlow()
     private var searchJob: Job? = null
     private var searchRequestId: Int = 0
     private var lastLoadedQuery: String? = null
     private val sessionUserId: Long
         get() = authRepository.getSavedSession()?.userId?.toLong() ?: -1L
+
+    init {
+        searchHistoryRepository.refresh()
+        viewModelScope.launch {
+            searchHistoryRepository.recentSearches.collect { recentSearches ->
+                _uiState.update { it.copy(recentSearches = recentSearches) }
+            }
+        }
+    }
 
     fun updateQuery(query: String) {
         if (query.isBlank()) {
@@ -191,8 +205,32 @@ class SearchViewModel @Inject constructor(
                 requestId == searchRequestId
             ) {
                 lastLoadedQuery = trimmedQuery
+                searchHistoryRepository.addRecentSearch(trimmedQuery)
             }
         }
+    }
+
+    fun applyRecentSearch(query: String) {
+        val trimmedQuery = query.trim()
+        if (trimmedQuery.isBlank()) return
+        _uiState.update {
+            it.copy(
+                query = trimmedQuery,
+                isLoadingPosts = true,
+                isLoadingUsers = true,
+                postsErrorMessage = null,
+                usersErrorMessage = null
+            )
+        }
+        search(trimmedQuery)
+    }
+
+    fun removeRecentSearch(query: String) {
+        searchHistoryRepository.removeRecentSearch(query)
+    }
+
+    fun clearRecentSearches() {
+        searchHistoryRepository.clearRecentSearches()
     }
 
     private fun hasLoadedSearchResults(query: String): Boolean {
