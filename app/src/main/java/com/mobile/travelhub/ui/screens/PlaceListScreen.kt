@@ -13,6 +13,7 @@ import com.mobile.travelhub.viewmodels.PlaceListViewModel
 fun PlaceListScreen(
     onPlaceClick: (TravelPlaceListItemResponse) -> Unit,
     onSearchClick: () -> Unit,
+    onAuthorClick: (Long) -> Unit,
     onMenuClick: () -> Unit = {},
     placeListViewModel: PlaceListViewModel = hiltViewModel(),
     homeViewModel: HomeViewModel = hiltViewModel()
@@ -30,6 +31,7 @@ fun PlaceListScreen(
         onRetryPosts = homeViewModel::refreshPosts,
         onLikeClick = homeViewModel::onLikeClicked,
         onCommentClick = homeViewModel::onCommentClicked,
+        onAuthorClick = onAuthorClick,
         onDismissCommentSheet = homeViewModel::onCommentDismissed,
         onCommentInputChanged = homeViewModel::onCommentInputChanged,
         onCommentSubmit = homeViewModel::submitComment

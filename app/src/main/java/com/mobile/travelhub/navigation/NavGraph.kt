@@ -274,6 +274,19 @@ fun NavGraph(
         navController.navigate(Screen.PlaceDetail.createRoute(place.id))
     }
 
+    fun navigateToUserProfile(userId: Long) {
+        if (userId <= 0L) return
+        val currentUserId = authUiState.session?.userId?.toLong()
+        val route = if (currentUserId == userId) {
+            Screen.Profile.route
+        } else {
+            Screen.OtherProfile.createRoute(userId)
+        }
+        navController.navigate(route) {
+            launchSingleTop = true
+        }
+    }
+
     LaunchedEffect(authUiState.isAuthenticated, currentRoute) {
         val isAuthRoute = currentRoute == Screen.Login.route || currentRoute == Screen.Register.route
         if (authUiState.isAuthenticated && isAuthRoute) {
@@ -428,6 +441,7 @@ fun NavGraph(
                             launchSingleTop = true
                         }
                     },
+                    onAuthorClick = ::navigateToUserProfile,
                     onMenuClick = openMenu
                 )
             }
@@ -455,11 +469,7 @@ fun NavGraph(
         composable(Screen.Search.route) {
             SearchPage(
                 onBack = { navController.navigateUp() },
-                onUserClick = { userId ->
-                    navController.navigate(Screen.OtherProfile.createRoute(userId)) {
-                        launchSingleTop = true
-                    }
-                }
+                onUserClick = ::navigateToUserProfile
             )
         }
         composable(Screen.Trips.route) { backStackEntry ->
@@ -494,7 +504,8 @@ fun NavGraph(
             arguments = listOf(navArgument("postId") { type = NavType.LongType })
         ) {
             PostDetailScreen(
-                onBack = { navController.popBackStack() }
+                onBack = { navController.popBackStack() },
+                onAuthorClick = ::navigateToUserProfile
             )
         }
         composable(Screen.Profile.route) {
@@ -520,10 +531,9 @@ fun NavGraph(
                     }
                 },
                 onFollowNotificationClick = { userId ->
-                    navController.navigate(Screen.OtherProfile.createRoute(userId)) {
-                        launchSingleTop = true
-                    }
+                    navigateToUserProfile(userId)
                 },
+                onNavigateToUserProfile = ::navigateToUserProfile,
                 onLogout = {
                     onLogout()
                     navController.navigate(Screen.Login.route) {
@@ -562,6 +572,7 @@ fun NavGraph(
                         launchSingleTop = true
                     }
                 },
+                onNavigateToUserProfile = ::navigateToUserProfile,
                 onBack = {
                     val poppedToOwnProfile = navController.popBackStack(Screen.Profile.route, false)
                     if (!poppedToOwnProfile) {

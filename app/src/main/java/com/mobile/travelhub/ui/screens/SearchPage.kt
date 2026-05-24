@@ -359,7 +359,8 @@ private fun CombinedSearchResults(
                 FeedPostCard(
                     post = post.toHomePostUiModel(isLikeLoading = post.id in likingPostIds),
                     onLikeClick = { onLikeClick(post.id) },
-                    onCommentClick = { onCommentClick(post.id) }
+                    onCommentClick = { onCommentClick(post.id) },
+                    onAuthorClick = { onUserClick(post.owner.id) }
                 )
             }
         }
@@ -980,6 +981,7 @@ private fun FeedPostResponse.toHomePostUiModel(isLikeLoading: Boolean): HomePost
 
     return HomePostUiModel(
         id = id,
+        ownerId = owner.id,
         username = owner.username.takeIf { it.isNotBlank() } ?: "unknown",
         subtitle = location?.takeIf { it.isNotBlank() } ?: "STUDIO NULL",
         description = description.takeIf { it.isNotBlank() } ?: "",

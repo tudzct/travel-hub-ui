@@ -10,6 +10,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -96,6 +97,7 @@ fun PlaceListScreenContent(
     onRetryPosts: () -> Unit,
     onLikeClick: (Long) -> Unit,
     onCommentClick: (Long) -> Unit,
+    onAuthorClick: (Long) -> Unit,
     onDismissCommentSheet: () -> Unit,
     onCommentInputChanged: (String) -> Unit,
     onCommentSubmit: () -> Unit
@@ -221,7 +223,8 @@ fun PlaceListScreenContent(
                         FeedPostCard(
                             post = post,
                             onLikeClick = { onLikeClick(post.id) },
-                            onCommentClick = { onCommentClick(post.id) }
+                            onCommentClick = { onCommentClick(post.id) },
+                            onAuthorClick = { onAuthorClick(post.ownerId) }
                         )
                     }
                 }
@@ -569,6 +572,7 @@ fun FeedPostCard(
     post: HomePostUiModel,
     onLikeClick: () -> Unit,
     onCommentClick: () -> Unit,
+    onAuthorClick: (() -> Unit)? = null,
     actionsEnabled: Boolean = true
 ) {
     val context = LocalContext.current
@@ -595,6 +599,7 @@ fun FeedPostCard(
 
     val imageCount = post.imageUrls.size.coerceAtLeast(1)
     val pagerState = rememberPagerState(pageCount = { imageCount })
+    val authorClick = onAuthorClick
 
     Column (modifier = Modifier.background(Color.White)) {
 
@@ -606,7 +611,15 @@ fun FeedPostCard(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Row(
-                modifier = Modifier.weight(1f),
+                modifier = Modifier
+                    .weight(1f)
+                    .then(
+                        if (authorClick != null) {
+                            Modifier.clickable(onClick = authorClick)
+                        } else {
+                            Modifier
+                        }
+                    ),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Image(
@@ -941,6 +954,7 @@ fun FeedPostCardPreview() {
     FeedPostCard(
         post = HomePostUiModel(
             id = 1L,
+            ownerId = 2L,
             username = "Duc Duong Hoang",
             subtitle = "Da Nang, Viet Nam",
             description = "A calm afternoon by the river.",

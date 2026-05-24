@@ -117,7 +117,15 @@ class ProfileViewModel @Inject constructor(
         val currentPost = _profilePostsState.value.posts.firstOrNull { it.id == postId } ?: return
         if (currentPost.isLikeLoading) return
 
-        updatePost(postId) { it.copy(isLikeLoading = true) }
+        val nextLiked = !currentPost.isLiked
+        val nextLikeCount = (currentPost.likeCount + if (nextLiked) 1 else -1).coerceAtLeast(0)
+        updatePost(postId) {
+            it.copy(
+                isLiked = nextLiked,
+                likeCount = nextLikeCount,
+                isLikeLoading = true
+            )
+        }
 
         viewModelScope.launch {
             val result = if (currentPost.isLiked) {
@@ -137,7 +145,13 @@ class ProfileViewModel @Inject constructor(
                     }
                 }
                 .onFailure { throwable ->
-                    updatePost(postId) { it.copy(isLikeLoading = false) }
+                    updatePost(postId) {
+                        it.copy(
+                            isLiked = currentPost.isLiked,
+                            likeCount = currentPost.likeCount,
+                            isLikeLoading = false
+                        )
+                    }
                     _profilePostsState.update {
                         it.copy(errorMessage = throwable.message ?: "Không thể cập nhật lượt thích")
                     }
@@ -463,6 +477,7 @@ class ProfileViewModel @Inject constructor(
 
         return HomePostUiModel(
             id = safeId,
+            ownerId = runCatching { post.owner.id }.getOrDefault(0L),
             username = safeUsername,
             subtitle = safeLocation,
             description = safeDescription,

@@ -24,6 +24,7 @@ import kotlinx.coroutines.launch
 
 data class HomePostUiModel(
     val id: Long,
+    val ownerId: Long,
     val username: String,
     val subtitle: String,
     val description: String,
@@ -105,7 +106,15 @@ class HomeViewModel @Inject constructor(
         val currentPost = _uiState.value.posts.firstOrNull { it.id == postId } ?: return
         if (currentPost.isLikeLoading) return
 
-        updatePost(postId) { it.copy(isLikeLoading = true) }
+        val nextLiked = !currentPost.isLiked
+        val nextLikeCount = (currentPost.likeCount + if (nextLiked) 1 else -1).coerceAtLeast(0)
+        updatePost(postId) {
+            it.copy(
+                isLiked = nextLiked,
+                likeCount = nextLikeCount,
+                isLikeLoading = true
+            )
+        }
 
         viewModelScope.launch {
             val result = if (currentPost.isLiked) {
@@ -125,7 +134,13 @@ class HomeViewModel @Inject constructor(
                     }
                 }
                 .onFailure { throwable ->
-                    updatePost(postId) { it.copy(isLikeLoading = false) }
+                    updatePost(postId) {
+                        it.copy(
+                            isLiked = currentPost.isLiked,
+                            likeCount = currentPost.likeCount,
+                            isLikeLoading = false
+                        )
+                    }
                     _uiState.update {
                         it.copy(errorMessage = throwable.message ?: "Failed to update like")
                     }
@@ -262,6 +277,7 @@ class HomeViewModel @Inject constructor(
 
         return HomePostUiModel(
             id = safeId,
+            ownerId = runCatching { post.owner.id }.getOrDefault(0L),
             username = safeUsername,
             subtitle = safeLocation,
             description = safeDescription,

@@ -79,7 +79,15 @@ class PostDetailViewModel @Inject constructor(
         val currentPost = _uiState.value.post ?: return
         if (currentPost.isLikeLoading) return
 
-        updatePost { it.copy(isLikeLoading = true) }
+        val nextLiked = !currentPost.isLiked
+        val nextLikeCount = (currentPost.likeCount + if (nextLiked) 1 else -1).coerceAtLeast(0)
+        updatePost {
+            it.copy(
+                isLiked = nextLiked,
+                likeCount = nextLikeCount,
+                isLikeLoading = true
+            )
+        }
 
         viewModelScope.launch {
             val result = if (currentPost.isLiked) {
@@ -99,7 +107,13 @@ class PostDetailViewModel @Inject constructor(
                     }
                 }
                 .onFailure { throwable ->
-                    updatePost { it.copy(isLikeLoading = false) }
+                    updatePost {
+                        it.copy(
+                            isLiked = currentPost.isLiked,
+                            likeCount = currentPost.likeCount,
+                            isLikeLoading = false
+                        )
+                    }
                     _uiState.update {
                         it.copy(errorMessage = throwable.message ?: "Failed to update like")
                     }
@@ -214,6 +228,7 @@ class PostDetailViewModel @Inject constructor(
 
         return HomePostUiModel(
             id = post.id,
+            ownerId = post.owner.id,
             username = username,
             subtitle = location,
             description = post.description.takeIf { it.isNotBlank() } ?: "",

@@ -81,6 +81,7 @@ fun ProfileScreen(
     onNotificationsClick: (() -> Unit)? = null,
     onPostNotificationClick: (Long) -> Unit = {},
     onFollowNotificationClick: (Long) -> Unit = {},
+    onNavigateToUserProfile: (Long) -> Unit = {},
     onBack: (() -> Unit)? = null,
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
@@ -127,6 +128,7 @@ fun ProfileScreen(
         onNotificationsClick = onNotificationsClick,
         onPostNotificationClick = onPostNotificationClick,
         onFollowNotificationClick = onFollowNotificationClick,
+        onNavigateToUserProfile = onNavigateToUserProfile,
         onReloadProfile = {
             if (isViewingOwnProfile) {
                 viewModel.loadUserProfile()
@@ -167,6 +169,7 @@ private fun ProfileScreenContent(
     onNotificationsClick: (() -> Unit)?,
     onPostNotificationClick: (Long) -> Unit,
     onFollowNotificationClick: (Long) -> Unit,
+    onNavigateToUserProfile: (Long) -> Unit,
     onReloadProfile: () -> Unit,
     onReloadOtherUserProfile: (Long) -> Unit,
     onReloadPosts: (Long?) -> Unit,
@@ -580,7 +583,8 @@ private fun ProfileScreenContent(
                                                     FeedPostCard(
                                                         post = post,
                                                         onLikeClick = { onLikeClick(post.id) },
-                                                        onCommentClick = { onCommentClick(post.id) }
+                                                        onCommentClick = { onCommentClick(post.id) },
+                                                        onAuthorClick = { onNavigateToUserProfile(post.ownerId) }
                                                     )
                                                 }
                                             }

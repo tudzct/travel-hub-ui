@@ -277,8 +277,18 @@ class SearchViewModel @Inject constructor(
         if (postId in _uiState.value.likingPostIds) return
 
         val wasLiked = currentPost.likedByCurrentUser == true
+        val nextLiked = !wasLiked
+        val currentLikeCount = currentPost.likeCount?.coerceAtLeast(0) ?: 0
+        val nextLikeCount = (currentLikeCount + if (nextLiked) 1 else -1).coerceAtLeast(0)
+
         viewModelScope.launch {
             _uiState.update { it.copy(likingPostIds = it.likingPostIds + postId) }
+            updatePost(postId) { post ->
+                post.copy(
+                    likedByCurrentUser = nextLiked,
+                    likeCount = nextLikeCount
+                )
+            }
 
             val result = if (wasLiked) {
                 unlikePostUseCase(postId)
@@ -296,6 +306,12 @@ class SearchViewModel @Inject constructor(
                     }
                 }
                 .onFailure { throwable ->
+                    updatePost(postId) { post ->
+                        post.copy(
+                            likedByCurrentUser = wasLiked,
+                            likeCount = currentPost.likeCount
+                        )
+                    }
                     _uiState.update {
                         it.copy(postsErrorMessage = throwable.message ?: "Failed to update like")
                     }
