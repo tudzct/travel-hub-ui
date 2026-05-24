@@ -35,6 +35,7 @@ import com.mobile.travelhub.viewmodels.PostDetailViewModel
 @Composable
 fun PostDetailScreen(
     onBack: () -> Unit,
+    onAuthorClick: (Long) -> Unit,
     viewModel: PostDetailViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -71,7 +72,9 @@ fun PostDetailScreen(
                             FeedPostCard(
                                 post = post,
                                 onLikeClick = viewModel::onLikeClicked,
-                                onCommentClick = viewModel::onCommentClicked
+                                onSaveClick = viewModel::onSaveClicked,
+                                onCommentClick = viewModel::onCommentClicked,
+                                onAuthorClick = { onAuthorClick(post.ownerId) }
                             )
                         }
                     }

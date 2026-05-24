@@ -10,6 +10,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -35,6 +36,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Send
+import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.outlined.BookmarkBorder
@@ -83,6 +85,7 @@ import com.mobile.travelhub.viewmodels.HomeUiState
 import com.mobile.travelhub.viewmodels.PlaceListUiState
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
+import com.mobile.travelhub.ui.theme.PrimaryBlue
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -95,7 +98,9 @@ fun PlaceListScreenContent(
     onRetryPlaces: () -> Unit,
     onRetryPosts: () -> Unit,
     onLikeClick: (Long) -> Unit,
+    onSaveClick: (Long) -> Unit,
     onCommentClick: (Long) -> Unit,
+    onAuthorClick: (Long) -> Unit,
     onDismissCommentSheet: () -> Unit,
     onCommentInputChanged: (String) -> Unit,
     onCommentSubmit: () -> Unit
@@ -221,7 +226,9 @@ fun PlaceListScreenContent(
                         FeedPostCard(
                             post = post,
                             onLikeClick = { onLikeClick(post.id) },
-                            onCommentClick = { onCommentClick(post.id) }
+                            onSaveClick = { onSaveClick(post.id) },
+                            onCommentClick = { onCommentClick(post.id) },
+                            onAuthorClick = { onAuthorClick(post.ownerId) }
                         )
                     }
                 }
@@ -568,7 +575,9 @@ private fun FeedEmptyState(
 fun FeedPostCard(
     post: HomePostUiModel,
     onLikeClick: () -> Unit,
+    onSaveClick: () -> Unit,
     onCommentClick: () -> Unit,
+    onAuthorClick: (() -> Unit)? = null,
     actionsEnabled: Boolean = true
 ) {
     val context = LocalContext.current
@@ -595,6 +604,7 @@ fun FeedPostCard(
 
     val imageCount = post.imageUrls.size.coerceAtLeast(1)
     val pagerState = rememberPagerState(pageCount = { imageCount })
+    val authorClick = onAuthorClick
 
     Column (modifier = Modifier.background(Color.White)) {
 
@@ -606,7 +616,15 @@ fun FeedPostCard(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Row(
-                modifier = Modifier.weight(1f),
+                modifier = Modifier
+                    .weight(1f)
+                    .then(
+                        if (authorClick != null) {
+                            Modifier.clickable(onClick = authorClick)
+                        } else {
+                            Modifier
+                        }
+                    ),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Image(
@@ -785,12 +803,18 @@ fun FeedPostCard(
                     modifier = Modifier.weight(1f),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        imageVector = Icons.Outlined.BookmarkBorder,
-                        contentDescription = "Save",
-                        modifier = Modifier.size(26.dp),
-                        tint = VerdantOnSurface
-                    )
+                    IconButton(
+                        onClick = onSaveClick,
+                        enabled = actionsEnabled && !post.isSaveLoading && !post.isSaved,
+                        modifier = Modifier.size(28.dp)
+                    ) {
+                        Icon(
+                            imageVector = if (post.isSaved) Icons.Filled.Bookmark else Icons.Outlined.BookmarkBorder,
+                            contentDescription = "Save",
+                            modifier = Modifier.size(26.dp),
+                            tint = if (post.isSaved) PrimaryBlue else VerdantOnSurface
+                        )
+                    }
                 }
                 Box(
                     modifier = Modifier.weight(1f),
@@ -941,6 +965,7 @@ fun FeedPostCardPreview() {
     FeedPostCard(
         post = HomePostUiModel(
             id = 1L,
+            ownerId = 2L,
             username = "Duc Duong Hoang",
             subtitle = "Da Nang, Viet Nam",
             description = "A calm afternoon by the river.",
@@ -949,9 +974,12 @@ fun FeedPostCardPreview() {
             commentCount = 4,
             isLiked = true,
             isLikeLoading = false,
+            isSaved = false,
+            isSaveLoading = false,
             timeAgoLabel = "2h"
         ),
         onLikeClick = {},
+        onSaveClick = {},
         onCommentClick = {}
     )
 }

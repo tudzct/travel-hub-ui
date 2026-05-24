@@ -12,6 +12,7 @@ import com.mobile.travelhub.data.model.UserProfileResponse
 import com.mobile.travelhub.usecase.AddCommentUseCase
 import com.mobile.travelhub.usecase.GetPostCommentsUseCase
 import com.mobile.travelhub.usecase.LikePostUseCase
+import com.mobile.travelhub.usecase.SavePostUseCase
 import com.mobile.travelhub.usecase.UnlikePostUseCase
 import com.mobile.travelhub.utils.PostsUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -31,6 +32,7 @@ data class SearchUiState(
     val users: List<UserProfileResponse> = emptyList(),
     val followingRequestUserIds: Set<Long> = emptySet(),
     val likingPostIds: Set<Long> = emptySet(),
+    val savingPostIds: Set<Long> = emptySet(),
     val isLoadingPosts: Boolean = false,
     val isLoadingUsers: Boolean = false,
     val postsErrorMessage: String? = null,
@@ -52,6 +54,7 @@ class SearchViewModel @Inject constructor(
     private val userApiService: UserApiService,
     private val likePostUseCase: LikePostUseCase,
     private val unlikePostUseCase: UnlikePostUseCase,
+    private val savePostUseCase: SavePostUseCase,
     private val addCommentUseCase: AddCommentUseCase,
     private val getPostCommentsUseCase: GetPostCommentsUseCase
 ) : ViewModel() {
@@ -87,6 +90,7 @@ class SearchViewModel @Inject constructor(
                     users = emptyList(),
                     followingRequestUserIds = emptySet(),
                     likingPostIds = emptySet(),
+                    savingPostIds = emptySet(),
                     isLoadingPosts = false,
                     isLoadingUsers = false,
                     postsErrorMessage = null,
@@ -277,8 +281,18 @@ class SearchViewModel @Inject constructor(
         if (postId in _uiState.value.likingPostIds) return
 
         val wasLiked = currentPost.likedByCurrentUser == true
+        val nextLiked = !wasLiked
+        val currentLikeCount = currentPost.likeCount?.coerceAtLeast(0) ?: 0
+        val nextLikeCount = (currentLikeCount + if (nextLiked) 1 else -1).coerceAtLeast(0)
+
         viewModelScope.launch {
             _uiState.update { it.copy(likingPostIds = it.likingPostIds + postId) }
+            updatePost(postId) { post ->
+                post.copy(
+                    likedByCurrentUser = nextLiked,
+                    likeCount = nextLikeCount
+                )
+            }
 
             val result = if (wasLiked) {
                 unlikePostUseCase(postId)
@@ -296,12 +310,41 @@ class SearchViewModel @Inject constructor(
                     }
                 }
                 .onFailure { throwable ->
+                    updatePost(postId) { post ->
+                        post.copy(
+                            likedByCurrentUser = wasLiked,
+                            likeCount = currentPost.likeCount
+                        )
+                    }
                     _uiState.update {
                         it.copy(postsErrorMessage = throwable.message ?: "Failed to update like")
                     }
                 }
 
             _uiState.update { it.copy(likingPostIds = it.likingPostIds - postId) }
+        }
+    }
+
+    fun onSaveClicked(postId: Long) {
+        val currentPost = _uiState.value.posts.firstOrNull { it.id == postId } ?: return
+        if (postId in _uiState.value.savingPostIds || currentPost.savedByCurrentUser == true) return
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(savingPostIds = it.savingPostIds + postId) }
+            updatePost(postId) { post -> post.copy(savedByCurrentUser = true) }
+
+            savePostUseCase(postId)
+                .onSuccess { response ->
+                    updatePost(postId) { post -> post.copy(savedByCurrentUser = response.saved) }
+                }
+                .onFailure { throwable ->
+                    updatePost(postId) { post -> post.copy(savedByCurrentUser = currentPost.savedByCurrentUser) }
+                    _uiState.update {
+                        it.copy(postsErrorMessage = throwable.message ?: "Failed to save post")
+                    }
+                }
+
+            _uiState.update { it.copy(savingPostIds = it.savingPostIds - postId) }
         }
     }
 

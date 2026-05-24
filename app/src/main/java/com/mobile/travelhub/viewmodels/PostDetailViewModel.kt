@@ -9,6 +9,7 @@ import com.mobile.travelhub.usecase.AddCommentUseCase
 import com.mobile.travelhub.usecase.GetPostByIdUseCase
 import com.mobile.travelhub.usecase.GetPostCommentsUseCase
 import com.mobile.travelhub.usecase.LikePostUseCase
+import com.mobile.travelhub.usecase.SavePostUseCase
 import com.mobile.travelhub.usecase.UnlikePostUseCase
 import com.mobile.travelhub.utils.PostsUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -38,6 +39,7 @@ class PostDetailViewModel @Inject constructor(
     private val getPostByIdUseCase: GetPostByIdUseCase,
     private val likePostUseCase: LikePostUseCase,
     private val unlikePostUseCase: UnlikePostUseCase,
+    private val savePostUseCase: SavePostUseCase,
     private val addCommentUseCase: AddCommentUseCase,
     private val getPostCommentsUseCase: GetPostCommentsUseCase
 ) : ViewModel() {
@@ -79,7 +81,15 @@ class PostDetailViewModel @Inject constructor(
         val currentPost = _uiState.value.post ?: return
         if (currentPost.isLikeLoading) return
 
-        updatePost { it.copy(isLikeLoading = true) }
+        val nextLiked = !currentPost.isLiked
+        val nextLikeCount = (currentPost.likeCount + if (nextLiked) 1 else -1).coerceAtLeast(0)
+        updatePost {
+            it.copy(
+                isLiked = nextLiked,
+                likeCount = nextLikeCount,
+                isLikeLoading = true
+            )
+        }
 
         viewModelScope.launch {
             val result = if (currentPost.isLiked) {
@@ -99,9 +109,50 @@ class PostDetailViewModel @Inject constructor(
                     }
                 }
                 .onFailure { throwable ->
-                    updatePost { it.copy(isLikeLoading = false) }
+                    updatePost {
+                        it.copy(
+                            isLiked = currentPost.isLiked,
+                            likeCount = currentPost.likeCount,
+                            isLikeLoading = false
+                        )
+                    }
                     _uiState.update {
                         it.copy(errorMessage = throwable.message ?: "Failed to update like")
+                    }
+                }
+        }
+    }
+
+    fun onSaveClicked() {
+        val currentPost = _uiState.value.post ?: return
+        if (currentPost.isSaveLoading || currentPost.isSaved) return
+
+        updatePost {
+            it.copy(
+                isSaved = true,
+                isSaveLoading = true
+            )
+        }
+
+        viewModelScope.launch {
+            savePostUseCase(postId)
+                .onSuccess { response ->
+                    updatePost {
+                        it.copy(
+                            isSaved = response.saved,
+                            isSaveLoading = false
+                        )
+                    }
+                }
+                .onFailure { throwable ->
+                    updatePost {
+                        it.copy(
+                            isSaved = currentPost.isSaved,
+                            isSaveLoading = false
+                        )
+                    }
+                    _uiState.update {
+                        it.copy(errorMessage = throwable.message ?: "Failed to save post")
                     }
                 }
         }
@@ -214,6 +265,7 @@ class PostDetailViewModel @Inject constructor(
 
         return HomePostUiModel(
             id = post.id,
+            ownerId = post.owner.id,
             username = username,
             subtitle = location,
             description = post.description.takeIf { it.isNotBlank() } ?: "",
@@ -222,6 +274,8 @@ class PostDetailViewModel @Inject constructor(
             commentCount = post.commentCount?.coerceAtLeast(0) ?: 0,
             isLiked = post.likedByCurrentUser == true,
             isLikeLoading = false,
+            isSaved = post.savedByCurrentUser == true,
+            isSaveLoading = false,
             timeAgoLabel = PostsUtils.formatTimeAgo(createdAt)
         )
     }

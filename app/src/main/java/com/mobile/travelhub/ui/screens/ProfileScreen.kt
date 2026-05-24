@@ -10,6 +10,8 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.outlined.BookmarkBorder
+import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.filled.Refresh
@@ -27,6 +29,8 @@ import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.NavigationDrawerItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
@@ -60,10 +64,12 @@ import com.mobile.travelhub.R
 import com.mobile.travelhub.data.model.UserProfileResponse
 import com.mobile.travelhub.ui.components.FeedPostCard
 import com.mobile.travelhub.ui.components.FeedPostCardSkeleton
+import com.mobile.travelhub.ui.components.HomeCommentsBottomSheet
 import com.mobile.travelhub.ui.theme.*
 import com.mobile.travelhub.viewmodels.HomePostUiModel
 import com.mobile.travelhub.viewmodels.ProfileViewModel
 import com.mobile.travelhub.viewmodels.ProfilePostsUiState
+import com.mobile.travelhub.viewmodels.ProfilePostsTab
 import com.mobile.travelhub.viewmodels.UiState
 import kotlinx.coroutines.launch
 
@@ -80,6 +86,7 @@ fun ProfileScreen(
     onNotificationsClick: (() -> Unit)? = null,
     onPostNotificationClick: (Long) -> Unit = {},
     onFollowNotificationClick: (Long) -> Unit = {},
+    onNavigateToUserProfile: (Long) -> Unit = {},
     onBack: (() -> Unit)? = null,
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
@@ -93,7 +100,7 @@ fun ProfileScreen(
     val profilePostsState by viewModel.profilePostsState.collectAsState()
     val unauthorized by viewModel.unauthorized.collectAsState()
 
-    LaunchedEffect(Unit) {
+    LaunchedEffect(isViewingOwnProfile, viewingUserId) {
         if (isViewingOwnProfile) {
             viewModel.loadUserProfile()
             viewModel.loadUserPosts()
@@ -126,6 +133,7 @@ fun ProfileScreen(
         onNotificationsClick = onNotificationsClick,
         onPostNotificationClick = onPostNotificationClick,
         onFollowNotificationClick = onFollowNotificationClick,
+        onNavigateToUserProfile = onNavigateToUserProfile,
         onReloadProfile = {
             if (isViewingOwnProfile) {
                 viewModel.loadUserProfile()
@@ -136,12 +144,25 @@ fun ProfileScreen(
         onReloadOtherUserProfile = viewModel::loadOtherUserProfile,
         onReloadPosts = { userId ->
             if (userId == null) {
-                viewModel.loadUserPosts()
+                when (profilePostsState.selectedTab) {
+                    ProfilePostsTab.POSTS -> viewModel.loadUserPosts()
+                    ProfilePostsTab.SAVED -> viewModel.loadUserSavedPosts()
+                    ProfilePostsTab.LIKED -> viewModel.loadUserLikedPosts()
+                }
             } else {
                 viewModel.loadUserPosts(userId)
             }
         },
-        onToggleFollow = viewModel::toggleFollowOtherUser
+        onProfileTabSelected = { tab ->
+            viewModel.selectProfilePostsTab(tab)
+        },
+        onToggleFollow = viewModel::toggleFollowOtherUser,
+        onLikeClick = viewModel::onLikeClicked,
+        onSaveClick = viewModel::onSaveClicked,
+        onCommentClick = viewModel::onCommentClicked,
+        onCommentDismissed = viewModel::onCommentDismissed,
+        onCommentInputChanged = viewModel::onCommentInputChanged,
+        onCommentSubmit = viewModel::submitComment
     )
 }
 
@@ -161,10 +182,18 @@ private fun ProfileScreenContent(
     onNotificationsClick: (() -> Unit)?,
     onPostNotificationClick: (Long) -> Unit,
     onFollowNotificationClick: (Long) -> Unit,
+    onNavigateToUserProfile: (Long) -> Unit,
     onReloadProfile: () -> Unit,
     onReloadOtherUserProfile: (Long) -> Unit,
     onReloadPosts: (Long?) -> Unit,
-    onToggleFollow: (Long, Boolean) -> Unit
+    onProfileTabSelected: (ProfilePostsTab) -> Unit,
+    onToggleFollow: (Long, Boolean) -> Unit,
+    onLikeClick: (Long) -> Unit,
+    onSaveClick: (Long) -> Unit,
+    onCommentClick: (Long) -> Unit,
+    onCommentDismissed: () -> Unit,
+    onCommentInputChanged: (String) -> Unit,
+    onCommentSubmit: () -> Unit
 ) {
     val profileTitle = (profileState as? UiState.Success)
         ?.data
@@ -486,11 +515,19 @@ private fun ProfileScreenContent(
                                     Spacer(modifier = Modifier.height(16.dp))
                                     HorizontalDivider(color = Color(0xFFF0F0F0))
 
+                                    if (isViewingOwnProfile) {
+                                        ProfilePostsTabRow(
+                                            selectedTab = profilePostsState.selectedTab,
+                                            onTabSelected = onProfileTabSelected
+                                        )
+                                        HorizontalDivider(color = Color(0xFFF0F0F0))
+                                    }
+
                                     // Posts Section
                                     Column(
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .padding(top = 24.dp, bottom = 100.dp)
+                                            .padding(top = if (isViewingOwnProfile) 12.dp else 24.dp, bottom = 100.dp)
                                     ) {
                                         when {
                                             profilePostsState.isLoading -> {
@@ -521,6 +558,16 @@ private fun ProfileScreenContent(
                                             }
 
                                             profilePostsState.posts.isEmpty() -> {
+                                                val emptyTitle = when (profilePostsState.selectedTab) {
+                                                    ProfilePostsTab.POSTS -> "No Posts Yet"
+                                                    ProfilePostsTab.SAVED -> "No Saved Posts"
+                                                    ProfilePostsTab.LIKED -> "No Liked Posts"
+                                                }
+                                                val emptyMessage = when (profilePostsState.selectedTab) {
+                                                    ProfilePostsTab.POSTS -> "When you share photos, they will appear on your profile."
+                                                    ProfilePostsTab.SAVED -> "Posts you save will appear here."
+                                                    ProfilePostsTab.LIKED -> "Posts you like will appear here."
+                                                }
                                                 Column(
                                                     modifier = Modifier.fillMaxWidth().padding(horizontal = 32.dp, vertical = 32.dp),
                                                     horizontalAlignment = Alignment.CenterHorizontally
@@ -540,19 +587,19 @@ private fun ProfileScreenContent(
                                                     }
                                                     Spacer(modifier = Modifier.height(16.dp))
                                                     Text(
-                                                        text = "No Posts Yet",
+                                                        text = emptyTitle,
                                                         style = MaterialTheme.typography.titleLarge,
                                                         fontWeight = FontWeight.Bold
                                                     )
                                                     Spacer(modifier = Modifier.height(8.dp))
                                                     Text(
-                                                        text = "When you share photos, they will appear on your profile.",
+                                                        text = emptyMessage,
                                                         style = MaterialTheme.typography.bodyMedium,
                                                         color = Color.Gray,
                                                         textAlign = TextAlign.Center
                                                     )
                                                     Spacer(modifier = Modifier.height(24.dp))
-                                                    if (isViewingOwnProfile) {
+                                                    if (isViewingOwnProfile && profilePostsState.selectedTab == ProfilePostsTab.POSTS) {
                                                         Button(
                                                             onClick = { /* navigate to create post */ },
                                                             shape = RoundedCornerShape(24.dp),
@@ -568,9 +615,10 @@ private fun ProfileScreenContent(
                                                 profilePostsState.posts.forEach { post ->
                                                     FeedPostCard(
                                                         post = post,
-                                                        onLikeClick = {},
-                                                        onCommentClick = {},
-                                                        actionsEnabled = false
+                                                        onLikeClick = { onLikeClick(post.id) },
+                                                        onSaveClick = { onSaveClick(post.id) },
+                                                        onCommentClick = { onCommentClick(post.id) },
+                                                        onAuthorClick = { onNavigateToUserProfile(post.ownerId) }
                                                     )
                                                 }
                                             }
@@ -595,9 +643,58 @@ private fun ProfileScreenContent(
                             }
                         )
                     }
+                    if (profilePostsState.activeCommentPostId != null) {
+                        HomeCommentsBottomSheet(
+                            comments = profilePostsState
+                                .commentsByPostId[profilePostsState.activeCommentPostId]
+                                .orEmpty(),
+                            commentInput = profilePostsState.commentInput,
+                            isCommentsLoading = profilePostsState.isCommentsLoading,
+                            isCommentSubmitting = profilePostsState.isCommentSubmitting,
+                            commentsErrorMessage = profilePostsState.commentsErrorMessage,
+                            commentErrorMessage = profilePostsState.commentErrorMessage,
+                            onDismiss = onCommentDismissed,
+                            onCommentInputChanged = onCommentInputChanged,
+                            onCommentSubmit = onCommentSubmit
+                        )
+                    }
                 }
             }
         }
+
+@Composable
+private fun ProfilePostsTabRow(
+    selectedTab: ProfilePostsTab,
+    onTabSelected: (ProfilePostsTab) -> Unit
+) {
+    val tabs = listOf(
+        ProfilePostsTab.POSTS to (Icons.Outlined.PhotoCamera to "Posts"),
+        ProfilePostsTab.SAVED to (Icons.Outlined.BookmarkBorder to "Saved"),
+        ProfilePostsTab.LIKED to (Icons.Outlined.FavoriteBorder to "Liked")
+    )
+    val selectedIndex = tabs.indexOfFirst { it.first == selectedTab }.coerceAtLeast(0)
+
+    TabRow(
+        selectedTabIndex = selectedIndex,
+        containerColor = MaterialTheme.colorScheme.background,
+        contentColor = PrimaryBlue
+    ) {
+        tabs.forEach { (tab, iconInfo) ->
+            val (icon, contentDescription) = iconInfo
+            Tab(
+                selected = tab == selectedTab,
+                onClick = { onTabSelected(tab) },
+                icon = {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = contentDescription,
+                        tint = Color.Black
+                    )
+                }
+            )
+        }
+    }
+}
 
 @Composable
 fun ErrorLayout(message: String, onRetry: () -> Unit) {
@@ -615,54 +712,54 @@ fun ErrorLayout(message: String, onRetry: () -> Unit) {
     }
 }
 
-@Preview
-@Composable
-fun ProfileScreenPreview() {
-    val sampleProfile = UserProfileResponse(
-        id = 1,
-        username = "traveler",
-        name = "Alex Nguyen",
-        bio = "Chasing sunsets and street food.",
-        postsCount = 12,
-        followersCount = 345,
-        followingCount = 180,
-        isFollowing = false
-    )
-    val samplePosts = listOf(
-        HomePostUiModel(
-            id = 1,
-            username = "traveler",
-            subtitle = "Hoi An, Viet Nam",
-            description = "Golden hour by the river.",
-            imageUrls = emptyList(),
-            likeCount = 120,
-            commentCount = 24,
-            isLiked = false,
-            isLikeLoading = false,
-            timeAgoLabel = "2h"
-        )
-    )
-
-    TravelHubTheme {
-        ProfileScreenContent(
-            isViewingOwnProfile = true,
-            profileState = UiState.Success(sampleProfile),
-            profilePostsState = ProfilePostsUiState(isLoading = false, posts = samplePosts),
-            onNavigateToEditProfile = {},
-            onNavigateToFollowers = {},
-            onNavigateToFollowing = {},
-            onNavigateToHistory = {},
-            onLogout = {},
-            onBack = {},
-            viewingUserId = null,
-            onNavigateToChat = {},
-            onNotificationsClick = {},
-            onPostNotificationClick = {},
-            onFollowNotificationClick = {},
-            onReloadProfile = {},
-            onReloadOtherUserProfile = {},
-            onReloadPosts = {},
-            onToggleFollow = { _, _ -> }
-        )
-    }
-}
+//@Preview
+//@Composable
+//fun ProfileScreenPreview() {
+//    val sampleProfile = UserProfileResponse(
+//        id = 1,
+//        username = "traveler",
+//        name = "Alex Nguyen",
+//        bio = "Chasing sunsets and street food.",
+//        postsCount = 12,
+//        followersCount = 345,
+//        followingCount = 180,
+//        isFollowing = false
+//    )
+//    val samplePosts = listOf(
+//        HomePostUiModel(
+//            id = 1,
+//            username = "traveler",
+//            subtitle = "Hoi An, Viet Nam",
+//            description = "Golden hour by the river.",
+//            imageUrls = emptyList(),
+//            likeCount = 120,
+//            commentCount = 24,
+//            isLiked = false,
+//            isLikeLoading = false,
+//            timeAgoLabel = "2h"
+//        )
+//    )
+//
+//    TravelHubTheme {
+//        ProfileScreenContent(
+//            isViewingOwnProfile = true,
+//            profileState = UiState.Success(sampleProfile),
+//            profilePostsState = ProfilePostsUiState(isLoading = false, posts = samplePosts),
+//            onNavigateToEditProfile = {},
+//            onNavigateToFollowers = {},
+//            onNavigateToFollowing = {},
+//            onNavigateToHistory = {},
+//            onLogout = {},
+//            onBack = {},
+//            viewingUserId = null,
+//            onNavigateToChat = {},
+//            onNotificationsClick = {},
+//            onPostNotificationClick = {},
+//            onFollowNotificationClick = {},
+//            onReloadProfile = {},
+//            onReloadOtherUserProfile = {},
+//            onReloadPosts = {},
+//            onToggleFollow = { _, _ -> }
+//        )
+//    }
+//}
