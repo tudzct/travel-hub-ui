@@ -60,6 +60,7 @@ import com.mobile.travelhub.R
 import com.mobile.travelhub.data.model.UserProfileResponse
 import com.mobile.travelhub.ui.components.FeedPostCard
 import com.mobile.travelhub.ui.components.FeedPostCardSkeleton
+import com.mobile.travelhub.ui.components.HomeCommentsBottomSheet
 import com.mobile.travelhub.ui.theme.*
 import com.mobile.travelhub.viewmodels.HomePostUiModel
 import com.mobile.travelhub.viewmodels.ProfileViewModel
@@ -93,7 +94,7 @@ fun ProfileScreen(
     val profilePostsState by viewModel.profilePostsState.collectAsState()
     val unauthorized by viewModel.unauthorized.collectAsState()
 
-    LaunchedEffect(Unit) {
+    LaunchedEffect(isViewingOwnProfile, viewingUserId) {
         if (isViewingOwnProfile) {
             viewModel.loadUserProfile()
             viewModel.loadUserPosts()
@@ -141,7 +142,12 @@ fun ProfileScreen(
                 viewModel.loadUserPosts(userId)
             }
         },
-        onToggleFollow = viewModel::toggleFollowOtherUser
+        onToggleFollow = viewModel::toggleFollowOtherUser,
+        onLikeClick = viewModel::onLikeClicked,
+        onCommentClick = viewModel::onCommentClicked,
+        onCommentDismissed = viewModel::onCommentDismissed,
+        onCommentInputChanged = viewModel::onCommentInputChanged,
+        onCommentSubmit = viewModel::submitComment
     )
 }
 
@@ -164,7 +170,12 @@ private fun ProfileScreenContent(
     onReloadProfile: () -> Unit,
     onReloadOtherUserProfile: (Long) -> Unit,
     onReloadPosts: (Long?) -> Unit,
-    onToggleFollow: (Long, Boolean) -> Unit
+    onToggleFollow: (Long, Boolean) -> Unit,
+    onLikeClick: (Long) -> Unit,
+    onCommentClick: (Long) -> Unit,
+    onCommentDismissed: () -> Unit,
+    onCommentInputChanged: (String) -> Unit,
+    onCommentSubmit: () -> Unit
 ) {
     val profileTitle = (profileState as? UiState.Success)
         ?.data
@@ -568,9 +579,8 @@ private fun ProfileScreenContent(
                                                 profilePostsState.posts.forEach { post ->
                                                     FeedPostCard(
                                                         post = post,
-                                                        onLikeClick = {},
-                                                        onCommentClick = {},
-                                                        actionsEnabled = false
+                                                        onLikeClick = { onLikeClick(post.id) },
+                                                        onCommentClick = { onCommentClick(post.id) }
                                                     )
                                                 }
                                             }
@@ -595,6 +605,21 @@ private fun ProfileScreenContent(
                             }
                         )
                     }
+                    if (profilePostsState.activeCommentPostId != null) {
+                        HomeCommentsBottomSheet(
+                            comments = profilePostsState
+                                .commentsByPostId[profilePostsState.activeCommentPostId]
+                                .orEmpty(),
+                            commentInput = profilePostsState.commentInput,
+                            isCommentsLoading = profilePostsState.isCommentsLoading,
+                            isCommentSubmitting = profilePostsState.isCommentSubmitting,
+                            commentsErrorMessage = profilePostsState.commentsErrorMessage,
+                            commentErrorMessage = profilePostsState.commentErrorMessage,
+                            onDismiss = onCommentDismissed,
+                            onCommentInputChanged = onCommentInputChanged,
+                            onCommentSubmit = onCommentSubmit
+                        )
+                    }
                 }
             }
         }
@@ -615,54 +640,54 @@ fun ErrorLayout(message: String, onRetry: () -> Unit) {
     }
 }
 
-@Preview
-@Composable
-fun ProfileScreenPreview() {
-    val sampleProfile = UserProfileResponse(
-        id = 1,
-        username = "traveler",
-        name = "Alex Nguyen",
-        bio = "Chasing sunsets and street food.",
-        postsCount = 12,
-        followersCount = 345,
-        followingCount = 180,
-        isFollowing = false
-    )
-    val samplePosts = listOf(
-        HomePostUiModel(
-            id = 1,
-            username = "traveler",
-            subtitle = "Hoi An, Viet Nam",
-            description = "Golden hour by the river.",
-            imageUrls = emptyList(),
-            likeCount = 120,
-            commentCount = 24,
-            isLiked = false,
-            isLikeLoading = false,
-            timeAgoLabel = "2h"
-        )
-    )
-
-    TravelHubTheme {
-        ProfileScreenContent(
-            isViewingOwnProfile = true,
-            profileState = UiState.Success(sampleProfile),
-            profilePostsState = ProfilePostsUiState(isLoading = false, posts = samplePosts),
-            onNavigateToEditProfile = {},
-            onNavigateToFollowers = {},
-            onNavigateToFollowing = {},
-            onNavigateToHistory = {},
-            onLogout = {},
-            onBack = {},
-            viewingUserId = null,
-            onNavigateToChat = {},
-            onNotificationsClick = {},
-            onPostNotificationClick = {},
-            onFollowNotificationClick = {},
-            onReloadProfile = {},
-            onReloadOtherUserProfile = {},
-            onReloadPosts = {},
-            onToggleFollow = { _, _ -> }
-        )
-    }
-}
+//@Preview
+//@Composable
+//fun ProfileScreenPreview() {
+//    val sampleProfile = UserProfileResponse(
+//        id = 1,
+//        username = "traveler",
+//        name = "Alex Nguyen",
+//        bio = "Chasing sunsets and street food.",
+//        postsCount = 12,
+//        followersCount = 345,
+//        followingCount = 180,
+//        isFollowing = false
+//    )
+//    val samplePosts = listOf(
+//        HomePostUiModel(
+//            id = 1,
+//            username = "traveler",
+//            subtitle = "Hoi An, Viet Nam",
+//            description = "Golden hour by the river.",
+//            imageUrls = emptyList(),
+//            likeCount = 120,
+//            commentCount = 24,
+//            isLiked = false,
+//            isLikeLoading = false,
+//            timeAgoLabel = "2h"
+//        )
+//    )
+//
+//    TravelHubTheme {
+//        ProfileScreenContent(
+//            isViewingOwnProfile = true,
+//            profileState = UiState.Success(sampleProfile),
+//            profilePostsState = ProfilePostsUiState(isLoading = false, posts = samplePosts),
+//            onNavigateToEditProfile = {},
+//            onNavigateToFollowers = {},
+//            onNavigateToFollowing = {},
+//            onNavigateToHistory = {},
+//            onLogout = {},
+//            onBack = {},
+//            viewingUserId = null,
+//            onNavigateToChat = {},
+//            onNotificationsClick = {},
+//            onPostNotificationClick = {},
+//            onFollowNotificationClick = {},
+//            onReloadProfile = {},
+//            onReloadOtherUserProfile = {},
+//            onReloadPosts = {},
+//            onToggleFollow = { _, _ -> }
+//        )
+//    }
+//}

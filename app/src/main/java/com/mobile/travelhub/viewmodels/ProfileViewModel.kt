@@ -8,6 +8,7 @@ import com.mobile.travelhub.data.PostRepository
 import com.mobile.travelhub.data.api.UserApiService
 import com.mobile.travelhub.data.model.FeedPostResponse
 import com.mobile.travelhub.data.httpStatusCode
+import com.mobile.travelhub.data.model.PostCommentResponse
 import com.mobile.travelhub.data.model.ProfileUpdateRequest
 import com.mobile.travelhub.data.model.UserProfileResponse
 import com.mobile.travelhub.data.model.UserSummaryResponse
@@ -99,7 +100,8 @@ class ProfileViewModel @Inject constructor(
                         isLoading = false,
                         posts = posts.mapNotNull { post ->
                             runCatching { toHomePostUiModel(post) }.getOrNull()
-                        }
+                        },
+                        commentsByPostId = _profilePostsState.value.commentsByPostId
                     )
                 }
                 .onFailure { throwable ->
@@ -108,6 +110,154 @@ class ProfileViewModel @Inject constructor(
                         errorMessage = throwable.message ?: "Không thể tải bài viết"
                     )
                 }
+        }
+    }
+
+    fun onLikeClicked(postId: Long) {
+        val currentPost = _profilePostsState.value.posts.firstOrNull { it.id == postId } ?: return
+        if (currentPost.isLikeLoading) return
+
+        updatePost(postId) { it.copy(isLikeLoading = true) }
+
+        viewModelScope.launch {
+            val result = if (currentPost.isLiked) {
+                postRepository.unlikePost(postId)
+            } else {
+                postRepository.likePost(postId)
+            }
+
+            result
+                .onSuccess { response ->
+                    updatePost(postId) {
+                        it.copy(
+                            isLiked = response.liked,
+                            likeCount = response.likeCount.coerceAtLeast(0),
+                            isLikeLoading = false
+                        )
+                    }
+                }
+                .onFailure { throwable ->
+                    updatePost(postId) { it.copy(isLikeLoading = false) }
+                    _profilePostsState.update {
+                        it.copy(errorMessage = throwable.message ?: "Không thể cập nhật lượt thích")
+                    }
+                }
+        }
+    }
+
+    fun onCommentClicked(postId: Long) {
+        _profilePostsState.update {
+            it.copy(
+                activeCommentPostId = postId,
+                commentInput = "",
+                isCommentsLoading = true,
+                commentsErrorMessage = null,
+                commentErrorMessage = null
+            )
+        }
+        loadComments(postId)
+    }
+
+    fun onCommentDismissed() {
+        _profilePostsState.update {
+            it.copy(
+                activeCommentPostId = null,
+                commentInput = "",
+                isCommentsLoading = false,
+                isCommentSubmitting = false,
+                commentsErrorMessage = null,
+                commentErrorMessage = null
+            )
+        }
+    }
+
+    fun onCommentInputChanged(value: String) {
+        _profilePostsState.update {
+            it.copy(commentInput = value, commentErrorMessage = null)
+        }
+    }
+
+    fun submitComment() {
+        val currentState = _profilePostsState.value
+        val postId = currentState.activeCommentPostId ?: return
+        val content = currentState.commentInput.trim()
+
+        if (content.isBlank()) {
+            _profilePostsState.update { it.copy(commentErrorMessage = "Comment cannot be empty") }
+            return
+        }
+
+        if (currentState.isCommentSubmitting) return
+
+        _profilePostsState.update {
+            it.copy(isCommentSubmitting = true, commentErrorMessage = null)
+        }
+
+        viewModelScope.launch {
+            postRepository.addComment(postId = postId, content = content)
+                .onSuccess { response ->
+                    val commentUiModel = toCommentUiModel(response)
+                    _profilePostsState.update { state ->
+                        val currentComments = state.commentsByPostId[postId].orEmpty()
+                        state.copy(
+                            isCommentSubmitting = false,
+                            commentInput = "",
+                            commentsErrorMessage = null,
+                            commentErrorMessage = null,
+                            commentsByPostId = state.commentsByPostId + (postId to (currentComments + commentUiModel)),
+                            posts = state.posts.map { post ->
+                                if (post.id == postId) {
+                                    post.copy(commentCount = (post.commentCount + 1).coerceAtLeast(0))
+                                } else {
+                                    post
+                                }
+                            }
+                        )
+                    }
+                }
+                .onFailure { throwable ->
+                    _profilePostsState.update {
+                        it.copy(
+                            isCommentSubmitting = false,
+                            commentErrorMessage = throwable.message ?: "Failed to add comment"
+                        )
+                    }
+                }
+        }
+    }
+
+    private fun loadComments(postId: Long) {
+        viewModelScope.launch {
+            postRepository.getPostComments(postId = postId, page = 0, pageSize = 50)
+                .onSuccess { response ->
+                    _profilePostsState.update { state ->
+                        state.copy(
+                            isCommentsLoading = false,
+                            commentsErrorMessage = null,
+                            commentsByPostId = state.commentsByPostId + (
+                                postId to response.data.map(::toCommentUiModel)
+                            )
+                        )
+                    }
+                }
+                .onFailure { throwable ->
+                    _profilePostsState.update {
+                        it.copy(
+                            isCommentsLoading = false,
+                            commentsErrorMessage = throwable.message ?: "Failed to load comments"
+                        )
+                    }
+                }
+        }
+    }
+
+    private fun updatePost(postId: Long, transform: (HomePostUiModel) -> HomePostUiModel) {
+        _profilePostsState.update { state ->
+            state.copy(
+                posts = state.posts.map { post ->
+                    if (post.id == postId) transform(post) else post
+                }
+            )
         }
     }
 
@@ -324,12 +474,34 @@ class ProfileViewModel @Inject constructor(
             timeAgoLabel = PostsUtils.formatTimeAgo(safeCreatedAt)
         )
     }
+
+    private fun toCommentUiModel(response: PostCommentResponse): HomeCommentUiModel {
+        val username = response.owner?.username
+            ?.takeIf { it.isNotBlank() }
+            ?: "unknown"
+        val content = response.content.trim()
+        val createdAt = response.createdAt ?: response.updatedAt
+
+        return HomeCommentUiModel(
+            id = response.id?.toString() ?: "${createdAt.orEmpty()}-${username}-${content.hashCode()}",
+            username = username,
+            content = content,
+            timeAgoLabel = PostsUtils.formatTimeAgo(createdAt)
+        )
+    }
 }
 
 data class ProfilePostsUiState(
     val isLoading: Boolean = false,
     val posts: List<HomePostUiModel> = emptyList(),
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
+    val activeCommentPostId: Long? = null,
+    val commentInput: String = "",
+    val isCommentsLoading: Boolean = false,
+    val isCommentSubmitting: Boolean = false,
+    val commentsErrorMessage: String? = null,
+    val commentErrorMessage: String? = null,
+    val commentsByPostId: Map<Long, List<HomeCommentUiModel>> = emptyMap()
 )
 
 sealed class UiState<out T> {
