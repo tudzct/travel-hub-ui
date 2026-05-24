@@ -28,7 +28,6 @@ import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavGraph.Companion.findStartDestination
-import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -177,18 +176,6 @@ sealed class Screen(
         }
     }
 }
-fun getDirection(
-    initialState: NavBackStackEntry,
-    targetState: NavBackStackEntry
-): SlideDirection {
-    val fromIndex = Screen.fromRoute(initialState.destination.route)?.index ?: 0
-    val toIndex = Screen.fromRoute(targetState.destination.route)?.index ?: 0
-    return if (toIndex > fromIndex) {
-        SlideDirection.Left
-    } else {
-        SlideDirection.Right
-    }
-}
 
 @Composable
 private fun HomeDrawerScaffold(
@@ -312,13 +299,25 @@ fun NavGraph(
         startDestination = startDestination,
         enterTransition = {
             slideIntoContainer(
-                towards = getDirection(initialState, targetState),
+                towards = SlideDirection.Left,
                 animationSpec = tween(300)
             )
         },
         exitTransition = {
             slideOutOfContainer(
-                towards = getDirection(initialState, targetState),
+                towards = SlideDirection.Left,
+                animationSpec = tween(300)
+            )
+        },
+        popEnterTransition = {
+            slideIntoContainer(
+                towards = SlideDirection.Right,
+                animationSpec = tween(300)
+            )
+        },
+        popExitTransition = {
+            slideOutOfContainer(
+                towards = SlideDirection.Right,
                 animationSpec = tween(300)
             )
         },
