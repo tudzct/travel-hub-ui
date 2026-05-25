@@ -114,9 +114,6 @@ sealed class Screen(
     data object GroupDetail : Screen("group_detail/{tripId}/{groupName}", 8) {
         fun createRoute(tripId: Long, groupName: String): String = "group_detail/$tripId/${Uri.encode(groupName)}"
     }
-    data object GroupChat : Screen("group_chat/{groupName}", 9) {
-        fun createRoute(groupName: String) = "group_chat/$groupName"
-    }
     data object Itinerary : Screen("itinerary/{tripId}/{groupName}", 10) {
         fun createRoute(tripId: Long, groupName: String) = "itinerary/$tripId/${Uri.encode(groupName)}"
     }
@@ -127,9 +124,6 @@ sealed class Screen(
     data object CostEstimate : Screen("cost_estimate/{tripId}", 12) {
         fun createRoute(tripId: Long) = "cost_estimate/$tripId"
     }
-    data object GroupDiscovery : Screen("group_discovery", 13)
-    data object RouteMap : Screen("route_map", 14)
-
     companion object {
         fun fromRoute(route: String?): Screen? {
             return when (route?.substringBefore("?")?.substringBefore("/")) {
@@ -166,11 +160,8 @@ sealed class Screen(
                 "followers_following" -> FollowersFollowing
                 "create_group" -> CreateGroup
                 "group_detail" -> GroupDetail
-                "group_chat" -> GroupChat
                 "itinerary" -> Itinerary
                 "cost_estimate" -> CostEstimate
-                "group_discovery" -> GroupDiscovery
-                "route_map" -> RouteMap
                 else -> null
             }
         }
@@ -695,22 +686,8 @@ fun NavGraph(
                 tripId = tripId,
                 groupName = groupName,
                 onBack = { navController.popBackStack() },
-                onNavigateToChat = { navController.navigate(Screen.GroupChat.createRoute(groupName)) { launchSingleTop = true } },
-                onNavigateToDiscovery = { navController.navigate(Screen.GroupDiscovery.route) { launchSingleTop = true } },
-                onNavigateToMap = { navController.navigate(Screen.RouteMap.route) { launchSingleTop = true } },
                 onNavigateToCost = { costTripId -> navController.navigate(Screen.CostEstimate.createRoute(costTripId)) { launchSingleTop = true } },
                 onNavigateToProfile = { userId -> navController.navigate(Screen.OtherProfile.createRoute(userId)) { launchSingleTop = true } }
-            )
-        }
-
-        composable(
-            route = Screen.GroupChat.route,
-            arguments = listOf(navArgument("groupName") { type = NavType.StringType })
-        ) { backStackEntry ->
-            val groupName = backStackEntry.arguments?.getString("groupName") ?: "Chat"
-            GroupChatScreen(
-                groupName = groupName,
-                onBack = { navController.popBackStack() }
             )
         }
 
@@ -833,17 +810,6 @@ fun NavGraph(
                         launchSingleTop = true
                     }
                 }
-            )
-        }
-        composable(Screen.GroupDiscovery.route) {
-            GroupDiscoveryScreen(
-                onBack = { navController.popBackStack() }
-            )
-        }
-
-        composable(Screen.RouteMap.route) {
-            RouteMapScreen(
-                onBack = { navController.popBackStack() }
             )
         }
     }

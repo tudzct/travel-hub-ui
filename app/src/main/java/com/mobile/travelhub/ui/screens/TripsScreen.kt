@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -36,6 +35,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import coil.compose.AsyncImage
 import com.mobile.travelhub.R
 import com.mobile.travelhub.ui.theme.*
 import com.mobile.travelhub.viewmodels.TripsViewModel
@@ -129,7 +129,7 @@ fun TripsScreen(
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = "Nhà thám hiểm! \uD83C\uDF0D",
+                        text = "Nhà thám hiểm!",
                         fontWeight = FontWeight.ExtraBold,
                         fontSize = 32.sp,
                         color = OnSurface,
@@ -160,8 +160,6 @@ fun TripsScreen(
                 Spacer(modifier = Modifier.height(36.dp))
             }
             
-            // Upcoming Trips
-            // Upcoming Trips header
             item {
                 Column(modifier = Modifier.padding(horizontal = 24.dp)) {
                     Row(
@@ -190,7 +188,7 @@ fun TripsScreen(
                 Column(modifier = Modifier.padding(horizontal = 24.dp)) {
                     if (state.upcomingTrips.isEmpty()) {
                         Text(
-                            text = "Chưa có chuyến đi sắp tới từ BE.",
+                            text = "Bạn chưa có chuyến đi nào sắp tới.",
                             color = OnSurfaceVariant,
                             fontSize = 14.sp
                         )
@@ -220,19 +218,28 @@ fun TripsScreen(
                         modifier = Modifier.padding(horizontal = 24.dp)
                     )
                     Spacer(modifier = Modifier.height(16.dp))
-                    LazyRow(
-                        contentPadding = PaddingValues(horizontal = 24.dp),
-                        horizontalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        items(4) { index ->
-                            val places = listOf("Đà Lạt", "Đà Nẵng", "Sapa", "Phú Quốc")
-                            val dates = listOf(
-                                "Tháng 8, 2023",
-                                "Tháng 5, 2023",
-                                "Tháng 12, 2022",
-                                "Tháng 7, 2022"
-                            )
-                            PastMemoryCard(places[index], dates[index])
+                    if (state.pastTrips.isEmpty()) {
+                        Text(
+                            text = "Chưa có chuyến đi",
+                            color = OnSurfaceVariant,
+                            fontSize = 14.sp,
+                            modifier = Modifier.padding(horizontal = 24.dp)
+                        )
+                    } else {
+                        LazyRow(
+                            contentPadding = PaddingValues(horizontal = 24.dp),
+                            horizontalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
+                            items(
+                                items = state.pastTrips,
+                                key = { it.tripId }
+                            ) { trip ->
+                                PastMemoryCard(
+                                    place = trip.locationName,
+                                    date = trip.dateString,
+                                    imageUrl = trip.imageUrl
+                                )
+                            }
                         }
                     }
                 }
@@ -308,12 +315,22 @@ fun ActiveJourneyCardV2(
                 .fillMaxWidth()
                 .height(260.dp)
         ) {
-            Image(
-                painter = painterResource(id = R.drawable.ic_launcher_background), // Mock image
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize()
-            )
+            val coverImageUrl = trip?.coverImageUrl?.takeIf { it.isNotBlank() }
+            if (coverImageUrl != null) {
+                AsyncImage(
+                    model = coverImageUrl,
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
+                )
+            } else {
+                Image(
+                    painter = painterResource(id = R.drawable.ic_launcher_background),
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
 
             // Dark gradient from bottom
             Box(
@@ -352,11 +369,6 @@ fun ActiveJourneyCardV2(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Default.LocationOn, null, tint = Color.White.copy(alpha = 0.8f), modifier = Modifier.size(14.dp))
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        trip?.location ?: "Dashboard BE chưa trả location",
-                        color = Color.White.copy(alpha = 0.8f),
-                        fontSize = 13.sp
-                    )
                 }
             }
         }
@@ -364,19 +376,33 @@ fun ActiveJourneyCardV2(
 }
 
 @Composable
-fun PastMemoryCard(place: String, date: String) {
+fun PastMemoryCard(place: String, date: String, imageUrl: String? = null) {
     Column(modifier = Modifier.width(130.dp)) {
         Box(
             modifier = Modifier
                 .size(130.dp)
                 .clip(RoundedCornerShape(24.dp))
         ) {
-            Image(
-                painter = painterResource(id = R.drawable.ic_launcher_foreground),
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize().background(SurfaceContainerLow)
-            )
+            val resolvedImageUrl = imageUrl?.takeIf { it.isNotBlank() }
+            if (resolvedImageUrl != null) {
+                AsyncImage(
+                    model = resolvedImageUrl,
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(SurfaceContainerLow)
+                )
+            } else {
+                Image(
+                    painter = painterResource(id = R.drawable.ic_launcher_foreground),
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(SurfaceContainerLow)
+                )
+            }
         }
         Spacer(modifier = Modifier.height(12.dp))
         Text(place, fontWeight = FontWeight.ExtraBold, fontSize = 15.sp, color = OnSurface)
@@ -428,13 +454,6 @@ fun AddTripOptionsContent(
                 }
             )
             Spacer(modifier = Modifier.height(16.dp))
-            TripOptionItem(
-                icon = Icons.Default.Map,
-                title = "Khám phá địa điểm",
-                desc = "Tìm cảm hứng từ các hành trình mẫu",
-                color = Color(0xFF4CAF50),
-                onClick = {}
-            )
         } else {
             Text(
                 text = "Tham gia chuyến đi",
@@ -536,12 +555,22 @@ fun UpcomingTripItem(
                 .clip(RoundedCornerShape(16.dp))
                 .background(SurfaceContainerLow)
         ) {
-            Image(
-                painter = painterResource(id = R.drawable.ic_launcher_background),
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize()
-            )
+            val coverImageUrl = trip.coverImageUrl?.takeIf { it.isNotBlank() }
+            if (coverImageUrl != null) {
+                AsyncImage(
+                    model = coverImageUrl,
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
+                )
+            } else {
+                Image(
+                    painter = painterResource(id = R.drawable.ic_launcher_background),
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
         }
         Spacer(modifier = Modifier.width(16.dp))
         Column(modifier = Modifier.weight(1f)) {
