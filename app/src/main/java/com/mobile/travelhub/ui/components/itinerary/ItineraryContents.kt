@@ -36,10 +36,7 @@ import com.mobile.travelhub.viewmodels.ItineraryUiState
 fun ItineraryOverviewContent(
     state: ItineraryUiState,
     paddingValues: PaddingValues,
-    onOpenDayDetail: (Int) -> Unit,
-    onToggleChange: (String) -> Unit,
-    onApplySelected: () -> Unit,
-    onDiscardProposal: () -> Unit
+    onOpenDayDetail: (Int) -> Unit
 ) {
     LazyColumn(
         modifier = Modifier
@@ -56,20 +53,6 @@ fun ItineraryOverviewContent(
             )
         }
 
-        state.pendingProposal?.let { proposal ->
-            item {
-                ProposalReviewSection(
-                    proposal = proposal,
-                    version = state.version,
-                    selectedChangeIds = state.selectedChangeIds,
-                    isLeader = state.isLeader,
-                    isStale = state.isProposalStale,
-                    onToggleChange = onToggleChange,
-                    onApplySelected = onApplySelected,
-                    onDiscardProposal = onDiscardProposal
-                )
-            }
-        }
         if (state.isLoadingActivities) {
             item {
                 ItineraryOverviewSkeleton()
@@ -706,104 +689,6 @@ private fun ItineraryDayDetailSkeleton() {
                         .background(SurfaceContainerLowest, RoundedCornerShape(22.dp))
                         .shimmerEffect()
                 )
-            }
-        }
-    }
-}
-
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-fun ProposalReviewSection(
-    proposal: ItineraryProposal,
-    version: Int,
-    selectedChangeIds: Set<String>,
-    isLeader: Boolean,
-    isStale: Boolean,
-    onToggleChange: (String) -> Unit,
-    onApplySelected: () -> Unit,
-    onDiscardProposal: () -> Unit
-) {
-    Card(
-        shape = RoundedCornerShape(28.dp),
-        colors = CardDefaults.cardColors(containerColor = SurfaceContainerLowest)
-    ) {
-        Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Top
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "Pending AI changes",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = OnSurface
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = proposal.summary,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = OnSurfaceVariant,
-                        lineHeight = 20.sp
-                    )
-                }
-                Spacer(modifier = Modifier.width(12.dp))
-                Box(
-                    modifier = Modifier
-                        .background(
-                            color = if (isStale) SunsetOrange.copy(alpha = 0.12f) else PrimaryBlue.copy(alpha = 0.12f),
-                            shape = RoundedCornerShape(999.dp)
-                        )
-                        .padding(horizontal = 12.dp, vertical = 7.dp)
-                ) {
-                    Text(
-                        text = if (isStale) "Stale vs v$version" else "Base v${proposal.baseVersion}",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 12.sp,
-                        color = if (isStale) SunsetOrange else PrimaryBlue
-                    )
-                }
-            }
-
-            if (isStale) {
-                Text(
-                    text = "This proposal was generated against an older itinerary version. Review is still available, but apply is disabled until you regenerate.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = SunsetOrange,
-                    lineHeight = 18.sp
-                )
-            }
-
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                SummaryChip(label = "${selectedChangeIds.size} selected")
-                SummaryChip(label = "${proposal.changes.size} total changes")
-                SummaryChip(label = if (isLeader) "Leader approval" else "Member preview")
-            }
-
-            proposal.changes.forEach { change ->
-                ProposalChangeCard(
-                    change = change,
-                    selected = change.changeId in selectedChangeIds,
-                    selectable = isLeader && !isStale,
-                    onToggle = { onToggleChange(change.changeId) }
-                )
-            }
-
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                OutlinedButton(
-                    onClick = onDiscardProposal,
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text("Discard")
-                }
-                TextButton(
-                    onClick = onApplySelected,
-                    enabled = isLeader && !isStale && selectedChangeIds.isNotEmpty(),
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text("Apply selected")
-                }
             }
         }
     }
