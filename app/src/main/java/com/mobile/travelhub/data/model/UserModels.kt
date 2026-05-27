@@ -48,9 +48,21 @@ data class ProfileUpdateRequest(
 )
 
 data class PageResponse<T>(
-    val content: List<T> = emptyList(),
+    @SerializedName("data")
+    val data: List<T> = emptyList(),
     val totalPages: Int = 0,
     val totalElements: Long = 0,
-    val size: Int = 0,
-    val number: Int = 0
-)
+    @SerializedName("pageSize")
+    val pageSize: Int = 0,
+    @SerializedName("pageNumber")
+    val pageNumber: Int = 0
+) {
+    val content: List<T>
+        get() = data
+
+    val size: Int
+        get() = pageSize
+
+    val number: Int
+        get() = pageNumber
+}

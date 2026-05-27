@@ -1,6 +1,9 @@
 package com.mobile.travelhub.data
 
 import android.content.Context
+import com.mobile.travelhub.data.api.ApiClient
+import com.mobile.travelhub.data.model.TopTravelerResponse
+import com.mobile.travelhub.data.model.toPlaceDetail
 import com.mobile.travelhub.models.EditablePlaceDraft
 import com.mobile.travelhub.models.PlaceDetail
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -26,6 +29,20 @@ class PlaceRepository @Inject constructor(
     fun getPlaces(): List<PlaceDetail> = _places.value
 
     fun getPlaceDetail(id: String): PlaceDetail? = _places.value.firstOrNull { it.id == id }
+
+    suspend fun fetchPopularPlaces(limit: Int = 8): List<PlaceDetail> {
+        val places = ApiClient.apiService.getPopularPlaces(page = 0, pageSize = limit)
+            .data
+            .map { it.toPlaceDetail() }
+        if (places.isNotEmpty()) {
+            _places.value = places
+        }
+        return places
+    }
+
+    suspend fun fetchTopTravelers(limit: Int = 5): List<TopTravelerResponse> {
+        return ApiClient.apiService.getTopTravelers(page = 0, pageSize = limit).data
+    }
 
     fun updatePlace(id: String, draft: EditablePlaceDraft): Result<PlaceDetail> {
         val existing = getPlaceDetail(id)

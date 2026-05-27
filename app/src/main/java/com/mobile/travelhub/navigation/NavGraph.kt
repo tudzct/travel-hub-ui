@@ -241,6 +241,13 @@ fun NavGraph(
             PlaceListScreen(
                 onPlaceClick = { placeId ->
                     navController.navigate(Screen.PlaceDetail.createRoute(placeId))
+                },
+                onTravelerClick = { userId ->
+                    if (authUiState.session?.userId?.toLong() == userId) {
+                        navController.navigate(Screen.Profile.route) { launchSingleTop = true }
+                    } else {
+                        navController.navigate(Screen.OtherProfile.createRoute(userId)) { launchSingleTop = true }
+                    }
                 }
             )
         }
