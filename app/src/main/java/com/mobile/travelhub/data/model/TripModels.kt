@@ -30,6 +30,8 @@ data class UpcomingTripResponse(
     val name: String,
     val location: String,
     val coverImageUrl: String? = null,
+    val startDate: String? = null,
+    val endDate: String? = null,
     val daysLeft: Int = 0,
     val memberCount: Int = 0
 )

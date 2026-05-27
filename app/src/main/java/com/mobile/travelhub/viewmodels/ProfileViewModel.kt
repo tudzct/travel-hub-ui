@@ -6,8 +6,8 @@ import androidx.lifecycle.viewModelScope
 import com.mobile.travelhub.data.AuthRepository
 import com.mobile.travelhub.data.PostRepository
 import com.mobile.travelhub.data.api.UserApiService
-import com.mobile.travelhub.data.model.FeedPostResponse
 import com.mobile.travelhub.data.httpStatusCode
+import com.mobile.travelhub.data.model.FeedPostResponse
 import com.mobile.travelhub.data.model.PostCommentResponse
 import com.mobile.travelhub.data.model.ProfileUpdateRequest
 import com.mobile.travelhub.data.model.UserProfileResponse
@@ -19,11 +19,16 @@ import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
 import javax.inject.Inject
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.MultipartBody
+import okhttp3.RequestBody.Companion.toRequestBody
 
 @HiltViewModel
 class ProfileViewModel @Inject constructor(
@@ -351,6 +356,25 @@ class ProfileViewModel @Inject constructor(
         }
     }
 
+    suspend fun uploadAvatar(
+        imageBytes: ByteArray,
+        mimeType: String,
+        fileName: String
+    ): String = withContext(Dispatchers.IO) {
+        userApiService.uploadAvatar(buildAvatarPart(imageBytes, mimeType, fileName)).string().trim().trim('"')
+    }
+
+    private fun buildAvatarPart(
+        bytes: ByteArray,
+        mimeType: String,
+        fileName: String
+    ): MultipartBody.Part {
+        val safeMimeType = mimeType.ifBlank { "image/jpeg" }
+        val safeFileName = fileName.ifBlank { "avatar.jpg" }
+        val requestBody = bytes.toRequestBody(safeMimeType.toMediaTypeOrNull())
+        return MultipartBody.Part.createFormData("file", safeFileName, requestBody)
+    }
+
     fun loadFollowers(userId: Long = sessionUserId) {
         viewModelScope.launch {
             _followersState.value = UiState.Loading
@@ -385,40 +409,48 @@ class ProfileViewModel @Inject constructor(
         }
     }
 
-    fun updateProfile(name: String, username: String, bio: String, dob: String, gender: String, location: String) {
-        viewModelScope.launch {
-            _updateStatus.value = UiState.Loading
-            try {
-                if (sessionUserId <= 0L) {
-                    error("Bạn cần đăng nhập để cập nhật hồ sơ")
-                }
-                val currentProfile = (_profileState.value as? UiState.Success)?.data
-
-                val request = ProfileUpdateRequest(
-                    id = sessionUserId,
-                    username = username,
-                    name = name,
-                    bio = bio,
-                    dateOfBirth = dob,
-                    gender = gender,
-                    location = location,
-                    email = currentProfile?.email,
-                    phoneNumber = currentProfile?.phoneNumber,
-                    avatarUrl = currentProfile?.avatarUrl,
-                    isFollowing = currentProfile?.isFollowing ?: false,
-                    postsCount = currentProfile?.postsCount ?: 0,
-                    followersCount = currentProfile?.followersCount ?: 0,
-                    followingCount = currentProfile?.followingCount ?: 0
-                )
-                val response = userApiService.updateMyProfile(request)
-                _profileState.value = UiState.Success(response)
-                _updateStatus.value = UiState.Success(true)
-                Log.d("API_SUCCESS", "Cập nhật Profile thành công!")
-            } catch (e: Exception) {
-                val errorMsg = "Lỗi cập nhật Profile (PUT): ${e.localizedMessage}"
-                Log.e("API_ERROR", errorMsg, e)
-                _updateStatus.value = UiState.Error(errorMsg)
+    suspend fun updateProfile(
+        name: String,
+        username: String,
+        bio: String,
+        dob: String,
+        gender: String,
+        location: String,
+        avatarUrl: String? = null
+    ) {
+        _updateStatus.value = UiState.Loading
+        try {
+            if (sessionUserId <= 0L) {
+                error("Bạn cần đăng nhập để cập nhật hồ sơ")
             }
+            val currentProfile = (_profileState.value as? UiState.Success)?.data
+
+            val request = ProfileUpdateRequest(
+                id = sessionUserId,
+                username = username,
+                name = name,
+                bio = bio,
+                dateOfBirth = dob,
+                gender = gender,
+                location = location,
+                email = currentProfile?.email,
+                phoneNumber = currentProfile?.phoneNumber,
+                avatarUrl = avatarUrl ?: currentProfile?.avatarUrl,
+                isFollowing = currentProfile?.isFollowing ?: false,
+                postsCount = currentProfile?.postsCount ?: 0,
+                followersCount = currentProfile?.followersCount ?: 0,
+                followingCount = currentProfile?.followingCount ?: 0
+            )
+            val response = withContext(Dispatchers.IO) {
+                userApiService.updateMyProfile(request)
+            }
+            _profileState.value = UiState.Success(response)
+            _updateStatus.value = UiState.Success(true)
+            Log.d("API_SUCCESS", "Cập nhật Profile thành công!")
+        } catch (e: Exception) {
+            val errorMsg = "Lỗi cập nhật Profile (PUT): ${e.localizedMessage}"
+            Log.e("API_ERROR", errorMsg, e)
+            _updateStatus.value = UiState.Error(errorMsg)
         }
     }
 

@@ -119,6 +119,8 @@ class TripsViewModel @Inject constructor(
             name = name,
             location = location,
             coverImageUrl = coverImageUrl,
+            startDate = startDate,
+            endDate = endDate,
             daysLeft = daysLeft,
             memberCount = memberCount
         )

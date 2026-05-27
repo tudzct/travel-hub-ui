@@ -46,6 +46,7 @@ fun TripsScreen(
     createdTripId: Long? = null,
     createdGroupName: String? = null,
     onNavigateToGroupDetail: (Long, String) -> Unit = { _, _ -> },
+    onNavigateToUpcomingTrips: () -> Unit = {},
     onNavigateToCreateGroup: () -> Unit = {}
 ) {
     val viewModel: TripsViewModel = hiltViewModel()
@@ -177,7 +178,8 @@ fun TripsScreen(
                             text = "Xem tất cả",
                             color = PrimaryBlue,
                             fontWeight = FontWeight.Bold,
-                            fontSize = 13.sp
+                            fontSize = 13.sp,
+                            modifier = Modifier.clickable(onClick = onNavigateToUpcomingTrips)
                         )
                     }
                     Spacer(modifier = Modifier.height(16.dp))
@@ -237,7 +239,8 @@ fun TripsScreen(
                                 PastMemoryCard(
                                     place = trip.locationName,
                                     date = trip.dateString,
-                                    imageUrl = trip.imageUrl
+                                    imageUrl = trip.imageUrl,
+                                    onClick = { onNavigateToGroupDetail(trip.tripId, trip.locationName) }
                                 )
                             }
                         }
@@ -376,8 +379,12 @@ fun ActiveJourneyCardV2(
 }
 
 @Composable
-fun PastMemoryCard(place: String, date: String, imageUrl: String? = null) {
-    Column(modifier = Modifier.width(130.dp)) {
+fun PastMemoryCard(place: String, date: String, imageUrl: String? = null, onClick: () -> Unit = {}) {
+    Column(
+        modifier = Modifier
+            .width(130.dp)
+            .clickable(onClick = onClick)
+    ) {
         Box(
             modifier = Modifier
                 .size(130.dp)

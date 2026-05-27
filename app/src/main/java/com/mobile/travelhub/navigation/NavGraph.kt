@@ -32,6 +32,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.mobile.travelhub.data.model.TravelPlaceListItemResponse
 import com.mobile.travelhub.data.model.TopTravelerPeriod
 import com.mobile.travelhub.ui.screens.OnboardingInterestsScreen
@@ -50,6 +51,7 @@ import com.mobile.travelhub.viewmodels.AuthUiState
 import androidx.navigation.navArgument
 import com.mobile.travelhub.ui.screens.*
 import com.mobile.travelhub.viewmodels.OnboardingViewModel
+import com.mobile.travelhub.viewmodels.ProfileViewModel
 import kotlinx.coroutines.launch
 
 private const val PLACE_DETAIL_PLACE_KEY = "place_detail_place"
@@ -78,6 +80,7 @@ sealed class Screen(
     }
     data object Search : Screen("search", 2)
     data object Trips : Screen("trips", 1, true)
+    data object UpcomingTrips : Screen("trips_upcoming", 15, true)
     data object CreatePost : Screen("create_post", showBottomBar = true)
     data object Profile : Screen("profile", 2, true)
     data object Chat : Screen("chat", 3, true)
@@ -135,6 +138,7 @@ sealed class Screen(
                 Explore.route -> Explore
                 Search.route -> Search
                 Trips.route -> Trips
+                UpcomingTrips.route -> UpcomingTrips
                 CreatePost.route -> CreatePost
                 Profile.route -> Profile
                 Chat.route -> Chat
@@ -521,17 +525,22 @@ fun NavGraph(
                 onNavigateToGroupDetail = { tripId, groupName ->
                     navController.navigate(Screen.GroupDetail.createRoute(tripId, groupName)) { launchSingleTop = true }
                 },
+                onNavigateToUpcomingTrips = {
+                    navController.navigate(Screen.UpcomingTrips.route) { launchSingleTop = true }
+                },
                 onNavigateToCreateGroup = {
                     navController.navigate(Screen.CreateGroup.route) { launchSingleTop = true }
                 }
             )
-//            GroupDiscoveryScreen(
-//                onNavigateToCreateGroup = { navController.navigate(Screen.CreateGroup.route) { launchSingleTop = true } },
-//                onNavigateToGroupDetail = { groupName ->
-//                    navController.navigate(Screen.GroupDetail.createRoute(groupName)) { launchSingleTop = true }
-//                }
-//            )
+        }
 
+        composable(Screen.UpcomingTrips.route) {
+            UpcomingTripsScreen(
+                onBack = { navController.popBackStack() },
+                onNavigateToGroupDetail = { tripId, groupName ->
+                    navController.navigate(Screen.GroupDetail.createRoute(tripId, groupName)) { launchSingleTop = true }
+                }
+            )
         }
         composable(Screen.CreatePost.route) {
             CreatePostScreen()
@@ -556,6 +565,7 @@ fun NavGraph(
                 return@composable
             }
             //^^^^ tu^^^^
+            val profileViewModel: ProfileViewModel = hiltViewModel()
             ProfileScreen(
                 onNavigateToEditProfile = { navController.navigate(Screen.EditProfile.route) { launchSingleTop = true } },
                 onNavigateToFollowers = { navController.navigate(Screen.FollowersFollowing.createRoute(0, null)) { launchSingleTop = true } },
@@ -584,7 +594,8 @@ fun NavGraph(
                         popUpTo(navController.graph.findStartDestination().id) { inclusive = false }
                         launchSingleTop = true
                     }
-                }
+                },
+                viewModel = profileViewModel
             )
         }
 //        composable(Screen.Notifications.route) {
@@ -619,9 +630,14 @@ fun NavGraph(
             )
         }
         composable(Screen.EditProfile.route) {
+            val profileBackStackEntry = remember(navController) {
+                navController.getBackStackEntry(Screen.Profile.route)
+            }
+            val profileViewModel: ProfileViewModel = hiltViewModel(profileBackStackEntry)
             EditProfileScreen(
                 onBack = { navController.popBackStack() },
-                onSaveSuccess = { navController.popBackStack() }
+                onSaveSuccess = { navController.popBackStack() },
+                viewModel = profileViewModel
             )
         }
         composable(

@@ -158,7 +158,7 @@ fun GroupDetailScreen(
                         Icon(Icons.Default.LocationOn, null, modifier = Modifier.size(16.dp), tint = Color.White.copy(alpha = 0.8f))
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = uiState.location.ifBlank { "Dashboard BE chưa có location" },
+                            text = uiState.location.ifBlank { "Đang tải điểm đến" },
                             fontSize = 14.sp,
                             color = Color.White.copy(alpha = 0.8f)
                         )
