@@ -227,17 +227,55 @@ fun EditProfileScreen(
             ) { uri: Uri? ->
                 if (uri != null) {
                     try {
-                        val bytes = context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
+                        val originalBytes = context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
                             ?: throw IllegalStateException("Không thể đọc ảnh đã chọn")
-                        val previewBitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+                        val originalBitmap = BitmapFactory.decodeByteArray(originalBytes, 0, originalBytes.size)
+                            ?: throw IllegalStateException("Không thể giải mã ảnh đã chọn")
+
+                        // Scale and compress for profile avatar
+                        val maxDimension = 500
+                        val width = originalBitmap.width
+                        val height = originalBitmap.height
+                        val (newWidth, newHeight) = if (width > height) {
+                            if (width > maxDimension) {
+                                Pair(maxDimension, (height * (maxDimension.toFloat() / width)).toInt())
+                            } else {
+                                Pair(width, height)
+                            }
+                        } else {
+                            if (height > maxDimension) {
+                                Pair((width * (maxDimension.toFloat() / height)).toInt(), maxDimension)
+                            } else {
+                                Pair(width, height)
+                            }
+                        }
+
+                        val scaledBitmap = if (newWidth != width || newHeight != height) {
+                            Bitmap.createScaledBitmap(originalBitmap, newWidth, newHeight, true)
+                        } else {
+                            originalBitmap
+                        }
+
+                        val outputStream = java.io.ByteArrayOutputStream()
+                        scaledBitmap.compress(Bitmap.CompressFormat.JPEG, 80, outputStream)
+                        val compressedBytes = outputStream.toByteArray()
+
+                        if (scaledBitmap != originalBitmap) {
+                            scaledBitmap.recycle()
+                        }
+                        originalBitmap.recycle()
+
+                        val previewBitmap = BitmapFactory.decodeByteArray(compressedBytes, 0, compressedBytes.size)
                             ?: throw IllegalStateException("Không thể tạo preview ảnh đã chọn")
+
                         pendingAvatar = PendingAvatar(
-                            bytes = bytes,
-                            mimeType = context.contentResolver.getType(uri) ?: "image/jpeg",
-                            fileName = uri.lastPathSegment
+                            bytes = compressedBytes,
+                            mimeType = "image/jpeg",
+                            fileName = (uri.lastPathSegment
                                 ?.substringAfterLast('/')
                                 ?.takeIf { it.isNotBlank() }
-                                ?: "avatar.jpg",
+                                ?: "avatar")
+                                .substringBeforeLast('.') + ".jpg",
                             previewBitmap = previewBitmap
                         )
                     } catch (e: Exception) {

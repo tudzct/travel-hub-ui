@@ -104,6 +104,10 @@ class ItineraryViewModel @Inject constructor(
 
     fun startAddingStop() {
         val state = _uiState.value
+        if (state.isCompleted) {
+            _uiState.update { it.copy(errorMessage = "Không thể chỉnh sửa chuyến đi đã hoàn thành") }
+            return
+        }
         if (state.dayOptions.isEmpty()) {
             _uiState.update { it.copy(errorMessage = "Không tải được danh sách ngày của trip") }
             return
@@ -271,12 +275,18 @@ class ItineraryViewModel @Inject constructor(
         if (tripId == null || tripId <= 0) return
         tripRepository.getTripDetail(tripId)
             .onSuccess { detail ->
+                val isCompleted = detail.tripInfo.status.equals("COMPLETED", ignoreCase = true) ||
+                        detail.tripInfo.status?.contains("hoàn thành", ignoreCase = true) == true ||
+                        isPastDate(detail.tripInfo.endDate)
                 val options = buildDayOptions(
                     startDateText = detail.tripInfo.startDate,
                     endDateText = detail.tripInfo.endDate
                 )
-                if (options.isNotEmpty()) {
-                    _uiState.update { it.copy(dayOptions = options) }
+                _uiState.update { state ->
+                    state.copy(
+                        isCompleted = isCompleted,
+                        dayOptions = options.ifEmpty { state.dayOptions }
+                    )
                 }
             }
     }
@@ -313,6 +323,11 @@ class ItineraryViewModel @Inject constructor(
                 )
             }
             .getOrNull()
+    }
+
+    private fun isPastDate(dateText: String?): Boolean {
+        val date = parseTripDate(dateText) ?: return false
+        return date.isBefore(LocalDate.now())
     }
 
     private fun launchMutation(block: suspend () -> Unit) {

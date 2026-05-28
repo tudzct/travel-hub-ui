@@ -23,7 +23,8 @@ data class ItineraryUiState(
     val editingEvent: ItineraryEvent? = null,
     val isCreatingEvent: Boolean = false,
     val isEditMode: Boolean = false,
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
+    val isCompleted: Boolean = false
 ) {
     val isLeader: Boolean
         get() = role == ItineraryUserRole.LEADER

@@ -53,6 +53,10 @@ class TripRepository @Inject constructor(
         return runCatching { tripApiService.joinTrip(request) }
     }
 
+    suspend fun getTripByInviteCode(code: String): Result<com.mobile.travelhub.data.model.TripInfoResponse> {
+        return runCatching { tripApiService.getTripByInviteCode(code) }
+    }
+
     suspend fun getInviteCode(tripId: Long): Result<TripInviteCodeResponse> {
         return runCatching { tripApiService.getInviteCode(tripId) }
     }

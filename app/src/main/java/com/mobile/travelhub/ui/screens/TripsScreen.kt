@@ -266,10 +266,8 @@ fun TripsScreen(
                     onJoinTrip = { joinCode, onDone ->
                         viewModel.joinTrip(joinCode) { success, message ->
                             Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
-                            if (success) {
-                                onDone()
-                                showAddTripSheet = false
-                            }
+                            onDone()
+                            showAddTripSheet = false
                         }
                     },
                     isJoining = state.isJoining,
@@ -372,6 +370,11 @@ fun ActiveJourneyCardV2(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Default.LocationOn, null, tint = Color.White.copy(alpha = 0.8f), modifier = Modifier.size(14.dp))
                     Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        trip?.location ?: "",
+                        color = Color.White.copy(alpha = 0.8f),
+                        fontSize = 13.sp
+                    )
                 }
             }
         }

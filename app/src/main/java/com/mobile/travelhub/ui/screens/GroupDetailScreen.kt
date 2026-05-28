@@ -7,6 +7,9 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.PagerState
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -22,6 +25,7 @@ import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Payments
 import androidx.compose.material.icons.filled.PersonAdd
+import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -29,12 +33,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 
 
 import androidx.compose.ui.graphics.vector.ImageVector
 
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.AnnotatedString
@@ -44,6 +51,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.mobile.travelhub.R
 import com.mobile.travelhub.ui.theme.*
@@ -71,12 +80,33 @@ fun GroupDetailScreen(
     val uiState by viewModel.uiState.collectAsState()
     var showInviteMenu by remember { mutableStateOf(false) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
+    var showLeaveConfirm by remember { mutableStateOf(false) }
     var showItinerarySheet by remember { mutableStateOf(false) }
     val isLeader = uiState.myRole.equals("LEADER", ignoreCase = true)
+    val isCompleted = uiState.isCompleted
     val pendingRequestCount = uiState.joinRequests.size
 
     LaunchedEffect(tripId, groupName) {
         viewModel.loadGroup(tripId = tripId, groupName = groupName)
+    }
+
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
+                viewModel.loadGroup(tripId = tripId, groupName = groupName)
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
+
+    LaunchedEffect(uiState.placeId) {
+        uiState.placeId?.let { placeId ->
+            viewModel.loadPlaceImages(placeId)
+        }
     }
 
     Box(
@@ -96,13 +126,55 @@ fun GroupDetailScreen(
                     .height(380.dp)
             ) {
                 val coverImageUrl = uiState.coverImageUrl?.takeIf { it.isNotBlank() }
-                if (coverImageUrl != null) {
-                    AsyncImage(
-                        model = coverImageUrl,
-                        contentDescription = null,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize()
+                val images = remember(coverImageUrl, uiState.placeImages) {
+                    val list = mutableListOf<String>()
+                    if (coverImageUrl != null) {
+                        list.add(coverImageUrl)
+                    }
+                    uiState.placeImages.forEach { img ->
+                        if (img != coverImageUrl && img.isNotBlank()) {
+                            list.add(img)
+                        }
+                    }
+                    list.distinct()
+                }
+
+                if (images.isNotEmpty()) {
+                    val topPagerState = rememberPagerState(
+                        initialPage = 0,
+                        pageCount = { images.size }
                     )
+                    HorizontalPager(
+                        state = topPagerState,
+                        modifier = Modifier.fillMaxSize()
+                    ) { page ->
+                        AsyncImage(
+                            model = images[page],
+                            contentDescription = null,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
+
+                    if (images.size > 1) {
+                        Row(
+                            Modifier
+                                .wrapContentSize()
+                                .align(Alignment.TopCenter)
+                                .padding(top = 60.dp),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            repeat(images.size) { iteration ->
+                                val color = if (topPagerState.currentPage == iteration) Color.White else Color.White.copy(alpha = 0.5f)
+                                Box(
+                                    modifier = Modifier
+                                        .size(6.dp)
+                                        .clip(CircleShape)
+                                        .background(color)
+                                )
+                            }
+                        }
+                    }
                 } else {
                     Image(
                         painter = painterResource(id = R.drawable.ic_launcher_background),
@@ -295,7 +367,10 @@ fun GroupDetailScreen(
                                 horizontalArrangement = Arrangement.spacedBy(16.dp)
                             ) {
                                 items(uiState.members) { member ->
-                                    MemberAvatarItem(member)
+                                    MemberAvatarItem(
+                                        member = member,
+                                        onClick = { onNavigateToProfile(member.userId) }
+                                    )
                                 }
                             }
                         }
@@ -351,11 +426,16 @@ fun GroupDetailScreen(
                         confirmButton = {
                             TextButton(
                                 onClick = {
-                                    viewModel.deleteGroup(tripId) { success, message ->
-                                        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
-                                        if (success) {
-                                            showDeleteConfirm = false
-                                            onBack()
+                                    if (!isLeader) {
+                                        Toast.makeText(context, "Bạn không có quyền xóa nhóm", Toast.LENGTH_SHORT).show()
+                                        showDeleteConfirm = false
+                                    } else {
+                                        viewModel.deleteGroup(tripId) { success, message ->
+                                            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                                            if (success) {
+                                                showDeleteConfirm = false
+                                                onBack()
+                                            }
                                         }
                                     }
                                 }
@@ -369,6 +449,30 @@ fun GroupDetailScreen(
                             ) {
                                 Text(text = "Hủy")
                             }
+                        }
+                    )
+                }
+
+                if (showLeaveConfirm) {
+                    AlertDialog(
+                        onDismissRequest = { showLeaveConfirm = false },
+                        title = { Text(text = "Rời nhóm") },
+                        text = { Text(text = "Bạn có chắc muốn rời nhóm này không?") },
+                        confirmButton = {
+                            TextButton(
+                                onClick = {
+                                    viewModel.leaveGroup { success, message ->
+                                        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                                        if (success) {
+                                            showLeaveConfirm = false
+                                            onBack()
+                                        }
+                                    }
+                                }
+                            ) { Text(text = "Rời", color = SunsetOrange) }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { showLeaveConfirm = false }) { Text(text = "Hủy") }
                         }
                     )
                 }
@@ -398,7 +502,9 @@ fun GroupDetailScreen(
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Row(
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .graphicsLayer { alpha = if (isCompleted) 0.38f else 1.0f },
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
@@ -420,7 +526,7 @@ fun GroupDetailScreen(
                                         showInviteMenu = false
                                     }
                                 },
-                                enabled = inviteCode != null && !uiState.isInviteCodeLoading
+                                enabled = inviteCode != null && !uiState.isInviteCodeLoading && !isCompleted
                             ) {
                                 Icon(Icons.Default.ContentCopy, contentDescription = "Copy mã tham gia")
                             }
@@ -488,14 +594,31 @@ fun GroupDetailScreen(
                             HorizontalDivider(color = SurfaceContainerLow)
                         }
 
-                        DropdownMenuItem(
-                            text = { Text("Xóa nhóm", color = SunsetOrange) },
-                            leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null, tint = SunsetOrange) },
-                            onClick = {
-                                showInviteMenu = false
-                                showDeleteConfirm = true
-                            }
-                        )
+                        // Show "Rời nhóm" for members (not leader, not non-member/pending)
+                        val role = uiState.myRole.orEmpty().uppercase()
+                        val canLeave = !isLeader && role.isNotBlank() && role != "NON_MEMBER" && role != "PENDING"
+                        if (canLeave) {
+                            DropdownMenuItem(
+                                text = { Text("Rời nhóm", color = SunsetOrange) },
+                                leadingIcon = { Icon(Icons.Default.ExitToApp, contentDescription = null, tint = SunsetOrange) },
+                                onClick = {
+                                    showInviteMenu = false
+                                    showLeaveConfirm = true
+                                }
+                            )
+                        }
+
+                        if (isLeader) {
+                            DropdownMenuItem(
+                                text = { Text("Xóa nhóm", color = if (isCompleted) Color.Gray.copy(alpha = 0.5f) else SunsetOrange) },
+                                leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null, tint = if (isCompleted) Color.Gray.copy(alpha = 0.5f) else SunsetOrange) },
+                                enabled = !isCompleted,
+                                onClick = {
+                                    showInviteMenu = false
+                                    showDeleteConfirm = true
+                                }
+                            )
+                        }
                     }
                 }
             }
@@ -669,9 +792,14 @@ fun JoinRequestActionItem(
 }
 
 @Composable
-fun MemberAvatarItem(member: com.mobile.travelhub.viewmodels.GroupMemberUiModel) {
+fun MemberAvatarItem(
+    member: com.mobile.travelhub.viewmodels.GroupMemberUiModel,
+    onClick: () -> Unit = {}
+) {
     Column(
-        modifier = Modifier.width(72.dp),
+        modifier = Modifier
+            .width(72.dp)
+            .clickable { onClick() },
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Box(

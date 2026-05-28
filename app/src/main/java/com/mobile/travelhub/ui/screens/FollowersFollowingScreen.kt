@@ -160,7 +160,7 @@ fun FollowersFollowingScreen(
                                 UserListItem(
                                     name = user.name,
                                     handle = user.username,
-                                    avatarRes = R.drawable.ic_launcher_foreground,
+                                    avatarUrl = user.avatarUrl,
                                     isFollowing = user.isFollowing,
                                     showFollowButton = user.id != currentUserId,
                                     onClick = {

@@ -14,6 +14,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 data class TripsUiState(
     val isLoading: Boolean = true,
@@ -94,23 +97,51 @@ class TripsViewModel @Inject constructor(
 
         viewModelScope.launch {
             _uiState.update { it.copy(isJoining = true, errorMessage = null) }
-            tripRepository.joinTrip(com.mobile.travelhub.data.model.JoinTripRequest(inviteCode = normalizedCode))
-                .onSuccess { response ->
-                    _uiState.update { it.copy(isJoining = false) }
-                    refreshDashboard()
-                    onResult(true, "Đã gửi yêu cầu tham gia nhóm")
+            // First, lookup trip by invite code without creating join request
+            tripRepository.getTripByInviteCode(normalizedCode)
+                .onSuccess { tripInfo ->
+                    if (isPastDate(tripInfo.endDate)) {
+                        _uiState.update { it.copy(isJoining = false) }
+                        onResult(false, "Chuyến đi đã kết thúc")
+                        return@onSuccess
+                    }
+
+                    // Trip is valid and not ended -> call joinTrip to send request
+                    tripRepository.joinTrip(com.mobile.travelhub.data.model.JoinTripRequest(inviteCode = normalizedCode))
+                        .onSuccess {
+                            _uiState.update { it.copy(isJoining = false) }
+                            refreshDashboard()
+                            onResult(true, "Đã gửi yêu cầu tham gia nhóm")
+                        }
+                        .onFailure { throwable ->
+                            val message = joinTripErrorMessage(throwable)
+                            _uiState.update {
+                                it.copy(isJoining = false, errorMessage = null)
+                            }
+                            onResult(false, message)
+                        }
                 }
                 .onFailure { throwable ->
+                    // If lookup fails, surface a friendly error (don't proceed to create join request)
+                    _uiState.update { it.copy(isJoining = false) }
                     val message = joinTripErrorMessage(throwable)
-                    _uiState.update {
-                        it.copy(
-                            isJoining = false,
-                            errorMessage = message
-                        )
-                    }
                     onResult(false, message)
                 }
         }
+    }
+
+    private fun isPastDate(dateText: String?): Boolean {
+        if (dateText.isNullOrBlank()) return false
+        val normalized = dateText.substringBefore("T")
+        val date = runCatching { LocalDate.parse(normalized) }
+            .recoverCatching {
+                LocalDate.parse(
+                    normalized,
+                    DateTimeFormatter.ofPattern("dd/MM/yyyy", Locale.getDefault())
+                )
+            }
+            .getOrNull() ?: return false
+        return date.isBefore(LocalDate.now())
     }
 
     private fun UpcomingTripResponse.toUiModel(): UpcomingTripUiModel {
@@ -147,6 +178,11 @@ class TripsViewModel @Inject constructor(
     }
 
     private fun joinTripErrorMessage(throwable: Throwable): String {
+        val raw = throwable.message ?: ""
+        if (raw.contains("kết thúc", ignoreCase = true) || raw.contains("đã hoàn thành", ignoreCase = true) || raw.contains("ended", ignoreCase = true)) {
+            return "Chuyến đi đã kết thúc"
+        }
+
         return when (throwable.httpStatusCode()) {
             400 -> "Mã chuyến đi không hợp lệ"
             404 -> "Không tìm thấy chuyến đi"

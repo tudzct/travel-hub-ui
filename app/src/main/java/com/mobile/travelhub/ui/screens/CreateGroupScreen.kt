@@ -208,7 +208,7 @@ fun CreateGroupScreen(
                     }
                     else -> ""
                 },
-                placeholder = "dd/mm/yyyy - dd/mm/yyyy",
+                placeholder = "",
                 onClick = {
                     focusManager.clearFocus()
                     dateSelectionStep = TripDateSelectionStep.START
@@ -216,20 +216,7 @@ fun CreateGroupScreen(
             )
 
             EditProfileField(
-                label = "Ngân sách tối thiểu",
-                value = uiState.budgetMin,
-                onValueChange = viewModel::updateBudgetMin,
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Decimal,
-                    imeAction = ImeAction.Next
-                ),
-                keyboardActions = KeyboardActions(
-                    onNext = { focusManager.moveFocus(FocusDirection.Down) }
-                )
-            )
-
-            EditProfileField(
-                label = "Ngân sách tối đa",
+                label = "Ngân sách dự kiến",
                 value = uiState.budgetMax,
                 onValueChange = viewModel::updateBudgetMax,
                 keyboardOptions = KeyboardOptions(
@@ -271,15 +258,15 @@ fun CreateGroupScreen(
         val currentStep by rememberUpdatedState(selectedStep)
         val currentStartDate by rememberUpdatedState(startDateObj)
 
-        val initialDate = when (selectedStep) {
-            TripDateSelectionStep.START -> startDateObj ?: today
-            TripDateSelectionStep.END -> startDateObj?.plusDays(1) ?: today
-            null -> today
+        val initialMillis = when (selectedStep) {
+            TripDateSelectionStep.START -> {
+                startDateObj?.atStartOfDay(ZoneOffset.UTC)?.toInstant()?.toEpochMilli() ?: System.currentTimeMillis()
+            }
+            TripDateSelectionStep.END -> {
+                startDateObj?.atStartOfDay(ZoneOffset.UTC)?.toInstant()?.toEpochMilli() ?: System.currentTimeMillis()
+            }
+            null -> System.currentTimeMillis()
         }
-        val initialMillis = initialDate
-            .atStartOfDay(ZoneOffset.UTC)
-            .toInstant()
-            .toEpochMilli()
 
         val selectableDates = remember {
             object : SelectableDates {
@@ -304,24 +291,15 @@ fun CreateGroupScreen(
             }
         }
 
-        val datePickerState = rememberDatePickerState(
-            initialSelectedDateMillis = initialMillis,
-            yearRange = today.year..today.year + 1,
-            selectableDates = selectableDates
-        )
+        var selectedDateMillisState by remember { mutableStateOf<Long?>(null) }
         var datePickerErrorMessage by remember { mutableStateOf<String?>(null) }
-
-        LaunchedEffect(selectedStep, uiState.startDate, uiState.endDate) {
-            datePickerErrorMessage = null
-            datePickerState.selectedDateMillis = initialMillis
-        }
 
         DatePickerDialog(
             onDismissRequest = { dateSelectionStep = null },
             confirmButton = {
                 TextButton(
                     onClick = {
-                        val selectedMillis = datePickerState.selectedDateMillis ?: return@TextButton
+                        val selectedMillis = selectedDateMillisState ?: return@TextButton
                         val selectedDate = Instant.ofEpochMilli(selectedMillis)
                             .atZone(ZoneOffset.UTC)
                             .toLocalDate()
@@ -329,7 +307,7 @@ fun CreateGroupScreen(
                         val isValid = when (currentStep) {
                             TripDateSelectionStep.START -> viewModel.canSelectStartDate(selectedDate)
                             TripDateSelectionStep.END -> {
-                                val startDate = currentStartDate
+                                val startDate = startDateObj
                                 startDate != null && viewModel.canSelectEndDate(startDate, selectedDate)
                             }
                             null -> false
@@ -372,7 +350,58 @@ fun CreateGroupScreen(
             }
         ) {
             Column {
-                DatePicker(state = datePickerState)
+                // Hoisted Custom Header with absolute layout/spacing control
+                Column(
+                    modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 20.dp, bottom = 12.dp)
+                ) {
+                    Text(
+                        text = if (currentStep == TripDateSelectionStep.START) "Chọn ngày bắt đầu" else "Chọn ngày kết thúc",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    val formattedSelectedDate = selectedDateMillisState?.let {
+                        Instant.ofEpochMilli(it).atZone(ZoneOffset.UTC).toLocalDate().format(displayDateFormatter)
+                    } ?: ""
+                    Text(
+                        text = if (formattedSelectedDate.isNotBlank()) formattedSelectedDate else "Chọn ngày",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+
+                androidx.compose.material3.HorizontalDivider(
+                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f),
+                    thickness = 1.dp
+                )
+
+                key(selectedStep, startDateObj) {
+                    val datePickerState = rememberDatePickerState(
+                        initialSelectedDateMillis = initialMillis,
+                        yearRange = today.year..today.year + 1,
+                        selectableDates = selectableDates
+                    )
+
+                    LaunchedEffect(datePickerState.selectedDateMillis) {
+                        selectedDateMillisState = datePickerState.selectedDateMillis
+                    }
+
+                    DatePicker(
+                        state = datePickerState,
+                        title = null,
+                        headline = null,
+                        showModeToggle = false,
+                        colors = DatePickerDefaults.colors(
+                            todayDateBorderColor = Color.Transparent,
+                            todayContentColor = if (currentStep == TripDateSelectionStep.START) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                            }
+                        )
+                    )
+                }
                 if (datePickerErrorMessage != null) {
                     Text(
                         text = datePickerErrorMessage ?: "",
@@ -384,8 +413,10 @@ fun CreateGroupScreen(
             }
         }
     }
+
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun TripDateRangeFieldInput(
     label: String,

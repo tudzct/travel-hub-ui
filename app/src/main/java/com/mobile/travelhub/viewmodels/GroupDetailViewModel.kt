@@ -3,6 +3,7 @@ package com.mobile.travelhub.viewmodels
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mobile.travelhub.data.TripRepository
+import com.mobile.travelhub.data.PlaceRepository
 import com.mobile.travelhub.data.model.*
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -11,6 +12,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 data class GroupDayUiModel(
     val dayIndex: Int,
@@ -42,6 +46,8 @@ data class GroupDetailUiState(
     val startDate: String = "",
     val endDate: String = "",
     val coverImageUrl: String? = null,
+    val placeId: Long? = null,
+    val placeImages: List<String> = emptyList(),
     val statusLabel: String = "",
     val days: List<GroupDayUiModel> = emptyList(),
     val totalStops: Int = 0,
@@ -54,12 +60,14 @@ data class GroupDetailUiState(
     val joinRequests: List<GroupJoinRequestUiModel> = emptyList(),
     val isJoinRequestsLoading: Boolean = false,
     val members: List<GroupMemberUiModel> = emptyList(),
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
+    val isCompleted: Boolean = false
 )
 
 @HiltViewModel
 class GroupDetailViewModel @Inject constructor(
-    private val tripRepository: TripRepository
+    private val tripRepository: TripRepository,
+    private val placeRepository: PlaceRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(GroupDetailUiState())
@@ -81,13 +89,18 @@ class GroupDetailViewModel @Inject constructor(
                 .onSuccess { dashboard ->
                     val snapshot = dashboard.findTripById(tripId)
                     if (snapshot != null) {
+                        val isPastTrip = dashboard.pastTrips.any { it.tripId == tripId } ||
+                                snapshot.statusLabel.contains("hoàn thành", ignoreCase = true) ||
+                                isPastDate(snapshot.endDate)
                         _uiState.update { state ->
                             state.copy(
                                 location = snapshot.location,
                                 startDate = snapshot.startDate.orEmpty(),
                                 endDate = snapshot.endDate.orEmpty(),
                                 coverImageUrl = snapshot.coverImageUrl,
-                                statusLabel = snapshot.statusLabel
+                                placeId = snapshot.placeId,
+                                statusLabel = if (isPastTrip) "Đã hoàn thành" else snapshot.statusLabel,
+                                isCompleted = isPastTrip
                             )
                         }
                     }
@@ -245,6 +258,20 @@ class GroupDetailViewModel @Inject constructor(
         }
     }
 
+    fun loadPlaceImages(placeId: Long?) {
+        if (placeId == null) return
+        viewModelScope.launch {
+            runCatching { placeRepository.getPlaceDetail(placeId) }
+                .onSuccess { detail ->
+                    val imgs = detail.images.map { it.imageUrl }
+                    _uiState.update { it.copy(placeImages = imgs) }
+                }
+                .onFailure {
+                    _uiState.update { it.copy(placeImages = emptyList()) }
+                }
+        }
+    }
+
     fun leaveGroup(onDone: (Boolean, String) -> Unit) {
         val tripId = uiState.value.tripId
         if (tripId == -1L) return
@@ -287,7 +314,8 @@ class GroupDetailViewModel @Inject constructor(
             coverImageUrl = coverImageUrl,
             startDate = startDate,
             endDate = endDate,
-            statusLabel = "Đang diễn ra"
+            statusLabel = "Đang diễn ra",
+            placeId = null
         )
     }
 
@@ -299,7 +327,8 @@ class GroupDetailViewModel @Inject constructor(
             coverImageUrl = coverImageUrl,
             startDate = null,
             endDate = null,
-            statusLabel = "Sắp khởi hành · Còn $daysLeft ngày"
+            statusLabel = "Sắp khởi hành · Còn $daysLeft ngày",
+            placeId = null
         )
     }
 
@@ -311,18 +340,24 @@ class GroupDetailViewModel @Inject constructor(
             coverImageUrl = imageUrl,
             startDate = dateString,
             endDate = dateString,
-            statusLabel = "Đã hoàn thành"
+            statusLabel = "Đã hoàn thành",
+            placeId = null
         )
     }
 
     private fun GroupDetailUiState.mergeTripDetail(detail: TripDetailResponse): GroupDetailUiState {
-        return copy(
+         val completed = this.isCompleted ||
+                 detail.tripInfo.status.equals("COMPLETED", ignoreCase = true) ||
+                 detail.tripInfo.status?.contains("hoàn thành", ignoreCase = true) == true ||
+                 isPastDate(detail.tripInfo.endDate)
+         return copy(
             groupName = detail.tripInfo.name,
             location = detail.tripInfo.location,
             startDate = detail.tripInfo.startDate.orEmpty(),
             endDate = detail.tripInfo.endDate.orEmpty(),
             coverImageUrl = detail.tripInfo.coverImageUrl,
-            statusLabel = detail.tripInfo.status ?: statusLabel,
+            placeId = detail.tripInfo.placeId,
+            statusLabel = if (completed) "Đã hoàn thành" else detail.tripInfo.status ?: statusLabel,
             myRole = detail.myRole,
             inviteCode = detail.tripInfo.inviteCode?.takeIf { it.isNotBlank() } ?: inviteCode,
             members = detail.members.map { member ->
@@ -333,8 +368,23 @@ class GroupDetailViewModel @Inject constructor(
                     role = member.role
                 )
             },
-            memberInfoLabel = "${detail.members.size} thành viên"
+            memberInfoLabel = "${detail.members.size} thành viên",
+            isCompleted = completed
         )
+    }
+
+    private fun isPastDate(dateText: String?): Boolean {
+         if (dateText.isNullOrBlank()) return false
+         val normalized = dateText.substringBefore("T")
+         val date = runCatching { LocalDate.parse(normalized) }
+             .recoverCatching {
+                 LocalDate.parse(
+                     normalized,
+                     DateTimeFormatter.ofPattern("dd/MM/yyyy", Locale.getDefault())
+                 )
+             }
+             .getOrNull() ?: return false
+         return date.isBefore(LocalDate.now())
     }
 
     private data class DashboardTripSnapshot(
@@ -344,6 +394,7 @@ class GroupDetailViewModel @Inject constructor(
         val coverImageUrl: String?,
         val startDate: String?,
         val endDate: String?,
-        val statusLabel: String
+        val statusLabel: String,
+        val placeId: Long? = null
     )
 }

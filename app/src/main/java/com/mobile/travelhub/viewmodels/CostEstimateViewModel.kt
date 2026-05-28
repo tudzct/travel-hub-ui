@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.mobile.travelhub.data.AuthRepository
 import com.mobile.travelhub.data.TripRepository
 import com.mobile.travelhub.data.model.CreateTripExpenseRequest
+import com.mobile.travelhub.data.model.UpdateTripExpenseRequest
 import com.mobile.travelhub.data.model.TripExpenseContributionResponse
 import com.mobile.travelhub.data.model.TripExpenseTransactionResponse
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -14,6 +15,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 data class CostEstimateUiState(
     val isLoading: Boolean = true,
@@ -26,7 +30,8 @@ data class CostEstimateUiState(
     val myBalance: Double = 0.0,
     val contributions: List<TripExpenseContributionUiModel> = emptyList(),
     val transactions: List<ExpenseTransactionUiModel> = emptyList(),
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
+    val isCompleted: Boolean = false
 )
 
 data class TripExpenseContributionUiModel(
@@ -81,11 +86,15 @@ class CostEstimateViewModel @Inject constructor(
 
             tripRepository.getTripDetail(tripId)
                 .onSuccess { detail ->
+                    val isCompleted = detail.tripInfo.status.equals("COMPLETED", ignoreCase = true) ||
+                            detail.tripInfo.status?.contains("hoàn thành", ignoreCase = true) == true ||
+                            isPastDate(detail.tripInfo.endDate)
                     _uiState.update { state ->
                         state.copy(
                             budgetMin = detail.tripInfo.budgetMin,
                             budgetMax = detail.tripInfo.budgetMax,
-                            groupName = detail.tripInfo.name.ifBlank { state.groupName }
+                            groupName = detail.tripInfo.name.ifBlank { state.groupName },
+                            isCompleted = isCompleted
                         )
                     }
                 }
@@ -124,6 +133,10 @@ class CostEstimateViewModel @Inject constructor(
             _uiState.update { it.copy(errorMessage = "Không xác định được chuyến đi") }
             return
         }
+        if (state.isCompleted) {
+            _uiState.update { it.copy(errorMessage = "Không thể thêm chi phí cho chuyến đi đã hoàn thành") }
+            return
+        }
         if (title.trim().isBlank() || parsedAmount == null || parsedAmount <= 0.0) {
             _uiState.update { it.copy(errorMessage = "Vui lòng nhập tên và số tiền hợp lệ") }
             return
@@ -157,6 +170,85 @@ class CostEstimateViewModel @Inject constructor(
         }
     }
 
+    fun editExpense(expenseId: Long, title: String, amountText: String, category: String, paidByUserId: Long) {
+        val state = _uiState.value
+        val tripId = state.tripId
+        val groupName = state.groupName
+        val parsedAmount = amountText.trim().toDoubleOrNull()
+
+        if (tripId <= 0L) {
+            _uiState.update { it.copy(errorMessage = "Không xác định được chuyến đi") }
+            return
+        }
+        if (state.isCompleted) {
+            _uiState.update { it.copy(errorMessage = "Không thể chỉnh sửa chi phí cho chuyến đi đã hoàn thành") }
+            return
+        }
+        if (title.trim().isBlank() || parsedAmount == null || parsedAmount <= 0.0) {
+            _uiState.update { it.copy(errorMessage = "Vui lòng nhập tên và số tiền hợp lệ") }
+            return
+        }
+        if (paidByUserId <= 0L) {
+            _uiState.update { it.copy(errorMessage = "Không xác định được người thanh toán") }
+            return
+        }
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(isAddingExpense = true, errorMessage = null) }
+            tripRepository.updateTripExpense(
+                tripId = tripId,
+                expenseId = expenseId,
+                request = UpdateTripExpenseRequest(
+                    title = title.trim(),
+                    amount = parsedAmount,
+                    category = category,
+                    paidByUserId = paidByUserId
+                )
+            ).onSuccess {
+                _uiState.update { it.copy(isAddingExpense = false) }
+                loadExpenseSummary(tripId, groupName)
+            }.onFailure { throwable ->
+                _uiState.update {
+                    it.copy(
+                        isAddingExpense = false,
+                        errorMessage = throwable.message ?: "Không cập nhật được chi phí"
+                    )
+                }
+            }
+        }
+    }
+
+    fun deleteExpense(expenseId: Long) {
+        val state = _uiState.value
+        val tripId = state.tripId
+        val groupName = state.groupName
+
+        if (tripId <= 0L) {
+            _uiState.update { it.copy(errorMessage = "Không xác định được chuyến đi") }
+            return
+        }
+        if (state.isCompleted) {
+            _uiState.update { it.copy(errorMessage = "Không thể xóa chi phí cho chuyến đi đã hoàn thành") }
+            return
+        }
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+            tripRepository.deleteTripExpense(tripId, expenseId)
+                .onSuccess {
+                    loadExpenseSummary(tripId, groupName)
+                }
+                .onFailure { throwable ->
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            errorMessage = throwable.message ?: "Không xóa được chi phí"
+                        )
+                    }
+                }
+        }
+    }
+
     private fun TripExpenseContributionResponse.toUiModel(): TripExpenseContributionUiModel {
         return TripExpenseContributionUiModel(
             userId = userId ?: -1L,
@@ -165,6 +257,20 @@ class CostEstimateViewModel @Inject constructor(
             amountPaid = amountPaid ?: 0.0,
             percentage = percentage ?: 0.0
         )
+    }
+
+    private fun isPastDate(dateText: String?): Boolean {
+        if (dateText.isNullOrBlank()) return false
+        val normalized = dateText.substringBefore("T")
+        val date = runCatching { LocalDate.parse(normalized) }
+            .recoverCatching {
+                LocalDate.parse(
+                    normalized,
+                    DateTimeFormatter.ofPattern("dd/MM/yyyy", Locale.getDefault())
+                )
+            }
+            .getOrNull() ?: return false
+        return date.isBefore(LocalDate.now())
     }
 
     private fun TripExpenseTransactionResponse.toUiModel(): ExpenseTransactionUiModel {
