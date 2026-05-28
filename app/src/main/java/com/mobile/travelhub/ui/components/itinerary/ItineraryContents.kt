@@ -37,6 +37,7 @@ fun ItineraryOverviewContent(
     state: ItineraryUiState,
     paddingValues: PaddingValues,
     onOpenDayDetail: (Int) -> Unit,
+    onEditEvent: (ItineraryEvent) -> Unit,
     onToggleChange: (String) -> Unit,
     onApplySelected: () -> Unit,
     onDiscardProposal: () -> Unit
@@ -84,7 +85,8 @@ fun ItineraryOverviewContent(
                     day = day,
                     index = index,
                     isLast = index == state.days.lastIndex,
-                    onOpenDayDetail = { onOpenDayDetail(day.dayIndex) }
+                    onOpenDayDetail = { onOpenDayDetail(day.dayIndex) },
+                    onEditEvent = onEditEvent
                 )
             }
 
@@ -302,7 +304,8 @@ private fun ItineraryTimelineDay(
     day: ItineraryDay,
     index: Int,
     isLast: Boolean,
-    onOpenDayDetail: () -> Unit
+    onOpenDayDetail: () -> Unit,
+    onEditEvent: (ItineraryEvent) -> Unit
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -377,7 +380,8 @@ private fun ItineraryTimelineDay(
                         title = event.title.ifBlank { event.placeName.ifBlank { "Địa điểm ${eventIndex + 1}" } },
                         timeRange = "${event.startTime} - ${event.endTime}",
                         badge = eventIndex + 1,
-                        onClick = onOpenDayDetail
+                        onClick = onOpenDayDetail,
+                        onLongClick = { onEditEvent(event) }
                     )
                 }
             }
@@ -386,12 +390,16 @@ private fun ItineraryTimelineDay(
 }
 
 @Composable
+@OptIn(ExperimentalFoundationApi::class)
 private fun ItineraryTimelineEventCard(
     title: String,
     timeRange: String,
     badge: Int?,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onLongClick: (() -> Unit)? = null
 ) {
+    val hapticFeedback = LocalHapticFeedback.current
+
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
@@ -435,7 +443,15 @@ private fun ItineraryTimelineEventCard(
         Surface(
             modifier = Modifier
                 .weight(1f)
-                .clickable(onClick = onClick),
+                .combinedClickable(
+                    onClick = onClick,
+                    onLongClick = onLongClick?.let { edit ->
+                        {
+                            hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                            edit()
+                        }
+                    }
+                ),
             shape = RoundedCornerShape(24.dp),
             color = SurfaceContainerLowest,
             shadowElevation = 6.dp

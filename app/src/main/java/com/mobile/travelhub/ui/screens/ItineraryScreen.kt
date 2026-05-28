@@ -162,6 +162,7 @@ fun ItineraryScreen(
             state = state,
             paddingValues = paddingValues,
             onOpenDayDetail = onOpenDayDetail,
+            onEditEvent = viewModel::startEditing,
             onToggleChange = viewModel::toggleChangeSelection,
             onApplySelected = viewModel::applySelectedChanges,
             onDiscardProposal = viewModel::discardPendingProposal
@@ -290,6 +291,7 @@ fun ItineraryPopupSheet(
             onAddItinerary = viewModel::startAddingStop,
             onOpenChat = viewModel::openChat,
             onOpenDayDetail = viewModel::selectDay,
+            onEditEvent = viewModel::startEditing,
             onToggleChange = viewModel::toggleChangeSelection,
             onApplySelected = viewModel::applySelectedChanges,
             onDiscardProposal = viewModel::discardPendingProposal,
@@ -323,6 +325,7 @@ private fun ItineraryPopupContent(
     onAddItinerary: () -> Unit,
     onOpenChat: () -> Unit,
     onOpenDayDetail: (Int) -> Unit,
+    onEditEvent: (ItineraryEvent) -> Unit,
     onToggleChange: (String) -> Unit,
     onApplySelected: () -> Unit,
     onDiscardProposal: () -> Unit,
@@ -367,6 +370,7 @@ private fun ItineraryPopupContent(
             state = state,
             paddingValues = paddingValues,
             onOpenDayDetail = onOpenDayDetail,
+            onEditEvent = onEditEvent,
             onToggleChange = onToggleChange,
             onApplySelected = onApplySelected,
             onDiscardProposal = onDiscardProposal
@@ -387,6 +391,7 @@ private fun ItineraryPopupPreview() {
                 onAddItinerary = {},
                 onOpenChat = {},
                 onOpenDayDetail = {},
+                onEditEvent = {},
                 onToggleChange = {},
                 onApplySelected = {},
                 onDiscardProposal = {},
@@ -499,7 +504,6 @@ private fun GeminiItineraryFab(onClick: () -> Unit) {
         }
     }
 }
-
 
 
 
