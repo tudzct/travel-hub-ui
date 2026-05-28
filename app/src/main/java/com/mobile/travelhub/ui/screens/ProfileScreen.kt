@@ -1,5 +1,7 @@
 package com.mobile.travelhub.ui.screens
 
+import android.net.Uri
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -37,9 +39,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
@@ -56,9 +58,14 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.clickable
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
+import coil.compose.AsyncImage
 
 import com.mobile.travelhub.R
 import com.mobile.travelhub.data.model.UserProfileResponse
@@ -91,6 +98,8 @@ fun ProfileScreen(
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
     val isViewingOwnProfile = viewingUserId == null
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
 
     val profileState by if (isViewingOwnProfile) {
         viewModel.profileState.collectAsState()
@@ -118,6 +127,39 @@ fun ProfileScreen(
             onRequireLogin?.invoke()
         }
     }
+
+    val onAvatarSelected: (Uri) -> Unit = onAvatarSelected@{ uri ->
+        if (!isViewingOwnProfile) return@onAvatarSelected
+        val currentProfile = (profileState as? UiState.Success)?.data ?: return@onAvatarSelected
+        coroutineScope.launch {
+            try {
+                val bytes = context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
+                    ?: throw IllegalStateException("Không thể đọc ảnh đã chọn")
+                val mimeType = context.contentResolver.getType(uri) ?: "image/jpeg"
+                val fileName = uri.lastPathSegment
+                    ?.substringAfterLast('/')
+                    ?.takeIf { it.isNotBlank() }
+                    ?: "avatar.jpg"
+                val uploadedUrl = viewModel.uploadAvatar(
+                    imageBytes = bytes,
+                    mimeType = mimeType,
+                    fileName = fileName
+                )
+                viewModel.updateProfile(
+                    name = currentProfile.name,
+                    username = currentProfile.username,
+                    bio = currentProfile.bio.orEmpty(),
+                    dob = currentProfile.dateOfBirth.orEmpty(),
+                    gender = currentProfile.gender.orEmpty(),
+                    location = currentProfile.location.orEmpty(),
+                    avatarUrl = uploadedUrl
+                )
+            } catch (e: Exception) {
+                Toast.makeText(context, "Lỗi upload ảnh: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
     ProfileScreenContent(
         isViewingOwnProfile = isViewingOwnProfile,
         profileState = profileState,
@@ -162,7 +204,8 @@ fun ProfileScreen(
         onCommentClick = viewModel::onCommentClicked,
         onCommentDismissed = viewModel::onCommentDismissed,
         onCommentInputChanged = viewModel::onCommentInputChanged,
-        onCommentSubmit = viewModel::submitComment
+        onCommentSubmit = viewModel::submitComment,
+        onAvatarSelected = onAvatarSelected
     )
 }
 
@@ -193,7 +236,8 @@ private fun ProfileScreenContent(
     onCommentClick: (Long) -> Unit,
     onCommentDismissed: () -> Unit,
     onCommentInputChanged: (String) -> Unit,
-    onCommentSubmit: () -> Unit
+    onCommentSubmit: () -> Unit,
+    onAvatarSelected: (Uri) -> Unit
 ) {
     val profileTitle = (profileState as? UiState.Success)
         ?.data
@@ -203,6 +247,11 @@ private fun ProfileScreenContent(
     val scrollState = rememberScrollState()
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val coroutineScope = rememberCoroutineScope()
+    val avatarPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia()
+    ) { uri: Uri? ->
+        uri?.let(onAvatarSelected)
+    }
     var showNotifications by remember { mutableStateOf(false) }
     var hideDrawerContentForNavigation by remember { mutableStateOf(false) }
 
@@ -342,6 +391,7 @@ private fun ProfileScreenContent(
                             is UiState.Success -> {
                                 val profile = state.data
                                 val displayName = profile.name.ifBlank { profile.username }
+                                val avatarUrl = profile.avatarUrl?.takeIf { it.isNotBlank() }
 
                                 Column(
                                     modifier = Modifier
@@ -356,31 +406,52 @@ private fun ProfileScreenContent(
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         // Avatar
-                                        Box(modifier = Modifier.size(80.dp)) {
-                                            Image(
-                                                painter = painterResource(id = R.drawable.female_avatar_maker),
-                                                contentDescription = "Avatar",
-                                                modifier = Modifier
-                                                    .fillMaxSize()
-                                                    .clip(CircleShape)
-                                                    .border(2.dp, Color(0xFFE0E0E0), CircleShape),
-                                                contentScale = ContentScale.Crop
-                                            )
-                                            // + icon
-                                            Box(
-                                                modifier = Modifier
-                                                    .align(Alignment.BottomEnd)
-                                                    .offset(x = (-4).dp, y = (-4).dp)
-                                                    .size(24.dp)
-                                                    .background(Color.White, CircleShape)
-                                                    .padding(2.dp)
-                                            ) {
-                                                Icon(
-                                                    imageVector = Icons.Default.AddCircle,
-                                                    contentDescription = "Add Story",
-                                                    tint = PrimaryBlue,
-                                                    modifier = Modifier.fillMaxSize()
+                                        Box(
+                                            modifier = Modifier
+                                                .size(80.dp)
+                                        ) {
+                                            if (avatarUrl != null) {
+                                                AsyncImage(
+                                                    model = avatarUrl,
+                                                    contentDescription = "Avatar",
+                                                    modifier = Modifier
+                                                        .fillMaxSize()
+                                                        .clip(CircleShape)
+                                                        .border(2.dp, Color(0xFFE0E0E0), CircleShape),
+                                                    contentScale = ContentScale.Crop
                                                 )
+                                            } else {
+                                                Image(
+                                                    painter = painterResource(id = R.drawable.female_avatar_maker),
+                                                    contentDescription = "Avatar",
+                                                    modifier = Modifier
+                                                        .fillMaxSize()
+                                                        .clip(CircleShape)
+                                                        .border(2.dp, Color(0xFFE0E0E0), CircleShape),
+                                                    contentScale = ContentScale.Crop
+                                                )
+                                            }
+                                            if (isViewingOwnProfile) {
+                                                Box(
+                                                    modifier = Modifier
+                                                        .align(Alignment.BottomEnd)
+                                                        .offset(x = (-4).dp, y = (-4).dp)
+                                                        .size(24.dp)
+                                                        .background(Color.White, CircleShape)
+                                                        .clickable {
+                                                            avatarPickerLauncher.launch(
+                                                                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                                                            )
+                                                        }
+                                                        .padding(2.dp)
+                                                ) {
+                                                    Icon(
+                                                        imageVector = Icons.Default.AddCircle,
+                                                        contentDescription = "Change avatar",
+                                                        tint = PrimaryBlue,
+                                                        modifier = Modifier.fillMaxSize()
+                                                    )
+                                                }
                                             }
                                         }
 
@@ -527,7 +598,7 @@ private fun ProfileScreenContent(
                                     Column(
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .padding(top = if (isViewingOwnProfile) 12.dp else 24.dp, bottom = 100.dp)
+                                            .padding(top = if (isViewingOwnProfile) 12.dp else 24.dp)
                                     ) {
                                         when {
                                             profilePostsState.isLoading -> {

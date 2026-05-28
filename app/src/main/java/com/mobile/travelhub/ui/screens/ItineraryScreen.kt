@@ -43,7 +43,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
@@ -125,14 +124,13 @@ fun ItineraryScreen(
     onBack: () -> Unit,
     onOpenDayDetail: (Int) -> Unit,
     showBackButton: Boolean = true,
-    openChatOnLaunch: Boolean = false,
     viewModel: ItineraryViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
 
-    LaunchedEffect(tripId, groupName, openChatOnLaunch) {
-        viewModel.bindGroup(groupName = groupName, tripId = tripId, openChatOnLaunch = openChatOnLaunch)
+    LaunchedEffect(tripId, groupName) {
+        viewModel.bindGroup(groupName = groupName, tripId = tripId)
     }
 
     LaunchedEffect(state.errorMessage) {
@@ -153,9 +151,6 @@ fun ItineraryScreen(
                 onAddItinerary = viewModel::startAddingStop,
                 onBack = onBack
             )
-        },
-        floatingActionButton = {
-            GeminiItineraryFab(onClick = viewModel::openChat)
         }
     ) { paddingValues ->
         ItineraryOverviewContent(
@@ -171,10 +166,6 @@ fun ItineraryScreen(
 
     ItinerarySharedOverlays(
         state = state,
-        onCloseChat = viewModel::closeChat,
-        onChatInputChange = viewModel::updateChatInput,
-        onVoiceInputChange = viewModel::updateVoiceChatInput,
-        onSendChat = viewModel::sendChatPrompt,
         onDismissDayEditor = viewModel::cancelEditingDay,
         onSaveDay = viewModel::saveDay,
         onDeleteEditingDay = viewModel::deleteEditingDay,
@@ -192,14 +183,13 @@ fun ItineraryDayDetailScreen(
     dayIndex: Int,
     onBack: () -> Unit,
     showBackButton: Boolean = true,
-    openChatOnLaunch: Boolean = false,
     viewModel: ItineraryViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
 
-    LaunchedEffect(tripId, groupName, openChatOnLaunch) {
-        viewModel.bindGroup(groupName = groupName, tripId = tripId, openChatOnLaunch = openChatOnLaunch)
+    LaunchedEffect(tripId, groupName) {
+        viewModel.bindGroup(groupName = groupName, tripId = tripId)
     }
 
     LaunchedEffect(dayIndex) {
@@ -226,9 +216,6 @@ fun ItineraryDayDetailScreen(
                 onAddItinerary = viewModel::startAddingStop,
                 onBack = onBack
             )
-        },
-        floatingActionButton = {
-            GeminiItineraryFab(onClick = viewModel::openChat)
         }
     ) { paddingValues ->
         ItineraryDayDetailContent(
@@ -245,10 +232,6 @@ fun ItineraryDayDetailScreen(
 
     ItinerarySharedOverlays(
         state = state,
-        onCloseChat = viewModel::closeChat,
-        onChatInputChange = viewModel::updateChatInput,
-        onVoiceInputChange = viewModel::updateVoiceChatInput,
-        onSendChat = viewModel::sendChatPrompt,
         onDismissDayEditor = viewModel::cancelEditingDay,
         onSaveDay = viewModel::saveDay,
         onDeleteEditingDay = viewModel::deleteEditingDay,
@@ -289,7 +272,6 @@ fun ItineraryPopupSheet(
             snackbarHostState = snackbarHostState,
             onDismiss = onDismiss,
             onAddItinerary = viewModel::startAddingStop,
-            onOpenChat = viewModel::openChat,
             onOpenDayDetail = viewModel::selectDay,
             onEditEvent = viewModel::startEditing,
             onToggleChange = viewModel::toggleChangeSelection,
@@ -303,10 +285,6 @@ fun ItineraryPopupSheet(
 
     ItinerarySharedOverlays(
         state = state,
-        onCloseChat = viewModel::closeChat,
-        onChatInputChange = viewModel::updateChatInput,
-        onVoiceInputChange = viewModel::updateVoiceChatInput,
-        onSendChat = viewModel::sendChatPrompt,
         onDismissDayEditor = viewModel::cancelEditingDay,
         onSaveDay = viewModel::saveDay,
         onDeleteEditingDay = viewModel::deleteEditingDay,
@@ -323,7 +301,6 @@ private fun ItineraryPopupContent(
     snackbarHostState: SnackbarHostState,
     onDismiss: () -> Unit,
     onAddItinerary: () -> Unit,
-    onOpenChat: () -> Unit,
     onOpenDayDetail: (Int) -> Unit,
     onEditEvent: (ItineraryEvent) -> Unit,
     onToggleChange: (String) -> Unit,
@@ -361,9 +338,6 @@ private fun ItineraryPopupContent(
                     )
                 }
             }
-        },
-        floatingActionButton = {
-            GeminiItineraryFab(onClick = onOpenChat)
         }
     ) { paddingValues ->
         ItineraryOverviewContent(
@@ -389,7 +363,6 @@ private fun ItineraryPopupPreview() {
                 snackbarHostState = remember { SnackbarHostState() },
                 onDismiss = {},
                 onAddItinerary = {},
-                onOpenChat = {},
                 onOpenDayDetail = {},
                 onEditEvent = {},
                 onToggleChange = {},
@@ -448,64 +421,6 @@ private fun previewItineraryState(): ItineraryUiState {
         )
     )
 }
-
-@Composable
-private fun GeminiItineraryFab(onClick: () -> Unit) {
-    val infiniteTransition = rememberInfiniteTransition(label = "ai-fab-rainbow")
-    val rotation by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 360f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 2400, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "ai-fab-border-rotation"
-    )
-    val rainbow = listOf(
-        Color(0xFFFF3B30),
-        Color(0xFFFF9500),
-        Color(0xFFFFCC00),
-        Color(0xFF34C759),
-        Color(0xFF00C7BE),
-        Color(0xFF007AFF),
-        Color(0xFFAF52DE),
-        Color(0xFFFF3B30)
-    )
-
-    Box(
-        modifier = Modifier
-            .size(64.dp)
-            .shadow(elevation = 10.dp, shape = CircleShape, clip = false)
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null,
-                onClick = onClick
-            ),
-        contentAlignment = Alignment.Center
-    ) {
-        Box(
-            modifier = Modifier
-                .matchParentSize()
-                .graphicsLayer { rotationZ = rotation }
-                .background(Brush.sweepGradient(rainbow), CircleShape)
-        )
-        Box(
-            modifier = Modifier
-                .size(56.dp)
-                .background(SurfaceContainerLowest, CircleShape),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = Icons.Default.AutoAwesome,
-                contentDescription = "Open AI itinerary editor",
-                tint = Color(0xFF5B35F5),
-                modifier = Modifier.size(28.dp)
-            )
-        }
-    }
-}
-
-
 
 
 

@@ -18,7 +18,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -37,12 +36,22 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
+import coil.compose.AsyncImage
+import android.net.Uri
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -60,8 +69,9 @@ fun EditProfileScreen(
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
     val profileState by viewModel.profileState.collectAsState()
-    val updateStatus by viewModel.updateStatus.collectAsState()
     val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+    var isSaving by remember { mutableStateOf(false) }
 
     var name by remember { mutableStateOf("") }
     var handle by remember { mutableStateOf("") }
@@ -71,7 +81,6 @@ fun EditProfileScreen(
     var location by remember { mutableStateOf("") }
     
     var email by remember { mutableStateOf("") }
-    var phoneNumber by remember { mutableStateOf("") }
 
     var originalName by remember { mutableStateOf("") }
     var originalHandle by remember { mutableStateOf("") }
@@ -81,6 +90,49 @@ fun EditProfileScreen(
     var originalGender by remember { mutableStateOf("") }
 
     var showConfirmDialog by remember { mutableStateOf(false) }
+
+    var pendingAvatar by remember { mutableStateOf<PendingAvatar?>(null) }
+
+    fun saveProfile() {
+        if (isSaving) return
+        coroutineScope.launch {
+            isSaving = true
+            try {
+                val uploadedUrl = pendingAvatar?.let { avatar ->
+                    viewModel.uploadAvatar(
+                        imageBytes = avatar.bytes,
+                        mimeType = avatar.mimeType,
+                        fileName = avatar.fileName
+                    )
+                }
+                viewModel.updateProfile(
+                    name = name,
+                    username = handle,
+                    bio = bio,
+                    dob = dob,
+                    gender = gender,
+                    location = location,
+                    avatarUrl = uploadedUrl
+                )
+                when (val result = viewModel.updateStatus.value) {
+                    is UiState.Success -> {
+                        pendingAvatar = null
+                        onSaveSuccess()
+                    }
+                    is UiState.Error -> {
+                        Toast.makeText(context, "Lỗi lưu hồ sơ: ${result.message}", Toast.LENGTH_LONG).show()
+                    }
+                    else -> {
+                        Toast.makeText(context, "Lỗi lưu hồ sơ", Toast.LENGTH_LONG).show()
+                    }
+                }
+            } catch (e: Exception) {
+                Toast.makeText(context, "Lỗi upload ảnh: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
+            } finally {
+                isSaving = false
+            }
+        }
+    }
 
     LaunchedEffect(Unit) {
         viewModel.loadUserProfile()
@@ -96,7 +148,6 @@ fun EditProfileScreen(
             gender = data.gender ?: ""
             location = data.location ?: ""
             email = data.email ?: ""
-            phoneNumber = data.phoneNumber ?: ""
             
             originalName = data.name
             originalHandle = data.username
@@ -107,25 +158,9 @@ fun EditProfileScreen(
         }
     }
     
-    LaunchedEffect(updateStatus) {
-        when (updateStatus) {
-            is UiState.Success -> {
-                viewModel.resetUpdateStatus()
-                Toast.makeText(context, "Cập nhật thành công!", Toast.LENGTH_SHORT).show()
-                viewModel.loadUserProfile()
-                onSaveSuccess()
-            }
-            is UiState.Error -> {
-                val errorMsg = (updateStatus as UiState.Error).message
-                Toast.makeText(context, "Lỗi: $errorMsg", Toast.LENGTH_LONG).show()
-                viewModel.resetUpdateStatus()
-            }
-            else -> {}
-        }
-    }
-
-    val hasChanges = name != originalName || handle != originalHandle || bio != originalBio || 
-                     dob != originalDob || location != originalLocation || gender != originalGender
+        val hasChanges = name != originalName || handle != originalHandle || bio != originalBio ||
+            dob != originalDob || location != originalLocation || gender != originalGender ||
+            pendingAvatar != null
 
     val handleBack = {
         if (hasChanges) {
@@ -154,12 +189,10 @@ fun EditProfileScreen(
                     }
                 },
                 actions = {
-                    if (updateStatus is UiState.Loading) {
+                    if (isSaving) {
                         CircularProgressIndicator(modifier = Modifier.size(24.dp).padding(end = 16.dp))
                     } else {
-                        TextButton(onClick = {
-                            viewModel.updateProfile(name, handle, bio, dob, gender, location)
-                        }) {
+                        TextButton(onClick = { saveProfile() }) {
                             Text(
                                 "SAVE",
                                 style = MaterialTheme.typography.labelMedium,
@@ -189,36 +222,79 @@ fun EditProfileScreen(
                 return@Scaffold
             }
             
+            val avatarPickerLauncher = rememberLauncherForActivityResult(
+                contract = ActivityResultContracts.PickVisualMedia()
+            ) { uri: Uri? ->
+                if (uri != null) {
+                    try {
+                        val bytes = context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
+                            ?: throw IllegalStateException("Không thể đọc ảnh đã chọn")
+                        val previewBitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+                            ?: throw IllegalStateException("Không thể tạo preview ảnh đã chọn")
+                        pendingAvatar = PendingAvatar(
+                            bytes = bytes,
+                            mimeType = context.contentResolver.getType(uri) ?: "image/jpeg",
+                            fileName = uri.lastPathSegment
+                                ?.substringAfterLast('/')
+                                ?.takeIf { it.isNotBlank() }
+                                ?: "avatar.jpg",
+                            previewBitmap = previewBitmap
+                        )
+                    } catch (e: Exception) {
+                        Toast.makeText(context, "Không thể đọc ảnh đã chọn: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
+                    }
+                }
+            }
+
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = 32.dp),
                 contentAlignment = Alignment.Center
             ) {
-                Box(modifier = Modifier.size(100.dp)) {
-                    Image(
-                        painter = painterResource(id = R.drawable.ic_launcher_foreground),
-                        contentDescription = "Profile Photo",
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.surfaceVariant),
-                        contentScale = ContentScale.Crop
-                    )
-                    Box(
-                        modifier = Modifier
-                            .size(32.dp)
-                            .align(Alignment.BottomEnd)
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.primary)
-                            .clickable { },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            Icons.Default.Edit,
-                            contentDescription = "Change",
-                            tint = MaterialTheme.colorScheme.onPrimary,
-                            modifier = Modifier.size(16.dp)
+                val existingAvatarUrl = (profileState as? UiState.Success)
+                    ?.data
+                    ?.avatarUrl
+                    ?.takeIf { it.isNotBlank() }
+                val selectedAvatar = pendingAvatar
+                Box(
+                    modifier = Modifier
+                        .size(100.dp)
+                        .clickable {
+                            avatarPickerLauncher.launch(
+                                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                            )
+                        }
+                ) {
+                    if (selectedAvatar != null) {
+                        Image(
+                            bitmap = selectedAvatar.previewBitmap.asImageBitmap(),
+                            contentDescription = "Profile Photo",
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.surfaceVariant),
+                            contentScale = ContentScale.Crop
+                        )
+                    } else if (existingAvatarUrl != null) {
+                        AsyncImage(
+                            model = existingAvatarUrl,
+                            contentDescription = "Profile Photo",
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.surfaceVariant),
+                            contentScale = ContentScale.Crop
+                        )
+                    } else {
+                        Image(
+                            painter = painterResource(id = R.drawable.ic_launcher_foreground),
+                            contentDescription = "Profile Photo",
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.surfaceVariant),
+                            contentScale = ContentScale.Crop
                         )
                     }
                 }
@@ -266,19 +342,6 @@ fun EditProfileScreen(
                 onValueChange = { email = it },
                 enabled = false
             )
-            EditProfileField(
-                label = "Phone Number",
-                value = phoneNumber,
-                onValueChange = { phoneNumber = it },
-                enabled = false
-            )
-            EditProfileField(
-                label = "Gender",
-                value = gender,
-                onValueChange = { gender = it },
-                enabled = false
-            )
-
             Spacer(modifier = Modifier.height(40.dp))
         }
 
@@ -301,7 +364,7 @@ fun EditProfileScreen(
                 confirmButton = {
                     TextButton(onClick = {
                         showConfirmDialog = false
-                        viewModel.updateProfile(name, handle, bio, dob, gender, location)
+                        saveProfile()
                     }) {
                         Text("Save", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
                     }
@@ -319,3 +382,10 @@ fun EditProfileScreen(
         }
     }
 }
+
+private data class PendingAvatar(
+    val bytes: ByteArray,
+    val mimeType: String,
+    val fileName: String,
+    val previewBitmap: Bitmap
+)

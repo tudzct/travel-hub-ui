@@ -2,11 +2,9 @@ package com.mobile.travelhub.data
 
 import com.mobile.travelhub.data.api.CreateTripActivityRequestDto
 import com.mobile.travelhub.data.api.ItineraryApiService
-import com.mobile.travelhub.data.model.ItineraryAssistantEvent
 import com.mobile.travelhub.data.model.ItineraryDay
 import com.mobile.travelhub.data.model.ItineraryEvent
 import com.mobile.travelhub.data.model.ItineraryEventColors
-import com.mobile.travelhub.data.model.ItineraryProposal
 import com.mobile.travelhub.data.model.ItineraryUserRole
 import com.mobile.travelhub.data.model.ItineraryWorkspace
 import com.mobile.travelhub.data.model.TripActivityResponse
@@ -16,10 +14,8 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 import javax.inject.Inject
 import javax.inject.Singleton
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.update
 
 @Singleton
@@ -36,31 +32,7 @@ class ItineraryRepository @Inject constructor(
     suspend fun refreshWorkspace(groupName: String, tripId: Long? = null) {
         val resolvedTripId = resolveTripId(groupName, tripId)
         val tripDays = itineraryApiService.listTripDays(resolvedTripId)
-        cacheTripDays(groupName, tripDays, pendingProposal = workspaceState(groupName).value.pendingProposal)
-    }
-
-    fun streamProposal(
-        groupName: String,
-        tripId: Long? = null,
-        prompt: String,
-        selectedDayIndex: Int,
-        inputType: String = "TEXT"
-    ): Flow<ItineraryAssistantEvent> = flow {
-        emit(ItineraryAssistantEvent.Error("Backend hiện chưa cung cấp API AI proposal cho TripDay/TripActivity."))
-        emit(ItineraryAssistantEvent.Done)
-    }
-
-    suspend fun applyProposalChanges(
-        groupName: String,
-        proposalId: String,
-        selectedChangeIds: Set<String>,
-        baseVersion: Int
-    ): Result<Unit> = runCatching {
-        error("Backend hiện chưa cung cấp API apply proposal cho TripDay/TripActivity.")
-    }
-
-    fun discardPendingProposal(groupName: String) {
-        workspaceState(groupName).update { it.copy(pendingProposal = null) }
+        cacheTripDays(groupName, tripDays)
     }
 
     suspend fun updateEvent(groupName: String, updatedEvent: ItineraryEvent) {
@@ -73,7 +45,7 @@ class ItineraryRepository @Inject constructor(
         updatedEvent.stopId?.let { activityId ->
             itineraryApiService.updateTripActivity(tripId, activityId, request)
         } ?: itineraryApiService.createTripActivity(tripId, request)
-        cacheTripDays(groupName, itineraryApiService.listTripDays(tripId), pendingProposal = null)
+        cacheTripDays(groupName, itineraryApiService.listTripDays(tripId))
     }
 
     suspend fun updateDay(groupName: String, updatedDay: ItineraryDay) {
@@ -85,8 +57,7 @@ class ItineraryRepository @Inject constructor(
                     } else {
                         day
                     }
-                },
-                pendingProposal = null
+                }
             )
         }
     }
@@ -95,7 +66,7 @@ class ItineraryRepository @Inject constructor(
         val stopId = eventId.toLongOrNull() ?: return
         val tripId = tripId(groupName)
         itineraryApiService.deleteTripActivity(tripId, stopId)
-        cacheTripDays(groupName, itineraryApiService.listTripDays(tripId), pendingProposal = null)
+        cacheTripDays(groupName, itineraryApiService.listTripDays(tripId))
     }
 
     suspend fun deleteDay(groupName: String, dayIndex: Int) {
@@ -104,7 +75,7 @@ class ItineraryRepository @Inject constructor(
         day.events.mapNotNull { it.stopId }.forEach { activityId ->
             itineraryApiService.deleteTripActivity(tripId, activityId)
         }
-        cacheTripDays(groupName, itineraryApiService.listTripDays(tripId), pendingProposal = null)
+        cacheTripDays(groupName, itineraryApiService.listTripDays(tripId))
     }
 
     suspend fun addDay(groupName: String): Int {
@@ -117,8 +88,7 @@ class ItineraryRepository @Inject constructor(
                     label = "Day $nextIndex",
                     dateLabel = nextDateLabel(workspace.days.maxByOrNull { day -> day.dayIndex }?.dateLabel, nextIndex),
                     events = emptyList()
-                )).sortedBy { day -> day.dayIndex },
-                pendingProposal = null
+                )).sortedBy { day -> day.dayIndex }
             )
         }
         return nextIndex
@@ -146,7 +116,7 @@ class ItineraryRepository @Inject constructor(
                     events = emptyList()
                 )
             }
-            workspace.copy(days = mergedDays, pendingProposal = null)
+            workspace.copy(days = mergedDays)
         }
 
         return workspaceState(groupName).value.days.first { it.dayIndex == dayIndex }
@@ -169,7 +139,7 @@ class ItineraryRepository @Inject constructor(
         val stopId = moved.stopId ?: return
         val tripId = tripId(groupName)
         itineraryApiService.updateTripActivity(tripId, stopId, request)
-        cacheTripDays(groupName, itineraryApiService.listTripDays(tripId), pendingProposal = null)
+        cacheTripDays(groupName, itineraryApiService.listTripDays(tripId))
     }
 
     private fun workspaceState(groupName: String): MutableStateFlow<ItineraryWorkspace> {
@@ -187,16 +157,14 @@ class ItineraryRepository @Inject constructor(
 
     private fun cacheTripDays(
         groupName: String,
-        tripDays: List<TripDayResponse>,
-        pendingProposal: ItineraryProposal? = workspaceState(groupName).value.pendingProposal
+        tripDays: List<TripDayResponse>
     ) {
         val previous = workspaceState(groupName).value
         workspaceState(groupName).value = ItineraryWorkspace(
             groupName = groupName,
             version = previous.version + 1,
             role = ItineraryUserRole.LEADER,
-            days = tripDays.sortedWith(compareBy<TripDayResponse> { it.dayNumber }.thenBy { it.date }).map { it.toDomain() },
-            pendingProposal = pendingProposal
+            days = tripDays.sortedWith(compareBy<TripDayResponse> { it.dayNumber }.thenBy { it.date }).map { it.toDomain() }
         )
     }
 

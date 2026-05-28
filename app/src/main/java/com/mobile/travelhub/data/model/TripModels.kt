@@ -5,6 +5,7 @@ data class CreateTripRequest(
     val destination: String,
     val startDate: String,
     val endDate: String,
+    val coverImageUrl: String? = null,
     val budgetMin: Double? = null,
     val budgetMax: Double? = null
 )
@@ -29,6 +30,8 @@ data class UpcomingTripResponse(
     val name: String,
     val location: String,
     val coverImageUrl: String? = null,
+    val startDate: String? = null,
+    val endDate: String? = null,
     val daysLeft: Int = 0,
     val memberCount: Int = 0
 )
@@ -121,15 +124,10 @@ data class TripMemberResponse(
     val role: String
 )
 
-data class TripDetailHighlightsResponse(
-    val title: String? = null
-)
-
 data class TripDetailResponse(
     val tripInfo: TripInfoResponse,
     val myRole: String,
-    val members: List<TripMemberResponse> = emptyList(),
-    val highlights: TripDetailHighlightsResponse? = null
+    val members: List<TripMemberResponse> = emptyList()
 )
 
 data class CreateTripExpenseRequest(

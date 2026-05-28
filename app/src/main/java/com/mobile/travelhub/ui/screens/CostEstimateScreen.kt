@@ -135,7 +135,7 @@ fun CostEstimateScreen(
                     val contributions = uiState.contributions
                     if (contributions.isEmpty()) {
                         Text(
-                            text = "Chưa có dữ liệu đóng góp từ BE.",
+                            text = "Chưa có khoản chi nào cho chuyến đi này.",
                             color = OnSurfaceVariant,
                             fontSize = 13.sp
                         )
@@ -175,7 +175,7 @@ fun CostEstimateScreen(
             if (recentExpenses.isEmpty()) {
                 item {
                     Text(
-                        text = "Chưa có giao dịch chi phí từ BE.",
+                        text = "Chuyến đi này chưa có giao dịch nào.",
                         color = OnSurfaceVariant,
                         fontSize = 13.sp
                     )

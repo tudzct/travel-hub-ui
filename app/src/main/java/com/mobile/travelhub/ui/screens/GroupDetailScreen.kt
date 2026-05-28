@@ -13,18 +13,15 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Payments
 import androidx.compose.material.icons.filled.PersonAdd
-import androidx.compose.material.icons.filled.Poll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -64,9 +61,6 @@ fun GroupDetailScreen(
     tripId: Long,
     groupName: String,
     onBack: () -> Unit,
-    onNavigateToChat: () -> Unit,
-    onNavigateToDiscovery: () -> Unit,
-    onNavigateToMap: () -> Unit,
     onNavigateToCost: (Long) -> Unit,
     onNavigateToProfile: (Long) -> Unit = {},
     viewModel: GroupDetailViewModel = hiltViewModel()
@@ -101,12 +95,22 @@ fun GroupDetailScreen(
                     .fillMaxWidth()
                     .height(380.dp)
             ) {
-                Image(
-                    painter = painterResource(id = R.drawable.ic_launcher_background),
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize()
-                )
+                val coverImageUrl = uiState.coverImageUrl?.takeIf { it.isNotBlank() }
+                if (coverImageUrl != null) {
+                    AsyncImage(
+                        model = coverImageUrl,
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                } else {
+                    Image(
+                        painter = painterResource(id = R.drawable.ic_launcher_background),
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
 
                 Box(
                     modifier = Modifier
@@ -154,7 +158,7 @@ fun GroupDetailScreen(
                         Icon(Icons.Default.LocationOn, null, modifier = Modifier.size(16.dp), tint = Color.White.copy(alpha = 0.8f))
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = uiState.location.ifBlank { "Dashboard BE chưa có location" },
+                            text = uiState.location.ifBlank { "Đang tải điểm đến" },
                             fontSize = 14.sp,
                             color = Color.White.copy(alpha = 0.8f)
                         )
@@ -167,10 +171,7 @@ fun GroupDetailScreen(
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 item { FeatureCard(Icons.Default.CalendarMonth, "Lịch trình", PrimaryBlue) { showItinerarySheet = true } }
-                item { FeatureCard(Icons.Default.Poll, "Bình chọn", SunsetOrange, onNavigateToDiscovery) }
                 item { FeatureCard(Icons.Default.Payments, "Chi phí", Color(0xFFE91E63), { onNavigateToCost(tripId) }) }
-                item { FeatureCard(Icons.Default.Map, "Bản đồ", Color(0xFF4CAF50), onNavigateToMap) }
-                item { FeatureCard(Icons.AutoMirrored.Filled.Chat, "Chat nhóm", PrimaryContainer, onNavigateToChat) }
             }
 
             Column(modifier = Modifier.padding(horizontal = 24.dp)) {
@@ -180,17 +181,6 @@ fun GroupDetailScreen(
                     fontSize = 13.sp,
                     color = OnSurfaceVariant,
                     letterSpacing = 1.sp
-                )
-                Spacer(modifier = Modifier.height(12.dp))
-                Text(
-                    text = if (uiState.startDate.isNotBlank() || uiState.endDate.isNotBlank()) {
-                        "Ngày đi: ${uiState.startDate.ifBlank { "?" }} - ${uiState.endDate.ifBlank { "?" }}"
-                    } else {
-                        "Backend hiện chưa trả mô tả trip chi tiết, nên màn này đang dùng dữ liệu dashboard + itinerary thật."
-                    },
-                    lineHeight = 24.sp,
-                    fontSize = 15.sp,
-                    color = OnSurface
                 )
             }
 
@@ -296,7 +286,7 @@ fun GroupDetailScreen(
                         Spacer(modifier = Modifier.height(16.dp))
                         if (uiState.members.isEmpty()) {
                             Text(
-                                text = "Chưa có dữ liệu thành viên từ BE.",
+                                text = "Chưa có dữ liệu thành viên.",
                                 color = OnSurfaceVariant,
                                 fontSize = 13.sp
                             )

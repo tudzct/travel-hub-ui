@@ -8,13 +8,19 @@ import com.mobile.travelhub.data.model.ProfileUpdateRequest
 import com.mobile.travelhub.data.model.GetPostsResponse
 import com.mobile.travelhub.data.model.UserProfileResponse
 import com.mobile.travelhub.data.model.UserSummaryResponse
+import com.mobile.travelhub.data.model.TopTravelerPeriod
+import com.mobile.travelhub.data.model.TopTravelerResponse
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
+import retrofit2.http.Multipart
 import retrofit2.http.POST
+import retrofit2.http.Part
 import retrofit2.http.PUT
 import retrofit2.http.Path
 import retrofit2.http.Query
+import okhttp3.MultipartBody
+import okhttp3.ResponseBody
 
 interface UserApiService {
     @GET("api/users/me")
@@ -29,6 +35,13 @@ interface UserApiService {
         @Query("page") page: Int = 0,
         @Query("pageSize") pageSize: Int = 10
     ): PaginationResponse<UserProfileResponse>
+
+    @GET("api/users/top-travelers")
+    suspend fun getTopTravelers(
+        @Query("period") period: TopTravelerPeriod,
+        @Query("page") page: Int = 0,
+        @Query("pageSize") pageSize: Int = 4
+    ): PaginationResponse<TopTravelerResponse>
 
     @GET("api/users/{id}/followers")
     suspend fun getFollowers(
@@ -75,6 +88,12 @@ interface UserApiService {
         @Path("id") id: Long,
         @Body request: ProfileUpdateRequest
     ): UserProfileResponse
+
+    @Multipart
+    @POST("api/users/me/avatar")
+    suspend fun uploadAvatar(
+        @Part file: MultipartBody.Part
+    ): ResponseBody
 
     @POST("api/users/{targetUserId}/follow")
     suspend fun followUser(

@@ -32,6 +32,7 @@ import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -42,7 +43,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -61,6 +61,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -68,6 +69,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil3.compose.AsyncImage
 import com.mobile.travelhub.data.model.TravelPlaceListItemResponse
 import com.mobile.travelhub.data.model.TravelPlaceReviewResponse
+import com.mobile.travelhub.ui.components.SimpleFormTextField
 import com.mobile.travelhub.ui.theme.OnSurface
 import com.mobile.travelhub.ui.theme.OnSurfaceVariant
 import com.mobile.travelhub.ui.theme.PrimaryBlue
@@ -80,6 +82,9 @@ import com.mobile.travelhub.viewmodels.ReviewViewModel
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+
+private val PlaceDetailHorizontalPadding = 16.dp
+private val PlaceDetailSectionPadding = 16.dp
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -177,8 +182,8 @@ fun PlaceDetailScreen(
                 val detail = uiState.detail ?: return
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(bottom = 28.dp),
-                    verticalArrangement = Arrangement.spacedBy(14.dp)
+                    contentPadding = PaddingValues(bottom = 24.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     item {
                         PlaceHeroSection(
@@ -436,10 +441,10 @@ private fun FlatSection(content: @Composable () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 24.dp)
+            .padding(horizontal = PlaceDetailHorizontalPadding)
             .clip(RoundedCornerShape(20.dp))
             .background(SurfaceContainerLowest)
-            .padding(horizontal = 20.dp, vertical = 20.dp)
+            .padding(PlaceDetailSectionPadding)
     ) {
         content()
     }
@@ -531,8 +536,10 @@ private fun DescriptionSection(description: String) {
         Text(
             text = "Mô tả",
             style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold
-        )
+            fontWeight = FontWeight.SemiBold,
+            textAlign = TextAlign.Justify
+
+            )
         ExpandableDescription(description = description)
     }
 }
@@ -549,7 +556,7 @@ private fun RelatedPlacesSection(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 24.dp),
+            modifier = Modifier.padding(horizontal = PlaceDetailHorizontalPadding),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
@@ -584,7 +591,7 @@ private fun RelatedPlacesSection(
 
             else -> {
                 LazyRow(
-                    contentPadding = PaddingValues(horizontal = 24.dp),
+                    contentPadding = PaddingValues(horizontal = PlaceDetailHorizontalPadding),
                     horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     items(places, key = { it.id }) { place ->
@@ -900,7 +907,11 @@ private fun ReviewBottomSheet(
     onSubmit: () -> Unit
 ) {
     ModalBottomSheet(
-        onDismissRequest = onDismiss
+        onDismissRequest = onDismiss,
+        containerColor = SurfaceContainerLowest,
+        dragHandle = {
+            BottomSheetDefaults.DragHandle(color = SurfaceContainerLow)
+        }
     ) {
         Column(
             modifier = Modifier
@@ -911,15 +922,25 @@ private fun ReviewBottomSheet(
             Text(
                 text = "Đánh giá địa điểm",
                 style = MaterialTheme.typography.headlineSmall,
+                color = OnSurface,
                 fontWeight = FontWeight.Bold
             )
 
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally)
+            ) {
                 (1..5).forEach { star ->
+                    val selected = star <= uiState.rating
+                    val starColor = Color(0xFFFFB800)
                     Surface(
                         modifier = Modifier.clickable { onRatingChange(star) },
                         shape = CircleShape,
-                        color = if (star <= uiState.rating) Color(0xFFFFF4D6) else MaterialTheme.colorScheme.surfaceContainerLow
+                        color = if (selected) starColor.copy(alpha = 0.16f) else SurfaceContainerLow,
+                        border = BorderStroke(
+                            width = 1.dp,
+                            color = if (selected) starColor.copy(alpha = 0.42f) else Color.Transparent
+                        )
                     ) {
                         Box(
                             modifier = Modifier
@@ -930,19 +951,27 @@ private fun ReviewBottomSheet(
                             Icon(
                                 imageVector = Icons.Default.Star,
                                 contentDescription = "$star sao",
-                                tint = if (star <= uiState.rating) Color(0xFFFFB800) else MaterialTheme.colorScheme.onSurfaceVariant
+                                tint = if (selected) starColor else OnSurfaceVariant.copy(alpha = 0.62f)
                             )
                         }
                     }
                 }
             }
 
-            OutlinedTextField(
+            SimpleFormTextField(
                 value = uiState.content,
                 onValueChange = onContentChange,
                 modifier = Modifier.fillMaxWidth(),
-                label = { Text("Nội dung đánh giá") },
-                minLines = 4
+                placeholder = "Chia sẻ trải nghiệm của bạn",
+                enabled = !uiState.isSubmitting,
+                singleLine = false,
+                minLines = 4,
+                maxLines = 6,
+                shape = RoundedCornerShape(18.dp),
+                focusedContainerColor = PrimaryBlue.copy(alpha = 0.10f),
+                unfocusedContainerColor = SurfaceContainerLow,
+                disabledContainerColor = SurfaceContainerLow.copy(alpha = 0.62f),
+                focusedIndicatorColor = PrimaryBlue.copy(alpha = 0.72f)
             )
 
             uiState.errorMessage?.let { error ->
@@ -956,7 +985,16 @@ private fun ReviewBottomSheet(
             Button(
                 onClick = onSubmit,
                 enabled = !uiState.isSubmitting,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(52.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = PrimaryBlue,
+                    disabledContainerColor = PrimaryBlue.copy(alpha = 0.42f),
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                    disabledContentColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.72f)
+                )
             ) {
                 if (uiState.isSubmitting) {
                     CircularProgressIndicator(
@@ -983,7 +1021,7 @@ private fun PlaceActionSection(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 24.dp),
+            .padding(horizontal = PlaceDetailHorizontalPadding),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {

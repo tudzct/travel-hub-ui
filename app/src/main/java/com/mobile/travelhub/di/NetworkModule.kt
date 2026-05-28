@@ -2,7 +2,6 @@ package com.mobile.travelhub.di
 
 import com.mobile.travelhub.BuildConfig
 import com.mobile.travelhub.data.api.ApiConfig
-import com.mobile.travelhub.data.api.AiRecommendationApiService
 import com.mobile.travelhub.data.api.AuthApiService
 import com.mobile.travelhub.data.api.AuthHeaderInterceptor
 import com.mobile.travelhub.data.api.DeviceApiService
@@ -38,7 +37,6 @@ import java.util.concurrent.TimeUnit
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
     private const val BASE_URL = ApiConfig.BASE_URL
-    private const val AI_BASE_URL = ApiConfig.AI_BASE_URL
     private val logging = HttpLoggingInterceptor().apply {
         level = HttpLoggingInterceptor.Level.BODY
     }
@@ -75,13 +73,6 @@ object NetworkModule {
     @Named("public")
     fun providePublicRetrofit(): Retrofit {
         return RetrofitFactory.create(baseUrl = BASE_URL)
-    }
-
-    @Provides
-    @Singleton
-    @Named("ai-public")
-    fun provideAiPublicRetrofit(okHttpClient: OkHttpClient): Retrofit {
-        return RetrofitFactory.create(baseUrl = AI_BASE_URL, client = okHttpClient)
     }
 
     @Provides
@@ -142,12 +133,6 @@ object NetworkModule {
     @Singleton
     fun provideItineraryApiService(@Named("authenticated") retrofit: Retrofit): ItineraryApiService {
         return retrofit.create(ItineraryApiService::class.java)
-    }
-
-    @Provides
-    @Singleton
-    fun provideAiRecommendationApiService(@Named("ai-public") retrofit: Retrofit): AiRecommendationApiService {
-        return retrofit.create(AiRecommendationApiService::class.java)
     }
 
     @Provides

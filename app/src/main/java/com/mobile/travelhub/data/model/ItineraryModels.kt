@@ -13,8 +13,7 @@ data class ItineraryWorkspace(
     val groupName: String,
     val version: Int,
     val role: ItineraryUserRole,
-    val days: List<ItineraryDay>,
-    val pendingProposal: ItineraryProposal? = null
+    val days: List<ItineraryDay>
 )
 
 data class ItineraryDay(
@@ -40,36 +39,6 @@ data class ItineraryEvent(
     val dayId: Long? = null,
     val stopId: Long? = null
 )
-
-data class ItineraryProposal(
-    val proposalId: String,
-    val baseVersion: Int,
-    val summary: String,
-    val changes: List<ItineraryChange>
-)
-
-enum class ItineraryChangeType {
-    ADD_DAY,
-    UPDATE_DAY,
-    DELETE_DAY,
-    ADD_EVENT,
-    UPDATE_EVENT,
-    DELETE_EVENT,
-    MOVE_EVENT
-}
-
-enum class ItineraryField(val label: String) {
-    DAY("Day"),
-    START_TIME("Start time"),
-    END_TIME("End time"),
-    TITLE("Title"),
-    PLACE_NAME("Place"),
-    NOTE("Note"),
-    TRANSPORT("Transport"),
-    ESTIMATED_COST("Cost"),
-    COLOR("Color"),
-    ICON("Icon")
-}
 
 object ItineraryEventColors {
     const val Default: Long = 0xFF3E6AE1
@@ -101,7 +70,6 @@ fun getItineraryIcon(name: String) = when (name) {
     "LocalPark" -> Icons.Default.Park
     "BeachAccess" -> Icons.Default.BeachAccess
     "Nightlife" -> Icons.Default.Nightlife
-    "AutoAwesome" -> Icons.Default.AutoAwesome
     else -> Icons.Default.Place
 }
 
@@ -121,108 +89,6 @@ object ItineraryIcons {
         "LocalDrink",
         "LocalPark",
         "BeachAccess",
-        "Nightlife",
-        "AutoAwesome"
+        "Nightlife"
     )
-}
-
-data class FieldDiff(
-    val field: ItineraryField,
-    val before: String?,
-    val after: String?
-) {
-    val label: String = field.label
-}
-
-sealed interface ItineraryChange {
-    val changeId: String
-    val type: ItineraryChangeType
-    val reason: String
-}
-
-data class AddDayChange(
-    override val changeId: String,
-    override val reason: String,
-    val insertAt: Int,
-    val dayAfter: ItineraryDay
-) : ItineraryChange {
-    override val type: ItineraryChangeType = ItineraryChangeType.ADD_DAY
-}
-
-data class UpdateDayChange(
-    override val changeId: String,
-    override val reason: String,
-    val dayBefore: ItineraryDay,
-    val dayAfter: ItineraryDay
-) : ItineraryChange {
-    override val type: ItineraryChangeType = ItineraryChangeType.UPDATE_DAY
-}
-
-data class DeleteDayChange(
-    override val changeId: String,
-    override val reason: String,
-    val dayBefore: ItineraryDay
-) : ItineraryChange {
-    override val type: ItineraryChangeType = ItineraryChangeType.DELETE_DAY
-}
-
-data class AddEventChange(
-    override val changeId: String,
-    override val reason: String,
-    val insertAt: Int,
-    val eventAfter: ItineraryEvent
-) : ItineraryChange {
-    override val type: ItineraryChangeType = ItineraryChangeType.ADD_EVENT
-}
-
-data class UpdateEventChange(
-    override val changeId: String,
-    override val reason: String,
-    val targetEventId: String,
-    val fieldDiffs: List<FieldDiff>,
-    val eventBefore: ItineraryEvent,
-    val eventAfter: ItineraryEvent
-) : ItineraryChange {
-    override val type: ItineraryChangeType = ItineraryChangeType.UPDATE_EVENT
-}
-
-data class DeleteEventChange(
-    override val changeId: String,
-    override val reason: String,
-    val targetEventId: String,
-    val eventBefore: ItineraryEvent
-) : ItineraryChange {
-    override val type: ItineraryChangeType = ItineraryChangeType.DELETE_EVENT
-}
-
-data class MoveEventChange(
-    override val changeId: String,
-    override val reason: String,
-    val targetEventId: String,
-    val fromDayIndex: Int,
-    val fromIndex: Int,
-    val toDayIndex: Int,
-    val toIndex: Int,
-    val eventSnapshot: ItineraryEvent
-) : ItineraryChange {
-    override val type: ItineraryChangeType = ItineraryChangeType.MOVE_EVENT
-}
-
-enum class ItineraryChatRole {
-    USER,
-    ASSISTANT
-}
-
-data class ItineraryChatMessage(
-    val id: String,
-    val role: ItineraryChatRole,
-    val text: String
-)
-
-sealed interface ItineraryAssistantEvent {
-    data class Thinking(val text: String) : ItineraryAssistantEvent
-    data class MessageChunk(val text: String) : ItineraryAssistantEvent
-    data class ProposalReady(val proposal: ItineraryProposal) : ItineraryAssistantEvent
-    data class Error(val message: String) : ItineraryAssistantEvent
-    data object Done : ItineraryAssistantEvent
 }
