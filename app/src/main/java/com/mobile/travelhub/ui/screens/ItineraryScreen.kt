@@ -156,7 +156,11 @@ fun ItineraryScreen(
         ItineraryOverviewContent(
             state = state,
             paddingValues = paddingValues,
-            onOpenDayDetail = onOpenDayDetail
+            onOpenDayDetail = onOpenDayDetail,
+            onEditEvent = viewModel::startEditing,
+            onToggleChange = viewModel::toggleChangeSelection,
+            onApplySelected = viewModel::applySelectedChanges,
+            onDiscardProposal = viewModel::discardPendingProposal
         )
     }
 
@@ -269,6 +273,10 @@ fun ItineraryPopupSheet(
             onDismiss = onDismiss,
             onAddItinerary = viewModel::startAddingStop,
             onOpenDayDetail = viewModel::selectDay,
+            onEditEvent = viewModel::startEditing,
+            onToggleChange = viewModel::toggleChangeSelection,
+            onApplySelected = viewModel::applySelectedChanges,
+            onDiscardProposal = viewModel::discardPendingProposal,
             modifier = Modifier
                 .fillMaxWidth()
                 .fillMaxHeight(0.92f)
@@ -294,6 +302,10 @@ private fun ItineraryPopupContent(
     onDismiss: () -> Unit,
     onAddItinerary: () -> Unit,
     onOpenDayDetail: (Int) -> Unit,
+    onEditEvent: (ItineraryEvent) -> Unit,
+    onToggleChange: (String) -> Unit,
+    onApplySelected: () -> Unit,
+    onDiscardProposal: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Scaffold(
@@ -331,7 +343,11 @@ private fun ItineraryPopupContent(
         ItineraryOverviewContent(
             state = state,
             paddingValues = paddingValues,
-            onOpenDayDetail = onOpenDayDetail
+            onOpenDayDetail = onOpenDayDetail,
+            onEditEvent = onEditEvent,
+            onToggleChange = onToggleChange,
+            onApplySelected = onApplySelected,
+            onDiscardProposal = onDiscardProposal
         )
     }
 }
@@ -348,6 +364,10 @@ private fun ItineraryPopupPreview() {
                 onDismiss = {},
                 onAddItinerary = {},
                 onOpenDayDetail = {},
+                onEditEvent = {},
+                onToggleChange = {},
+                onApplySelected = {},
+                onDiscardProposal = {},
                 modifier = Modifier.fillMaxSize()
             )
         }
@@ -401,7 +421,6 @@ private fun previewItineraryState(): ItineraryUiState {
         )
     )
 }
-
 
 
 
