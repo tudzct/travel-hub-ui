@@ -282,8 +282,8 @@ class CreateGroupViewModel @Inject constructor(
                 endDate = endDate.toString(),
                 coverImageUrl = state.destinationCoverImageUrl,
                 placeId = state.selectedPlaceId,
-                budgetMin = state.budgetMin.trim().toDoubleOrNull() ?: 0.0,
-                budgetMax = state.budgetMax.trim().toDoubleOrNull()
+                budgetMin = state.budgetMin.replace(".", "").trim().toDoubleOrNull() ?: 0.0,
+                budgetMax = state.budgetMax.replace(".", "").trim().toDoubleOrNull()
             )
 
             tripRepository.createTrip(request)

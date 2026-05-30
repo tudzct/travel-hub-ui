@@ -346,9 +346,9 @@ private fun ProfileScreenContent(
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis
                                 )
-                                if (!isViewingOwnProfile) {
+                                if (onBack != null) {
                                     IconButton(
-                                        onClick = { onBack?.invoke() },
+                                        onClick = { onBack.invoke() },
                                         modifier = Modifier.align(Alignment.CenterStart)
                                     ) {
                                         Icon(

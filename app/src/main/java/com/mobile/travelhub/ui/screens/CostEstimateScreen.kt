@@ -37,7 +37,15 @@ import androidx.compose.ui.unit.sp
 import com.mobile.travelhub.R
 import com.mobile.travelhub.ui.theme.*
 import com.mobile.travelhub.viewmodels.CostEstimateViewModel
+import com.mobile.travelhub.utils.NumberUtils
+import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import coil.compose.AsyncImage
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.style.TextOverflow
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -45,6 +53,7 @@ fun CostEstimateScreen(
     tripId: Long,
     groupName: String = "Tokyo Trip",
     onBack: () -> Unit,
+    onNavigateToProfile: (Long) -> Unit = {},
     viewModel: CostEstimateViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -149,7 +158,9 @@ fun CostEstimateScreen(
                             MemberExpenseCircle(
                                 name = contribution.userName,
                                 amount = contribution.amountPaid,
-                                color = listOf(PrimaryBlue, SunsetOrange, Color(0xFF4CAF50))[index % 3]
+                                avatarUrl = contribution.avatarUrl,
+                                color = listOf(PrimaryBlue, SunsetOrange, Color(0xFF4CAF50))[index % 3],
+                                onClick = { onNavigateToProfile(contribution.userId) }
                             )
                         }
                     }
@@ -242,7 +253,7 @@ fun AddExpenseContent(
     onDismiss: () -> Unit
 ) {
     var expenseTitle by remember { mutableStateOf("") }
-    var expenseAmount by remember { mutableStateOf("") }
+    var expenseAmountValue by remember { mutableStateOf(TextFieldValue("")) }
     var selectedCategory by remember { mutableStateOf("FOOD") }
     var expanded by remember { mutableStateOf(false) }
 
@@ -275,15 +286,19 @@ fun AddExpenseContent(
         Spacer(modifier = Modifier.height(16.dp))
 
         OutlinedTextField(
-            value = expenseAmount,
-            onValueChange = { expenseAmount = it },
-            label = { Text("Số tiền ($)") },
+            value = expenseAmountValue,
+            onValueChange = { newValue ->
+                val formatted = NumberUtils.formatTextFieldValue(newValue)
+                expenseAmountValue = formatted
+            },
+            label = { Text("Số tiền (VND)") },
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(16.dp),
             colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = PrimaryBlue,
                 unfocusedBorderColor = SurfaceContainerLow
-            )
+            ),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -330,7 +345,7 @@ fun AddExpenseContent(
         Button(
             onClick = {
                 if (!isSaving) {
-                    onSave(expenseTitle, expenseAmount, selectedCategory)
+                    onSave(expenseTitle, expenseAmountValue.text, selectedCategory)
                     onDismiss()
                 }
             },
@@ -361,16 +376,8 @@ fun BudgetSummaryCard(totalSpent: Double, budgetMax: Double) {
             ) {
                 Column {
                     Text("Tổng chi tiêu", fontSize = 13.sp, color = OnSurfaceVariant)
-                    Text("$${totalSpent.toInt()}", fontWeight = FontWeight.ExtraBold, fontSize = 32.sp, color = OnSurface)
-                }
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(SunsetOrange.copy(alpha = 0.1f))
-                        .padding(horizontal = 12.dp, vertical = 6.dp)
-                ) {
-                    Text("Ngân sách dự kiến: $${budgetMax.toInt()}", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = SunsetOrange)
-                }
+                    Text(NumberUtils.formatVnd(totalSpent), fontWeight = FontWeight.ExtraBold, fontSize = 32.sp, color = OnSurface)
+                } 
             }
             
             Spacer(modifier = Modifier.height(20.dp))
@@ -385,7 +392,7 @@ fun BudgetSummaryCard(totalSpent: Double, budgetMax: Double) {
             Spacer(modifier = Modifier.height(12.dp))
             
             Text(
-                text = "Còn lại $${(budgetMax - totalSpent).toInt()} trước khi vượt mức dự kiến",
+                text = "Còn lại ${NumberUtils.formatVnd(budgetMax - totalSpent)} trước khi vượt ngân sách",
                 fontSize = 12.sp,
                 color = OnSurfaceVariant
             )
@@ -394,13 +401,20 @@ fun BudgetSummaryCard(totalSpent: Double, budgetMax: Double) {
 }
 
 @Composable
-fun MemberExpenseCircle(name: String, amount: Double, color: Color) {
+fun MemberExpenseCircle(
+    name: String,
+    amount: Double,
+    avatarUrl: String? = null,
+    color: Color,
+    onClick: () -> Unit = {}
+) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
             .width(90.dp)
             .clip(RoundedCornerShape(20.dp))
             .background(SurfaceContainerLowest)
+            .clickable(onClick = onClick)
             .padding(vertical = 12.dp)
     ) {
         Box(
@@ -408,14 +422,22 @@ fun MemberExpenseCircle(name: String, amount: Double, color: Color) {
                 .size(40.dp)
                 .clip(CircleShape)
                 .background(color.copy(alpha = 0.1f)),
-
             contentAlignment = Alignment.Center
         ) {
-            Image(painterResource(id = R.drawable.ic_launcher_foreground), null, modifier = Modifier.size(24.dp))
+            if (!avatarUrl.isNullOrBlank()) {
+                AsyncImage(
+                    model = avatarUrl,
+                    contentDescription = name,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+            } else {
+                Image(painterResource(id = R.drawable.ic_launcher_foreground), null, modifier = Modifier.size(24.dp))
+            }
         }
         Spacer(modifier = Modifier.height(8.dp))
-        Text(name, fontWeight = FontWeight.Bold, fontSize = 12.sp, color = OnSurface)
-        Text("$${amount.toInt()}", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = color)
+        Text(name, fontWeight = FontWeight.Bold, fontSize = 12.sp, color = OnSurface, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Text(NumberUtils.formatVnd(amount), fontWeight = FontWeight.Bold, fontSize = 14.sp, color = color)
     }
 }
 
@@ -455,7 +477,7 @@ fun ExpenseRow(
             Text("Trả bởi ${expense.paidByName}", fontSize = 12.sp, color = OnSurfaceVariant)
         }
         
-        Text("$${expense.amount.toInt()}", fontWeight = FontWeight.ExtraBold, fontSize = 16.sp, color = PrimaryBlue)
+        Text(NumberUtils.formatVnd(expense.amount), fontWeight = FontWeight.ExtraBold, fontSize = 16.sp, color = PrimaryBlue)
     }
 }
 
@@ -486,7 +508,10 @@ fun EditExpenseContent(
     onDismiss: () -> Unit
 ) {
     var expenseTitle by remember(expense.id) { mutableStateOf(expense.title) }
-    var expenseAmount by remember(expense.id) { mutableStateOf(expense.amount.toInt().toString()) }
+    var expenseAmountValue by remember(expense.id) {
+        val initialText = NumberUtils.formatInputString(expense.amount.toInt().toString())
+        mutableStateOf(TextFieldValue(text = initialText, selection = TextRange(initialText.length)))
+    }
     var selectedCategory by remember(expense.id) { mutableStateOf(expense.category) }
     var expanded by remember { mutableStateOf(false) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
@@ -561,15 +586,19 @@ fun EditExpenseContent(
         Spacer(modifier = Modifier.height(16.dp))
 
         OutlinedTextField(
-            value = expenseAmount,
-            onValueChange = { expenseAmount = it },
-            label = { Text("Số tiền ($)") },
+            value = expenseAmountValue,
+            onValueChange = { newValue ->
+                val formatted = NumberUtils.formatTextFieldValue(newValue)
+                expenseAmountValue = formatted
+            },
+            label = { Text("Số tiền (VND)") },
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(16.dp),
             colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = PrimaryBlue,
                 unfocusedBorderColor = SurfaceContainerLow
-            )
+            ),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -616,7 +645,7 @@ fun EditExpenseContent(
         Button(
             onClick = {
                 if (!isSaving) {
-                    onSave(expenseTitle, expenseAmount, selectedCategory)
+                    onSave(expenseTitle, expenseAmountValue.text, selectedCategory)
                     onDismiss()
                 }
             },

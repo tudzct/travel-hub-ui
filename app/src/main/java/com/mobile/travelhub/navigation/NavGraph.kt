@@ -264,13 +264,18 @@ fun NavGraph(
     fun navigateToUserProfile(userId: Long) {
         if (userId <= 0L) return
         val currentUserId = authUiState.session?.userId?.toLong()
-        val route = if (currentUserId == userId) {
-            Screen.Profile.route
+        if (currentUserId == userId) {
+            navController.navigate(Screen.Profile.route) {
+                popUpTo(navController.graph.findStartDestination().id) {
+                    saveState = true
+                }
+                launchSingleTop = true
+                restoreState = true
+            }
         } else {
-            Screen.OtherProfile.createRoute(userId)
-        }
-        navController.navigate(route) {
-            launchSingleTop = true
+            navController.navigate(Screen.OtherProfile.createRoute(userId)) {
+                launchSingleTop = true
+            }
         }
     }
 
@@ -564,8 +569,17 @@ fun NavGraph(
                 }
                 return@composable
             }
-            //^^^^ tu^^^^
             val profileViewModel: ProfileViewModel = hiltViewModel()
+            val previousRoute = navController.previousBackStackEntry?.destination?.route
+            val isFromDeepScreen = previousRoute != null && 
+                previousRoute != Screen.Home.route &&
+                previousRoute != Screen.Explore.route &&
+                previousRoute != Screen.Explore.ROUTE_WITH_ARGS &&
+                previousRoute != Screen.Trips.route &&
+                previousRoute != Screen.CreatePost.route &&
+                previousRoute != Screen.Chat.route &&
+                previousRoute != Screen.Profile.route
+
             ProfileScreen(
                 onNavigateToEditProfile = { navController.navigate(Screen.EditProfile.route) { launchSingleTop = true } },
                 onNavigateToFollowers = { navController.navigate(Screen.FollowersFollowing.createRoute(0, null)) { launchSingleTop = true } },
@@ -594,6 +608,11 @@ fun NavGraph(
                         popUpTo(navController.graph.findStartDestination().id) { inclusive = false }
                         launchSingleTop = true
                     }
+                },
+                onBack = if (isFromDeepScreen) {
+                    { navController.popBackStack() }
+                } else {
+                    null
                 },
                 viewModel = profileViewModel
             )
@@ -703,7 +722,7 @@ fun NavGraph(
                 groupName = groupName,
                 onBack = { navController.popBackStack() },
                 onNavigateToCost = { costTripId -> navController.navigate(Screen.CostEstimate.createRoute(costTripId)) { launchSingleTop = true } },
-                onNavigateToProfile = { userId -> navController.navigate(Screen.OtherProfile.createRoute(userId)) { launchSingleTop = true } }
+                onNavigateToProfile = ::navigateToUserProfile
             )
         }
 
@@ -762,7 +781,8 @@ fun NavGraph(
                             launchSingleTop = true
                         }
                     }
-                }
+                },
+                onNavigateToProfile = ::navigateToUserProfile
             )
         }
 

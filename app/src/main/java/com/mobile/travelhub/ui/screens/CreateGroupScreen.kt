@@ -58,6 +58,8 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -66,6 +68,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.mobile.travelhub.ui.components.EditProfileField
 import com.mobile.travelhub.ui.components.PrimaryProfileButton
 import com.mobile.travelhub.viewmodels.CreateGroupViewModel
+import com.mobile.travelhub.utils.NumberUtils
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
@@ -92,6 +95,20 @@ fun CreateGroupScreen(
 
     LaunchedEffect(uiState.errorMessage) {
         uiState.errorMessage?.let { snackbarHostState.showSnackbar(it) }
+    }
+
+    var budgetMaxFieldVal by remember {
+        val initialText = uiState.budgetMax
+        mutableStateOf(TextFieldValue(text = initialText, selection = TextRange(initialText.length)))
+    }
+
+    LaunchedEffect(uiState.budgetMax) {
+        if (uiState.budgetMax != budgetMaxFieldVal.text) {
+            budgetMaxFieldVal = TextFieldValue(
+                text = uiState.budgetMax,
+                selection = TextRange(uiState.budgetMax.length)
+            )
+        }
     }
 
     Scaffold(
@@ -217,10 +234,14 @@ fun CreateGroupScreen(
 
             EditProfileField(
                 label = "Ngân sách dự kiến",
-                value = uiState.budgetMax,
-                onValueChange = viewModel::updateBudgetMax,
+                value = budgetMaxFieldVal,
+                onValueChange = { newValue ->
+                    val formatted = NumberUtils.formatTextFieldValue(newValue)
+                    budgetMaxFieldVal = formatted
+                    viewModel.updateBudgetMax(formatted.text)
+                },
                 keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Decimal,
+                    keyboardType = KeyboardType.Number,
                     imeAction = ImeAction.Done
                 ),
                 keyboardActions = KeyboardActions(

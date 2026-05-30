@@ -126,7 +126,7 @@ class CostEstimateViewModel @Inject constructor(
         val state = _uiState.value
         val tripId = state.tripId
         val groupName = state.groupName
-        val parsedAmount = amountText.trim().toDoubleOrNull()
+        val parsedAmount = amountText.replace(".", "").trim().toDoubleOrNull()
         val sessionUserId = authRepository.getSavedSession()?.userId?.toLong() ?: -1L
 
         if (tripId <= 0L) {
@@ -174,7 +174,7 @@ class CostEstimateViewModel @Inject constructor(
         val state = _uiState.value
         val tripId = state.tripId
         val groupName = state.groupName
-        val parsedAmount = amountText.trim().toDoubleOrNull()
+        val parsedAmount = amountText.replace(".", "").trim().toDoubleOrNull()
 
         if (tripId <= 0L) {
             _uiState.update { it.copy(errorMessage = "Không xác định được chuyến đi") }
