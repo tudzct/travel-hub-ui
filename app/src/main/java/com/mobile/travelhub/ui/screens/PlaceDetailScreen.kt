@@ -199,7 +199,7 @@ fun PlaceDetailScreen(
 
                     item {
                         FlatSection {
-                            DescriptionSection(
+                            ExpandableDescription(
                                 description = detail.description.orEmpty().ifBlank { "Chưa có mô tả." }
                             )
                         }
@@ -528,23 +528,6 @@ private fun InfoRow(
 }
 
 @Composable
-private fun DescriptionSection(description: String) {
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(10.dp)
-    ) {
-        Text(
-            text = "Mô tả",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold,
-            textAlign = TextAlign.Justify
-
-            )
-        ExpandableDescription(description = description)
-    }
-}
-
-@Composable
 private fun RelatedPlacesSection(
     places: List<TravelPlaceListItemResponse>,
     isLoading: Boolean,
@@ -703,12 +686,21 @@ private fun ExpandableDescription(
 ) {
     var expanded by remember(description) { mutableStateOf(false) }
     var canExpand by remember(description) { mutableStateOf(false) }
+    Column(
+        modifier = Modifier.fillMaxWidth().clickable(enabled = expanded) { expanded = false },
+        verticalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        Text(
+            text = "Mô tả",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold
+        )
 
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Text(
             text = description,
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Justify,
             maxLines = if (expanded) Int.MAX_VALUE else collapsedMaxLines,
             overflow = TextOverflow.Ellipsis,
             onTextLayout = { layoutResult ->
@@ -727,6 +719,7 @@ private fun ExpandableDescription(
             }
         }
     }
+
 }
 
 @Composable
