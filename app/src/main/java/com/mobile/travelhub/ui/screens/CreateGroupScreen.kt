@@ -1,6 +1,5 @@
 package com.mobile.travelhub.ui.screens
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -9,9 +8,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
@@ -20,12 +17,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CalendarMonth
-import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.SelectableDates
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -61,10 +55,10 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.mobile.travelhub.ui.components.DestinationPlacePicker
 import com.mobile.travelhub.ui.components.EditProfileField
 import com.mobile.travelhub.ui.components.PrimaryProfileButton
 import com.mobile.travelhub.viewmodels.CreateGroupViewModel
@@ -159,60 +153,20 @@ fun CreateGroupScreen(
                     onNext = { focusManager.moveFocus(FocusDirection.Down) }
                 )
             )
-            Text(
-                text = "TỈNH",
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                letterSpacing = 1.sp,
-                modifier = Modifier.padding(top = 4.dp, bottom = 8.dp)
-            )
 
-            CompactSelectionDropdown(
-                selectedValue = uiState.selectedProvince?.name.orEmpty(),
-                options = uiState.provinces,
-                optionLabel = { it.name },
-                onOptionSelected = { viewModel.selectProvince(it.id) },
+            DestinationPlacePicker(
+                label = "Điểm đến",
+                selectedProvince = uiState.selectedProvince,
+                selectedPlace = uiState.selectedPlace,
+                provinces = uiState.provinces,
+                places = uiState.places,
+                isLoading = uiState.isLoadingLocations,
                 enabled = !uiState.isSaving && uiState.provinces.isNotEmpty(),
-                placeholder = ""
+                placeholder = "Chọn địa điểm",
+                modifier = Modifier.padding(top = 4.dp, bottom = 12.dp),
+                onProvinceSelected = { viewModel.selectProvince(it) },
+                onPlaceSelected = { viewModel.selectPlace(it) }
             )
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            Text(
-                text = "ĐIỂM ĐẾN",
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                letterSpacing = 1.sp,
-                modifier = Modifier.padding(top = 4.dp, bottom = 8.dp)
-            )
-
-            CompactSelectionDropdown(
-                selectedValue = uiState.selectedPlace?.let { "${it.name} • ${it.province.name}" }.orEmpty(),
-                options = uiState.places,
-                optionLabel = { "${it.name} • ${it.province.name}" },
-                onOptionSelected = { viewModel.selectPlace(it.id) },
-                enabled = !uiState.isSaving && uiState.selectedProvinceId != null && uiState.places.isNotEmpty(),
-                placeholder = ""
-            )
-
-            if (uiState.isLoadingLocations) {
-                Spacer(modifier = Modifier.height(8.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    androidx.compose.material3.CircularProgressIndicator(
-                        modifier = Modifier.size(14.dp),
-                        strokeWidth = 2.dp,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                    Spacer(modifier = Modifier.size(8.dp))
-                    Text(
-                        text = "Đang tải danh sách điểm đến...",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
 
             TripDateRangeFieldInput(
                 label = "Ngày đi và ngày về",
@@ -508,70 +462,3 @@ private fun parseDisplayDate(value: String, formatter: DateTimeFormatter): Local
     }.getOrNull()
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun <T> CompactSelectionDropdown(
-    selectedValue: String,
-    options: List<T>,
-    optionLabel: (T) -> String,
-    onOptionSelected: (T) -> Unit,
-    enabled: Boolean,
-    placeholder: String
-) {
-    var expanded by remember { mutableStateOf(false) }
-
-    ExposedDropdownMenuBox(
-        expanded = expanded,
-        onExpandedChange = { if (enabled) expanded = !expanded }
-    ) {
-        OutlinedTextField(
-            value = selectedValue,
-            onValueChange = {},
-            readOnly = true,
-            enabled = enabled,
-            placeholder = {
-                Text(
-                    text = placeholder,
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-                )
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .menuAnchor(),
-            shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
-                unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-                disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
-                disabledBorderColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f),
-                disabledTextColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
-            ),
-            textStyle = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface),
-            trailingIcon = {
-                ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
-            },
-            singleLine = true
-        )
-
-        androidx.compose.material3.DropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false },
-            modifier = Modifier
-                .fillMaxWidth(0.92f)
-                .heightIn(max = 320.dp)
-        ) {
-            options.forEach { option ->
-                androidx.compose.material3.DropdownMenuItem(
-                    text = { Text(optionLabel(option)) },
-                    onClick = {
-                        expanded = false
-                        onOptionSelected(option)
-                    }
-                )
-            }
-        }
-    }
-}
