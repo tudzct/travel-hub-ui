@@ -680,13 +680,13 @@ fun FeedPostCard(
             )
         }
 
-        Text(
+        ExpandableDescription(
+            description = post.description,
             modifier = Modifier.padding(horizontal = 16.dp),
-            text = post.description,
-            style = MaterialTheme.typography.bodyMedium,
-            maxLines = 3,
-            overflow = TextOverflow.Ellipsis,
-            color = VerdantOnSurface
+            title = null,
+            collapsedMaxLines = 3,
+            textStyle = MaterialTheme.typography.bodyMedium,
+            textColor = VerdantOnSurface
         )
 
         Spacer(modifier = Modifier.height(12.dp))

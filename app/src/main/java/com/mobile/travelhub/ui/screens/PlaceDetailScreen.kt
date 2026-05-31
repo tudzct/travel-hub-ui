@@ -61,7 +61,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -69,6 +68,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil3.compose.AsyncImage
 import com.mobile.travelhub.data.model.TravelPlaceListItemResponse
 import com.mobile.travelhub.data.model.TravelPlaceReviewResponse
+import com.mobile.travelhub.ui.components.ExpandableDescription
 import com.mobile.travelhub.ui.components.SimpleFormTextField
 import com.mobile.travelhub.ui.theme.OnSurface
 import com.mobile.travelhub.ui.theme.OnSurfaceVariant
@@ -677,49 +677,6 @@ private fun RelatedPlaceCard(
             }
         }
     }
-}
-
-@Composable
-private fun ExpandableDescription(
-    description: String,
-    collapsedMaxLines: Int = 4
-) {
-    var expanded by remember(description) { mutableStateOf(false) }
-    var canExpand by remember(description) { mutableStateOf(false) }
-    Column(
-        modifier = Modifier.fillMaxWidth().clickable(enabled = expanded) { expanded = false },
-        verticalArrangement = Arrangement.spacedBy(10.dp)
-    ) {
-        Text(
-            text = "Mô tả",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold
-        )
-
-        Text(
-            text = description,
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Justify,
-            maxLines = if (expanded) Int.MAX_VALUE else collapsedMaxLines,
-            overflow = TextOverflow.Ellipsis,
-            onTextLayout = { layoutResult ->
-                if (!expanded) {
-                    canExpand = layoutResult.hasVisualOverflow
-                }
-            }
-        )
-
-        if (canExpand || expanded) {
-            TextButton(
-                onClick = { expanded = !expanded },
-                modifier = Modifier.padding(horizontal = 0.dp)
-            ) {
-                Text(if (expanded) "Thu gọn" else "Xem thêm")
-            }
-        }
-    }
-
 }
 
 @Composable
