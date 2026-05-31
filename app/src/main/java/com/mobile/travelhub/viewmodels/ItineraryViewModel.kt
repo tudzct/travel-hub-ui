@@ -32,11 +32,13 @@ class ItineraryViewModel @Inject constructor(
     private var workspaceJob: Job? = null
     private var boundGroupName: String? = null
     private var boundTripId: Long? = null
+    private var isMutatingActivities = false
 
     fun bindGroup(groupName: String, tripId: Long? = null) {
         if (boundGroupName == groupName && boundTripId == tripId) return
         boundGroupName = groupName
         boundTripId = tripId
+        isMutatingActivities = false
         workspaceJob?.cancel()
         _uiState.update {
             it.copy(
@@ -68,7 +70,7 @@ class ItineraryViewModel @Inject constructor(
                         version = workspace.version,
                         role = workspace.role,
                         days = workspace.days,
-                        isLoadingActivities = false,
+                        isLoadingActivities = isMutatingActivities,
                         selectedDayIndex = selectedDayIndex
                     )
                 }
@@ -150,9 +152,18 @@ class ItineraryViewModel @Inject constructor(
 
     fun saveEvent(updatedEvent: ItineraryEvent) {
         val groupName = boundGroupName ?: return
+        val wasCreating = _uiState.value.isCreatingEvent
+        _uiState.update {
+            it.copy(
+                editingEvent = null,
+                isCreatingEvent = false,
+                isLoadingActivities = true,
+                errorMessage = null
+            )
+        }
         launchMutation {
             val selectedOption = _uiState.value.dayOptions.firstOrNull { it.dayIndex == updatedEvent.dayIndex }
-            if (_uiState.value.isCreatingEvent && selectedOption != null) {
+            if (wasCreating && selectedOption != null) {
                 _uiState.value.dayOptions
                     .filter { it.dayIndex <= selectedOption.dayIndex }
                     .sortedBy { it.dayIndex }
@@ -163,10 +174,9 @@ class ItineraryViewModel @Inject constructor(
                             label = option.label,
                             dateLabel = option.dateLabel
                         )
-                    }
+                }
             }
             repository.updateEvent(groupName, updatedEvent)
-            _uiState.update { it.copy(editingEvent = null, isCreatingEvent = false) }
         }
     }
 
@@ -185,17 +195,31 @@ class ItineraryViewModel @Inject constructor(
             _uiState.update { it.copy(editingEvent = null, isCreatingEvent = false) }
             return
         }
+        _uiState.update {
+            it.copy(
+                editingEvent = null,
+                isCreatingEvent = false,
+                isLoadingActivities = true,
+                errorMessage = null
+            )
+        }
         launchMutation {
-            repository.deleteEvent(groupName, event.eventId)
-            _uiState.update { it.copy(editingEvent = null, isCreatingEvent = false) }
+            repository.deleteEvent(groupName, event)
         }
     }
 
     fun deleteEvent(eventId: String) {
         val groupName = boundGroupName ?: return
+        _uiState.update {
+            it.copy(
+                editingEvent = null,
+                isCreatingEvent = false,
+                isLoadingActivities = true,
+                errorMessage = null
+            )
+        }
         launchMutation {
             repository.deleteEvent(groupName, eventId)
-            _uiState.update { it.copy(editingEvent = null, isCreatingEvent = false) }
         }
     }
 
@@ -316,10 +340,27 @@ class ItineraryViewModel @Inject constructor(
     }
 
     private fun launchMutation(block: suspend () -> Unit) {
+        isMutatingActivities = true
+        _uiState.update {
+            it.copy(
+                isLoadingActivities = true,
+                errorMessage = null
+            )
+        }
         viewModelScope.launch {
-            runCatching { block() }
+            val result = runCatching { block() }
+            isMutatingActivities = false
+            result
                 .onFailure { throwable ->
-                    _uiState.update { it.copy(errorMessage = throwable.message ?: "Unable to update itinerary") }
+                    _uiState.update {
+                        it.copy(
+                            isLoadingActivities = false,
+                            errorMessage = throwable.message ?: "Unable to update itinerary"
+                        )
+                    }
+                }
+                .onSuccess {
+                    _uiState.update { it.copy(isLoadingActivities = false) }
                 }
         }
     }

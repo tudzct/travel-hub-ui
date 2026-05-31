@@ -10,6 +10,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.LocationOn
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -18,6 +19,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mobile.travelhub.data.model.*
@@ -98,11 +100,8 @@ fun DayContinuousTimelineCard(day: ItineraryDay) {
                                     .size(10.dp)
                                     .background(event.displayColor(), RoundedCornerShape(999.dp))
                             )
-                            Text(
-                                text = "${event.startTime} - ${event.endTime}",
-                                style = MaterialTheme.typography.labelMedium,
-                                color = OnSurfaceVariant
-                            )
+                            ActivityTimeChip(timeRange = "${event.startTime} - ${event.endTime}")
+                            ActivityPlaceChip(placeName = event.placeName)
                             Text(
                                 text = event.title,
                                 style = MaterialTheme.typography.bodyMedium,
@@ -409,12 +408,16 @@ fun DayEventCard(
                     verticalAlignment = Alignment.Top
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "${event.startTime} - ${event.endTime}",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 13.sp,
-                            color = accent
-                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            ActivityTimeChip(
+                                timeRange = "${event.startTime} - ${event.endTime}",
+                                contentColor = accent
+                            )
+                            ActivityPlaceChip(placeName = event.placeName)
+                        }
                         Spacer(modifier = Modifier.height(4.dp))
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
@@ -534,6 +537,67 @@ fun MetaPill(
     ) {
         icon?.invoke()
         content()
+    }
+}
+
+@Composable
+fun ActivityTimeChip(
+    timeRange: String,
+    modifier: Modifier = Modifier,
+    contentColor: Color = PrimaryBlue
+) {
+    Row(
+        modifier = modifier
+            .background(contentColor.copy(alpha = 0.12f), RoundedCornerShape(999.dp))
+            .padding(horizontal = 8.dp, vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        Icon(
+            imageVector = Icons.Default.Schedule,
+            contentDescription = null,
+            tint = contentColor,
+            modifier = Modifier.size(12.dp)
+        )
+        Text(
+            text = timeRange,
+            color = contentColor,
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Medium,
+            maxLines = 1
+        )
+    }
+}
+
+@Composable
+fun ActivityPlaceChip(
+    placeName: String,
+    modifier: Modifier = Modifier
+) {
+    if (placeName.isBlank()) return
+
+    Row(
+        modifier = modifier
+            .widthIn(max = 150.dp)
+            .background(PrimaryBlue.copy(alpha = 0.10f), RoundedCornerShape(999.dp))
+            .padding(horizontal = 8.dp, vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        Icon(
+            imageVector = Icons.Outlined.LocationOn,
+            contentDescription = null,
+            tint = PrimaryBlue,
+            modifier = Modifier.size(12.dp)
+        )
+        Text(
+            text = placeName,
+            color = OnSurfaceVariant,
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Medium,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
     }
 }
 
