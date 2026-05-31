@@ -6,7 +6,6 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
@@ -627,8 +626,11 @@ fun FeedPostCard(
                     ),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Image(
-                    painter = painterResource(R.drawable.female_avatar_maker),
+                AsyncImage(
+                    model = post.ownerAvatarUrl?.let(::toDisplayUrl),
+                    placeholder = painterResource(R.drawable.female_avatar_maker),
+                    error = painterResource(R.drawable.female_avatar_maker),
+                    fallback = painterResource(R.drawable.female_avatar_maker),
                     contentDescription = post.username,
                     modifier = Modifier
                         .size(36.dp)
@@ -816,17 +818,6 @@ fun FeedPostCard(
                         )
                     }
                 }
-                Box(
-                    modifier = Modifier.weight(1f),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        painter = painterResource(R.drawable.share_fat_bold),
-                        contentDescription = "Share",
-                        modifier = Modifier.size(24.dp),
-                        tint = VerdantOnSurface
-                    )
-                }
             }
         }
 
@@ -967,6 +958,7 @@ fun FeedPostCardPreview() {
             id = 1L,
             ownerId = 2L,
             username = "Duc Duong Hoang",
+            ownerAvatarUrl = null,
             subtitle = "Da Nang, Viet Nam",
             description = "A calm afternoon by the river.",
             imageUrls = listOf("sample.jpg"),

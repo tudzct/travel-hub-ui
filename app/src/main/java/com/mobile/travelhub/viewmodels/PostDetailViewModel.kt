@@ -267,6 +267,7 @@ class PostDetailViewModel @Inject constructor(
             id = post.id,
             ownerId = post.owner.id,
             username = username,
+            ownerAvatarUrl = post.owner.avatarUrl?.takeIf { it.isNotBlank() },
             subtitle = location,
             description = post.description.takeIf { it.isNotBlank() } ?: "",
             imageUrls = post.imageUrls.filter { it.isNotBlank() },

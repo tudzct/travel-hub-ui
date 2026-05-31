@@ -572,6 +572,7 @@ class ProfileViewModel @Inject constructor(
             id = safeId,
             ownerId = runCatching { post.owner.id }.getOrDefault(0L),
             username = safeUsername,
+            ownerAvatarUrl = runCatching { post.owner.avatarUrl }.getOrNull()?.takeIf { it.isNotBlank() },
             subtitle = safeLocation,
             description = safeDescription,
             imageUrls = safeImageUrls,
