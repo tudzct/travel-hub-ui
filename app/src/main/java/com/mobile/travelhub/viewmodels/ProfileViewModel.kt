@@ -192,23 +192,30 @@ class ProfileViewModel @Inject constructor(
 
     fun onSaveClicked(postId: Long) {
         val currentPost = _profilePostsState.value.posts.firstOrNull { it.id == postId } ?: return
-        if (currentPost.isSaveLoading || currentPost.isSaved) return
+        if (currentPost.isSaveLoading) return
+        val targetSaved = !currentPost.isSaved
 
         updatePost(postId) {
             it.copy(
-                isSaved = true,
+                isSaved = targetSaved,
                 isSaveLoading = true
             )
         }
 
         viewModelScope.launch {
-            postRepository.savePost(postId)
+            postRepository.toggleSavedPost(postId, currentlySaved = currentPost.isSaved)
                 .onSuccess { response ->
-                    updatePost(postId) {
-                        it.copy(
-                            isSaved = response.saved,
-                            isSaveLoading = false
-                        )
+                    if (!response.saved && _profilePostsState.value.selectedTab == ProfilePostsTab.SAVED) {
+                        _profilePostsState.update { state ->
+                            state.copy(posts = state.posts.filterNot { it.id == postId })
+                        }
+                    } else {
+                        updatePost(postId) {
+                            it.copy(
+                                isSaved = response.saved,
+                                isSaveLoading = false
+                            )
+                        }
                     }
                 }
                 .onFailure { throwable ->

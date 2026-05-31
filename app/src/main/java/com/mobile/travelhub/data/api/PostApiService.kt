@@ -55,6 +55,11 @@ interface PostApiService {
         @Path("postId") postId: Long
     ): SavePostResponse
 
+    @DELETE("api/posts/{postId}/save")
+    suspend fun unsavePost(
+        @Path("postId") postId: Long
+    ): SavePostResponse
+
     @POST("api/posts/{postId}/comments")
     suspend fun addComment(
         @Path("postId") postId: Long,

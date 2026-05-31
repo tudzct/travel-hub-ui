@@ -125,17 +125,18 @@ class PostDetailViewModel @Inject constructor(
 
     fun onSaveClicked() {
         val currentPost = _uiState.value.post ?: return
-        if (currentPost.isSaveLoading || currentPost.isSaved) return
+        if (currentPost.isSaveLoading) return
+        val targetSaved = !currentPost.isSaved
 
         updatePost {
             it.copy(
-                isSaved = true,
+                isSaved = targetSaved,
                 isSaveLoading = true
             )
         }
 
         viewModelScope.launch {
-            savePostUseCase(postId)
+            savePostUseCase(postId, currentlySaved = currentPost.isSaved)
                 .onSuccess { response ->
                     updatePost {
                         it.copy(

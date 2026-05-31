@@ -37,10 +37,7 @@ fun ItineraryOverviewContent(
     state: ItineraryUiState,
     paddingValues: PaddingValues,
     onOpenDayDetail: (Int) -> Unit,
-    onEditEvent: (ItineraryEvent) -> Unit,
-    onToggleChange: (String) -> Unit,
-    onApplySelected: () -> Unit,
-    onDiscardProposal: () -> Unit
+    onEditEvent: (ItineraryEvent) -> Unit
 ) {
     LazyColumn(
         modifier = Modifier
