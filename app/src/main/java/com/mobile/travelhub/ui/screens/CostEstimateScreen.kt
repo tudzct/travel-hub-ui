@@ -7,9 +7,14 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.clickable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
+import com.mobile.travelhub.viewmodels.ExpenseTransactionUiModel
+
+
 import androidx.compose.material.icons.filled.ConfirmationNumber
 import androidx.compose.material.icons.filled.Hotel
 import androidx.compose.material.icons.filled.Restaurant
@@ -21,7 +26,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+
+
 import androidx.compose.ui.graphics.vector.ImageVector
+
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -29,7 +37,15 @@ import androidx.compose.ui.unit.sp
 import com.mobile.travelhub.R
 import com.mobile.travelhub.ui.theme.*
 import com.mobile.travelhub.viewmodels.CostEstimateViewModel
+import com.mobile.travelhub.utils.NumberUtils
+import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import coil.compose.AsyncImage
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.style.TextOverflow
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -37,10 +53,12 @@ fun CostEstimateScreen(
     tripId: Long,
     groupName: String = "Tokyo Trip",
     onBack: () -> Unit,
+    onNavigateToProfile: (Long) -> Unit = {},
     viewModel: CostEstimateViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var showAddExpense by remember { mutableStateOf(false) }
+    var editingExpense by remember { mutableStateOf<ExpenseTransactionUiModel?>(null) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     LaunchedEffect(tripId, groupName) {
@@ -68,13 +86,15 @@ fun CostEstimateScreen(
             )
         },
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = { showAddExpense = true },
-                containerColor = PrimaryBlue,
-                contentColor = Color.White,
-                shape = CircleShape
-            ) {
-                Icon(Icons.Default.Add, contentDescription = "Add Expense")
+            if (!uiState.isCompleted) {
+                FloatingActionButton(
+                    onClick = { showAddExpense = true },
+                    containerColor = PrimaryBlue,
+                    contentColor = Color.White,
+                    shape = CircleShape
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = "Add Expense")
+                }
             }
         }
     ) { padding ->
@@ -106,8 +126,7 @@ fun CostEstimateScreen(
             item {
                 BudgetSummaryCard(
                     totalSpent = uiState.totalSpent,
-                    budgetMax = uiState.budgetMax ?: 0.0,
-                    budgetMin = uiState.budgetMin ?: 0.0
+                    budgetMax = uiState.budgetMax ?: 0.0
                 )
             }
 
@@ -130,7 +149,7 @@ fun CostEstimateScreen(
                     val contributions = uiState.contributions
                     if (contributions.isEmpty()) {
                         Text(
-                            text = "Chưa có dữ liệu đóng góp từ BE.",
+                            text = "Chưa có khoản chi nào cho chuyến đi này.",
                             color = OnSurfaceVariant,
                             fontSize = 13.sp
                         )
@@ -139,7 +158,9 @@ fun CostEstimateScreen(
                             MemberExpenseCircle(
                                 name = contribution.userName,
                                 amount = contribution.amountPaid,
-                                color = listOf(PrimaryBlue, SunsetOrange, Color(0xFF4CAF50))[index % 3]
+                                avatarUrl = contribution.avatarUrl,
+                                color = listOf(PrimaryBlue, SunsetOrange, Color(0xFF4CAF50))[index % 3],
+                                onClick = { onNavigateToProfile(contribution.userId) }
                             )
                         }
                     }
@@ -157,27 +178,26 @@ fun CostEstimateScreen(
                 )
             }
 
-            val recentExpenses = uiState.transactions.map {
-                ExpenseItemData(
-                    title = it.title,
-                    paidBy = it.paidByName,
-                    amount = it.amount,
-                    category = it.category,
-                    dateLabel = it.date.orEmpty()
-                )
-            }
+            val recentExpenses = uiState.transactions
 
             if (recentExpenses.isEmpty()) {
                 item {
                     Text(
-                        text = "Chưa có giao dịch chi phí từ BE.",
+                        text = "Chuyến đi này chưa có giao dịch nào.",
                         color = OnSurfaceVariant,
                         fontSize = 13.sp
                     )
                 }
             } else {
                 items(recentExpenses) { expense ->
-                    ExpenseRow(expense)
+                    ExpenseRow(
+                        expense = expense,
+                        onClick = {
+                            if (!uiState.isCompleted) {
+                                editingExpense = expense
+                            }
+                        }
+                    )
                 }
             }
 
@@ -200,6 +220,28 @@ fun CostEstimateScreen(
                 )
             }
         }
+
+        if (editingExpense != null) {
+            ModalBottomSheet(
+                onDismissRequest = { editingExpense = null },
+                sheetState = sheetState,
+                containerColor = SurfaceContainerLowest,
+                dragHandle = { BottomSheetDefaults.DragHandle(color = SurfaceContainerLow) }
+            ) {
+                val expense = editingExpense!!
+                EditExpenseContent(
+                    expense = expense,
+                    isSaving = uiState.isAddingExpense,
+                    onSave = { title, amountText, category ->
+                        viewModel.editExpense(expense.id, title, amountText, category, expense.paidByUserId)
+                    },
+                    onDelete = {
+                        viewModel.deleteExpense(expense.id)
+                    },
+                    onDismiss = { editingExpense = null }
+                )
+            }
+        }
     }
 }
 
@@ -211,7 +253,7 @@ fun AddExpenseContent(
     onDismiss: () -> Unit
 ) {
     var expenseTitle by remember { mutableStateOf("") }
-    var expenseAmount by remember { mutableStateOf("") }
+    var expenseAmountValue by remember { mutableStateOf(TextFieldValue("")) }
     var selectedCategory by remember { mutableStateOf("FOOD") }
     var expanded by remember { mutableStateOf(false) }
 
@@ -244,15 +286,19 @@ fun AddExpenseContent(
         Spacer(modifier = Modifier.height(16.dp))
 
         OutlinedTextField(
-            value = expenseAmount,
-            onValueChange = { expenseAmount = it },
-            label = { Text("Số tiền ($)") },
+            value = expenseAmountValue,
+            onValueChange = { newValue ->
+                val formatted = NumberUtils.formatTextFieldValue(newValue)
+                expenseAmountValue = formatted
+            },
+            label = { Text("Số tiền (VND)") },
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(16.dp),
             colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = PrimaryBlue,
                 unfocusedBorderColor = SurfaceContainerLow
-            )
+            ),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -299,7 +345,7 @@ fun AddExpenseContent(
         Button(
             onClick = {
                 if (!isSaving) {
-                    onSave(expenseTitle, expenseAmount, selectedCategory)
+                    onSave(expenseTitle, expenseAmountValue.text, selectedCategory)
                     onDismiss()
                 }
             },
@@ -314,7 +360,7 @@ fun AddExpenseContent(
 }
 
 @Composable
-fun BudgetSummaryCard(totalSpent: Double, budgetMin: Double, budgetMax: Double) {
+fun BudgetSummaryCard(totalSpent: Double, budgetMax: Double) {
     val progress = if (budgetMax > 0.0) (totalSpent / budgetMax).toFloat() else 0f
     
     Card(
@@ -330,16 +376,8 @@ fun BudgetSummaryCard(totalSpent: Double, budgetMin: Double, budgetMax: Double) 
             ) {
                 Column {
                     Text("Tổng chi tiêu", fontSize = 13.sp, color = OnSurfaceVariant)
-                    Text("$${totalSpent.toInt()}", fontWeight = FontWeight.ExtraBold, fontSize = 32.sp, color = OnSurface)
-                }
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(SunsetOrange.copy(alpha = 0.1f))
-                        .padding(horizontal = 12.dp, vertical = 6.dp)
-                ) {
-                    Text("Ngân sách: $${budgetMin.toInt()}-$${budgetMax.toInt()}", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = SunsetOrange)
-                }
+                    Text(NumberUtils.formatVnd(totalSpent), fontWeight = FontWeight.ExtraBold, fontSize = 32.sp, color = OnSurface)
+                } 
             }
             
             Spacer(modifier = Modifier.height(20.dp))
@@ -354,7 +392,7 @@ fun BudgetSummaryCard(totalSpent: Double, budgetMin: Double, budgetMax: Double) 
             Spacer(modifier = Modifier.height(12.dp))
             
             Text(
-                text = "Còn lại $${(budgetMax - totalSpent).toInt()} trước khi vượt mức tối đa",
+                text = "Còn lại ${NumberUtils.formatVnd(budgetMax - totalSpent)} trước khi vượt ngân sách",
                 fontSize = 12.sp,
                 color = OnSurfaceVariant
             )
@@ -363,13 +401,20 @@ fun BudgetSummaryCard(totalSpent: Double, budgetMin: Double, budgetMax: Double) 
 }
 
 @Composable
-fun MemberExpenseCircle(name: String, amount: Double, color: Color) {
+fun MemberExpenseCircle(
+    name: String,
+    amount: Double,
+    avatarUrl: String? = null,
+    color: Color,
+    onClick: () -> Unit = {}
+) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
             .width(90.dp)
             .clip(RoundedCornerShape(20.dp))
             .background(SurfaceContainerLowest)
+            .clickable(onClick = onClick)
             .padding(vertical = 12.dp)
     ) {
         Box(
@@ -379,21 +424,34 @@ fun MemberExpenseCircle(name: String, amount: Double, color: Color) {
                 .background(color.copy(alpha = 0.1f)),
             contentAlignment = Alignment.Center
         ) {
-            Image(painterResource(id = R.drawable.ic_launcher_foreground), null, modifier = Modifier.size(24.dp))
+            if (!avatarUrl.isNullOrBlank()) {
+                AsyncImage(
+                    model = avatarUrl,
+                    contentDescription = name,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+            } else {
+                Image(painterResource(id = R.drawable.ic_launcher_foreground), null, modifier = Modifier.size(24.dp))
+            }
         }
         Spacer(modifier = Modifier.height(8.dp))
-        Text(name, fontWeight = FontWeight.Bold, fontSize = 12.sp, color = OnSurface)
-        Text("$${amount.toInt()}", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = color)
+        Text(name, fontWeight = FontWeight.Bold, fontSize = 12.sp, color = OnSurface, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Text(NumberUtils.formatVnd(amount), fontWeight = FontWeight.Bold, fontSize = 14.sp, color = color)
     }
 }
 
 @Composable
-fun ExpenseRow(expense: ExpenseItemData) {
+fun ExpenseRow(
+    expense: ExpenseTransactionUiModel,
+    onClick: () -> Unit
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(20.dp))
             .background(SurfaceContainerLowest)
+            .clickable(onClick = onClick)
             .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -416,10 +474,10 @@ fun ExpenseRow(expense: ExpenseItemData) {
         
         Column(modifier = Modifier.weight(1f)) {
             Text(expense.title, fontWeight = FontWeight.Bold, fontSize = 15.sp, color = OnSurface)
-            Text("Trả bởi ${expense.paidBy}", fontSize = 12.sp, color = OnSurfaceVariant)
+            Text("Trả bởi ${expense.paidByName}", fontSize = 12.sp, color = OnSurfaceVariant)
         }
         
-        Text("$${expense.amount.toInt()}", fontWeight = FontWeight.ExtraBold, fontSize = 16.sp, color = PrimaryBlue)
+        Text(NumberUtils.formatVnd(expense.amount), fontWeight = FontWeight.ExtraBold, fontSize = 16.sp, color = PrimaryBlue)
     }
 }
 
@@ -437,5 +495,166 @@ private fun expenseCategoryIcon(category: String): ImageVector {
         "STAY" -> Icons.Default.Hotel
         "TRANSPORT" -> Icons.Default.Train
         else -> Icons.Default.ConfirmationNumber
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun EditExpenseContent(
+    expense: ExpenseTransactionUiModel,
+    isSaving: Boolean,
+    onSave: (String, String, String) -> Unit,
+    onDelete: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    var expenseTitle by remember(expense.id) { mutableStateOf(expense.title) }
+    var expenseAmountValue by remember(expense.id) {
+        val initialText = NumberUtils.formatInputString(expense.amount.toInt().toString())
+        mutableStateOf(TextFieldValue(text = initialText, selection = TextRange(initialText.length)))
+    }
+    var selectedCategory by remember(expense.id) { mutableStateOf(expense.category) }
+    var expanded by remember { mutableStateOf(false) }
+    var showDeleteConfirm by remember { mutableStateOf(false) }
+
+    if (showDeleteConfirm) {
+        AlertDialog(
+            onDismissRequest = { showDeleteConfirm = false },
+            title = { Text("Xóa khoản chi", fontWeight = FontWeight.Bold) },
+            text = { Text("Bạn có chắc chắn muốn xóa khoản chi '${expense.title}' không?") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showDeleteConfirm = false
+                        onDelete()
+                        onDismiss()
+                    },
+                    colors = ButtonDefaults.textButtonColors(contentColor = SunsetOrange)
+                ) {
+                    Text("Xóa", fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteConfirm = false }) {
+                    Text("Hủy")
+                }
+            },
+            containerColor = SurfaceContainerLowest
+        )
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 24.dp)
+            .padding(bottom = 40.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Chỉnh sửa khoản chi",
+                fontWeight = FontWeight.ExtraBold,
+                fontSize = 20.sp,
+                color = OnSurface
+            )
+            IconButton(
+                onClick = { showDeleteConfirm = true }
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Delete,
+                    contentDescription = "Delete Expense",
+                    tint = SunsetOrange
+                )
+            }
+        }
+        Spacer(modifier = Modifier.height(24.dp))
+        
+        OutlinedTextField(
+            value = expenseTitle,
+            onValueChange = { expenseTitle = it },
+            label = { Text("Tên khoản chi (VD: Ăn trưa, Vé tàu...)") },
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = PrimaryBlue,
+                unfocusedBorderColor = SurfaceContainerLow
+            )
+        )
+        
+        Spacer(modifier = Modifier.height(16.dp))
+
+        OutlinedTextField(
+            value = expenseAmountValue,
+            onValueChange = { newValue ->
+                val formatted = NumberUtils.formatTextFieldValue(newValue)
+                expenseAmountValue = formatted
+            },
+            label = { Text("Số tiền (VND)") },
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = PrimaryBlue,
+                unfocusedBorderColor = SurfaceContainerLow
+            ),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        ExposedDropdownMenuBox(
+            expanded = expanded,
+            onExpandedChange = { expanded = !expanded }
+        ) {
+            OutlinedTextField(
+                value = selectedCategory,
+                onValueChange = {},
+                readOnly = true,
+                label = { Text("Danh mục") },
+                trailingIcon = {
+                    Icon(Icons.Default.ArrowDropDown, contentDescription = null)
+                },
+                modifier = Modifier
+                    .menuAnchor()
+                    .fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = PrimaryBlue,
+                    unfocusedBorderColor = SurfaceContainerLow
+                )
+            )
+            ExposedDropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false }
+            ) {
+                listOf("FOOD", "STAY", "TRANSPORT", "ENTRY").forEach { category ->
+                    DropdownMenuItem(
+                        text = { Text(category) },
+                        onClick = {
+                            selectedCategory = category
+                            expanded = false
+                        }
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+        
+        Button(
+            onClick = {
+                if (!isSaving) {
+                    onSave(expenseTitle, expenseAmountValue.text, selectedCategory)
+                    onDismiss()
+                }
+            },
+            modifier = Modifier.fillMaxWidth().height(56.dp),
+            shape = RoundedCornerShape(20.dp),
+            enabled = !isSaving,
+            colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
+        ) {
+            Text(if (isSaving) "Đang lưu..." else "Cập nhật chi phí", fontWeight = FontWeight.Bold)
+        }
     }
 }

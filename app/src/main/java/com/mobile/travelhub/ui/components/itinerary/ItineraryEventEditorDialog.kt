@@ -7,26 +7,32 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material3.FilterChip
+import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.*
-import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -35,35 +41,57 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.mobile.travelhub.data.model.ItineraryEvent
-import com.mobile.travelhub.data.model.ItineraryEventColors
 import com.mobile.travelhub.ui.theme.OnSurface
 import com.mobile.travelhub.ui.theme.OnSurfaceVariant
+import com.mobile.travelhub.ui.theme.OutlineVariant
 import com.mobile.travelhub.ui.theme.PrimaryBlue
 import com.mobile.travelhub.ui.theme.SurfaceContainerLow
 import com.mobile.travelhub.ui.theme.SurfaceContainerLowest
 import com.mobile.travelhub.ui.theme.SunsetOrange
-import com.mobile.travelhub.data.model.ItineraryIcons
-import com.mobile.travelhub.data.model.getItineraryIcon
+import com.mobile.travelhub.viewmodels.ItineraryDayOption
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ItineraryEventEditorDialog(
     event: ItineraryEvent,
     dayCount: Int,
+    dayOptions: List<ItineraryDayOption> = emptyList(),
     isCreating: Boolean,
     onDismiss: () -> Unit,
     onSave: (ItineraryEvent) -> Unit,
     onDelete: () -> Unit
 ) {
     var selectedDay by remember(event.eventId) { mutableStateOf(event.dayIndex) }
-    val effectiveDayCount = maxOf(dayCount, event.dayIndex)
+    var isDayMenuExpanded by remember { mutableStateOf(false) }
+    var expandedTimeTarget by remember { mutableStateOf<TimePickerTarget?>(null) }
+    val effectiveDayOptions = remember(dayOptions, dayCount, event.dayIndex) {
+        dayOptions.ifEmpty {
+            val effectiveDayCount = maxOf(dayCount, event.dayIndex)
+            (1..effectiveDayCount).map { day ->
+                ItineraryDayOption(
+                    dayIndex = day,
+                    label = "Day $day",
+                    dateLabel = "",
+                    epochDay = null
+                )
+            }
+        }
+    }
+    val selectedDayOption = effectiveDayOptions.firstOrNull { it.dayIndex == selectedDay }
+        ?: effectiveDayOptions.firstOrNull()
+
     var startTime by remember(event.eventId) { mutableStateOf(event.startTime) }
     var endTime by remember(event.eventId) { mutableStateOf(event.endTime) }
     var title by remember(event.eventId) { mutableStateOf(event.title) }
@@ -71,8 +99,8 @@ fun ItineraryEventEditorDialog(
     var note by remember(event.eventId) { mutableStateOf(event.note) }
     var transport by remember(event.eventId) { mutableStateOf(event.transportToNext) }
     var cost by remember(event.eventId) { mutableStateOf(event.estimatedCost) }
-    var colorHex by remember(event.eventId) { mutableStateOf(event.colorHex) }
-    var iconName by remember(event.eventId) { mutableStateOf(event.iconName) }
+    val timeOptions = remember { buildTimeOptions() }
+    val canSave = title.isNotBlank() && selectedDayOption != null
 
     Dialog(
         onDismissRequest = onDismiss,
@@ -82,7 +110,7 @@ fun ItineraryEventEditorDialog(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 20.dp),
-            shape = RoundedCornerShape(32.dp),
+            shape = RoundedCornerShape(28.dp),
             color = SurfaceContainerLowest
         ) {
             Column(
@@ -91,129 +119,161 @@ fun ItineraryEventEditorDialog(
                     .padding(20.dp),
                 verticalArrangement = Arrangement.spacedBy(18.dp)
             ) {
-
                 Text(
-                    text = if (isCreating) "Add stop" else "Edit stop",
+                    text = if (isCreating) "Thêm activity" else "Sửa activity",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.ExtraBold,
                     color = OnSurface
                 )
-                
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Text(
-                        text = "Day",
-                        style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = OnSurfaceVariant
+
+                Box {
+                    PickerAnchorField(
+                        label = "Select a day",
+                        value = selectedDayOption?.dateLabel?.toPickerDateLabel()
+                            ?: selectedDayOption?.label
+                            ?: "Chọn ngày",
+                        icon = Icons.Default.CalendarMonth,
+                        expanded = isDayMenuExpanded,
+                        onClick = { isDayMenuExpanded = true }
                     )
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        for (day in 1..effectiveDayCount) {
-                            FilterChip(
-                                selected = selectedDay == day,
-                                onClick = { selectedDay = day },
-                                label = { Text("Day $day") }
+                    DropdownMenu(
+                        expanded = isDayMenuExpanded,
+                        onDismissRequest = { isDayMenuExpanded = false },
+                        modifier = Modifier
+                            .fillMaxWidth(0.86f)
+                            .heightIn(max = 280.dp)
+                            .background(SurfaceContainerLowest)
+                    ) {
+                        effectiveDayOptions.forEach { option ->
+                            DropdownMenuItem(
+                                text = {
+                                    Column {
+                                        Text(
+                                            text = option.label,
+                                            style = MaterialTheme.typography.labelMedium,
+                                            color = OnSurfaceVariant
+                                        )
+                                        Text(
+                                            text = option.dateLabel.toPickerDateLabel()
+                                                .ifBlank { "Chưa có ngày" },
+                                            style = MaterialTheme.typography.bodyLarge,
+                                            fontWeight = FontWeight.Bold,
+                                            color = OnSurface
+                                        )
+                                    }
+                                },
+                                onClick = {
+                                    selectedDay = option.dayIndex
+                                    isDayMenuExpanded = false
+                                }
                             )
                         }
                     }
                 }
 
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    ItineraryEditorField(
-                        value = startTime,
-                        onValueChange = { startTime = it },
-                        label = "Start",
-                        modifier = Modifier.weight(1f)
-                    )
-                    ItineraryEditorField(
-                        value = endTime,
-                        onValueChange = { endTime = it },
-                        label = "End",
-                        modifier = Modifier.weight(1f)
-                    )
+                    Box(modifier = Modifier.weight(1f)) {
+                        PickerAnchorField(
+                            value = startTime.toPickerTimeLabel(),
+                            label = "Start with",
+                            icon = Icons.Default.Schedule,
+                            expanded = expandedTimeTarget == TimePickerTarget.START,
+                            onClick = { expandedTimeTarget = TimePickerTarget.START }
+                        )
+                        TimeDropdownMenu(
+                            expanded = expandedTimeTarget == TimePickerTarget.START,
+                            options = timeOptions,
+                            selected = startTime,
+                            onDismiss = { expandedTimeTarget = null },
+                            onSelect = { selected ->
+                                startTime = selected
+                                if (endTime.isBlank() || endTime <= selected) {
+                                    endTime = nextTimeOption(timeOptions, selected)
+                                }
+                                expandedTimeTarget = null
+                            }
+                        )
+                    }
+                    Box(modifier = Modifier.weight(1f)) {
+                        PickerAnchorField(
+                            value = endTime.toPickerTimeLabel(),
+                            label = "End with",
+                            icon = Icons.Default.Schedule,
+                            expanded = expandedTimeTarget == TimePickerTarget.END,
+                            onClick = { expandedTimeTarget = TimePickerTarget.END }
+                        )
+                        TimeDropdownMenu(
+                            expanded = expandedTimeTarget == TimePickerTarget.END,
+                            options = timeOptions,
+                            selected = endTime,
+                            onDismiss = { expandedTimeTarget = null },
+                            onSelect = { selected ->
+                                endTime = selected
+                                expandedTimeTarget = null
+                            }
+                        )
+                    }
                 }
 
                 ItineraryEditorField(
                     value = title,
                     onValueChange = { title = it },
-                    label = "Title"
+                    label = "Tên activity"
                 )
-                ItineraryEditorField(
-                    value = placeName,
-                    onValueChange = { placeName = it },
-                    label = "Place"
-                )
-                ItineraryEditorField(
-                    value = note,
-                    onValueChange = { note = it },
-                    label = "Note",
-                    minLines = 3
-                )
+
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    ItineraryEditorField(
+                        value = placeName,
+                        onValueChange = { placeName = it },
+                        label = "Địa điểm",
+                        modifier = Modifier.weight(1f)
+                    )
+                    ItineraryEditorField(
+                        value = cost,
+                        onValueChange = { cost = it },
+                        label = "Chi phí",
+                        modifier = Modifier.weight(1f),
+                        keyboardType = KeyboardType.Decimal
+                    )
+                }
+
                 ItineraryEditorField(
                     value = transport,
                     onValueChange = { transport = it },
-                    label = "Transport to next"
+                    label = "Địa chỉ / hướng dẫn di chuyển"
                 )
+
                 ItineraryEditorField(
-                    value = cost,
-                    onValueChange = { cost = it },
-                    label = "Estimated cost"
+                    value = note,
+                    onValueChange = { note = it },
+                    label = "Ghi chú",
+                    minLines = 3
                 )
-
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Text(
-                        text = "Color",
-                        style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = OnSurfaceVariant
-                    )
-                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        ItineraryEventColors.Palette.forEach { option ->
-                            EventColorSwatch(
-                                colorHex = option,
-                                selected = colorHex == option,
-                                onClick = { colorHex = option }
-                            )
-                        }
-                    }
-                }
-
-                @OptIn(ExperimentalLayoutApi::class)
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Text(
-                        text = "Icon",
-                        style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = OnSurfaceVariant
-                    )
-                    FlowRow(
-                        horizontalArrangement = Arrangement.spacedBy(10.dp),
-                        verticalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        ItineraryIcons.Palette.forEach { option ->
-                            EventIconSwatch(
-                                iconName = option,
-                                selected = iconName == option,
-                                onClick = { iconName = option }
-                            )
-                        }
-                    }
-                }
-
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     if (!isCreating) {
-                        TextButton(onClick = onDelete) {
-                            Text("Delete stop", color = SunsetOrange)
+                        Button(
+                            onClick = onDelete,
+                            modifier = Modifier.weight(1f),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = SurfaceContainerLow,
+                                contentColor = SunsetOrange
+                            )
+                        ) {
+                            Text("Xóa")
                         }
-                        Spacer(modifier = Modifier.weight(1f))
+                    } else {
+                        TextButton(
+                            onClick = onDismiss,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text("Hủy")
+                        }
                     }
-                    TextButton(onClick = onDismiss) {
-                        Text("Cancel")
-                    }
-                    TextButton(
+                    Button(
                         onClick = {
                             onSave(
                                 event.copy(
@@ -225,13 +285,19 @@ fun ItineraryEventEditorDialog(
                                     note = note.trim(),
                                     transportToNext = transport.trim(),
                                     estimatedCost = cost.trim(),
-                                    colorHex = colorHex,
-                                    iconName = iconName
+                                    colorHex = event.colorHex,
+                                    iconName = event.iconName
                                 )
                             )
-                        }
+                        },
+                        enabled = canSave,
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = PrimaryBlue,
+                            contentColor = Color.White
+                        )
                     ) {
-                        Text(if (isCreating) "Add stop" else "Save changes")
+                        Text(if (isCreating) "Thêm" else "Lưu")
                     }
                 }
             }
@@ -239,35 +305,9 @@ fun ItineraryEventEditorDialog(
     }
 }
 
-@Composable
-private fun EventColorSwatch(
-    colorHex: Long,
-    selected: Boolean,
-    onClick: () -> Unit
-) {
-    val color = colorHex.toItineraryColor()
-    Box(
-        modifier = Modifier
-            .size(32.dp)
-            .clip(CircleShape)
-            .background(color)
-            .border(
-                width = if (selected) 3.dp else 1.dp,
-                color = if (selected) OnSurface else color.copy(alpha = 0.22f),
-                shape = CircleShape
-            )
-            .clickable(onClick = onClick),
-        contentAlignment = Alignment.Center
-    ) {
-        if (selected) {
-            Icon(
-                imageVector = Icons.Default.Check,
-                contentDescription = null,
-                tint = Color.White,
-                modifier = Modifier.size(16.dp)
-            )
-        }
-    }
+private enum class TimePickerTarget {
+    START,
+    END
 }
 
 @Composable
@@ -276,42 +316,131 @@ private fun ItineraryEditorField(
     onValueChange: (String) -> Unit,
     label: String,
     modifier: Modifier = Modifier,
-    minLines: Int = 1
+    minLines: Int = 1,
+    keyboardType: KeyboardType = KeyboardType.Text
 ) {
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
         label = { Text(label) },
         modifier = modifier.fillMaxWidth(),
-        minLines = minLines
+        minLines = minLines,
+        shape = RoundedCornerShape(18.dp),
+        keyboardOptions = KeyboardOptions(keyboardType = keyboardType)
     )
 }
 
 @Composable
-private fun EventIconSwatch(
-    iconName: String,
-    selected: Boolean,
-    onClick: () -> Unit
+private fun PickerAnchorField(
+    value: String,
+    label: String,
+    icon: ImageVector,
+    expanded: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
-    Box(
-        modifier = Modifier
-            .size(40.dp)
-            .clip(RoundedCornerShape(12.dp))
-            .background(if (selected) PrimaryBlue.copy(alpha = 0.12f) else SurfaceContainerLow)
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
             .border(
-                width = if (selected) 2.dp else 0.dp,
-                color = if (selected) PrimaryBlue else Color.Transparent,
-                shape = RoundedCornerShape(12.dp)
+                width = 1.4.dp,
+                color = if (expanded) PrimaryBlue else OutlineVariant,
+                shape = RoundedCornerShape(16.dp)
             )
             .clickable(onClick = onClick),
-        contentAlignment = Alignment.Center
+        color = SurfaceContainerLowest,
+        shape = RoundedCornerShape(16.dp)
     ) {
-        Icon(
-            imageVector = getItineraryIcon(iconName),
-            contentDescription = null,
-            tint = if (selected) PrimaryBlue else OnSurfaceVariant,
-            modifier = Modifier.size(20.dp)
-        )
+        Row(
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = OnSurfaceVariant,
+                modifier = Modifier.size(22.dp)
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = if (expanded) PrimaryBlue else OnSurfaceVariant
+                )
+                Text(
+                    text = value,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = OnSurface
+                )
+            }
+            Icon(
+                imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                contentDescription = null,
+                tint = OnSurface
+            )
+        }
     }
 }
 
+@Composable
+private fun TimeDropdownMenu(
+    expanded: Boolean,
+    options: List<String>,
+    selected: String,
+    onDismiss: () -> Unit,
+    onSelect: (String) -> Unit
+) {
+    DropdownMenu(
+        expanded = expanded,
+        onDismissRequest = onDismiss,
+        modifier = Modifier
+            .heightIn(max = 280.dp)
+            .background(SurfaceContainerLowest)
+    ) {
+        options.forEachIndexed { index, option ->
+            DropdownMenuItem(
+                text = {
+                    Text(
+                        text = option.toPickerTimeLabel(),
+                        color = if (option == selected) PrimaryBlue else OnSurface,
+                        fontWeight = if (option == selected) FontWeight.Bold else FontWeight.Normal
+                    )
+                },
+                onClick = { onSelect(option) }
+            )
+            if (index < options.lastIndex) {
+                HorizontalDivider(color = SurfaceContainerLow)
+            }
+        }
+    }
+}
+
+private fun buildTimeOptions(): List<String> {
+    return (0 until 24).flatMap { hour ->
+        listOf(0, 30).map { minute -> "%02d:%02d".format(hour, minute) }
+    }
+}
+
+private fun nextTimeOption(options: List<String>, selected: String): String {
+    val index = options.indexOf(selected)
+    return options.getOrElse(index + 1) { selected }
+}
+
+private fun String.toPickerTimeLabel(): String {
+    return ifBlank { "--:--" }
+}
+
+private fun String.toPickerDateLabel(): String {
+    return runCatching {
+        LocalDate.parse(this, displayDateFormatter).format(pickerDateFormatter)
+    }.getOrDefault(this)
+}
+
+private val displayDateFormatter: DateTimeFormatter =
+    DateTimeFormatter.ofPattern("dd/MM/yyyy", Locale.getDefault())
+
+private val pickerDateFormatter: DateTimeFormatter =
+    DateTimeFormatter.ofPattern("dd.MM.yyyy", Locale.getDefault())

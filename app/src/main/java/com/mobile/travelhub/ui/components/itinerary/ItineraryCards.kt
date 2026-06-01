@@ -10,6 +10,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.LocationOn
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -18,6 +19,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mobile.travelhub.data.model.*
@@ -98,11 +100,8 @@ fun DayContinuousTimelineCard(day: ItineraryDay) {
                                     .size(10.dp)
                                     .background(event.displayColor(), RoundedCornerShape(999.dp))
                             )
-                            Text(
-                                text = "${event.startTime} - ${event.endTime}",
-                                style = MaterialTheme.typography.labelMedium,
-                                color = OnSurfaceVariant
-                            )
+                            ActivityTimeChip(timeRange = "${event.startTime} - ${event.endTime}")
+                            ActivityPlaceChip(placeName = event.placeName)
                             Text(
                                 text = event.title,
                                 style = MaterialTheme.typography.bodyMedium,
@@ -409,12 +408,16 @@ fun DayEventCard(
                     verticalAlignment = Alignment.Top
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "${event.startTime} - ${event.endTime}",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 13.sp,
-                            color = accent
-                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            ActivityTimeChip(
+                                timeRange = "${event.startTime} - ${event.endTime}",
+                                contentColor = accent
+                            )
+                            ActivityPlaceChip(placeName = event.placeName)
+                        }
                         Spacer(modifier = Modifier.height(4.dp))
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
@@ -538,6 +541,67 @@ fun MetaPill(
 }
 
 @Composable
+fun ActivityTimeChip(
+    timeRange: String,
+    modifier: Modifier = Modifier,
+    contentColor: Color = PrimaryBlue
+) {
+    Row(
+        modifier = modifier
+            .background(contentColor.copy(alpha = 0.12f), RoundedCornerShape(999.dp))
+            .padding(horizontal = 8.dp, vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        Icon(
+            imageVector = Icons.Default.Schedule,
+            contentDescription = null,
+            tint = contentColor,
+            modifier = Modifier.size(12.dp)
+        )
+        Text(
+            text = timeRange,
+            color = contentColor,
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Medium,
+            maxLines = 1
+        )
+    }
+}
+
+@Composable
+fun ActivityPlaceChip(
+    placeName: String,
+    modifier: Modifier = Modifier
+) {
+    if (placeName.isBlank()) return
+
+    Row(
+        modifier = modifier
+            .widthIn(max = 150.dp)
+            .background(PrimaryBlue.copy(alpha = 0.10f), RoundedCornerShape(999.dp))
+            .padding(horizontal = 8.dp, vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        Icon(
+            imageVector = Icons.Outlined.LocationOn,
+            contentDescription = null,
+            tint = PrimaryBlue,
+            modifier = Modifier.size(12.dp)
+        )
+        Text(
+            text = placeName,
+            color = OnSurfaceVariant,
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Medium,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+    }
+}
+
+@Composable
 fun EmptyOverviewCard() {
     Card(
         shape = RoundedCornerShape(24.dp),
@@ -595,209 +659,11 @@ fun EmptyDayCard() {
         colors = CardDefaults.cardColors(containerColor = SurfaceContainerLowest)
     ) {
         Text(
-            text = "No events on this day yet. Add a stop or ask AI to draft one for you.",
+            text = "No events on this day yet. Add a stop to start planning.",
             modifier = Modifier.padding(20.dp),
             color = OnSurfaceVariant,
             lineHeight = 20.sp
         )
-    }
-}
-
-@Composable
-fun ProposalChangeCard(
-    change: ItineraryChange,
-    selected: Boolean,
-    selectable: Boolean,
-    onToggle: () -> Unit
-) {
-    val accent = when (change) {
-        is AddDayChange -> Color(0xFF0D8A4B)
-        is DeleteDayChange -> Color(0xFFC44536)
-        is AddEventChange -> Color(0xFF0D8A4B)
-        is DeleteEventChange -> Color(0xFFC44536)
-        is MoveEventChange -> Color(0xFF006D77)
-        is UpdateDayChange -> PrimaryBlue
-        is UpdateEventChange -> PrimaryBlue
-    }
-
-    Card(
-        shape = RoundedCornerShape(22.dp),
-        colors = CardDefaults.cardColors(containerColor = accent.copy(alpha = 0.08f))
-    ) {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Top
-            ) {
-                Row(
-                    modifier = Modifier.weight(1f),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalAlignment = Alignment.Top
-                ) {
-                    Checkbox(checked = selected, enabled = selectable, onCheckedChange = { onToggle() })
-                    Column {
-                        Text(
-                            text = changeTitle(change),
-                            fontWeight = FontWeight.ExtraBold,
-                            color = OnSurface
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = change.reason,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = OnSurfaceVariant,
-                            lineHeight = 18.sp
-                        )
-                    }
-                }
-                Box(
-                    modifier = Modifier
-                        .background(accent.copy(alpha = 0.18f), RoundedCornerShape(999.dp))
-                        .padding(horizontal = 10.dp, vertical = 6.dp)
-                ) {
-                    Text(
-                        text = changeTypeLabel(change),
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = accent
-                    )
-                }
-            }
-
-            when (change) {
-                is AddDayChange -> DayProposalPreview(day = change.dayAfter, accent = accent)
-                is DeleteDayChange -> DayProposalPreview(day = change.dayBefore, accent = accent)
-                is AddEventChange -> EventPreviewCard(event = change.eventAfter, accent = accent)
-                is DeleteEventChange -> EventPreviewCard(
-                    event = change.eventBefore,
-                    accent = accent,
-                    crossedOut = true
-                )
-                is MoveEventChange -> {
-                    Text(
-                        text = "Move ${change.eventSnapshot.title} from Day ${change.fromDayIndex} #${change.fromIndex + 1} to Day ${change.toDayIndex} #${change.toIndex + 1}.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = OnSurface
-                    )
-                }
-                is UpdateEventChange -> {
-                    change.fieldDiffs.forEach { diff ->
-                        DiffRow(label = diff.label, before = diff.before, after = diff.after)
-                    }
-                }
-                is UpdateDayChange -> {
-                    DiffRow(label = "Label", before = change.dayBefore.label, after = change.dayAfter.label)
-                    DiffRow(label = "Date", before = change.dayBefore.dateLabel, after = change.dayAfter.dateLabel)
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun DayProposalPreview(day: ItineraryDay, accent: Color) {
-    Surface(
-        color = Color.White.copy(alpha = 0.8f),
-        shape = RoundedCornerShape(18.dp)
-    ) {
-        Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text(
-                text = "${day.label} · ${day.dateLabel}",
-                fontWeight = FontWeight.ExtraBold,
-                color = OnSurface
-            )
-            Text(
-                text = "${day.events.size} stop${if (day.events.size == 1) "" else "s"}",
-                color = accent,
-                style = MaterialTheme.typography.labelSmall
-            )
-            day.events.take(2).forEach { event ->
-                Text(
-                    text = "${event.startTime} ${event.title}",
-                    color = OnSurfaceVariant,
-                    style = MaterialTheme.typography.bodySmall
-                )
-            }
-        }
-    }
-}
-
-@Composable
-fun EventPreviewCard(
-    event: ItineraryEvent,
-    accent: Color,
-    crossedOut: Boolean = false
-) {
-    Surface(
-        color = Color.White.copy(alpha = 0.8f),
-        shape = RoundedCornerShape(18.dp)
-    ) {
-        Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text(
-                text = "${event.startTime} - ${event.endTime}",
-                fontWeight = FontWeight.Bold,
-                color = event.displayColor()
-            )
-            Text(
-                text = event.title,
-                fontWeight = FontWeight.ExtraBold,
-                color = OnSurface,
-                textDecoration = if (crossedOut) TextDecoration.LineThrough else TextDecoration.None
-            )
-            Text(
-                text = event.placeName,
-                color = OnSurfaceVariant,
-                textDecoration = if (crossedOut) TextDecoration.LineThrough else TextDecoration.None
-            )
-            Text(
-                text = colorLabel(event.colorHex),
-                color = accent,
-                style = MaterialTheme.typography.labelSmall
-            )
-        }
-    }
-}
-
-@Composable
-fun DiffRow(label: String, before: String?, after: String?) {
-    val beforeValue = diffValueLabel(label, before)
-    val afterValue = diffValueLabel(label, after)
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelMedium,
-            color = OnSurfaceVariant
-        )
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Surface(
-                color = Color(0xFFFCE8E6),
-                shape = RoundedCornerShape(14.dp),
-                modifier = Modifier.weight(1f)
-            ) {
-                Text(
-                    text = beforeValue,
-                    modifier = Modifier.padding(10.dp),
-                    color = Color(0xFFC44536),
-                    lineHeight = 18.sp
-                )
-            }
-            Surface(
-                color = Color(0xFFE8F5EE),
-                shape = RoundedCornerShape(14.dp),
-                modifier = Modifier.weight(1f)
-            ) {
-                Text(
-                    text = afterValue,
-                    modifier = Modifier.padding(10.dp),
-                    color = Color(0xFF0D8A4B),
-                    lineHeight = 18.sp
-                )
-            }
-        }
     }
 }
 
@@ -854,58 +720,6 @@ fun minutesToTime(value: Int): String {
     val hour = (value / 60).coerceIn(0, 23)
     val minute = (value % 60).coerceIn(0, 59)
     return "%02d:%02d".format(hour, minute)
-}
-
-
-
-fun colorLabel(colorHex: Long): String {
-    return when (colorHex) {
-        ItineraryEventColors.Palette.getOrNull(0) -> "Blue"
-        ItineraryEventColors.Palette.getOrNull(1) -> "Green"
-        ItineraryEventColors.Palette.getOrNull(2) -> "Amber"
-        ItineraryEventColors.Palette.getOrNull(3) -> "Red"
-        ItineraryEventColors.Palette.getOrNull(4) -> "Violet"
-        ItineraryEventColors.Palette.getOrNull(5) -> "Teal"
-        ItineraryEventColors.Palette.getOrNull(6) -> "Rose"
-        ItineraryEventColors.Palette.getOrNull(7) -> "Slate"
-        else -> "Custom"
-    }
-}
-
-
-
-fun diffValueLabel(label: String, value: String?): String {
-    val normalized = value.orEmpty().ifBlank { "Empty" }
-    if (!label.equals("Color", ignoreCase = true)) return normalized
-    return normalized.toLongOrNull()?.let(::colorLabel) ?: normalized
-}
-
-
-
-fun changeTitle(change: ItineraryChange): String {
-    return when (change) {
-        is AddDayChange -> "Add ${change.dayAfter.label}"
-        is DeleteDayChange -> "Delete ${change.dayBefore.label}"
-        is AddEventChange -> "Add ${change.eventAfter.title}"
-        is DeleteEventChange -> "Delete ${change.eventBefore.title}"
-        is MoveEventChange -> "Move ${change.eventSnapshot.title}"
-        is UpdateDayChange -> "Update ${change.dayBefore.label}"
-        is UpdateEventChange -> "Update ${change.eventBefore.title}"
-    }
-}
-
-
-
-fun changeTypeLabel(change: ItineraryChange): String {
-    return when (change) {
-        is AddDayChange -> "Add day"
-        is DeleteDayChange -> "Delete day"
-        is AddEventChange -> "Add"
-        is DeleteEventChange -> "Delete"
-        is MoveEventChange -> "Move"
-        is UpdateDayChange -> "Edit day"
-        is UpdateEventChange -> "Edit"
-    }
 }
 
 

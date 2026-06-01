@@ -25,13 +25,15 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
 import com.mobile.travelhub.R
 
 @Composable
 fun UserListItem(
     name: String,
     handle: String,
-    avatarRes: Int,
+    avatarUrl: String? = null,
+    avatarRes: Int = R.drawable.ic_launcher_foreground,
     isFollowing: Boolean,
     showFollowButton: Boolean = true,
     onClick: () -> Unit,
@@ -50,12 +52,21 @@ fun UserListItem(
                 .clip(CircleShape)
                 .background(MaterialTheme.colorScheme.surfaceVariant)
         ) {
-            Image(
-                painter = painterResource(id = avatarRes),
-                contentDescription = "Avatar",
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop
-            )
+            if (!avatarUrl.isNullOrBlank()) {
+                AsyncImage(
+                    model = avatarUrl,
+                    contentDescription = "Avatar",
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+            } else {
+                Image(
+                    painter = painterResource(id = avatarRes),
+                    contentDescription = "Avatar",
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+            }
         }
 
         Column(

@@ -3,13 +3,15 @@ package com.mobile.travelhub.viewmodels
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mobile.travelhub.data.ItineraryRepository
-import com.mobile.travelhub.data.model.ItineraryAssistantEvent
-import com.mobile.travelhub.data.model.ItineraryChatMessage
-import com.mobile.travelhub.data.model.ItineraryChatRole
+import com.mobile.travelhub.data.TripRepository
 import com.mobile.travelhub.data.model.ItineraryDay
 import com.mobile.travelhub.data.model.ItineraryEvent
 import com.mobile.travelhub.data.model.ItineraryEventColors
 import dagger.hilt.android.lifecycle.HiltViewModel
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import java.time.temporal.ChronoUnit
+import java.util.Locale
 import javax.inject.Inject
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,7 +22,8 @@ import kotlinx.coroutines.launch
 
 @HiltViewModel
 class ItineraryViewModel @Inject constructor(
-    private val repository: ItineraryRepository
+    private val repository: ItineraryRepository,
+    private val tripRepository: TripRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ItineraryUiState())
@@ -28,46 +31,47 @@ class ItineraryViewModel @Inject constructor(
 
     private var workspaceJob: Job? = null
     private var boundGroupName: String? = null
-    private var lastProposalId: String? = null
+    private var boundTripId: Long? = null
+    private var isMutatingActivities = false
 
-    fun bindGroup(groupName: String, openChatOnLaunch: Boolean = false) {
-        if (boundGroupName == groupName && !openChatOnLaunch) return
+    fun bindGroup(groupName: String, tripId: Long? = null) {
+        if (boundGroupName == groupName && boundTripId == tripId) return
         boundGroupName = groupName
+        boundTripId = tripId
+        isMutatingActivities = false
         workspaceJob?.cancel()
         _uiState.update {
             it.copy(
                 groupName = groupName,
-                isChatSheetOpen = it.isChatSheetOpen || openChatOnLaunch,
+                isLoadingActivities = true,
                 errorMessage = null
             )
         }
         workspaceJob = viewModelScope.launch {
-            runCatching { repository.refreshWorkspace(groupName) }
+            runCatching { repository.refreshWorkspace(groupName, tripId) }
                 .onFailure { throwable ->
-                    _uiState.update { it.copy(errorMessage = throwable.message ?: "Unable to load itinerary") }
+                    _uiState.update {
+                        it.copy(
+                            isLoadingActivities = false,
+                            errorMessage = throwable.message ?: "Unable to load itinerary"
+                        )
+                    }
                 }
+            loadTripDayOptions(tripId)
             repository.observeWorkspace(groupName).collect { workspace ->
                 val selectedDayIndex = _uiState.value.selectedDayIndex
                     .takeIf { value -> workspace.days.any { it.dayIndex == value } }
                     ?: workspace.days.firstOrNull()?.dayIndex
                     ?: 1
 
-                val nextSelectedIds = if (workspace.pendingProposal?.proposalId != lastProposalId) {
-                    workspace.pendingProposal?.changes?.map { it.changeId }?.toSet().orEmpty()
-                } else {
-                    _uiState.value.selectedChangeIds
-                }
-
-                lastProposalId = workspace.pendingProposal?.proposalId
                 _uiState.update {
                     it.copy(
                         groupName = workspace.groupName,
                         version = workspace.version,
                         role = workspace.role,
                         days = workspace.days,
-                        selectedDayIndex = selectedDayIndex,
-                        pendingProposal = workspace.pendingProposal,
-                        selectedChangeIds = nextSelectedIds
+                        isLoadingActivities = isMutatingActivities,
+                        selectedDayIndex = selectedDayIndex
                     )
                 }
             }
@@ -76,139 +80,6 @@ class ItineraryViewModel @Inject constructor(
 
     fun selectDay(dayIndex: Int) {
         _uiState.update { it.copy(selectedDayIndex = dayIndex) }
-    }
-
-    fun openChat() {
-        _uiState.update { it.copy(isChatSheetOpen = true) }
-    }
-
-    fun closeChat() {
-        _uiState.update { it.copy(isChatSheetOpen = false, thinking = "") }
-    }
-
-    fun updateChatInput(value: String) {
-        _uiState.update { it.copy(chatInput = value, chatInputType = "TEXT") }
-    }
-
-    fun updateVoiceChatInput(value: String) {
-        _uiState.update { it.copy(chatInput = value, chatInputType = "VOICE") }
-    }
-
-    fun sendChatPrompt() {
-        val groupName = boundGroupName ?: return
-        val prompt = _uiState.value.chatInput.trim()
-        if (prompt.isEmpty()) return
-
-        val userMessage = ItineraryChatMessage(
-            id = "user-${System.currentTimeMillis()}",
-            role = ItineraryChatRole.USER,
-            text = prompt
-        )
-
-        _uiState.update {
-            it.copy(
-                chatMessages = it.chatMessages + userMessage,
-                chatInput = "",
-                thinking = "",
-                isStreaming = true,
-                errorMessage = null
-            )
-        }
-
-        viewModelScope.launch {
-            var assistantMessageId: String? = null
-            repository.streamProposal(
-                groupName = groupName,
-                prompt = prompt,
-                selectedDayIndex = _uiState.value.selectedDayIndex,
-                inputType = _uiState.value.chatInputType
-            ).collect { event ->
-                when (event) {
-                    is ItineraryAssistantEvent.Thinking -> {
-                        _uiState.update { it.copy(thinking = event.text) }
-                    }
-
-                    is ItineraryAssistantEvent.MessageChunk -> {
-                        val nextAssistantId = assistantMessageId ?: "assistant-${System.currentTimeMillis()}"
-                            .also { assistantMessageId = it }
-                        _uiState.update { state ->
-                            val existing = state.chatMessages.firstOrNull { it.id == nextAssistantId }
-                            if (existing == null) {
-                                state.copy(
-                                    chatMessages = state.chatMessages + ItineraryChatMessage(
-                                        id = nextAssistantId,
-                                        role = ItineraryChatRole.ASSISTANT,
-                                        text = event.text
-                                    )
-                                )
-                            } else {
-                                state.copy(
-                                    chatMessages = state.chatMessages.map { message ->
-                                        if (message.id == nextAssistantId) {
-                                            message.copy(text = message.text + event.text)
-                                        } else {
-                                            message
-                                        }
-                                    }
-                                )
-                            }
-                        }
-                    }
-
-                    is ItineraryAssistantEvent.ProposalReady -> {
-                        _uiState.update { it.copy(thinking = "", isChatSheetOpen = false) }
-                    }
-
-                    is ItineraryAssistantEvent.Error -> {
-                        _uiState.update {
-                            it.copy(
-                                isStreaming = false,
-                                thinking = "",
-                                errorMessage = event.message
-                            )
-                        }
-                    }
-
-                    ItineraryAssistantEvent.Done -> {
-                        _uiState.update { it.copy(isStreaming = false, thinking = "") }
-                    }
-                }
-            }
-        }
-    }
-
-    fun toggleChangeSelection(changeId: String) {
-        _uiState.update { state ->
-            val next = if (changeId in state.selectedChangeIds) {
-                state.selectedChangeIds - changeId
-            } else {
-                state.selectedChangeIds + changeId
-            }
-            state.copy(selectedChangeIds = next)
-        }
-    }
-
-    fun applySelectedChanges() {
-        val state = _uiState.value
-        val proposal = state.pendingProposal ?: return
-        val groupName = boundGroupName ?: return
-
-        viewModelScope.launch {
-            repository.applyProposalChanges(
-                groupName = groupName,
-                proposalId = proposal.proposalId,
-                selectedChangeIds = state.selectedChangeIds,
-                baseVersion = proposal.baseVersion
-            ).onFailure { throwable ->
-                _uiState.update { it.copy(errorMessage = throwable.message ?: "Unable to apply changes") }
-            }
-        }
-    }
-
-    fun discardPendingProposal() {
-        val groupName = boundGroupName ?: return
-        repository.discardPendingProposal(groupName)
-        _uiState.update { it.copy(selectedChangeIds = emptySet()) }
     }
 
     fun startEditing(event: ItineraryEvent) {
@@ -235,11 +106,25 @@ class ItineraryViewModel @Inject constructor(
 
     fun startAddingStop() {
         val state = _uiState.value
-        val selectedDay = state.selectedDay ?: return
-        val anchorEvent = selectedDay.events.lastOrNull()
+        if (state.isCompleted) {
+            _uiState.update { it.copy(errorMessage = "Không thể chỉnh sửa chuyến đi đã hoàn thành") }
+            return
+        }
+        if (state.dayOptions.isEmpty()) {
+            _uiState.update { it.copy(errorMessage = "Không tải được danh sách ngày của trip") }
+            return
+        }
+        val selectedOption = state.dayOptions.firstOrNull { it.dayIndex == state.selectedDayIndex }
+            ?: state.dayOptions.firstOrNull()
+        val selectedDay = state.days.firstOrNull { it.dayIndex == selectedOption?.dayIndex }
+            ?: state.selectedDay
+            ?: state.days.firstOrNull()
+        val selectedDayIndex = selectedOption?.dayIndex ?: selectedDay?.dayIndex ?: 1
+        val anchorEvent = selectedDay?.events?.lastOrNull()
+        val eventCount = selectedDay?.events?.size ?: 0
         val draftEvent = ItineraryEvent(
             eventId = "manual-${System.currentTimeMillis()}",
-            dayIndex = selectedDay.dayIndex,
+            dayIndex = selectedDayIndex,
             startTime = anchorEvent?.endTime ?: "09:00",
             endTime = nextHour(anchorEvent?.endTime ?: "09:00"),
             title = "",
@@ -247,12 +132,13 @@ class ItineraryViewModel @Inject constructor(
             note = "",
             transportToNext = "",
             estimatedCost = "",
-            colorHex = ItineraryEventColors.Palette[selectedDay.events.size % ItineraryEventColors.Palette.size],
+            colorHex = ItineraryEventColors.Palette[eventCount % ItineraryEventColors.Palette.size],
             iconName = "Place",
-            dayId = selectedDay.dayId
+            dayId = selectedDay?.dayId
         )
         _uiState.update {
             it.copy(
+                selectedDayIndex = selectedDayIndex,
                 editingEvent = draftEvent,
                 isCreatingEvent = true,
                 errorMessage = null
@@ -270,9 +156,31 @@ class ItineraryViewModel @Inject constructor(
 
     fun saveEvent(updatedEvent: ItineraryEvent) {
         val groupName = boundGroupName ?: return
+        val wasCreating = _uiState.value.isCreatingEvent
+        _uiState.update {
+            it.copy(
+                editingEvent = null,
+                isCreatingEvent = false,
+                isLoadingActivities = true,
+                errorMessage = null
+            )
+        }
         launchMutation {
+            val selectedOption = _uiState.value.dayOptions.firstOrNull { it.dayIndex == updatedEvent.dayIndex }
+            if (wasCreating && selectedOption != null) {
+                _uiState.value.dayOptions
+                    .filter { it.dayIndex <= selectedOption.dayIndex }
+                    .sortedBy { it.dayIndex }
+                    .forEach { option ->
+                        repository.ensureDay(
+                            groupName = groupName,
+                            dayIndex = option.dayIndex,
+                            label = option.label,
+                            dateLabel = option.dateLabel
+                        )
+                }
+            }
             repository.updateEvent(groupName, updatedEvent)
-            _uiState.update { it.copy(editingEvent = null, isCreatingEvent = false) }
         }
     }
 
@@ -291,17 +199,31 @@ class ItineraryViewModel @Inject constructor(
             _uiState.update { it.copy(editingEvent = null, isCreatingEvent = false) }
             return
         }
+        _uiState.update {
+            it.copy(
+                editingEvent = null,
+                isCreatingEvent = false,
+                isLoadingActivities = true,
+                errorMessage = null
+            )
+        }
         launchMutation {
-            repository.deleteEvent(groupName, event.eventId)
-            _uiState.update { it.copy(editingEvent = null, isCreatingEvent = false) }
+            repository.deleteEvent(groupName, event)
         }
     }
 
     fun deleteEvent(eventId: String) {
         val groupName = boundGroupName ?: return
+        _uiState.update {
+            it.copy(
+                editingEvent = null,
+                isCreatingEvent = false,
+                isLoadingActivities = true,
+                errorMessage = null
+            )
+        }
         launchMutation {
             repository.deleteEvent(groupName, eventId)
-            _uiState.update { it.copy(editingEvent = null, isCreatingEvent = false) }
         }
     }
 
@@ -373,11 +295,87 @@ class ItineraryViewModel @Inject constructor(
         return "%02d:%02d".format(nextHour, minute)
     }
 
+    private suspend fun loadTripDayOptions(tripId: Long?) {
+        if (tripId == null || tripId <= 0) return
+        tripRepository.getTripDetail(tripId)
+            .onSuccess { detail ->
+                val isCompleted = detail.tripInfo.status.equals("COMPLETED", ignoreCase = true) ||
+                        detail.tripInfo.status?.contains("hoàn thành", ignoreCase = true) == true ||
+                        isPastDate(detail.tripInfo.endDate)
+                val options = buildDayOptions(
+                    startDateText = detail.tripInfo.startDate,
+                    endDateText = detail.tripInfo.endDate
+                )
+                _uiState.update { state ->
+                    state.copy(
+                        isCompleted = isCompleted,
+                        dayOptions = options.ifEmpty { state.dayOptions }
+                    )
+                }
+            }
+    }
+
+    private fun buildDayOptions(
+        startDateText: String?,
+        endDateText: String?
+    ): List<ItineraryDayOption> {
+        val startDate = parseTripDate(startDateText) ?: return emptyList()
+        val endDate = parseTripDate(endDateText) ?: return emptyList()
+        if (endDate.isBefore(startDate)) return emptyList()
+
+        val displayFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy", Locale.getDefault())
+        val dayCount = ChronoUnit.DAYS.between(startDate, endDate).toInt() + 1
+        return List(dayCount) { index ->
+            val date = startDate.plusDays(index.toLong())
+            ItineraryDayOption(
+                dayIndex = index + 1,
+                label = "Day ${index + 1}",
+                dateLabel = date.format(displayFormatter),
+                epochDay = date.toEpochDay()
+            )
+        }
+    }
+
+    private fun parseTripDate(value: String?): LocalDate? {
+        if (value.isNullOrBlank()) return null
+        val normalized = value.substringBefore("T")
+        return runCatching { LocalDate.parse(normalized) }
+            .recoverCatching {
+                LocalDate.parse(
+                    normalized,
+                    DateTimeFormatter.ofPattern("dd/MM/yyyy", Locale.getDefault())
+                )
+            }
+            .getOrNull()
+    }
+
+    private fun isPastDate(dateText: String?): Boolean {
+        val date = parseTripDate(dateText) ?: return false
+        return date.isBefore(LocalDate.now())
+    }
+
     private fun launchMutation(block: suspend () -> Unit) {
+        isMutatingActivities = true
+        _uiState.update {
+            it.copy(
+                isLoadingActivities = true,
+                errorMessage = null
+            )
+        }
         viewModelScope.launch {
-            runCatching { block() }
+            val result = runCatching { block() }
+            isMutatingActivities = false
+            result
                 .onFailure { throwable ->
-                    _uiState.update { it.copy(errorMessage = throwable.message ?: "Unable to update itinerary") }
+                    _uiState.update {
+                        it.copy(
+                            isLoadingActivities = false,
+                            errorMessage = throwable.message ?: "Unable to update itinerary"
+                        )
+                    }
+                }
+                .onSuccess {
+                    _uiState.update { it.copy(isLoadingActivities = false) }
                 }
         }
     }

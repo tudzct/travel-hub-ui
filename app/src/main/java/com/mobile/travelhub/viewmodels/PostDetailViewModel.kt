@@ -1,21 +1,18 @@
 package com.mobile.travelhub.viewmodels
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mobile.travelhub.data.model.FeedPostResponse
 import com.mobile.travelhub.data.model.PostCommentResponse
 import com.mobile.travelhub.usecase.AddCommentUseCase
-import com.mobile.travelhub.usecase.GetAllPostsUseCase
+import com.mobile.travelhub.usecase.GetPostByIdUseCase
 import com.mobile.travelhub.usecase.GetPostCommentsUseCase
 import com.mobile.travelhub.usecase.LikePostUseCase
 import com.mobile.travelhub.usecase.SavePostUseCase
 import com.mobile.travelhub.usecase.UnlikePostUseCase
 import com.mobile.travelhub.utils.PostsUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
-import java.util.TimeZone
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -23,74 +20,47 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-data class HomePostUiModel(
-    val id: Long,
-    val ownerId: Long,
-    val username: String,
-    val ownerAvatarUrl: String?,
-    val subtitle: String,
-    val description: String,
-    val imageUrls: List<String>,
-    val likeCount: Int,
-    val commentCount: Int,
-    val isLiked: Boolean,
-    val isLikeLoading: Boolean,
-    val isSaved: Boolean,
-    val isSaveLoading: Boolean,
-    val timeAgoLabel: String
-)
-
-data class HomeCommentUiModel(
-    val id: String,
-    val username: String,
-    val content: String,
-    val timeAgoLabel: String
-)
-
-data class HomeUiState(
+data class PostDetailUiState(
     val isLoading: Boolean = false,
-    val posts: List<HomePostUiModel> = emptyList(),
+    val post: HomePostUiModel? = null,
     val errorMessage: String? = null,
-    val activeCommentPostId: Long? = null,
+    val isCommentSheetVisible: Boolean = false,
     val commentInput: String = "",
     val isCommentsLoading: Boolean = false,
     val isCommentSubmitting: Boolean = false,
     val commentsErrorMessage: String? = null,
     val commentErrorMessage: String? = null,
-    val commentsByPostId: Map<Long, List<HomeCommentUiModel>> = emptyMap()
+    val comments: List<HomeCommentUiModel> = emptyList()
 )
 
 @HiltViewModel
-class HomeViewModel @Inject constructor(
-    private val getAllPostsUseCase: GetAllPostsUseCase,
+class PostDetailViewModel @Inject constructor(
+    savedStateHandle: SavedStateHandle,
+    private val getPostByIdUseCase: GetPostByIdUseCase,
     private val likePostUseCase: LikePostUseCase,
     private val unlikePostUseCase: UnlikePostUseCase,
     private val savePostUseCase: SavePostUseCase,
     private val addCommentUseCase: AddCommentUseCase,
     private val getPostCommentsUseCase: GetPostCommentsUseCase
 ) : ViewModel() {
+    private val postId: Long = checkNotNull(savedStateHandle["postId"])
 
-    private val _uiState = MutableStateFlow(HomeUiState(isLoading = true))
-    val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
+    private val _uiState = MutableStateFlow(PostDetailUiState(isLoading = true))
+    val uiState: StateFlow<PostDetailUiState> = _uiState.asStateFlow()
 
     init {
-        refreshPosts()
+        refreshPost()
     }
 
-    fun refreshPosts() {
+    fun refreshPost() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, errorMessage = null) }
-
-            getAllPostsUseCase(page = 0, pageSize = 20)
-                .onSuccess { posts ->
-                    val safePosts = posts.mapNotNull { post ->
-                        runCatching { toUiModel(post) }.getOrNull()
-                    }
-
+            getPostByIdUseCase(postId)
+                .onSuccess { response ->
                     _uiState.update {
                         it.copy(
                             isLoading = false,
-                            posts = safePosts,
+                            post = toPostUiModel(response),
                             errorMessage = null
                         )
                     }
@@ -99,21 +69,21 @@ class HomeViewModel @Inject constructor(
                     _uiState.update {
                         it.copy(
                             isLoading = false,
-                            posts = emptyList(),
-                            errorMessage = throwable.message ?: "Failed to load posts"
+                            post = null,
+                            errorMessage = throwable.message ?: "Failed to load post"
                         )
                     }
                 }
         }
     }
 
-    fun onLikeClicked(postId: Long) {
-        val currentPost = _uiState.value.posts.firstOrNull { it.id == postId } ?: return
+    fun onLikeClicked() {
+        val currentPost = _uiState.value.post ?: return
         if (currentPost.isLikeLoading) return
 
         val nextLiked = !currentPost.isLiked
         val nextLikeCount = (currentPost.likeCount + if (nextLiked) 1 else -1).coerceAtLeast(0)
-        updatePost(postId) {
+        updatePost {
             it.copy(
                 isLiked = nextLiked,
                 likeCount = nextLikeCount,
@@ -130,7 +100,7 @@ class HomeViewModel @Inject constructor(
 
             result
                 .onSuccess { response ->
-                    updatePost(postId) {
+                    updatePost {
                         it.copy(
                             isLiked = response.liked,
                             likeCount = response.likeCount.coerceAtLeast(0),
@@ -139,7 +109,7 @@ class HomeViewModel @Inject constructor(
                     }
                 }
                 .onFailure { throwable ->
-                    updatePost(postId) {
+                    updatePost {
                         it.copy(
                             isLiked = currentPost.isLiked,
                             likeCount = currentPost.likeCount,
@@ -153,12 +123,12 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    fun onSaveClicked(postId: Long) {
-        val currentPost = _uiState.value.posts.firstOrNull { it.id == postId } ?: return
+    fun onSaveClicked() {
+        val currentPost = _uiState.value.post ?: return
         if (currentPost.isSaveLoading) return
         val targetSaved = !currentPost.isSaved
 
-        updatePost(postId) {
+        updatePost {
             it.copy(
                 isSaved = targetSaved,
                 isSaveLoading = true
@@ -168,7 +138,7 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch {
             savePostUseCase(postId, currentlySaved = currentPost.isSaved)
                 .onSuccess { response ->
-                    updatePost(postId) {
+                    updatePost {
                         it.copy(
                             isSaved = response.saved,
                             isSaveLoading = false
@@ -176,7 +146,7 @@ class HomeViewModel @Inject constructor(
                     }
                 }
                 .onFailure { throwable ->
-                    updatePost(postId) {
+                    updatePost {
                         it.copy(
                             isSaved = currentPost.isSaved,
                             isSaveLoading = false
@@ -189,23 +159,23 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    fun onCommentClicked(postId: Long) {
+    fun onCommentClicked() {
         _uiState.update {
             it.copy(
-                activeCommentPostId = postId,
+                isCommentSheetVisible = true,
                 commentInput = "",
                 isCommentsLoading = true,
                 commentsErrorMessage = null,
                 commentErrorMessage = null
             )
         }
-        loadComments(postId)
+        loadComments()
     }
 
     fun onCommentDismissed() {
         _uiState.update {
             it.copy(
-                activeCommentPostId = null,
+                isCommentSheetVisible = false,
                 commentInput = "",
                 isCommentsLoading = false,
                 isCommentSubmitting = false,
@@ -216,14 +186,11 @@ class HomeViewModel @Inject constructor(
     }
 
     fun onCommentInputChanged(value: String) {
-        _uiState.update {
-            it.copy(commentInput = value, commentErrorMessage = null)
-        }
+        _uiState.update { it.copy(commentInput = value, commentErrorMessage = null) }
     }
 
     fun submitComment() {
         val currentState = _uiState.value
-        val postId = currentState.activeCommentPostId ?: return
         val content = currentState.commentInput.trim()
 
         if (content.isBlank()) {
@@ -233,29 +200,22 @@ class HomeViewModel @Inject constructor(
 
         if (currentState.isCommentSubmitting) return
 
-        _uiState.update {
-            it.copy(isCommentSubmitting = true, commentErrorMessage = null)
-        }
+        _uiState.update { it.copy(isCommentSubmitting = true, commentErrorMessage = null) }
 
         viewModelScope.launch {
             addCommentUseCase(postId = postId, content = content)
                 .onSuccess { response ->
                     val commentUiModel = toCommentUiModel(response)
                     _uiState.update { state ->
-                        val currentComments = state.commentsByPostId[postId].orEmpty()
                         state.copy(
                             isCommentSubmitting = false,
                             commentInput = "",
                             commentsErrorMessage = null,
                             commentErrorMessage = null,
-                            commentsByPostId = state.commentsByPostId + (postId to (currentComments + commentUiModel)),
-                            posts = state.posts.map { post ->
-                                if (post.id == postId) {
-                                    post.copy(commentCount = (post.commentCount + 1).coerceAtLeast(0))
-                                } else {
-                                    post
-                                }
-                            }
+                            comments = state.comments + commentUiModel,
+                            post = state.post?.copy(
+                                commentCount = (state.post.commentCount + 1).coerceAtLeast(0)
+                            )
                         )
                     }
                 }
@@ -270,17 +230,15 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    private fun loadComments(postId: Long) {
+    private fun loadComments() {
         viewModelScope.launch {
             getPostCommentsUseCase(postId = postId, page = 0, pageSize = 50)
                 .onSuccess { response ->
-                    _uiState.update { state ->
-                        state.copy(
+                    _uiState.update {
+                        it.copy(
                             isCommentsLoading = false,
                             commentsErrorMessage = null,
-                            commentsByPostId = state.commentsByPostId + (
-                                postId to response.data.map(::toCommentUiModel)
-                            )
+                            comments = response.data.map(::toCommentUiModel)
                         )
                     }
                 }
@@ -295,53 +253,33 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    private fun toUiModel(post: FeedPostResponse): HomePostUiModel {
-        val safeId = runCatching { post.id }.getOrDefault(0L)
-        val safeUsername = runCatching { post.owner.username }
-            .getOrNull()
-            ?.takeIf { it.isNotBlank() }
-            ?: "unknown"
-        val safeDescription = runCatching { post.description }
-            .getOrNull()
-            ?.takeIf { it.isNotBlank() }
-            ?: ""
-        val safeLocation = runCatching { post.location }
-            .getOrNull()
-            ?.takeIf { it.isNotBlank() }
-            ?: "STUDIO NULL"
-        val safeImageUrls = runCatching { post.imageUrls }
-            .getOrNull()
-            ?.filter { it.isNotBlank() }
-            ?: emptyList()
-        val safeCreatedAt = runCatching { post.createdAt }.getOrNull()
-            ?: runCatching { post.updatedAt }.getOrNull()
+    private fun updatePost(transform: (HomePostUiModel) -> HomePostUiModel) {
+        _uiState.update { state ->
+            state.copy(post = state.post?.let(transform))
+        }
+    }
+
+    private fun toPostUiModel(post: FeedPostResponse): HomePostUiModel {
+        val username = post.owner.username.takeIf { it.isNotBlank() } ?: "unknown"
+        val location = post.location?.takeIf { it.isNotBlank() } ?: "STUDIO NULL"
+        val createdAt = post.createdAt ?: post.updatedAt
 
         return HomePostUiModel(
-            id = safeId,
-            ownerId = runCatching { post.owner.id }.getOrDefault(0L),
-            username = safeUsername,
-            ownerAvatarUrl = runCatching { post.owner.avatarUrl }.getOrNull()?.takeIf { it.isNotBlank() },
-            subtitle = safeLocation,
-            description = safeDescription,
-            imageUrls = safeImageUrls,
+            id = post.id,
+            ownerId = post.owner.id,
+            username = username,
+            ownerAvatarUrl = post.owner.avatarUrl?.takeIf { it.isNotBlank() },
+            subtitle = location,
+            description = post.description.takeIf { it.isNotBlank() } ?: "",
+            imageUrls = post.imageUrls.filter { it.isNotBlank() },
             likeCount = post.likeCount?.coerceAtLeast(0) ?: 0,
             commentCount = post.commentCount?.coerceAtLeast(0) ?: 0,
             isLiked = post.likedByCurrentUser == true,
             isLikeLoading = false,
             isSaved = post.savedByCurrentUser == true,
             isSaveLoading = false,
-            timeAgoLabel = PostsUtils.formatTimeAgo(safeCreatedAt)
+            timeAgoLabel = PostsUtils.formatTimeAgo(createdAt)
         )
-    }
-
-    private fun updatePost(postId: Long, transform: (HomePostUiModel) -> HomePostUiModel) {
-        _uiState.update { state ->
-            state.copy(
-                posts = state.posts.map { post ->
-                    if (post.id == postId) transform(post) else post
-                }
-            )
-        }
     }
 
     private fun toCommentUiModel(response: PostCommentResponse): HomeCommentUiModel {
@@ -358,5 +296,4 @@ class HomeViewModel @Inject constructor(
             timeAgoLabel = PostsUtils.formatTimeAgo(createdAt)
         )
     }
-
 }

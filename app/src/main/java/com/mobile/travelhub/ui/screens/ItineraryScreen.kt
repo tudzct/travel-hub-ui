@@ -43,7 +43,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
@@ -82,9 +81,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
@@ -95,6 +92,7 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -102,7 +100,6 @@ import com.mobile.travelhub.data.model.*
 
 import com.mobile.travelhub.ui.components.itinerary.*
 import com.mobile.travelhub.ui.components.itinerary.ItineraryDayEditorDialog
-import com.mobile.travelhub.ui.components.itinerary.ItineraryEditButton
 import com.mobile.travelhub.ui.components.itinerary.ItineraryEventEditorDialog
 import com.mobile.travelhub.ui.components.itinerary.toItineraryColor
 import com.mobile.travelhub.ui.theme.OnSurface
@@ -112,6 +109,7 @@ import com.mobile.travelhub.ui.theme.SurfaceBg
 import com.mobile.travelhub.ui.theme.SurfaceContainerLow
 import com.mobile.travelhub.ui.theme.SurfaceContainerLowest
 import com.mobile.travelhub.ui.theme.SunsetOrange
+import com.mobile.travelhub.ui.theme.TravelHubTheme
 import com.mobile.travelhub.viewmodels.ItineraryUiState
 import com.mobile.travelhub.viewmodels.ItineraryViewModel
 import kotlin.math.max
@@ -121,18 +119,18 @@ import sh.calvin.reorderable.rememberReorderableLazyListState
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ItineraryScreen(
+    tripId: Long? = null,
     groupName: String,
     onBack: () -> Unit,
     onOpenDayDetail: (Int) -> Unit,
     showBackButton: Boolean = true,
-    openChatOnLaunch: Boolean = false,
     viewModel: ItineraryViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
 
-    LaunchedEffect(groupName, openChatOnLaunch) {
-        viewModel.bindGroup(groupName = groupName, openChatOnLaunch = openChatOnLaunch)
+    LaunchedEffect(tripId, groupName) {
+        viewModel.bindGroup(groupName = groupName, tripId = tripId)
     }
 
     LaunchedEffect(state.errorMessage) {
@@ -148,36 +146,23 @@ fun ItineraryScreen(
             ItineraryTopBar(
                 title = if (state.groupName.isBlank()) "Itinerary" else state.groupName,
                 subtitle = "Version ${state.version}",
-                isLeader = state.isLeader,
+                isLeader = state.isLeader && !state.isCompleted,
                 showBackButton = showBackButton,
-                isEditMode = state.isEditMode,
-                onToggleEditMode = viewModel::toggleEditMode,
+                onAddItinerary = viewModel::startAddingStop,
                 onBack = onBack
             )
-        },
-        floatingActionButton = {
-            GeminiItineraryFab(onClick = viewModel::openChat)
         }
     ) { paddingValues ->
         ItineraryOverviewContent(
             state = state,
             paddingValues = paddingValues,
             onOpenDayDetail = onOpenDayDetail,
-            onAddDay = viewModel::addDay,
-            onEditDay = viewModel::startEditingDay,
-            onDeleteDay = viewModel::deleteDay,
-            onToggleChange = viewModel::toggleChangeSelection,
-            onApplySelected = viewModel::applySelectedChanges,
-            onDiscardProposal = viewModel::discardPendingProposal
+            onEditEvent = viewModel::startEditing
         )
     }
 
     ItinerarySharedOverlays(
         state = state,
-        onCloseChat = viewModel::closeChat,
-        onChatInputChange = viewModel::updateChatInput,
-        onVoiceInputChange = viewModel::updateVoiceChatInput,
-        onSendChat = viewModel::sendChatPrompt,
         onDismissDayEditor = viewModel::cancelEditingDay,
         onSaveDay = viewModel::saveDay,
         onDeleteEditingDay = viewModel::deleteEditingDay,
@@ -190,18 +175,18 @@ fun ItineraryScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ItineraryDayDetailScreen(
+    tripId: Long? = null,
     groupName: String,
     dayIndex: Int,
     onBack: () -> Unit,
     showBackButton: Boolean = true,
-    openChatOnLaunch: Boolean = false,
     viewModel: ItineraryViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
 
-    LaunchedEffect(groupName, openChatOnLaunch) {
-        viewModel.bindGroup(groupName = groupName, openChatOnLaunch = openChatOnLaunch)
+    LaunchedEffect(tripId, groupName) {
+        viewModel.bindGroup(groupName = groupName, tripId = tripId)
     }
 
     LaunchedEffect(dayIndex) {
@@ -223,20 +208,17 @@ fun ItineraryDayDetailScreen(
             ItineraryTopBar(
                 title = selectedDay?.label ?: "Day detail",
                 subtitle = selectedDay?.dateLabel ?: state.groupName,
-                isLeader = state.isLeader,
+                isLeader = state.isLeader && !state.isCompleted,
                 showBackButton = showBackButton,
-                isEditMode = state.isEditMode,
-                onToggleEditMode = viewModel::toggleEditMode,
+                onAddItinerary = viewModel::startAddingStop,
                 onBack = onBack
             )
-        },
-        floatingActionButton = {
-            GeminiItineraryFab(onClick = viewModel::openChat)
         }
     ) { paddingValues ->
         ItineraryDayDetailContent(
             day = selectedDay,
-            isEditMode = state.isEditMode,
+            isLoading = state.isLoadingActivities,
+            isEditMode = state.isEditMode && !state.isCompleted,
             paddingValues = paddingValues,
             onAddStop = viewModel::startAddingStop,
             onReorderEvents = viewModel::reorderDayEvents,
@@ -247,10 +229,56 @@ fun ItineraryDayDetailScreen(
 
     ItinerarySharedOverlays(
         state = state,
-        onCloseChat = viewModel::closeChat,
-        onChatInputChange = viewModel::updateChatInput,
-        onVoiceInputChange = viewModel::updateVoiceChatInput,
-        onSendChat = viewModel::sendChatPrompt,
+        onDismissDayEditor = viewModel::cancelEditingDay,
+        onSaveDay = viewModel::saveDay,
+        onDeleteEditingDay = viewModel::deleteEditingDay,
+        onDismissEventEditor = viewModel::cancelEditing,
+        onSaveEvent = viewModel::saveEvent,
+        onDeleteEditingEvent = viewModel::deleteEditingEvent
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ItineraryPopupSheet(
+    tripId: Long? = null,
+    groupName: String,
+    onDismiss: () -> Unit,
+    viewModel: ItineraryViewModel = hiltViewModel()
+) {
+    val state by viewModel.uiState.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(tripId, groupName) {
+        viewModel.bindGroup(groupName = groupName, tripId = tripId)
+    }
+
+    LaunchedEffect(state.errorMessage) {
+        val message = state.errorMessage ?: return@LaunchedEffect
+        snackbarHostState.showSnackbar(message)
+        viewModel.clearError()
+    }
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        containerColor = SurfaceBg
+    ) {
+        ItineraryPopupContent(
+            state = state,
+            groupName = groupName,
+            snackbarHostState = snackbarHostState,
+            onDismiss = onDismiss,
+            onAddItinerary = viewModel::startAddingStop,
+            onOpenDayDetail = viewModel::selectDay,
+            onEditEvent = viewModel::startEditing,
+            modifier = Modifier
+                .fillMaxWidth()
+                .fillMaxHeight(0.92f)
+        )
+    }
+
+    ItinerarySharedOverlays(
+        state = state,
         onDismissDayEditor = viewModel::cancelEditingDay,
         onSaveDay = viewModel::saveDay,
         onDeleteEditingDay = viewModel::deleteEditingDay,
@@ -261,72 +289,123 @@ fun ItineraryDayDetailScreen(
 }
 
 @Composable
-private fun GeminiItineraryFab(onClick: () -> Unit) {
-    val infiniteTransition = rememberInfiniteTransition(label = "ai-fab-rainbow")
-    val rotation by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 360f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 2400, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "ai-fab-border-rotation"
-    )
-    val rainbow = listOf(
-        Color(0xFFFF3B30),
-        Color(0xFFFF9500),
-        Color(0xFFFFCC00),
-        Color(0xFF34C759),
-        Color(0xFF00C7BE),
-        Color(0xFF007AFF),
-        Color(0xFFAF52DE),
-        Color(0xFFFF3B30)
-    )
-
-    Box(
-        modifier = Modifier
-            .size(64.dp)
-            .shadow(elevation = 10.dp, shape = CircleShape, clip = false)
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null,
-                onClick = onClick
-            ),
-        contentAlignment = Alignment.Center
-    ) {
-        Box(
-            modifier = Modifier
-                .matchParentSize()
-                .graphicsLayer { rotationZ = rotation }
-                .background(Brush.sweepGradient(rainbow), CircleShape)
+private fun ItineraryPopupContent(
+    state: ItineraryUiState,
+    groupName: String,
+    snackbarHostState: SnackbarHostState,
+    onDismiss: () -> Unit,
+    onAddItinerary: () -> Unit,
+    onOpenDayDetail: (Int) -> Unit,
+    onEditEvent: (ItineraryEvent) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Scaffold(
+        modifier = modifier,
+        containerColor = SurfaceBg,
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
+        topBar = {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 16.dp, end = 12.dp, top = 4.dp, bottom = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = if (state.groupName.isBlank()) groupName else state.groupName,
+                        fontWeight = FontWeight.ExtraBold,
+                        fontSize = 20.sp,
+                        color = OnSurface
+                    )
+                }
+                if (state.isLeader && !state.isCompleted) {
+                    ItineraryAddButton(onAddItinerary = onAddItinerary)
+                }
+                IconButton(onClick = onDismiss) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "Close itinerary",
+                        tint = OnSurface
+                    )
+                }
+            }
+        }
+    ) { paddingValues ->
+        ItineraryOverviewContent(
+            state = state,
+            paddingValues = paddingValues,
+            onOpenDayDetail = onOpenDayDetail,
+            onEditEvent = onEditEvent
         )
-        Box(
-            modifier = Modifier
-                .size(56.dp)
-                .background(SurfaceContainerLowest, CircleShape),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = Icons.Default.AutoAwesome,
-                contentDescription = "Open AI itinerary editor",
-                tint = Color(0xFF5B35F5),
-                modifier = Modifier.size(28.dp)
+    }
+}
+
+@Preview(showBackground = true, widthDp = 390, heightDp = 720)
+@Composable
+private fun ItineraryPopupPreview() {
+    TravelHubTheme {
+        Surface(color = SurfaceBg) {
+            ItineraryPopupContent(
+                state = previewItineraryState(),
+                groupName = "New test trip",
+                snackbarHostState = remember { SnackbarHostState() },
+                onDismiss = {},
+                onAddItinerary = {},
+                onOpenDayDetail = {},
+                onEditEvent = {},
+                modifier = Modifier.fillMaxSize()
             )
         }
     }
 }
 
-
-
-
-
-
-
-
-
-
-
-
+private fun previewItineraryState(): ItineraryUiState {
+    return ItineraryUiState(
+        groupName = "New test trip",
+        version = 2,
+        role = ItineraryUserRole.LEADER,
+        days = listOf(
+            ItineraryDay(
+                dayIndex = 1,
+                label = "Day 1",
+                dateLabel = "Tuesday, 05/05",
+                events = listOf(
+                    ItineraryEvent(
+                        eventId = "preview-1",
+                        dayIndex = 1,
+                        startTime = "09:00",
+                        endTime = "10:00",
+                        title = "Gh",
+                        placeName = "Ha Noi",
+                        note = "",
+                        transportToNext = "",
+                        estimatedCost = "",
+                        colorHex = ItineraryEventColors.Default
+                    )
+                )
+            ),
+            ItineraryDay(
+                dayIndex = 2,
+                label = "Day 2",
+                dateLabel = "Wednesday, 06/05",
+                events = listOf(
+                    ItineraryEvent(
+                        eventId = "preview-2",
+                        dayIndex = 2,
+                        startTime = "09:00",
+                        endTime = "10:00",
+                        title = "Cà phê",
+                        placeName = "Old Quarter",
+                        note = "",
+                        transportToNext = "",
+                        estimatedCost = "",
+                        colorHex = ItineraryEventColors.Default
+                    )
+                )
+            )
+        )
+    )
+}
 
 
 

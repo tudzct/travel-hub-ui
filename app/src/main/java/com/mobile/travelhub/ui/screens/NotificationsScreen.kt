@@ -1,6 +1,7 @@
 package com.mobile.travelhub.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -24,6 +25,7 @@ import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.PersonAdd
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.HorizontalDivider
@@ -35,6 +37,7 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -64,13 +67,23 @@ import com.mobile.travelhub.viewmodels.NotificationsViewModel
 @Composable
 fun NotificationsPopup(
     onDismiss: () -> Unit,
+    onPostNotificationClick: (Long) -> Unit = {},
+    onFollowNotificationClick: (Long) -> Unit = {},
     viewModel: NotificationsViewModel = hiltViewModel()
 ) {
+    LaunchedEffect(Unit) {
+        viewModel.refreshNotifications()
+    }
+
     val uiState by viewModel.uiState.collectAsState()
     NotificationsPopupContent(
         activeFilter = uiState.activeFilter,
         notifications = uiState.notifications,
+        isLoading = uiState.isLoading,
+        isMarkingAllRead = uiState.isMarkingAllRead,
         onDismiss = onDismiss,
+        onPostNotificationClick = onPostNotificationClick,
+        onFollowNotificationClick = onFollowNotificationClick,
         onFilterSelected = viewModel::setFilter,
         onMarkAllRead = viewModel::markAllRead
     )
@@ -81,7 +94,11 @@ fun NotificationsPopup(
 private fun NotificationsPopupContent(
     activeFilter: NotificationFilter,
     notifications: List<NotificationModel>,
+    isLoading: Boolean,
+    isMarkingAllRead: Boolean,
     onDismiss: () -> Unit,
+    onPostNotificationClick: (Long) -> Unit,
+    onFollowNotificationClick: (Long) -> Unit,
     onFilterSelected: (NotificationFilter) -> Unit,
     onMarkAllRead: () -> Unit
 ) {
@@ -113,6 +130,8 @@ private fun NotificationsPopupContent(
         ) {
             PopupTopBar(
                 onClose = onDismiss,
+                hasUnreadNotifications = notifications.any { !it.isRead },
+                isMarkingAllRead = isMarkingAllRead,
                 onMarkAllRead = onMarkAllRead
             )
             NotificationFilters(
@@ -125,7 +144,9 @@ private fun NotificationsPopupContent(
                     .padding(bottom = 12.dp),
                 contentAlignment = Alignment.Center
             ) {
-                if (filteredNotifications.isEmpty()) {
+                if (isLoading) {
+                    CircularProgressIndicator()
+                } else if (filteredNotifications.isEmpty()) {
                     if (isPopupVisible) {
                         EmptyNotificationsPopup(onDismiss = { isPopupVisible = false })
                     }
@@ -137,7 +158,11 @@ private fun NotificationsPopupContent(
                     ) {
                         if (unreadNotifications.isNotEmpty()) {
                             items(unreadNotifications, key = { "${it.createdAt}-${it.title}" }) { notification ->
-                                NotificationCard(notification = notification)
+                                NotificationCard(
+                                    notification = notification,
+                                    onPostNotificationClick = onPostNotificationClick,
+                                    onFollowNotificationClick = onFollowNotificationClick
+                                )
                             }
                         }
                         if (unreadNotifications.isNotEmpty() && readNotifications.isNotEmpty()) {
@@ -165,7 +190,11 @@ private fun NotificationsPopupContent(
                         }
                         if (readNotifications.isNotEmpty()) {
                             items(readNotifications, key = { "${it.createdAt}-${it.title}" }) { notification ->
-                                NotificationCard(notification = notification)
+                                NotificationCard(
+                                    notification = notification,
+                                    onPostNotificationClick = onPostNotificationClick,
+                                    onFollowNotificationClick = onFollowNotificationClick
+                                )
                             }
                         }
                     }
@@ -187,60 +216,72 @@ private fun NotificationsScreenPreview() {
                     body = "Your Hanoi weekend trip starts in 2 days.",
                     isRead = false,
                     createdAt = Instant.parse("2026-05-12T09:15:00Z"),
-                    type = NotificationType.COMMENT
+                    type = NotificationType.COMMENT,
+                    targetId = 10
                 ),
                 NotificationModel(
                     title = "New follower",
                     body = "Linh Nguyen started following you.",
                     isRead = false,
                     createdAt = Instant.parse("2026-05-12T08:40:00Z"),
-                    type = NotificationType.FOLLOW
+                    type = NotificationType.FOLLOW,
+                    targetId = null
                 ),
                 NotificationModel(
                     title = "System",
                     body = "Your profile is 90% complete. Add a bio to finish it.",
                     isRead = true,
                     createdAt = Instant.parse("2026-05-11T15:30:00Z"),
-                    type = NotificationType.LIKE
+                    type = NotificationType.LIKE,
+                    targetId = 11
                 ),
                 NotificationModel(
                     title = "New follower 2",
                     body = "Your profile is 90% complete. Add a bio to finish it.",
                     isRead = true,
                     createdAt = Instant.parse("2026-05-11T15:30:00Z"),
-                    type = NotificationType.FOLLOW
+                    type = NotificationType.FOLLOW,
+                    targetId = null
                 ),
                 NotificationModel(
                     title = "New follower 3",
                     body = "Your profile is 90% complete. Add a bio to finish it.",
                     isRead = true,
                     createdAt = Instant.parse("2026-05-11T15:30:00Z"),
-                    type = NotificationType.FOLLOW
+                    type = NotificationType.FOLLOW,
+                    targetId = null
                 ),
                 NotificationModel(
                     title = "New follower 4",
                     body = "Your profile is 90% complete. Add a bio to finish it.",
                     isRead = true,
                     createdAt = Instant.parse("2026-05-11T15:30:00Z"),
-                    type = NotificationType.FOLLOW
+                    type = NotificationType.FOLLOW,
+                    targetId = null
                 ),
                 NotificationModel(
                     title = "New follower 5",
                     body = "Your profile is 90% complete. Add a bio to finish it.",
                     isRead = true,
                     createdAt = Instant.parse("2026-05-11T15:30:00Z"),
-                    type = NotificationType.FOLLOW
+                    type = NotificationType.FOLLOW,
+                    targetId = null
                 ),
                 NotificationModel(
                     title = "New follower 6",
                     body = "Your profile is 90% complete. Add a bio to finish it.",
                     isRead = true,
                     createdAt = Instant.parse("2026-05-11T15:30:00Z"),
-                    type = NotificationType.FOLLOW
+                    type = NotificationType.FOLLOW,
+                    targetId = null
                 ),
             ),
+            isLoading = false,
             onDismiss = {},
+            onPostNotificationClick = {},
+            onFollowNotificationClick = {},
             onFilterSelected = {},
+            isMarkingAllRead = false,
             onMarkAllRead = {}
         )
     }
@@ -249,6 +290,8 @@ private fun NotificationsScreenPreview() {
 @Composable
 private fun PopupTopBar(
     onClose: () -> Unit,
+    hasUnreadNotifications: Boolean,
+    isMarkingAllRead: Boolean,
     onMarkAllRead: () -> Unit
 ) {
     Row(
@@ -268,7 +311,10 @@ private fun PopupTopBar(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            TextButton(onClick = onMarkAllRead) {
+            TextButton(
+                onClick = onMarkAllRead,
+                enabled = hasUnreadNotifications && !isMarkingAllRead
+            ) {
                 Text(text = "Mark all read")
             }
         }
@@ -324,7 +370,23 @@ private fun SectionHeader(title: String) {
 }
 
 @Composable
-private fun NotificationCard(notification: NotificationModel) {
+private fun NotificationCard(
+    notification: NotificationModel,
+    onPostNotificationClick: (Long) -> Unit,
+    onFollowNotificationClick: (Long) -> Unit
+) {
+    val onNotificationClick: (() -> Unit)? = notification.targetId?.let { targetId ->
+        when (notification.type) {
+            NotificationType.COMMENT,
+            NotificationType.LIKE -> {
+                { onPostNotificationClick(targetId) }
+            }
+            NotificationType.FOLLOW -> {
+                { onFollowNotificationClick(targetId) }
+            }
+            null -> null
+        }
+    }
     val containerColor = if (!notification.isRead) {
         MaterialTheme.colorScheme.primary.copy(alpha = 0.08f)
     } else {
@@ -347,7 +409,11 @@ private fun NotificationCard(notification: NotificationModel) {
         shape = RoundedCornerShape(18.dp),
         color = containerColor,
         tonalElevation = if (!notification.isRead) 2.dp else 0.dp,
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier
+            .fillMaxWidth()
+            .then(
+                onNotificationClick?.let { Modifier.clickable(onClick = it) } ?: Modifier
+            )
     ) {
         Row(
             modifier = Modifier

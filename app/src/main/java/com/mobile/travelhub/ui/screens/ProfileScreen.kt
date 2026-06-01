@@ -1,5 +1,7 @@
 package com.mobile.travelhub.ui.screens
 
+import android.net.Uri
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -9,14 +11,18 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.AddCircle
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.outlined.BookmarkBorder
+import androidx.compose.material.icons.outlined.FavoriteBorder
+import androidx.compose.material.icons.outlined.History
+import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.outlined.PhotoCamera
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -27,46 +33,57 @@ import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.NavigationDrawerItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
+import coil.compose.AsyncImage
 
 import com.mobile.travelhub.R
 import com.mobile.travelhub.data.model.UserProfileResponse
 import com.mobile.travelhub.ui.components.FeedPostCard
 import com.mobile.travelhub.ui.components.FeedPostCardSkeleton
+import com.mobile.travelhub.ui.components.HomeCommentsBottomSheet
 import com.mobile.travelhub.ui.theme.*
 import com.mobile.travelhub.viewmodels.HomePostUiModel
 import com.mobile.travelhub.viewmodels.ProfileViewModel
 import com.mobile.travelhub.viewmodels.ProfilePostsUiState
+import com.mobile.travelhub.viewmodels.ProfilePostsTab
 import com.mobile.travelhub.viewmodels.UiState
 import kotlinx.coroutines.launch
 
@@ -81,11 +98,16 @@ fun ProfileScreen(
     viewingUserId: Long? = null,
     onNavigateToChat: (() -> Unit)? = null,
     onNotificationsClick: (() -> Unit)? = null,
+    onPostNotificationClick: (Long) -> Unit = {},
+    onFollowNotificationClick: (Long) -> Unit = {},
+    onNavigateToUserProfile: (Long) -> Unit = {},
     onBack: (() -> Unit)? = null,
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
     val isViewingOwnProfile = viewingUserId == null
-    
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+
     val profileState by if (isViewingOwnProfile) {
         viewModel.profileState.collectAsState()
     } else {
@@ -93,8 +115,9 @@ fun ProfileScreen(
     }
     val profilePostsState by viewModel.profilePostsState.collectAsState()
     val unauthorized by viewModel.unauthorized.collectAsState()
+    val changePasswordState by viewModel.changePasswordState.collectAsState()
 
-    LaunchedEffect(Unit) {
+    LaunchedEffect(isViewingOwnProfile, viewingUserId) {
         if (isViewingOwnProfile) {
             viewModel.loadUserProfile()
             viewModel.loadUserPosts()
@@ -105,12 +128,46 @@ fun ProfileScreen(
             }
         }
     }
+
     LaunchedEffect(unauthorized) {
         if (unauthorized && isViewingOwnProfile) {
             viewModel.clearUnauthorized()
             onRequireLogin?.invoke()
         }
     }
+
+    val onAvatarSelected: (Uri) -> Unit = onAvatarSelected@{ uri ->
+        if (!isViewingOwnProfile) return@onAvatarSelected
+        val currentProfile = (profileState as? UiState.Success)?.data ?: return@onAvatarSelected
+        coroutineScope.launch {
+            try {
+                val bytes = context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
+                    ?: throw IllegalStateException("Không thể đọc ảnh đã chọn")
+                val mimeType = context.contentResolver.getType(uri) ?: "image/jpeg"
+                val fileName = uri.lastPathSegment
+                    ?.substringAfterLast('/')
+                    ?.takeIf { it.isNotBlank() }
+                    ?: "avatar.jpg"
+                val uploadedUrl = viewModel.uploadAvatar(
+                    imageBytes = bytes,
+                    mimeType = mimeType,
+                    fileName = fileName
+                )
+                viewModel.updateProfile(
+                    name = currentProfile.name,
+                    username = currentProfile.username,
+                    bio = currentProfile.bio.orEmpty(),
+                    dob = currentProfile.dateOfBirth.orEmpty(),
+                    gender = currentProfile.gender.orEmpty(),
+                    location = currentProfile.location.orEmpty(),
+                    avatarUrl = uploadedUrl
+                )
+            } catch (e: Exception) {
+                Toast.makeText(context, "Lỗi upload ảnh: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
     ProfileScreenContent(
         isViewingOwnProfile = isViewingOwnProfile,
         profileState = profileState,
@@ -118,11 +175,15 @@ fun ProfileScreen(
         onNavigateToEditProfile = onNavigateToEditProfile,
         onNavigateToFollowers = onNavigateToFollowers,
         onNavigateToFollowing = onNavigateToFollowing,
+        onNavigateToHistory = onNavigateToHistory,
         onLogout = onLogout,
         onBack = onBack,
         viewingUserId = viewingUserId,
         onNavigateToChat = onNavigateToChat,
         onNotificationsClick = onNotificationsClick,
+        onPostNotificationClick = onPostNotificationClick,
+        onFollowNotificationClick = onFollowNotificationClick,
+        onNavigateToUserProfile = onNavigateToUserProfile,
         onReloadProfile = {
             if (isViewingOwnProfile) {
                 viewModel.loadUserProfile()
@@ -133,12 +194,29 @@ fun ProfileScreen(
         onReloadOtherUserProfile = viewModel::loadOtherUserProfile,
         onReloadPosts = { userId ->
             if (userId == null) {
-                viewModel.loadUserPosts()
+                when (profilePostsState.selectedTab) {
+                    ProfilePostsTab.POSTS -> viewModel.loadUserPosts()
+                    ProfilePostsTab.SAVED -> viewModel.loadUserSavedPosts()
+                    ProfilePostsTab.LIKED -> viewModel.loadUserLikedPosts()
+                }
             } else {
                 viewModel.loadUserPosts(userId)
             }
         },
-        onToggleFollow = viewModel::toggleFollowOtherUser
+        onProfileTabSelected = { tab ->
+            viewModel.selectProfilePostsTab(tab)
+        },
+        onToggleFollow = viewModel::toggleFollowOtherUser,
+        onLikeClick = viewModel::onLikeClicked,
+        onSaveClick = viewModel::onSaveClicked,
+        onCommentClick = viewModel::onCommentClicked,
+        onCommentDismissed = viewModel::onCommentDismissed,
+        onCommentInputChanged = viewModel::onCommentInputChanged,
+        onCommentSubmit = viewModel::submitComment,
+        onAvatarSelected = onAvatarSelected,
+        changePasswordState = changePasswordState,
+        onChangePassword = viewModel::changePassword,
+        onClearChangePasswordState = viewModel::clearChangePasswordState
     )
 }
 
@@ -150,15 +228,30 @@ private fun ProfileScreenContent(
     onNavigateToEditProfile: () -> Unit,
     onNavigateToFollowers: () -> Unit,
     onNavigateToFollowing: () -> Unit,
+    onNavigateToHistory: (() -> Unit)?,
     onLogout: (() -> Unit)?,
     onBack: (() -> Unit)?,
     viewingUserId: Long?,
     onNavigateToChat: (() -> Unit)?,
     onNotificationsClick: (() -> Unit)?,
+    onPostNotificationClick: (Long) -> Unit,
+    onFollowNotificationClick: (Long) -> Unit,
+    onNavigateToUserProfile: (Long) -> Unit,
     onReloadProfile: () -> Unit,
     onReloadOtherUserProfile: (Long) -> Unit,
     onReloadPosts: (Long?) -> Unit,
-    onToggleFollow: (Long, Boolean) -> Unit
+    onProfileTabSelected: (ProfilePostsTab) -> Unit,
+    onToggleFollow: (Long, Boolean) -> Unit,
+    onLikeClick: (Long) -> Unit,
+    onSaveClick: (Long) -> Unit,
+    onCommentClick: (Long) -> Unit,
+    onCommentDismissed: () -> Unit,
+    onCommentInputChanged: (String) -> Unit,
+    onCommentSubmit: () -> Unit,
+    onAvatarSelected: (Uri) -> Unit,
+    changePasswordState: UiState<Boolean>,
+    onChangePassword: (String, String, String) -> Unit,
+    onClearChangePasswordState: () -> Unit
 ) {
     val profileTitle = (profileState as? UiState.Success)
         ?.data
@@ -168,68 +261,104 @@ private fun ProfileScreenContent(
     val scrollState = rememberScrollState()
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val coroutineScope = rememberCoroutineScope()
+    val avatarPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia()
+    ) { uri: Uri? ->
+        uri?.let(onAvatarSelected)
+    }
     var showNotifications by remember { mutableStateOf(false) }
+    var showChangePasswordDialog by remember { mutableStateOf(false) }
+    var hideDrawerContentForNavigation by remember { mutableStateOf(false) }
 
-    CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
-        ModalNavigationDrawer(
-            drawerState = drawerState,
-            gesturesEnabled = isViewingOwnProfile,
-            drawerContent = {
-                if (isViewingOwnProfile) {
-                    ModalDrawerSheet {
-                        CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(56.dp)
-                                    .padding(horizontal = 8.dp),
-                                horizontalArrangement = Arrangement.End,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                IconButton(
-                                    onClick = { coroutineScope.launch { drawerState.close() } }
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Close,
-                                        contentDescription = "Close menu"
-                                    )
-                                }
-                            }
+    LaunchedEffect(changePasswordState) {
+        if (changePasswordState is UiState.Success) {
+            showChangePasswordDialog = false
+        }
+    }
+
+    ModalNavigationDrawer(
+        drawerState = drawerState,
+        gesturesEnabled = isViewingOwnProfile,
+        drawerContent = {
+            if (isViewingOwnProfile && !hideDrawerContentForNavigation) {
+                ModalDrawerSheet(
+                    modifier = Modifier.width(280.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(top = 56.dp)
+                    ) {
+                        val navigateToHistory = onNavigateToHistory
+                        if (navigateToHistory != null) {
                             NavigationDrawerItem(
-                                label = { Text("Logout") },
+                                label = { Text("Recently viewed places") },
                                 selected = false,
                                 onClick = {
-                                    coroutineScope.launch { drawerState.close() }
-                                    onLogout?.invoke()
+                                    hideDrawerContentForNavigation = true
+                                    coroutineScope.launch {
+                                        drawerState.snapTo(DrawerValue.Closed)
+                                        withFrameNanos { }
+                                        navigateToHistory()
+                                    }
                                 },
                                 icon = {
                                     Icon(
-                                        imageVector = Icons.AutoMirrored.Filled.ExitToApp,
+                                        imageVector = Icons.Outlined.History,
                                         contentDescription = null
                                     )
                                 },
                                 modifier = Modifier.padding(horizontal = 12.dp)
                             )
                         }
+                        NavigationDrawerItem(
+                            label = { Text("Đổi mật khẩu") },
+                            selected = false,
+                            onClick = {
+                                onClearChangePasswordState()
+                                showChangePasswordDialog = true
+                                coroutineScope.launch { drawerState.close() }
+                            },
+                            icon = {
+                                Icon(
+                                    imageVector = Icons.Outlined.Lock,
+                                    contentDescription = null
+                                )
+                            },
+                            modifier = Modifier.padding(horizontal = 12.dp)
+                        )
+                        NavigationDrawerItem(
+                            label = { Text("Logout") },
+                            selected = false,
+                            onClick = {
+                                coroutineScope.launch { drawerState.close() }
+                                onLogout?.invoke()
+                            },
+                            icon = {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.ExitToApp,
+                                    contentDescription = null
+                                )
+                            },
+                            modifier = Modifier.padding(horizontal = 12.dp)
+                        )
                     }
                 }
             }
-        ) {
-            CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
-                Scaffold(
-                    modifier = Modifier.fillMaxSize(),
-                    containerColor = MaterialTheme.colorScheme.background,
-                    topBar = {
-                        Surface(
-                            color = MaterialTheme.colorScheme.background
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(56.dp)
-                                    .padding(horizontal = 4.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
+        }
+    ) {
+        Scaffold(
+            modifier = Modifier.fillMaxSize(),
+            containerColor = MaterialTheme.colorScheme.background,
+            topBar = {
+                Surface(
+                    color = MaterialTheme.colorScheme.background
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(56.dp)
+                            .padding(horizontal = 4.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
                                 if (isViewingOwnProfile) {
                                     IconButton(
                                         onClick = {
@@ -254,9 +383,9 @@ private fun ProfileScreenContent(
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis
                                 )
-                                if (!isViewingOwnProfile) {
+                                if (onBack != null) {
                                     IconButton(
-                                        onClick = { onBack?.invoke() },
+                                        onClick = { onBack.invoke() },
                                         modifier = Modifier.align(Alignment.CenterStart)
                                     ) {
                                         Icon(
@@ -267,7 +396,10 @@ private fun ProfileScreenContent(
                                     }
                                 } else {
                                     IconButton(
-                                        onClick = { coroutineScope.launch { drawerState.open() } },
+                                        onClick = {
+                                            hideDrawerContentForNavigation = false
+                                            coroutineScope.launch { drawerState.open() }
+                                        },
                                         modifier = Modifier.align(Alignment.CenterStart)
                                     ) {
                                         Icon(
@@ -296,6 +428,7 @@ private fun ProfileScreenContent(
                             is UiState.Success -> {
                                 val profile = state.data
                                 val displayName = profile.name.ifBlank { profile.username }
+                                val avatarUrl = profile.avatarUrl?.takeIf { it.isNotBlank() }
 
                                 Column(
                                     modifier = Modifier
@@ -310,31 +443,52 @@ private fun ProfileScreenContent(
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         // Avatar
-                                        Box(modifier = Modifier.size(80.dp)) {
-                                            Image(
-                                                painter = painterResource(id = R.drawable.female_avatar_maker),
-                                                contentDescription = "Avatar",
-                                                modifier = Modifier
-                                                    .fillMaxSize()
-                                                    .clip(CircleShape)
-                                                    .border(2.dp, Color(0xFFE0E0E0), CircleShape),
-                                                contentScale = ContentScale.Crop
-                                            )
-                                            // + icon
-                                            Box(
-                                                modifier = Modifier
-                                                    .align(Alignment.BottomEnd)
-                                                    .offset(x = (-4).dp, y = (-4).dp)
-                                                    .size(24.dp)
-                                                    .background(Color.White, CircleShape)
-                                                    .padding(2.dp)
-                                            ) {
-                                                Icon(
-                                                    imageVector = Icons.Default.AddCircle,
-                                                    contentDescription = "Add Story",
-                                                    tint = PrimaryBlue,
-                                                    modifier = Modifier.fillMaxSize()
+                                        Box(
+                                            modifier = Modifier
+                                                .size(80.dp)
+                                        ) {
+                                            if (avatarUrl != null) {
+                                                AsyncImage(
+                                                    model = avatarUrl,
+                                                    contentDescription = "Avatar",
+                                                    modifier = Modifier
+                                                        .fillMaxSize()
+                                                        .clip(CircleShape)
+                                                        .border(2.dp, Color(0xFFE0E0E0), CircleShape),
+                                                    contentScale = ContentScale.Crop
                                                 )
+                                            } else {
+                                                Image(
+                                                    painter = painterResource(id = R.drawable.female_avatar_maker),
+                                                    contentDescription = "Avatar",
+                                                    modifier = Modifier
+                                                        .fillMaxSize()
+                                                        .clip(CircleShape)
+                                                        .border(2.dp, Color(0xFFE0E0E0), CircleShape),
+                                                    contentScale = ContentScale.Crop
+                                                )
+                                            }
+                                            if (isViewingOwnProfile) {
+                                                Box(
+                                                    modifier = Modifier
+                                                        .align(Alignment.BottomEnd)
+                                                        .offset(x = (-4).dp, y = (-4).dp)
+                                                        .size(24.dp)
+                                                        .background(Color.White, CircleShape)
+                                                        .clickable {
+                                                            avatarPickerLauncher.launch(
+                                                                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                                                            )
+                                                        }
+                                                        .padding(2.dp)
+                                                ) {
+                                                    Icon(
+                                                        imageVector = Icons.Default.AddCircle,
+                                                        contentDescription = "Change avatar",
+                                                        tint = PrimaryBlue,
+                                                        modifier = Modifier.fillMaxSize()
+                                                    )
+                                                }
                                             }
                                         }
 
@@ -469,11 +623,19 @@ private fun ProfileScreenContent(
                                     Spacer(modifier = Modifier.height(16.dp))
                                     HorizontalDivider(color = Color(0xFFF0F0F0))
 
+                                    if (isViewingOwnProfile) {
+                                        ProfilePostsTabRow(
+                                            selectedTab = profilePostsState.selectedTab,
+                                            onTabSelected = onProfileTabSelected
+                                        )
+                                        HorizontalDivider(color = Color(0xFFF0F0F0))
+                                    }
+
                                     // Posts Section
                                     Column(
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .padding(top = 24.dp, bottom = 100.dp)
+                                            .padding(top = if (isViewingOwnProfile) 12.dp else 24.dp)
                                     ) {
                                         when {
                                             profilePostsState.isLoading -> {
@@ -504,6 +666,16 @@ private fun ProfileScreenContent(
                                             }
 
                                             profilePostsState.posts.isEmpty() -> {
+                                                val emptyTitle = when (profilePostsState.selectedTab) {
+                                                    ProfilePostsTab.POSTS -> "No Posts Yet"
+                                                    ProfilePostsTab.SAVED -> "No Saved Posts"
+                                                    ProfilePostsTab.LIKED -> "No Liked Posts"
+                                                }
+                                                val emptyMessage = when (profilePostsState.selectedTab) {
+                                                    ProfilePostsTab.POSTS -> "When you share photos, they will appear on your profile."
+                                                    ProfilePostsTab.SAVED -> "Posts you save will appear here."
+                                                    ProfilePostsTab.LIKED -> "Posts you like will appear here."
+                                                }
                                                 Column(
                                                     modifier = Modifier.fillMaxWidth().padding(horizontal = 32.dp, vertical = 32.dp),
                                                     horizontalAlignment = Alignment.CenterHorizontally
@@ -523,19 +695,19 @@ private fun ProfileScreenContent(
                                                     }
                                                     Spacer(modifier = Modifier.height(16.dp))
                                                     Text(
-                                                        text = "No Posts Yet",
+                                                        text = emptyTitle,
                                                         style = MaterialTheme.typography.titleLarge,
                                                         fontWeight = FontWeight.Bold
                                                     )
                                                     Spacer(modifier = Modifier.height(8.dp))
                                                     Text(
-                                                        text = "When you share photos, they will appear on your profile.",
+                                                        text = emptyMessage,
                                                         style = MaterialTheme.typography.bodyMedium,
                                                         color = Color.Gray,
                                                         textAlign = TextAlign.Center
                                                     )
                                                     Spacer(modifier = Modifier.height(24.dp))
-                                                    if (isViewingOwnProfile) {
+                                                    if (isViewingOwnProfile && profilePostsState.selectedTab == ProfilePostsTab.POSTS) {
                                                         Button(
                                                             onClick = { /* navigate to create post */ },
                                                             shape = RoundedCornerShape(24.dp),
@@ -551,9 +723,10 @@ private fun ProfileScreenContent(
                                                 profilePostsState.posts.forEach { post ->
                                                     FeedPostCard(
                                                         post = post,
-                                                        onLikeClick = {},
-                                                        onCommentClick = {},
-                                                        actionsEnabled = false
+                                                        onLikeClick = { onLikeClick(post.id) },
+                                                        onSaveClick = { onSaveClick(post.id) },
+                                                        onCommentClick = { onCommentClick(post.id) },
+                                                        onAuthorClick = { onNavigateToUserProfile(post.ownerId) }
                                                     )
                                                 }
                                             }
@@ -566,10 +739,196 @@ private fun ProfileScreenContent(
                         }
                     }
                     if (showNotifications) {
-                        NotificationsPopup(onDismiss = { showNotifications = false })
+                        NotificationsPopup(
+                            onDismiss = { showNotifications = false },
+                            onPostNotificationClick = { postId ->
+                                showNotifications = false
+                                onPostNotificationClick(postId)
+                            },
+                            onFollowNotificationClick = { userId ->
+                                showNotifications = false
+                                onFollowNotificationClick(userId)
+                            }
+                        )
+                    }
+                    if (profilePostsState.activeCommentPostId != null) {
+                        HomeCommentsBottomSheet(
+                            comments = profilePostsState
+                                .commentsByPostId[profilePostsState.activeCommentPostId]
+                                .orEmpty(),
+                            commentInput = profilePostsState.commentInput,
+                            isCommentsLoading = profilePostsState.isCommentsLoading,
+                            isCommentSubmitting = profilePostsState.isCommentSubmitting,
+                            commentsErrorMessage = profilePostsState.commentsErrorMessage,
+                            commentErrorMessage = profilePostsState.commentErrorMessage,
+                            onDismiss = onCommentDismissed,
+                            onCommentInputChanged = onCommentInputChanged,
+                            onCommentSubmit = onCommentSubmit
+                        )
+                    }
+                    if (showChangePasswordDialog) {
+                        ChangePasswordDialog(
+                            state = changePasswordState,
+                            onDismiss = {
+                                showChangePasswordDialog = false
+                                onClearChangePasswordState()
+                            },
+                            onSubmit = onChangePassword
+                        )
                     }
                 }
             }
+        }
+
+@Composable
+private fun ChangePasswordDialog(
+    state: UiState<Boolean>,
+    onDismiss: () -> Unit,
+    onSubmit: (String, String, String) -> Unit
+) {
+    var currentPassword by remember { mutableStateOf("") }
+    var newPassword by remember { mutableStateOf("") }
+    var confirmPassword by remember { mutableStateOf("") }
+    val isLoading = state is UiState.Loading
+    val errorMessage = (state as? UiState.Error)?.message
+    val canSubmit = currentPassword.isNotBlank() &&
+        newPassword.isNotBlank() &&
+        confirmPassword.isNotBlank() &&
+        !isLoading
+
+    Dialog(
+        onDismissRequest = {
+            if (!isLoading) onDismiss()
+        },
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp),
+            shape = RoundedCornerShape(28.dp),
+            color = SurfaceContainerLowest
+        ) {
+            Column(
+                modifier = Modifier.padding(20.dp),
+                verticalArrangement = Arrangement.spacedBy(18.dp)
+            ) {
+                Text(
+                    text = "Đổi mật khẩu",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = OnSurface
+                )
+                PasswordDialogField(
+                    value = currentPassword,
+                    onValueChange = { currentPassword = it },
+                    label = "Mật khẩu hiện tại"
+                )
+                PasswordDialogField(
+                    value = newPassword,
+                    onValueChange = { newPassword = it },
+                    label = "Mật khẩu mới"
+                )
+                PasswordDialogField(
+                    value = confirmPassword,
+                    onValueChange = { confirmPassword = it },
+                    label = "Nhập lại mật khẩu mới"
+                )
+                if (!errorMessage.isNullOrBlank()) {
+                    Text(
+                        text = errorMessage,
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Button(
+                        onClick = onDismiss,
+                        enabled = !isLoading,
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = SurfaceContainerLow,
+                            contentColor = OnSurfaceVariant
+                        )
+                    ) {
+                        Text("Hủy")
+                    }
+                    Button(
+                        onClick = { onSubmit(currentPassword, newPassword, confirmPassword) },
+                        enabled = canSubmit,
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = PrimaryBlue,
+                            contentColor = Color.White
+                        )
+                    ) {
+                        if (isLoading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(18.dp),
+                                strokeWidth = 2.dp,
+                                color = Color.White
+                            )
+                        } else {
+                            Text("Lưu")
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun PasswordDialogField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    label: String
+) {
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
+        label = { Text(label) },
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(18.dp),
+        singleLine = true,
+        visualTransformation = PasswordVisualTransformation(),
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password)
+    )
+}
+
+	@Composable
+	private fun ProfilePostsTabRow(
+    selectedTab: ProfilePostsTab,
+    onTabSelected: (ProfilePostsTab) -> Unit
+) {
+    val tabs = listOf(
+        ProfilePostsTab.POSTS to (Icons.Outlined.PhotoCamera to "Posts"),
+        ProfilePostsTab.SAVED to (Icons.Outlined.BookmarkBorder to "Saved"),
+        ProfilePostsTab.LIKED to (Icons.Outlined.FavoriteBorder to "Liked")
+    )
+    val selectedIndex = tabs.indexOfFirst { it.first == selectedTab }.coerceAtLeast(0)
+
+    TabRow(
+        selectedTabIndex = selectedIndex,
+        containerColor = MaterialTheme.colorScheme.background,
+        contentColor = PrimaryBlue
+    ) {
+        tabs.forEach { (tab, iconInfo) ->
+            val (icon, contentDescription) = iconInfo
+            Tab(
+                selected = tab == selectedTab,
+                onClick = { onTabSelected(tab) },
+                icon = {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = contentDescription,
+                        tint = Color.Black
+                    )
+                }
+            )
         }
     }
 }
@@ -590,51 +949,54 @@ fun ErrorLayout(message: String, onRetry: () -> Unit) {
     }
 }
 
-@Preview
-@Composable
-fun ProfileScreenPreview() {
-    val sampleProfile = UserProfileResponse(
-        id = 1,
-        username = "traveler",
-        name = "Alex Nguyen",
-        bio = "Chasing sunsets and street food.",
-        postsCount = 12,
-        followersCount = 345,
-        followingCount = 180,
-        isFollowing = false
-    )
-    val samplePosts = listOf(
-        HomePostUiModel(
-            id = 1,
-            username = "traveler",
-            subtitle = "Hoi An, Viet Nam",
-            description = "Golden hour by the river.",
-            imageUrls = emptyList(),
-            likeCount = 120,
-            commentCount = 24,
-            isLiked = false,
-            isLikeLoading = false,
-            timeAgoLabel = "2h"
-        )
-    )
-
-    TravelHubTheme {
-        ProfileScreenContent(
-            isViewingOwnProfile = true,
-            profileState = UiState.Success(sampleProfile),
-            profilePostsState = ProfilePostsUiState(isLoading = false, posts = samplePosts),
-            onNavigateToEditProfile = {},
-            onNavigateToFollowers = {},
-            onNavigateToFollowing = {},
-            onLogout = {},
-            onBack = {},
-            viewingUserId = null,
-            onNavigateToChat = {},
-            onNotificationsClick = {},
-            onReloadProfile = {},
-            onReloadOtherUserProfile = {},
-            onReloadPosts = {},
-            onToggleFollow = { _, _ -> }
-        )
-    }
-}
+//@Preview
+//@Composable
+//fun ProfileScreenPreview() {
+//    val sampleProfile = UserProfileResponse(
+//        id = 1,
+//        username = "traveler",
+//        name = "Alex Nguyen",
+//        bio = "Chasing sunsets and street food.",
+//        postsCount = 12,
+//        followersCount = 345,
+//        followingCount = 180,
+//        isFollowing = false
+//    )
+//    val samplePosts = listOf(
+//        HomePostUiModel(
+//            id = 1,
+//            username = "traveler",
+//            subtitle = "Hoi An, Viet Nam",
+//            description = "Golden hour by the river.",
+//            imageUrls = emptyList(),
+//            likeCount = 120,
+//            commentCount = 24,
+//            isLiked = false,
+//            isLikeLoading = false,
+//            timeAgoLabel = "2h"
+//        )
+//    )
+//
+//    TravelHubTheme {
+//        ProfileScreenContent(
+//            isViewingOwnProfile = true,
+//            profileState = UiState.Success(sampleProfile),
+//            profilePostsState = ProfilePostsUiState(isLoading = false, posts = samplePosts),
+//            onNavigateToEditProfile = {},
+//            onNavigateToFollowers = {},
+//            onNavigateToFollowing = {},
+//            onNavigateToHistory = {},
+//            onLogout = {},
+//            onBack = {},
+//            viewingUserId = null,
+//            onNavigateToChat = {},
+//            onNotificationsClick = {},
+//            onPostNotificationClick = {},
+//            onFollowNotificationClick = {},
+//            onReloadProfile = {},
+//            onReloadOtherUserProfile = {},
+//            onReloadPosts = {},
+//            onToggleFollow = { _, _ -> }
+//        )
+//    }
+//}

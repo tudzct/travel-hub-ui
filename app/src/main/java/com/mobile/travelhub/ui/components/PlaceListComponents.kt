@@ -6,25 +6,22 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.lazy.LazyColumn
@@ -38,6 +35,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Send
+import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.outlined.BookmarkBorder
@@ -75,15 +73,18 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import coil.compose.AsyncImage
 import com.mobile.travelhub.R
 import com.mobile.travelhub.data.model.TravelPlaceListItemResponse
 import com.mobile.travelhub.ui.components.modifiers.shimmerEffect
+import com.mobile.travelhub.viewmodels.HomeCommentUiModel
 import com.mobile.travelhub.viewmodels.HomePostUiModel
 import com.mobile.travelhub.viewmodels.HomeUiState
 import com.mobile.travelhub.viewmodels.PlaceListUiState
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
+import com.mobile.travelhub.ui.theme.PrimaryBlue
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -96,7 +97,9 @@ fun PlaceListScreenContent(
     onRetryPlaces: () -> Unit,
     onRetryPosts: () -> Unit,
     onLikeClick: (Long) -> Unit,
+    onSaveClick: (Long) -> Unit,
     onCommentClick: (Long) -> Unit,
+    onAuthorClick: (Long) -> Unit,
     onDismissCommentSheet: () -> Unit,
     onCommentInputChanged: (String) -> Unit,
     onCommentSubmit: () -> Unit
@@ -109,7 +112,6 @@ fun PlaceListScreenContent(
     var previousScrollIndex by remember { mutableIntStateOf(0) }
     var previousScrollOffset by remember { mutableIntStateOf(0) }
     var isTopBarVisible by remember { mutableStateOf(true) }
-    val statusBarTopPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
     val topBarContentHeight = 52.dp
 
     LaunchedEffect(listState) {
@@ -140,7 +142,9 @@ fun PlaceListScreenContent(
                 animationSpec = tween(durationMillis = 180),
                 targetOffsetY = { -it }
             ) + fadeOut(animationSpec = tween(durationMillis = 180)),
-            modifier = Modifier.align(Alignment.TopCenter)
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .zIndex(1f)
         ) {
             FeedTopBar(
                 onMenuClick = onMenuClick,
@@ -152,7 +156,7 @@ fun PlaceListScreenContent(
             modifier = Modifier.fillMaxSize(),
             state = listState,
             contentPadding = PaddingValues(
-                top = statusBarTopPadding + topBarContentHeight + 18.dp,
+                top = topBarContentHeight + 18.dp,
                 bottom = 112.dp
             ),
             verticalArrangement = Arrangement.spacedBy(14.dp)
@@ -221,7 +225,9 @@ fun PlaceListScreenContent(
                         FeedPostCard(
                             post = post,
                             onLikeClick = { onLikeClick(post.id) },
-                            onCommentClick = { onCommentClick(post.id) }
+                            onSaveClick = { onSaveClick(post.id) },
+                            onCommentClick = { onCommentClick(post.id) },
+                            onAuthorClick = { onAuthorClick(post.ownerId) }
                         )
                     }
                 }
@@ -230,120 +236,146 @@ fun PlaceListScreenContent(
 
 
         if (activeCommentPost != null) {
-            ModalBottomSheet(
-                onDismissRequest = onDismissCommentSheet,
-                containerColor = Color.White
+            HomeCommentsBottomSheet(
+                comments = activeComments,
+                commentInput = homeUiState.commentInput,
+                isCommentsLoading = homeUiState.isCommentsLoading,
+                isCommentSubmitting = homeUiState.isCommentSubmitting,
+                commentsErrorMessage = homeUiState.commentsErrorMessage,
+                commentErrorMessage = homeUiState.commentErrorMessage,
+                onDismiss = onDismissCommentSheet,
+                onCommentInputChanged = onCommentInputChanged,
+                onCommentSubmit = onCommentSubmit
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun HomeCommentsBottomSheet(
+    comments: List<HomeCommentUiModel>,
+    commentInput: String,
+    isCommentsLoading: Boolean,
+    isCommentSubmitting: Boolean,
+    commentsErrorMessage: String?,
+    commentErrorMessage: String?,
+    onDismiss: () -> Unit,
+    onCommentInputChanged: (String) -> Unit,
+    onCommentSubmit: () -> Unit
+) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        containerColor = Color.White
+    ) {
+        Text(
+            text = "Comments",
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.padding(horizontal = 24.dp)
+        )
+        Spacer(modifier = Modifier.height(12.dp))
+
+        if (isCommentsLoading) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 24.dp),
+                contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = "Comments",
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.padding(horizontal = 24.dp)
-                )
-                Spacer(modifier = Modifier.height(12.dp))
-
-                if (homeUiState.isCommentsLoading) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 24.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator()
-                    }
-                } else if (!homeUiState.commentsErrorMessage.isNullOrBlank()) {
-                    Text(
-                        text = homeUiState.commentsErrorMessage,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.padding(horizontal = 24.dp)
-                    )
-                } else if (activeComments.isEmpty()) {
-                    Text(
-                        text = "No comments yet",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(horizontal = 24.dp)
-                    )
-                } else {
-                    LazyColumn(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .heightIn(max = 320.dp)
-                    ) {
-                        items(
-                            items = activeComments,
-                            key = { it.id }
-                        ) { comment ->
-                            CommentItem(
-                                name = comment.username,
-                                comment = comment.content,
-                                time = comment.timeAgoLabel,
-                                avatarRes = R.drawable.female_avatar_maker
-                            )
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(12.dp))
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    SimpleFormTextField(
-                        value = homeUiState.commentInput,
-                        onValueChange = onCommentInputChanged,
-                        placeholder = "Add a comment",
-                        modifier = Modifier.weight(1f),
-                        enabled = !homeUiState.isCommentSubmitting,
-                        singleLine = false,
-                        maxLines = 3,
-                        shape = RoundedCornerShape(24.dp),
-                        focusedContainerColor = Color.White,
-                        unfocusedContainerColor = Color.White,
-                        disabledContainerColor = Color(0xFFF4F4F4),
-                        focusedIndicatorColor = VerdantPrimary
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    IconButton(
-                        onClick = onCommentSubmit,
-                        enabled = !homeUiState.isCommentSubmitting && homeUiState.commentInput.isNotBlank(),
-                        modifier = Modifier
-                            .size(40.dp)
-                            .clip(CircleShape)
-                            .background(VerdantPrimary)
-                    ) {
-                        if (homeUiState.isCommentSubmitting) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(16.dp),
-                                strokeWidth = 2.dp,
-                                color = Color.White
-                            )
-                        } else {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Outlined.Send,
-                                modifier = Modifier.size(16.dp),
-                                contentDescription = "Send comment",
-                                tint = Color.White
-                            )
-                        }
-                    }
-                }
-
-                if (!homeUiState.commentErrorMessage.isNullOrBlank()) {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = homeUiState.commentErrorMessage,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.padding(horizontal = 16.dp)
+                CircularProgressIndicator()
+            }
+        } else if (!commentsErrorMessage.isNullOrBlank()) {
+            Text(
+                text = commentsErrorMessage,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.padding(horizontal = 24.dp)
+            )
+        } else if (comments.isEmpty()) {
+            Text(
+                text = "No comments yet",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = 24.dp)
+            )
+        } else {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 320.dp)
+            ) {
+                items(
+                    items = comments,
+                    key = { it.id }
+                ) { comment ->
+                    CommentItem(
+                        name = comment.username,
+                        comment = comment.content,
+                        time = comment.timeAgoLabel,
+                        avatarRes = R.drawable.female_avatar_maker
                     )
                 }
-
-                Spacer(modifier = Modifier.height(16.dp))
             }
         }
+
+        Spacer(modifier = Modifier.height(12.dp))
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            SimpleFormTextField(
+                value = commentInput,
+                onValueChange = onCommentInputChanged,
+                placeholder = "Add a comment",
+                modifier = Modifier.weight(1f),
+                enabled = !isCommentSubmitting,
+                singleLine = false,
+                maxLines = 3,
+                shape = RoundedCornerShape(24.dp),
+                focusedContainerColor = Color.White,
+                unfocusedContainerColor = Color.White,
+                disabledContainerColor = Color(0xFFF4F4F4),
+                focusedIndicatorColor = VerdantPrimary
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            IconButton(
+                onClick = onCommentSubmit,
+                enabled = !isCommentSubmitting && commentInput.isNotBlank(),
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(VerdantPrimary)
+            ) {
+                if (isCommentSubmitting) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(16.dp),
+                        strokeWidth = 2.dp,
+                        color = Color.White
+                    )
+                } else {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Outlined.Send,
+                        modifier = Modifier.size(16.dp),
+                        contentDescription = "Send comment",
+                        tint = Color.White
+                    )
+                }
+            }
+        }
+
+        if (!commentErrorMessage.isNullOrBlank()) {
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = commentErrorMessage,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.padding(horizontal = 16.dp)
+            )
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
     }
 }
 
@@ -353,13 +385,12 @@ private fun FeedTopBar(
     onSearchClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val statusBarTopPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
     val topBarContentHeight = 52.dp
 
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .height(statusBarTopPadding + topBarContentHeight)
+            .height(topBarContentHeight)
             .background(Color.White)
     ) {
         Box(
@@ -543,7 +574,9 @@ private fun FeedEmptyState(
 fun FeedPostCard(
     post: HomePostUiModel,
     onLikeClick: () -> Unit,
+    onSaveClick: () -> Unit,
     onCommentClick: () -> Unit,
+    onAuthorClick: (() -> Unit)? = null,
     actionsEnabled: Boolean = true
 ) {
     val context = LocalContext.current
@@ -570,6 +603,7 @@ fun FeedPostCard(
 
     val imageCount = post.imageUrls.size.coerceAtLeast(1)
     val pagerState = rememberPagerState(pageCount = { imageCount })
+    val authorClick = onAuthorClick
 
     Column (modifier = Modifier.background(Color.White)) {
 
@@ -581,11 +615,22 @@ fun FeedPostCard(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Row(
-                modifier = Modifier.weight(1f),
+                modifier = Modifier
+                    .weight(1f)
+                    .then(
+                        if (authorClick != null) {
+                            Modifier.clickable(onClick = authorClick)
+                        } else {
+                            Modifier
+                        }
+                    ),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Image(
-                    painter = painterResource(R.drawable.female_avatar_maker),
+                AsyncImage(
+                    model = post.ownerAvatarUrl?.let(::toDisplayUrl),
+                    placeholder = painterResource(R.drawable.female_avatar_maker),
+                    error = painterResource(R.drawable.female_avatar_maker),
+                    fallback = painterResource(R.drawable.female_avatar_maker),
                     contentDescription = post.username,
                     modifier = Modifier
                         .size(36.dp)
@@ -637,13 +682,13 @@ fun FeedPostCard(
             )
         }
 
-        Text(
+        ExpandableDescription(
+            description = post.description,
             modifier = Modifier.padding(horizontal = 16.dp),
-            text = post.description,
-            style = MaterialTheme.typography.bodyMedium,
-            maxLines = 3,
-            overflow = TextOverflow.Ellipsis,
-            color = VerdantOnSurface
+            title = null,
+            collapsedMaxLines = 3,
+            textStyle = MaterialTheme.typography.bodyMedium,
+            textColor = VerdantOnSurface
         )
 
         Spacer(modifier = Modifier.height(12.dp))
@@ -760,23 +805,18 @@ fun FeedPostCard(
                     modifier = Modifier.weight(1f),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        imageVector = Icons.Outlined.BookmarkBorder,
-                        contentDescription = "Save",
-                        modifier = Modifier.size(26.dp),
-                        tint = VerdantOnSurface
-                    )
-                }
-                Box(
-                    modifier = Modifier.weight(1f),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Outlined.Send,
-                        contentDescription = "Share",
-                        modifier = Modifier.size(24.dp),
-                        tint = VerdantOnSurface
-                    )
+                    IconButton(
+                        onClick = onSaveClick,
+                        enabled = actionsEnabled && !post.isSaveLoading,
+                        modifier = Modifier.size(28.dp)
+                    ) {
+                        Icon(
+                            imageVector = if (post.isSaved) Icons.Filled.Bookmark else Icons.Outlined.BookmarkBorder,
+                            contentDescription = if (post.isSaved) "Unsave" else "Save",
+                            modifier = Modifier.size(26.dp),
+                            tint = if (post.isSaved) PrimaryBlue else VerdantOnSurface
+                        )
+                    }
                 }
             }
         }
@@ -916,7 +956,9 @@ fun FeedPostCardPreview() {
     FeedPostCard(
         post = HomePostUiModel(
             id = 1L,
+            ownerId = 2L,
             username = "Duc Duong Hoang",
+            ownerAvatarUrl = null,
             subtitle = "Da Nang, Viet Nam",
             description = "A calm afternoon by the river.",
             imageUrls = listOf("sample.jpg"),
@@ -924,9 +966,12 @@ fun FeedPostCardPreview() {
             commentCount = 4,
             isLiked = true,
             isLikeLoading = false,
+            isSaved = false,
+            isSaveLoading = false,
             timeAgoLabel = "2h"
         ),
         onLikeClick = {},
+        onSaveClick = {},
         onCommentClick = {}
     )
 }

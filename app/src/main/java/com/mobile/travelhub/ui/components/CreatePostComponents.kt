@@ -1,13 +1,9 @@
 package com.mobile.travelhub.ui.components
 
 import android.net.Uri
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -30,25 +26,13 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Image
-import androidx.compose.material.icons.rounded.KeyboardArrowDown
 import androidx.compose.material.icons.rounded.Public
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -284,61 +268,18 @@ private fun TravelPlaceSection(
     onSelectPlace: (Long?) -> Unit
 ) {
     Column(modifier = Modifier.padding(horizontal = 20.dp)) {
-        // Section title
-        Text(
-            text = "TRAVEL PLACE",
-            style = MaterialTheme.typography.labelMedium,
-            fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            letterSpacing = 1.sp
+        DestinationPlacePicker(
+            label = "Travel place",
+            selectedProvince = uiState.selectedProvince,
+            selectedPlace = uiState.selectedPlace,
+            provinces = uiState.provinces,
+            places = uiState.places,
+            isLoading = uiState.isLoadingLocations,
+            enabled = !uiState.isSubmitting && uiState.provinces.isNotEmpty(),
+            placeholder = "Select place",
+            onProvinceSelected = onSelectProvince,
+            onPlaceSelected = onSelectPlace
         )
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        // Province dropdown
-        StyledSelectionDropdown(
-            value = uiState.selectedProvince?.name.orEmpty(),
-            placeholder = "Select Province",
-            options = uiState.provinces,
-            optionLabel = { it.name },
-            onOptionSelected = { onSelectProvince(it.id) },
-            enabled = !uiState.isSubmitting && uiState.provinces.isNotEmpty()
-        )
-
-        Spacer(modifier = Modifier.height(10.dp))
-
-        // Place dropdown
-        StyledSelectionDropdown(
-            value = uiState.selectedPlace?.name.orEmpty(),
-            placeholder = if (uiState.selectedProvinceId == null) {
-                "Select Province first"
-            } else {
-                "Select Place"
-            },
-            options = uiState.places,
-            optionLabel = { "${it.name} • ${it.province.name}" },
-            onOptionSelected = { onSelectPlace(it.id) },
-            enabled = !uiState.isSubmitting && uiState.selectedProvinceId != null && uiState.places.isNotEmpty(),
-            allowClear = uiState.selectedPlaceId != null,
-            onClear = { onSelectPlace(null) }
-        )
-
-        if (uiState.isLoadingLocations) {
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(14.dp),
-                    strokeWidth = 2.dp,
-                    color = MaterialTheme.colorScheme.primary
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "Loading places...",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
     }
 }
 
@@ -469,172 +410,3 @@ private fun SelectedImagesSection(
     }
 }
 
-// ──────────────────────────────────────────────────────────────────────────────
-// Styled Selection Dropdown — clean, minimal style matching the design
-// ──────────────────────────────────────────────────────────────────────────────
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun <T> StyledSelectionDropdown(
-    value: String,
-    placeholder: String,
-    options: List<T>,
-    optionLabel: (T) -> String,
-    onOptionSelected: (T) -> Unit,
-    enabled: Boolean,
-    allowClear: Boolean = false,
-    onClear: (() -> Unit)? = null
-) {
-    var expanded by remember { mutableStateOf(false) }
-
-    ExposedDropdownMenuBox(
-        expanded = expanded,
-        onExpandedChange = { if (enabled) expanded = !expanded }
-    ) {
-        OutlinedTextField(
-            value = value,
-            onValueChange = {},
-            readOnly = true,
-            enabled = enabled,
-            placeholder = {
-                Text(
-                    text = placeholder,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-                )
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .menuAnchor(),
-            shape = RoundedCornerShape(12.dp),
-            colors = OutlinedTextFieldDefaults.colors(
-                unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
-                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                unfocusedContainerColor = Color.Transparent,
-                focusedContainerColor = Color.Transparent,
-                disabledBorderColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f),
-                disabledTextColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
-            ),
-            textStyle = MaterialTheme.typography.bodyMedium.copy(
-                color = MaterialTheme.colorScheme.onSurface
-            ),
-            trailingIcon = {
-                Icon(
-                    imageVector = Icons.Rounded.KeyboardArrowDown,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            },
-            singleLine = true
-        )
-
-        DropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false },
-            modifier = Modifier
-                .fillMaxWidth(0.92f)
-                .heightIn(max = 320.dp)
-                .background(
-                    MaterialTheme.colorScheme.surface,
-                    RoundedCornerShape(12.dp)
-                )
-        ) {
-            if (allowClear && onClear != null) {
-                DropdownMenuItem(
-                    text = {
-                        Text(
-                            "Clear selection",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.error
-                        )
-                    },
-                    onClick = {
-                        expanded = false
-                        onClear()
-                    }
-                )
-            }
-
-            options.forEach { option ->
-                DropdownMenuItem(
-                    text = {
-                        Text(
-                            optionLabel(option),
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                    },
-                    onClick = {
-                        expanded = false
-                        onOptionSelected(option)
-                    }
-                )
-            }
-        }
-    }
-}
-
-// Keep the old SelectionDropdown for backward compatibility
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun <T> SelectionDropdown(
-    label: String,
-    value: String,
-    placeholder: String,
-    options: List<T>,
-    optionLabel: (T) -> String,
-    onOptionSelected: (T) -> Unit,
-    enabled: Boolean,
-    allowClear: Boolean = false,
-    onClear: (() -> Unit)? = null
-) {
-    var expanded by remember { mutableStateOf(false) }
-
-    ExposedDropdownMenuBox(
-        expanded = expanded,
-        onExpandedChange = { if (enabled) expanded = !expanded }
-    ) {
-        OutlinedTextField(
-            value = value,
-            onValueChange = {},
-            readOnly = true,
-            enabled = enabled,
-            label = { Text(label) },
-            placeholder = { Text(placeholder) },
-            modifier = Modifier
-                .fillMaxWidth()
-                .menuAnchor(),
-            trailingIcon = {
-                ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
-            },
-            colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors()
-        )
-
-        DropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false },
-            modifier = Modifier
-                .fillMaxWidth(0.95f)
-                .heightIn(max = 320.dp)
-        ) {
-            if (allowClear && onClear != null) {
-                DropdownMenuItem(
-                    text = { Text("Clear selection") },
-                    onClick = {
-                        expanded = false
-                        onClear()
-                    }
-                )
-            }
-
-            options.forEach { option ->
-                DropdownMenuItem(
-                    text = { Text(optionLabel(option)) },
-                    onClick = {
-                        expanded = false
-                        onOptionSelected(option)
-                    }
-                )
-            }
-        }
-    }
-}

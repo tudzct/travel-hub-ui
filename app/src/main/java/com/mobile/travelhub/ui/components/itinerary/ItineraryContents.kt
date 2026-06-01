@@ -5,6 +5,7 @@ import androidx.compose.foundation.*
 import androidx.compose.foundation.gestures.draggable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.lazy.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -27,6 +28,7 @@ import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
+import com.mobile.travelhub.ui.components.modifiers.shimmerEffect
 import com.mobile.travelhub.viewmodels.ItineraryUiState
 
 
@@ -35,55 +37,427 @@ fun ItineraryOverviewContent(
     state: ItineraryUiState,
     paddingValues: PaddingValues,
     onOpenDayDetail: (Int) -> Unit,
-    onAddDay: () -> Unit,
-    onEditDay: (ItineraryDay) -> Unit,
-    onDeleteDay: (Int) -> Unit,
-    onToggleChange: (String) -> Unit,
-    onApplySelected: () -> Unit,
-    onDiscardProposal: () -> Unit
+    onEditEvent: (ItineraryEvent) -> Unit
 ) {
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
+            .background(SurfaceBg)
             .padding(paddingValues),
-        contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 120.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 120.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
-        state.pendingProposal?.let { proposal ->
-            item {
-                ProposalReviewSection(
-                    proposal = proposal,
-                    version = state.version,
-                    selectedChangeIds = state.selectedChangeIds,
-                    isLeader = state.isLeader,
-                    isStale = state.isProposalStale,
-                    onToggleChange = onToggleChange,
-                    onApplySelected = onApplySelected,
-                    onDiscardProposal = onDiscardProposal
-                )
-            }
+        item {
+            ItineraryTimelineHeader(
+                dayCount = state.days.size,
+                stopCount = state.days.sumOf { it.events.size }
+            )
         }
-        if (state.days.isEmpty()) {
+
+        if (state.isLoadingActivities) {
+            item {
+                ItineraryOverviewSkeleton()
+            }
+        } else if (state.days.isEmpty()) {
             item {
                 EmptyOverviewCard()
             }
         } else {
-            items(state.days, key = { it.dayIndex }) { day ->
-                ItineraryDayCard(
+            itemsIndexed(state.days, key = { _, day -> day.dayIndex }) { index, day ->
+                ItineraryTimelineDay(
                     day = day,
-                    isEditMode = state.isEditMode,
-                    onClick = { onOpenDayDetail(day.dayIndex) },
-                    onEdit = { onEditDay(day) },
-                    onDelete = { onDeleteDay(day.dayIndex) }
+                    index = index,
+                    isLast = index == state.days.lastIndex,
+                    onOpenDayDetail = { onOpenDayDetail(day.dayIndex) },
+                    onEditEvent = onEditEvent
+                )
+            }
+
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Surface(
+                        shape = RoundedCornerShape(999.dp),
+                        color = SurfaceContainerLowest.copy(alpha = 0.86f),
+                        shadowElevation = 1.dp
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 9.dp),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = if (state.isCompleted) Icons.Default.Lock else Icons.Default.Edit,
+                                contentDescription = null,
+                                tint = OnSurfaceVariant.copy(alpha = if (state.isCompleted) 0.4f else 0.55f),
+                                modifier = Modifier.size(14.dp)
+                            )
+                            Text(
+                                text = if (state.isCompleted) "Chuyến đi đã hoàn thành (Chế độ chỉ xem)" else "Long press a place to edit",
+                                color = OnSurfaceVariant.copy(alpha = if (state.isCompleted) 0.5f else 0.72f),
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ItineraryTimelineHeader(
+    dayCount: Int,
+    stopCount: Int
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+//        Row(
+//            modifier = Modifier.fillMaxWidth(),
+//            horizontalArrangement = Arrangement.SpaceBetween,
+//            verticalAlignment = Alignment.CenterVertically
+//        ) {
+//            Row(
+//                modifier = Modifier
+//                    .weight(1f)
+//                    .horizontalScroll(rememberScrollState()),
+//                horizontalArrangement = Arrangement.spacedBy(8.dp)
+//            ) {
+//                ItineraryFilterChip(
+//                    label = "Tất cả",
+//                    selected = true,
+//                    icon = Icons.Default.TravelExplore
+//                )
+//                ItineraryFilterChip(
+//                    label = "Nhóm",
+//                    selected = false,
+//                    icon = Icons.Default.PersonAdd
+//                )
+//                ItineraryFilterChip(
+//                    label = "Cá nhân",
+//                    selected = false,
+//                    icon = Icons.Default.Person
+//                )
+//            }
+//
+//            Spacer(modifier = Modifier.width(8.dp))
+//
+//            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+//                Surface(
+//                    shape = RoundedCornerShape(999.dp),
+//                    color = SurfaceContainerLowest,
+//                    shadowElevation = 1.dp
+//                ) {
+//                    Row(
+//                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+//                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+//                        verticalAlignment = Alignment.CenterVertically
+//                    ) {
+//                        Icon(
+//                            imageVector = Icons.Default.Share,
+//                            contentDescription = null,
+//                            tint = OnSurfaceVariant,
+//                            modifier = Modifier.size(14.dp)
+//                        )
+//                        Text(
+//                            text = "Share",
+//                            color = OnSurfaceVariant,
+//                            fontSize = 12.sp,
+//                            fontWeight = FontWeight.SemiBold
+//                        )
+//                    }
+//                }
+//
+//                Surface(
+//                    shape = CircleShape,
+//                    color = SurfaceContainerLowest,
+//                    shadowElevation = 1.dp
+//                ) {
+//                    Icon(
+//                        imageVector = Icons.Default.MoreVert,
+//                        contentDescription = null,
+//                        tint = OnSurfaceVariant,
+//                        modifier = Modifier
+//                            .size(32.dp)
+//                            .padding(7.dp)
+//                    )
+//                }
+//            }
+//        }
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Tất cả lịch trình",
+                color = OnSurface,
+                fontWeight = FontWeight.ExtraBold,
+                fontSize = 21.sp
+            )
+
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                ItineraryStatPill(
+                    label = "$dayCount ngày",
+                    active = false,
+                    icon = Icons.Default.CalendarMonth
+                )
+                ItineraryStatPill(
+                    label = "$stopCount điểm",
+                    active = true,
+                    icon = Icons.Default.Place
                 )
             }
         }
-        if (state.isEditMode) {
-            item {
-                AddActionCard(
-                    title = "Add day",
-                    onClick = onAddDay
+    }
+}
+
+@Composable
+private fun ItineraryFilterChip(
+    label: String,
+    selected: Boolean,
+    icon: androidx.compose.ui.graphics.vector.ImageVector
+) {
+    val background = if (selected) PrimaryBlue else SurfaceContainerLowest
+    val contentColor = if (selected) Color.White else OnSurfaceVariant
+    Surface(
+        shape = RoundedCornerShape(999.dp),
+        color = background,
+        shadowElevation = if (selected) 3.dp else 1.dp
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(5.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = contentColor,
+                modifier = Modifier.size(13.dp)
+            )
+            Text(
+                text = label,
+                color = contentColor,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.ExtraBold
+            )
+        }
+    }
+}
+
+@Composable
+private fun ItineraryStatPill(
+    label: String,
+    active: Boolean,
+    icon: androidx.compose.ui.graphics.vector.ImageVector
+) {
+    val background = if (active) PrimaryBlue.copy(alpha = 0.16f) else SurfaceContainerLowest
+    val contentColor = if (active) PrimaryBlue else OnSurfaceVariant
+    Surface(
+        shape = RoundedCornerShape(999.dp),
+        color = background
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp),
+            horizontalArrangement = Arrangement.spacedBy(5.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = contentColor,
+                modifier = Modifier.size(13.dp)
+            )
+            Text(
+                text = label,
+                color = contentColor,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.ExtraBold
+            )
+        }
+    }
+}
+
+@Composable
+private fun ItineraryTimelineDay(
+    day: ItineraryDay,
+    index: Int,
+    isLast: Boolean,
+    onOpenDayDetail: () -> Unit,
+    onEditEvent: (ItineraryEvent) -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.Top,
+        horizontalArrangement = Arrangement.Center
+    ) {
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(32.dp)
+                        .background(PrimaryBlue, CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = (index + 1).toString(),
+                        color = Color.White,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.ExtraBold
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(12.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = day.dateLabel.ifBlank { day.label },
+                        color = OnSurface,
+                        fontWeight = FontWeight.ExtraBold,
+                        fontSize = 13.sp
+                    )
+                    Text(
+                        text = "${day.events.size} địa điểm",
+                        color = OnSurfaceVariant,
+                        fontWeight = FontWeight.Medium,
+                        fontSize = 12.sp
+                    )
+                }
+
+                Surface(
+                    modifier = Modifier.clickable(onClick = onOpenDayDetail),
+                    shape = RoundedCornerShape(12.dp),
+                    color = PrimaryBlue.copy(alpha = 0.14f)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Map,
+                        contentDescription = "Open day detail",
+                        tint = PrimaryBlue,
+                        modifier = Modifier
+                            .size(34.dp)
+                            .padding(8.dp)
+                    )
+                }
+            }
+
+            if (day.events.isEmpty()) {
+                ItineraryTimelineEventCard(
+                    title = "Chưa có địa điểm",
+                    timeRange = "Thêm điểm đến cho ngày này",
+                    badge = null,
+                    onClick = onOpenDayDetail
                 )
+            } else {
+                day.events.forEachIndexed { eventIndex, event ->
+                    ItineraryTimelineEventCard(
+                        title = event.title.ifBlank { event.placeName.ifBlank { "Địa điểm ${eventIndex + 1}" } },
+                        timeRange = "${event.startTime} - ${event.endTime}",
+                        placeName = event.placeName,
+                        badge = eventIndex + 1,
+                        onClick = onOpenDayDetail,
+                        onLongClick = { onEditEvent(event) }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+@OptIn(ExperimentalFoundationApi::class)
+private fun ItineraryTimelineEventCard(
+    title: String,
+    timeRange: String,
+    placeName: String = "",
+    badge: Int?,
+    onClick: () -> Unit,
+    onLongClick: (() -> Unit)? = null
+) {
+    val hapticFeedback = LocalHapticFeedback.current
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier.width(28.dp),
+            contentAlignment = Alignment.Center
+        ) {
+//            Surface(
+//                shape = CircleShape,
+//                color = SurfaceContainerLowest,
+//                shadowElevation = 3.dp
+//            ) {
+//                Box(
+//                    modifier = Modifier
+//                        .size(28.dp)
+//                        .padding(6.dp)
+//                        .background(OnSurfaceVariant.copy(alpha = 0.45f), CircleShape)
+//                )
+//            }
+            if (badge != null) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .size(22.dp)
+                        .background(PrimaryBlue, CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = badge.toString(),
+                        color = Color.White,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.ExtraBold
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.width(10.dp))
+
+        Surface(
+            modifier = Modifier
+                .weight(1f)
+                .combinedClickable(
+                    onClick = onClick,
+                    onLongClick = onLongClick?.let { edit ->
+                        {
+                            hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                            edit()
+                        }
+                    }
+                ),
+            shape = RoundedCornerShape(24.dp),
+            color = SurfaceContainerLowest,
+            shadowElevation = 6.dp
+        ) {
+            Column(
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 13.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Text(
+                    text = title,
+                    color = OnSurface,
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 14.sp
+                )
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    ActivityTimeChip(timeRange = timeRange)
+                    ActivityPlaceChip(placeName = placeName)
+                }
             }
         }
     }
@@ -92,6 +466,7 @@ fun ItineraryOverviewContent(
 @Composable
 fun ItineraryDayDetailContent(
     day: ItineraryDay?,
+    isLoading: Boolean,
     isEditMode: Boolean,
     paddingValues: PaddingValues,
     onAddStop: () -> Unit,
@@ -120,16 +495,20 @@ fun ItineraryDayDetailContent(
         contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 120.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        if (day != null) {
+        if (isLoading) {
+            item {
+                ItineraryDayDetailSkeleton()
+            }
+        } else if (day != null) {
             item {
                 DayContinuousTimelineCard(day = day)
             }
         }
-        if (day == null || day.events.isEmpty()) {
+        if (!isLoading && (day == null || day.events.isEmpty())) {
             item {
                 EmptyDayCard()
             }
-        } else {
+        } else if (!isLoading && day != null) {
             itemsIndexed(day.events, key = { _, it -> it.eventId }) { index, event ->
                 ReorderableItem(reorderableState, key = event.eventId) { isDragging ->
                     Row(
@@ -215,7 +594,7 @@ fun ItineraryDayDetailContent(
                 }
             }
         }
-        if (day != null && isEditMode) {
+        if (!isLoading && day != null && isEditMode) {
             item {
                 AddActionCard(
                     title = "Add stop",
@@ -226,99 +605,73 @@ fun ItineraryDayDetailContent(
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun ProposalReviewSection(
-    proposal: ItineraryProposal,
-    version: Int,
-    selectedChangeIds: Set<String>,
-    isLeader: Boolean,
-    isStale: Boolean,
-    onToggleChange: (String) -> Unit,
-    onApplySelected: () -> Unit,
-    onDiscardProposal: () -> Unit
-) {
-    Card(
-        shape = RoundedCornerShape(28.dp),
-        colors = CardDefaults.cardColors(containerColor = SurfaceContainerLowest)
-    ) {
-        Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+private fun ItineraryOverviewSkeleton() {
+    Column(verticalArrangement = Arrangement.spacedBy(18.dp)) {
+        repeat(3) { index ->
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.Top
             ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "Pending AI changes",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = OnSurface
+                Box(
+                    modifier = Modifier
+                        .size(32.dp)
+                        .background(SurfaceContainerLow, CircleShape)
+                        .shimmerEffect()
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth(if (index == 0) 0.55f else 0.42f)
+                            .height(16.dp)
+                            .background(SurfaceContainerLow, RoundedCornerShape(6.dp))
+                            .shimmerEffect()
                     )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = proposal.summary,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = OnSurfaceVariant,
-                        lineHeight = 20.sp
-                    )
+                    repeat(2) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(58.dp)
+                                .background(SurfaceContainerLowest, RoundedCornerShape(20.dp))
+                                .shimmerEffect()
+                        )
+                    }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ItineraryDayDetailSkeleton() {
+    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(150.dp)
+                .background(SurfaceContainerLowest, RoundedCornerShape(24.dp))
+                .shimmerEffect()
+        )
+        repeat(4) {
+            Row(modifier = Modifier.fillMaxWidth()) {
+                Box(
+                    modifier = Modifier
+                        .size(32.dp)
+                        .background(SurfaceContainerLow, CircleShape)
+                        .shimmerEffect()
+                )
                 Spacer(modifier = Modifier.width(12.dp))
                 Box(
                     modifier = Modifier
-                        .background(
-                            color = if (isStale) SunsetOrange.copy(alpha = 0.12f) else PrimaryBlue.copy(alpha = 0.12f),
-                            shape = RoundedCornerShape(999.dp)
-                        )
-                        .padding(horizontal = 12.dp, vertical = 7.dp)
-                ) {
-                    Text(
-                        text = if (isStale) "Stale vs v$version" else "Base v${proposal.baseVersion}",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 12.sp,
-                        color = if (isStale) SunsetOrange else PrimaryBlue
-                    )
-                }
-            }
-
-            if (isStale) {
-                Text(
-                    text = "This proposal was generated against an older itinerary version. Review is still available, but apply is disabled until you regenerate.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = SunsetOrange,
-                    lineHeight = 18.sp
+                        .weight(1f)
+                        .height(92.dp)
+                        .background(SurfaceContainerLowest, RoundedCornerShape(22.dp))
+                        .shimmerEffect()
                 )
-            }
-
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                SummaryChip(label = "${selectedChangeIds.size} selected")
-                SummaryChip(label = "${proposal.changes.size} total changes")
-                SummaryChip(label = if (isLeader) "Leader approval" else "Member preview")
-            }
-
-            proposal.changes.forEach { change ->
-                ProposalChangeCard(
-                    change = change,
-                    selected = change.changeId in selectedChangeIds,
-                    selectable = isLeader && !isStale,
-                    onToggle = { onToggleChange(change.changeId) }
-                )
-            }
-
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                OutlinedButton(
-                    onClick = onDiscardProposal,
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text("Discard")
-                }
-                TextButton(
-                    onClick = onApplySelected,
-                    enabled = isLeader && !isStale && selectedChangeIds.isNotEmpty(),
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text("Apply selected")
-                }
             }
         }
     }

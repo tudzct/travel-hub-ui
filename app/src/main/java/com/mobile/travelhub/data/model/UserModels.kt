@@ -31,6 +31,21 @@ data class UserSummaryResponse(
     val isFollowing: Boolean = false
 )
 
+enum class TopTravelerPeriod {
+    WEEK,
+    MONTH
+}
+
+data class TopTravelerResponse(
+    val id: Long,
+    val username: String,
+    val name: String?,
+    val avatarUrl: String?,
+    val score: Long,
+    val following: Boolean = false,
+    val currentUser: Boolean = false
+)
+
 data class ProfileUpdateRequest(
     val id: Long,
     val username: String,
@@ -48,6 +63,11 @@ data class ProfileUpdateRequest(
     val postsCount: Int = 0,
     val followersCount: Int = 0,
     val followingCount: Int = 0
+)
+
+data class ChangePasswordRequest(
+    val currentPassword: String,
+    val newPassword: String
 )
 
 data class PageResponse<T>(

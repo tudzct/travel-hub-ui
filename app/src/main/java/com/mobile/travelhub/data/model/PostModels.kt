@@ -54,6 +54,8 @@ data class FeedPostResponse(
     val location: String? = null,
     @SerializedName(value = "likedByCurrentUser", alternate = ["liked", "isLiked"]) 
     val likedByCurrentUser: Boolean? = null,
+    @SerializedName(value = "savedByCurrentUser", alternate = ["saved", "isSaved"])
+    val savedByCurrentUser: Boolean? = null,
     @SerializedName(value = "likeCount", alternate = ["likesCount", "likes", "like_count"]) 
     val likeCount: Int? = null,
     @SerializedName(value = "commentCount", alternate = ["commentsCount", "comments", "comment_count"]) 
@@ -64,6 +66,11 @@ data class LikePostResponse(
     val postId: Long,
     val liked: Boolean,
     val likeCount: Int
+)
+
+data class SavePostResponse(
+    val postId: Long,
+    val saved: Boolean
 )
 
 data class CreateCommentRequest(
@@ -94,5 +101,7 @@ data class CommentOwnerResponse(
 
 data class PostOwner(
     val id: Long,
-    val username: String
+    val username: String,
+    @SerializedName(value = "avatarUrl", alternate = ["avatar_url", "userAvatar", "user_avatar"])
+    val avatarUrl: String? = null
 )

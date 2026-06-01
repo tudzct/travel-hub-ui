@@ -6,8 +6,10 @@ import androidx.lifecycle.viewModelScope
 import com.mobile.travelhub.data.AuthRepository
 import com.mobile.travelhub.data.PostRepository
 import com.mobile.travelhub.data.api.UserApiService
-import com.mobile.travelhub.data.model.FeedPostResponse
 import com.mobile.travelhub.data.httpStatusCode
+import com.mobile.travelhub.data.model.FeedPostResponse
+import com.mobile.travelhub.data.model.ChangePasswordRequest
+import com.mobile.travelhub.data.model.PostCommentResponse
 import com.mobile.travelhub.data.model.ProfileUpdateRequest
 import com.mobile.travelhub.data.model.UserProfileResponse
 import com.mobile.travelhub.data.model.UserSummaryResponse
@@ -18,11 +20,16 @@ import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
 import javax.inject.Inject
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.MultipartBody
+import okhttp3.RequestBody.Companion.toRequestBody
 
 @HiltViewModel
 class ProfileViewModel @Inject constructor(
@@ -47,6 +54,9 @@ class ProfileViewModel @Inject constructor(
 
     private val _updateStatus = MutableStateFlow<UiState<Boolean>>(UiState.Idle)
     val updateStatus: StateFlow<UiState<Boolean>> = _updateStatus.asStateFlow()
+
+    private val _changePasswordState = MutableStateFlow<UiState<Boolean>>(UiState.Idle)
+    val changePasswordState: StateFlow<UiState<Boolean>> = _changePasswordState.asStateFlow()
 
     private val _profilePostsState = MutableStateFlow(ProfilePostsUiState(isLoading = true))
     val profilePostsState: StateFlow<ProfilePostsUiState> = _profilePostsState.asStateFlow()
@@ -83,31 +93,262 @@ class ProfileViewModel @Inject constructor(
     }
 
     fun loadUserPosts(userId: Long = sessionUserId) {
+        loadProfilePosts(userId = userId, tab = ProfilePostsTab.POSTS)
+    }
+
+    fun loadUserLikedPosts(userId: Long = sessionUserId) {
+        loadProfilePosts(userId = userId, tab = ProfilePostsTab.LIKED)
+    }
+
+    fun loadUserSavedPosts(userId: Long = sessionUserId) {
+        loadProfilePosts(userId = userId, tab = ProfilePostsTab.SAVED)
+    }
+
+    fun selectProfilePostsTab(tab: ProfilePostsTab, userId: Long = sessionUserId) {
+        if (_profilePostsState.value.selectedTab == tab && !_profilePostsState.value.isLoading) return
+        loadProfilePosts(userId = userId, tab = tab)
+    }
+
+    private fun loadProfilePosts(userId: Long, tab: ProfilePostsTab) {
         viewModelScope.launch {
             if (userId <= 0L) {
                 _profilePostsState.value = ProfilePostsUiState(
                     isLoading = false,
+                    selectedTab = tab,
                     errorMessage = "Bạn cần đăng nhập để xem bài viết"
                 )
                 return@launch
             }
 
-            _profilePostsState.value = ProfilePostsUiState(isLoading = true)
-            postRepository.getPostsByUser(userId = userId, page = 0, pageSize = 20)
+            val currentComments = _profilePostsState.value.commentsByPostId
+            _profilePostsState.value = ProfilePostsUiState(isLoading = true, selectedTab = tab)
+            val result = when (tab) {
+                ProfilePostsTab.POSTS -> postRepository.getPostsByUser(userId = userId, page = 0, pageSize = 20)
+                ProfilePostsTab.SAVED -> postRepository.getSavedPostsByUser(userId = userId, page = 0, pageSize = 20)
+                ProfilePostsTab.LIKED -> postRepository.getLikedPostsByUser(userId = userId, page = 0, pageSize = 20)
+            }
+            result
                 .onSuccess { posts ->
                     _profilePostsState.value = ProfilePostsUiState(
                         isLoading = false,
+                        selectedTab = tab,
                         posts = posts.mapNotNull { post ->
                             runCatching { toHomePostUiModel(post) }.getOrNull()
-                        }
+                        },
+                        commentsByPostId = currentComments
                     )
                 }
                 .onFailure { throwable ->
                     _profilePostsState.value = ProfilePostsUiState(
                         isLoading = false,
+                        selectedTab = tab,
                         errorMessage = throwable.message ?: "Không thể tải bài viết"
                     )
                 }
+        }
+    }
+
+    fun onLikeClicked(postId: Long) {
+        val currentPost = _profilePostsState.value.posts.firstOrNull { it.id == postId } ?: return
+        if (currentPost.isLikeLoading) return
+
+        val nextLiked = !currentPost.isLiked
+        val nextLikeCount = (currentPost.likeCount + if (nextLiked) 1 else -1).coerceAtLeast(0)
+        updatePost(postId) {
+            it.copy(
+                isLiked = nextLiked,
+                likeCount = nextLikeCount,
+                isLikeLoading = true
+            )
+        }
+
+        viewModelScope.launch {
+            val result = if (currentPost.isLiked) {
+                postRepository.unlikePost(postId)
+            } else {
+                postRepository.likePost(postId)
+            }
+
+            result
+                .onSuccess { response ->
+                    updatePost(postId) {
+                        it.copy(
+                            isLiked = response.liked,
+                            likeCount = response.likeCount.coerceAtLeast(0),
+                            isLikeLoading = false
+                        )
+                    }
+                }
+                .onFailure { throwable ->
+                    updatePost(postId) {
+                        it.copy(
+                            isLiked = currentPost.isLiked,
+                            likeCount = currentPost.likeCount,
+                            isLikeLoading = false
+                        )
+                    }
+                    _profilePostsState.update {
+                        it.copy(errorMessage = throwable.message ?: "Không thể cập nhật lượt thích")
+                    }
+                }
+        }
+    }
+
+    fun onSaveClicked(postId: Long) {
+        val currentPost = _profilePostsState.value.posts.firstOrNull { it.id == postId } ?: return
+        if (currentPost.isSaveLoading) return
+        val targetSaved = !currentPost.isSaved
+
+        updatePost(postId) {
+            it.copy(
+                isSaved = targetSaved,
+                isSaveLoading = true
+            )
+        }
+
+        viewModelScope.launch {
+            postRepository.toggleSavedPost(postId, currentlySaved = currentPost.isSaved)
+                .onSuccess { response ->
+                    if (!response.saved && _profilePostsState.value.selectedTab == ProfilePostsTab.SAVED) {
+                        _profilePostsState.update { state ->
+                            state.copy(posts = state.posts.filterNot { it.id == postId })
+                        }
+                    } else {
+                        updatePost(postId) {
+                            it.copy(
+                                isSaved = response.saved,
+                                isSaveLoading = false
+                            )
+                        }
+                    }
+                }
+                .onFailure { throwable ->
+                    updatePost(postId) {
+                        it.copy(
+                            isSaved = currentPost.isSaved,
+                            isSaveLoading = false
+                        )
+                    }
+                    _profilePostsState.update {
+                        it.copy(errorMessage = throwable.message ?: "Không thể lưu bài viết")
+                    }
+                }
+        }
+    }
+
+    fun onCommentClicked(postId: Long) {
+        _profilePostsState.update {
+            it.copy(
+                activeCommentPostId = postId,
+                commentInput = "",
+                isCommentsLoading = true,
+                commentsErrorMessage = null,
+                commentErrorMessage = null
+            )
+        }
+        loadComments(postId)
+    }
+
+    fun onCommentDismissed() {
+        _profilePostsState.update {
+            it.copy(
+                activeCommentPostId = null,
+                commentInput = "",
+                isCommentsLoading = false,
+                isCommentSubmitting = false,
+                commentsErrorMessage = null,
+                commentErrorMessage = null
+            )
+        }
+    }
+
+    fun onCommentInputChanged(value: String) {
+        _profilePostsState.update {
+            it.copy(commentInput = value, commentErrorMessage = null)
+        }
+    }
+
+    fun submitComment() {
+        val currentState = _profilePostsState.value
+        val postId = currentState.activeCommentPostId ?: return
+        val content = currentState.commentInput.trim()
+
+        if (content.isBlank()) {
+            _profilePostsState.update { it.copy(commentErrorMessage = "Comment cannot be empty") }
+            return
+        }
+
+        if (currentState.isCommentSubmitting) return
+
+        _profilePostsState.update {
+            it.copy(isCommentSubmitting = true, commentErrorMessage = null)
+        }
+
+        viewModelScope.launch {
+            postRepository.addComment(postId = postId, content = content)
+                .onSuccess { response ->
+                    val commentUiModel = toCommentUiModel(response)
+                    _profilePostsState.update { state ->
+                        val currentComments = state.commentsByPostId[postId].orEmpty()
+                        state.copy(
+                            isCommentSubmitting = false,
+                            commentInput = "",
+                            commentsErrorMessage = null,
+                            commentErrorMessage = null,
+                            commentsByPostId = state.commentsByPostId + (postId to (currentComments + commentUiModel)),
+                            posts = state.posts.map { post ->
+                                if (post.id == postId) {
+                                    post.copy(commentCount = (post.commentCount + 1).coerceAtLeast(0))
+                                } else {
+                                    post
+                                }
+                            }
+                        )
+                    }
+                }
+                .onFailure { throwable ->
+                    _profilePostsState.update {
+                        it.copy(
+                            isCommentSubmitting = false,
+                            commentErrorMessage = throwable.message ?: "Failed to add comment"
+                        )
+                    }
+                }
+        }
+    }
+
+    private fun loadComments(postId: Long) {
+        viewModelScope.launch {
+            postRepository.getPostComments(postId = postId, page = 0, pageSize = 50)
+                .onSuccess { response ->
+                    _profilePostsState.update { state ->
+                        state.copy(
+                            isCommentsLoading = false,
+                            commentsErrorMessage = null,
+                            commentsByPostId = state.commentsByPostId + (
+                                postId to response.data.map(::toCommentUiModel)
+                            )
+                        )
+                    }
+                }
+                .onFailure { throwable ->
+                    _profilePostsState.update {
+                        it.copy(
+                            isCommentsLoading = false,
+                            commentsErrorMessage = throwable.message ?: "Failed to load comments"
+                        )
+                    }
+                }
+        }
+    }
+
+    private fun updatePost(postId: Long, transform: (HomePostUiModel) -> HomePostUiModel) {
+        _profilePostsState.update { state ->
+            state.copy(
+                posts = state.posts.map { post ->
+                    if (post.id == postId) transform(post) else post
+                }
+            )
         }
     }
 
@@ -124,6 +365,25 @@ class ProfileViewModel @Inject constructor(
                 _otherUserProfileState.value = UiState.Error(errorMsg)
             }
         }
+    }
+
+    suspend fun uploadAvatar(
+        imageBytes: ByteArray,
+        mimeType: String,
+        fileName: String
+    ): String = withContext(Dispatchers.IO) {
+        userApiService.uploadAvatar(buildAvatarPart(imageBytes, mimeType, fileName)).string().trim().trim('"')
+    }
+
+    private fun buildAvatarPart(
+        bytes: ByteArray,
+        mimeType: String,
+        fileName: String
+    ): MultipartBody.Part {
+        val safeMimeType = mimeType.ifBlank { "image/jpeg" }
+        val safeFileName = fileName.ifBlank { "avatar.jpg" }
+        val requestBody = bytes.toRequestBody(safeMimeType.toMediaTypeOrNull())
+        return MultipartBody.Part.createFormData("file", safeFileName, requestBody)
     }
 
     fun loadFollowers(userId: Long = sessionUserId) {
@@ -160,41 +420,95 @@ class ProfileViewModel @Inject constructor(
         }
     }
 
-    fun updateProfile(name: String, username: String, bio: String, dob: String, gender: String, location: String) {
-        viewModelScope.launch {
-            _updateStatus.value = UiState.Loading
-            try {
-                if (sessionUserId <= 0L) {
-                    error("Bạn cần đăng nhập để cập nhật hồ sơ")
-                }
-                val currentProfile = (_profileState.value as? UiState.Success)?.data
+    suspend fun updateProfile(
+        name: String,
+        username: String,
+        bio: String,
+        dob: String,
+        gender: String,
+        location: String,
+        avatarUrl: String? = null
+    ) {
+        _updateStatus.value = UiState.Loading
+        try {
+            if (sessionUserId <= 0L) {
+                error("Bạn cần đăng nhập để cập nhật hồ sơ")
+            }
+            val currentProfile = (_profileState.value as? UiState.Success)?.data
 
-                val request = ProfileUpdateRequest(
-                    id = sessionUserId,
-                    username = username,
-                    name = name,
-                    bio = bio,
-                    dateOfBirth = dob,
-                    gender = gender,
-                    location = location,
-                    email = currentProfile?.email,
-                    phoneNumber = currentProfile?.phoneNumber,
-                    avatarUrl = currentProfile?.avatarUrl,
-                    isFollowing = currentProfile?.isFollowing ?: false,
-                    postsCount = currentProfile?.postsCount ?: 0,
-                    followersCount = currentProfile?.followersCount ?: 0,
-                    followingCount = currentProfile?.followingCount ?: 0
-                )
-                val response = userApiService.updateMyProfile(request)
-                _profileState.value = UiState.Success(response)
-                _updateStatus.value = UiState.Success(true)
-                Log.d("API_SUCCESS", "Cập nhật Profile thành công!")
+            val request = ProfileUpdateRequest(
+                id = sessionUserId,
+                username = username,
+                name = name,
+                bio = bio,
+                dateOfBirth = dob,
+                gender = gender,
+                location = location,
+                email = currentProfile?.email,
+                phoneNumber = currentProfile?.phoneNumber,
+                avatarUrl = avatarUrl ?: currentProfile?.avatarUrl,
+                isFollowing = currentProfile?.isFollowing ?: false,
+                postsCount = currentProfile?.postsCount ?: 0,
+                followersCount = currentProfile?.followersCount ?: 0,
+                followingCount = currentProfile?.followingCount ?: 0
+            )
+            val response = withContext(Dispatchers.IO) {
+                userApiService.updateMyProfile(request)
+            }
+            _profileState.value = UiState.Success(response)
+            _updateStatus.value = UiState.Success(true)
+            Log.d("API_SUCCESS", "Cập nhật Profile thành công!")
+        } catch (e: Exception) {
+            val errorMsg = "Lỗi cập nhật Profile (PUT): ${e.localizedMessage}"
+            Log.e("API_ERROR", errorMsg, e)
+            _updateStatus.value = UiState.Error(errorMsg)
+        }
+    }
+
+    fun changePassword(
+        currentPassword: String,
+        newPassword: String,
+        confirmPassword: String
+    ) {
+        val validationError = validateChangePassword(currentPassword, newPassword, confirmPassword)
+        if (validationError != null) {
+            _changePasswordState.value = UiState.Error(validationError)
+            return
+        }
+        viewModelScope.launch {
+            _changePasswordState.value = UiState.Loading
+            try {
+                withContext(Dispatchers.IO) {
+                    userApiService.changePassword(
+                        ChangePasswordRequest(
+                            currentPassword = currentPassword,
+                            newPassword = newPassword
+                        )
+                    )
+                }
+                _changePasswordState.value = UiState.Success(true)
             } catch (e: Exception) {
-                val errorMsg = "Lỗi cập nhật Profile (PUT): ${e.localizedMessage}"
-                Log.e("API_ERROR", errorMsg, e)
-                _updateStatus.value = UiState.Error(errorMsg)
+                val errorMsg = e.localizedMessage ?: "Không thể đổi mật khẩu"
+                Log.e("API_ERROR", "Lỗi đổi mật khẩu: $errorMsg", e)
+                _changePasswordState.value = UiState.Error(errorMsg)
             }
         }
+    }
+
+    fun clearChangePasswordState() {
+        _changePasswordState.value = UiState.Idle
+    }
+
+    private fun validateChangePassword(
+        currentPassword: String,
+        newPassword: String,
+        confirmPassword: String
+    ): String? {
+        if (currentPassword.isBlank()) return "Vui lòng nhập mật khẩu hiện tại"
+        if (newPassword.length < 8) return "Mật khẩu mới phải có ít nhất 8 ký tự"
+        if (newPassword != confirmPassword) return "Mật khẩu mới không khớp"
+        if (currentPassword == newPassword) return "Mật khẩu mới phải khác mật khẩu hiện tại"
+        return null
     }
 
     fun toggleFollow(
@@ -226,22 +540,59 @@ class ProfileViewModel @Inject constructor(
 
     fun toggleFollowOtherUser(targetUserId: Long, isCurrentlyFollowing: Boolean) {
         viewModelScope.launch {
-            try {
-                if (targetUserId == sessionUserId) return@launch
+            if (targetUserId == sessionUserId) return@launch
 
+            val previousOtherProfileState = _otherUserProfileState.value
+            val previousOwnProfileState = _profileState.value
+            val nextFollowingState = !isCurrentlyFollowing
+
+            updateOtherProfileFollowState(targetUserId, nextFollowingState)
+            updateOwnFollowingCount(if (nextFollowingState) 1 else -1)
+
+            try {
                 if (isCurrentlyFollowing) {
                     userApiService.unfollowUser(targetUserId)
                 } else {
                     userApiService.followUser(targetUserId)
                 }
-
-                loadOtherUserProfile(targetUserId)
-                loadUserProfile()
-                loadFollowers()
-                loadFollowing()
             } catch (e: Exception) {
+                _otherUserProfileState.value = previousOtherProfileState
+                _profileState.value = previousOwnProfileState
                 Log.e("API_ERROR", "Lỗi follow/unfollow other profile: ${e.localizedMessage}", e)
             }
+        }
+    }
+
+    private fun updateOtherProfileFollowState(targetUserId: Long, isFollowing: Boolean) {
+        _otherUserProfileState.update { state ->
+            val currentProfile = (state as? UiState.Success)?.data ?: return@update state
+            if (currentProfile.id != targetUserId) return@update state
+
+            val followerDelta = when {
+                isFollowing && !currentProfile.isFollowing -> 1
+                !isFollowing && currentProfile.isFollowing -> -1
+                else -> 0
+            }
+
+            UiState.Success(
+                currentProfile.copy(
+                    isFollowing = isFollowing,
+                    followersCount = (currentProfile.followersCount + followerDelta).coerceAtLeast(0)
+                )
+            )
+        }
+    }
+
+    private fun updateOwnFollowingCount(delta: Int) {
+        if (delta == 0) return
+
+        _profileState.update { state ->
+            val currentProfile = (state as? UiState.Success)?.data ?: return@update state
+            UiState.Success(
+                currentProfile.copy(
+                    followingCount = (currentProfile.followingCount + delta).coerceAtLeast(0)
+                )
+            )
         }
     }
 
@@ -276,7 +627,9 @@ class ProfileViewModel @Inject constructor(
 
         return HomePostUiModel(
             id = safeId,
+            ownerId = runCatching { post.owner.id }.getOrDefault(0L),
             username = safeUsername,
+            ownerAvatarUrl = runCatching { post.owner.avatarUrl }.getOrNull()?.takeIf { it.isNotBlank() },
             subtitle = safeLocation,
             description = safeDescription,
             imageUrls = safeImageUrls,
@@ -284,16 +637,47 @@ class ProfileViewModel @Inject constructor(
             commentCount = post.commentCount?.coerceAtLeast(0) ?: 0,
             isLiked = post.likedByCurrentUser == true,
             isLikeLoading = false,
+            isSaved = post.savedByCurrentUser == true,
+            isSaveLoading = false,
             timeAgoLabel = PostsUtils.formatTimeAgo(safeCreatedAt)
+        )
+    }
+
+    private fun toCommentUiModel(response: PostCommentResponse): HomeCommentUiModel {
+        val username = response.owner?.username
+            ?.takeIf { it.isNotBlank() }
+            ?: "unknown"
+        val content = response.content.trim()
+        val createdAt = response.createdAt ?: response.updatedAt
+
+        return HomeCommentUiModel(
+            id = response.id?.toString() ?: "${createdAt.orEmpty()}-${username}-${content.hashCode()}",
+            username = username,
+            content = content,
+            timeAgoLabel = PostsUtils.formatTimeAgo(createdAt)
         )
     }
 }
 
 data class ProfilePostsUiState(
     val isLoading: Boolean = false,
+    val selectedTab: ProfilePostsTab = ProfilePostsTab.POSTS,
     val posts: List<HomePostUiModel> = emptyList(),
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
+    val activeCommentPostId: Long? = null,
+    val commentInput: String = "",
+    val isCommentsLoading: Boolean = false,
+    val isCommentSubmitting: Boolean = false,
+    val commentsErrorMessage: String? = null,
+    val commentErrorMessage: String? = null,
+    val commentsByPostId: Map<Long, List<HomeCommentUiModel>> = emptyMap()
 )
+
+enum class ProfilePostsTab {
+    POSTS,
+    SAVED,
+    LIKED
+}
 
 sealed class UiState<out T> {
     data object Idle : UiState<Nothing>()

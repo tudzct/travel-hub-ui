@@ -6,9 +6,9 @@ import com.mobile.travelhub.data.api.ItineraryApiService
 import com.mobile.travelhub.data.api.TripApiService
 import com.mobile.travelhub.data.model.CreateTripRequest
 import com.mobile.travelhub.data.model.CreateTripExpenseRequest
-import com.mobile.travelhub.data.model.ItineraryResponse
 import com.mobile.travelhub.data.model.TripExpenseResponse
 import com.mobile.travelhub.data.model.TripDashboardResponse
+import com.mobile.travelhub.data.model.TripDayResponse
 import com.mobile.travelhub.data.model.TripDetailResponse
 import com.mobile.travelhub.data.model.TripExpenseTransactionResponse
 import com.mobile.travelhub.data.model.TripJoinRequestResponse
@@ -51,6 +51,10 @@ class TripRepository @Inject constructor(
 
     suspend fun joinTrip(request: JoinTripRequest): Result<JoinTripResultResponse> {
         return runCatching { tripApiService.joinTrip(request) }
+    }
+
+    suspend fun getTripByInviteCode(code: String): Result<com.mobile.travelhub.data.model.TripInfoResponse> {
+        return runCatching { tripApiService.getTripByInviteCode(code) }
     }
 
     suspend fun getInviteCode(tripId: Long): Result<TripInviteCodeResponse> {
@@ -112,7 +116,7 @@ class TripRepository @Inject constructor(
         return runCatching { tripExpenseApiService.deleteExpense(tripId, expenseId) }
     }
 
-    suspend fun getItineraryByGroupName(groupName: String): Result<ItineraryResponse> {
-        return runCatching { itineraryApiService.getByGroupName(groupName) }
+    suspend fun listTripDays(tripId: Long): Result<List<TripDayResponse>> {
+        return runCatching { itineraryApiService.listTripDays(tripId) }
     }
 }

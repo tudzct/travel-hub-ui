@@ -1,5 +1,7 @@
 package com.mobile.travelhub.data.model
 
+import com.google.gson.annotations.SerializedName
+
 data class NotificationsPageResponse(
     val pageNumber: Int,
     val pageSize: Int,
@@ -13,5 +15,10 @@ data class NotificationResponse(
     val body: String,
     val isRead: Boolean,
     val type: String? = null,
+    @SerializedName(
+        value = "targetId",
+        alternate = ["target", "target_id", "targetUserId", "userId", "actorId", "senderId", "followerId"]
+    )
+    val targetId: Long? = null,
     val createdAt: String
 )
