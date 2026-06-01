@@ -5,6 +5,7 @@ import com.mobile.travelhub.data.api.ApiConfig
 import com.mobile.travelhub.data.api.AuthApiService
 import com.mobile.travelhub.data.api.AuthHeaderInterceptor
 import com.mobile.travelhub.data.api.DeviceApiService
+import com.mobile.travelhub.data.api.FeaturedPlaceApiService
 import com.mobile.travelhub.data.api.ItineraryApiService
 import com.mobile.travelhub.data.api.FileUploadApiService
 import com.mobile.travelhub.data.api.LocationApiService
@@ -38,6 +39,7 @@ import java.util.concurrent.TimeUnit
 object NetworkModule {
     private const val BASE_URL = ApiConfig.BASE_URL
     private val logging = HttpLoggingInterceptor().apply {
+        redactHeader("Authorization")
         level = HttpLoggingInterceptor.Level.BODY
     }
     @Provides
@@ -127,6 +129,12 @@ object NetworkModule {
     @Singleton
     fun providePlaceApiService(@Named("authenticated") retrofit: Retrofit): PlaceApiService {
         return retrofit.create(PlaceApiService::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideFeaturedPlaceApiService(@Named("public") retrofit: Retrofit): FeaturedPlaceApiService {
+        return retrofit.create(FeaturedPlaceApiService::class.java)
     }
 
     @Provides

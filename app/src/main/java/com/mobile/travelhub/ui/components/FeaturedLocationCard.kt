@@ -7,11 +7,14 @@ import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.outlined.Place
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -29,12 +32,16 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import com.mobile.travelhub.ui.theme.SurfaceContainer
+import java.util.Locale
 
 @Composable
 fun FeaturedLocationCard(
     country: String,
     city: String,
     imageUrl: String?,
+    averageRating: Double? = null,
+    reviewCount: Long? = null,
     modifier: Modifier = Modifier,
     onClick: (() -> Unit)? = null
 ) {
@@ -49,12 +56,28 @@ fun FeaturedLocationCard(
             .clip(RoundedCornerShape(10.dp))
             .then(clickableModifier)
     ) {
-        AsyncImage(
-            model = imageUrl,
-            contentDescription = city,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier.fillMaxSize()
-        )
+        if (imageUrl.isNullOrBlank()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(SurfaceContainer),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.Place,
+                    contentDescription = null,
+                    tint = Color.White.copy(alpha = 0.88f),
+                    modifier = Modifier.size(54.dp)
+                )
+            }
+        } else {
+            AsyncImage(
+                model = imageUrl,
+                contentDescription = city,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize()
+            )
+        }
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -64,6 +87,13 @@ fun FeaturedLocationCard(
                     )
                 )
         )
+        if (reviewCount != null) {
+            LocationRatingBadge(
+                averageRating = averageRating,
+                reviewCount = reviewCount,
+                modifier = Modifier.align(Alignment.TopStart)
+            )
+        }
         Column(
             modifier = Modifier
                 .align(Alignment.BottomStart)
@@ -85,6 +115,45 @@ fun FeaturedLocationCard(
         CircularActionButton(
             modifier = Modifier.align(Alignment.TopEnd)
         )
+    }
+}
+
+@Composable
+private fun LocationRatingBadge(
+    averageRating: Double?,
+    reviewCount: Long,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier
+            .padding(14.dp)
+            .clip(RoundedCornerShape(14.dp))
+            .background(Color.White.copy(alpha = 0.86f))
+            .padding(horizontal = 8.dp, vertical = 5.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        if (reviewCount > 0 && averageRating != null) {
+            Icon(
+                imageVector = Icons.Filled.Star,
+                contentDescription = null,
+                tint = Color(0xFFFFB800),
+                modifier = Modifier.size(14.dp)
+            )
+            Text(
+                text = String.format(Locale.US, "%.1f", averageRating),
+                modifier = Modifier.padding(start = 3.dp),
+                color = Color.Black,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold
+            )
+        } else {
+            Text(
+                text = "New",
+                color = Color.Black,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold
+            )
+        }
     }
 }
 

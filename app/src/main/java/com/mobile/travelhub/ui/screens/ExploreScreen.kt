@@ -47,7 +47,9 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.mobile.travelhub.data.model.TopTravelerPeriod
 import com.mobile.travelhub.data.model.TopTravelerResponse
+import com.mobile.travelhub.data.model.TravelPlaceListItemResponse
 import com.mobile.travelhub.ui.components.FeaturedLocationCard
+import com.mobile.travelhub.ui.components.modifiers.shimmerEffect
 import com.mobile.travelhub.ui.theme.OnSurface
 import com.mobile.travelhub.ui.theme.OnSurfaceVariant
 import com.mobile.travelhub.ui.theme.PrimaryBlue
@@ -61,6 +63,7 @@ fun ExploreScreen(
     activateSearch: Boolean = false,
     refreshTopTravelersKey: Int = 0,
     onSearchClick: () -> Unit = {},
+    onPlaceClick: (TravelPlaceListItemResponse) -> Unit = {},
     onTravelerClick: (Long, Boolean) -> Unit = { _, _ -> },
     onSeeAllTopTravelers: (TopTravelerPeriod) -> Unit = {},
     topTravelersViewModel: TopTravelersViewModel = hiltViewModel(),
@@ -68,23 +71,6 @@ fun ExploreScreen(
 ) {
     val topTravelersState by topTravelersViewModel.uiState.collectAsState()
     val uiState by exploreViewModel.uiState.collectAsState()
-    val featuredLocations = listOf(
-        FeaturedLocation(
-            country = "INDONESIA",
-            city = "Bali",
-            imageUrl = "https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=700&q=80"
-        ),
-        FeaturedLocation(
-            country = "FRANCE",
-            city = "Paris",
-            imageUrl = "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&fit=crop&w=700&q=80"
-        ),
-        FeaturedLocation(
-            country = "JAPAN",
-            city = "Tokyo",
-            imageUrl = "https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?auto=format&fit=crop&w=700&q=80"
-        )
-    )
 
     LaunchedEffect(refreshTopTravelersKey) {
         topTravelersViewModel.loadPreview()
@@ -131,24 +117,13 @@ fun ExploreScreen(
         )
 
         SectionTitle(text = "Featured Locations", topPadding = 24.dp)
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .horizontalScroll(rememberScrollState())
-                .padding(start = 16.dp, end = 16.dp),
-            horizontalArrangement = Arrangement.spacedBy(14.dp)
-        ) {
-            featuredLocations.forEach { location ->
-                FeaturedLocationCard(
-                    country = location.country,
-                    city = location.city,
-                    imageUrl = location.imageUrl,
-                    modifier = Modifier
-                        .width(220.dp)
-                        .height(270.dp)
-                )
-            }
-        }
+        FeaturedLocationsSection(
+            locations = uiState.featuredLocations,
+            isLoading = uiState.isLoadingFeaturedLocations,
+            errorMessage = uiState.featuredLocationsError,
+            onRetry = exploreViewModel::loadFeaturedLocations,
+            onPlaceClick = onPlaceClick
+        )
 
         TopTravelersPreview(
             state = topTravelersState,
@@ -158,6 +133,91 @@ fun ExploreScreen(
             onToggleFollow = topTravelersViewModel::toggleFollow,
             onSeeAll = { onSeeAllTopTravelers(topTravelersState.period) }
         )
+    }
+}
+
+@Composable
+private fun FeaturedLocationsSection(
+    locations: List<TravelPlaceListItemResponse>,
+    isLoading: Boolean,
+    errorMessage: String?,
+    onRetry: () -> Unit,
+    onPlaceClick: (TravelPlaceListItemResponse) -> Unit
+) {
+    when {
+        isLoading -> FeaturedLocationsSkeleton()
+
+        errorMessage != null -> {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = "Unable to load featured locations.",
+                    color = OnSurfaceVariant,
+                    fontSize = 13.sp
+                )
+                TextButton(onClick = onRetry) {
+                    Text("Retry", color = PrimaryBlue)
+                }
+            }
+        }
+
+        locations.isEmpty() -> {
+            Text(
+                text = "No featured locations yet.",
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
+                color = OnSurfaceVariant,
+                fontSize = 13.sp
+            )
+        }
+
+        else -> {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState())
+                    .padding(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+                locations.forEach { location ->
+                    FeaturedLocationCard(
+                        country = location.province.name,
+                        city = location.name,
+                        imageUrl = location.mainImage,
+                        averageRating = location.averageRating,
+                        reviewCount = location.reviewCount,
+                        modifier = Modifier
+                            .width(220.dp)
+                            .height(270.dp),
+                        onClick = { onPlaceClick(location) }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun FeaturedLocationsSkeleton() {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .horizontalScroll(rememberScrollState())
+            .padding(horizontal = 16.dp),
+        horizontalArrangement = Arrangement.spacedBy(14.dp)
+    ) {
+        repeat(3) {
+            Box(
+                modifier = Modifier
+                    .width(220.dp)
+                    .height(270.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .shimmerEffect()
+            )
+        }
     }
 }
 
@@ -483,9 +543,3 @@ private fun TravelerItem(
         }
     }
 }
-
-private data class FeaturedLocation(
-    val country: String,
-    val city: String,
-    val imageUrl: String
-)
