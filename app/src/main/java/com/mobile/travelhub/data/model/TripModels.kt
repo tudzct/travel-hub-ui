@@ -6,6 +6,7 @@ data class CreateTripRequest(
     val startDate: String,
     val endDate: String,
     val coverImageUrl: String? = null,
+    val placeId: Long? = null,
     val budgetMin: Double? = null,
     val budgetMax: Double? = null
 )
@@ -107,6 +108,7 @@ data class TripInfoResponse(
     val name: String,
     val location: String,
     val coverImageUrl: String? = null,
+    val placeId: Long? = null,
     val description: String? = null,
     val startDate: String? = null,
     val endDate: String? = null,

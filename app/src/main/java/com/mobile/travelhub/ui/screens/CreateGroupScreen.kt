@@ -1,6 +1,5 @@
 package com.mobile.travelhub.ui.screens
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -9,9 +8,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
@@ -20,12 +17,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CalendarMonth
-import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.SelectableDates
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -58,14 +52,17 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.mobile.travelhub.ui.components.DestinationPlacePicker
 import com.mobile.travelhub.ui.components.EditProfileField
 import com.mobile.travelhub.ui.components.PrimaryProfileButton
 import com.mobile.travelhub.viewmodels.CreateGroupViewModel
+import com.mobile.travelhub.utils.NumberUtils
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
@@ -92,6 +89,20 @@ fun CreateGroupScreen(
 
     LaunchedEffect(uiState.errorMessage) {
         uiState.errorMessage?.let { snackbarHostState.showSnackbar(it) }
+    }
+
+    var budgetMaxFieldVal by remember {
+        val initialText = uiState.budgetMax
+        mutableStateOf(TextFieldValue(text = initialText, selection = TextRange(initialText.length)))
+    }
+
+    LaunchedEffect(uiState.budgetMax) {
+        if (uiState.budgetMax != budgetMaxFieldVal.text) {
+            budgetMaxFieldVal = TextFieldValue(
+                text = uiState.budgetMax,
+                selection = TextRange(uiState.budgetMax.length)
+            )
+        }
     }
 
     Scaffold(
@@ -142,60 +153,20 @@ fun CreateGroupScreen(
                     onNext = { focusManager.moveFocus(FocusDirection.Down) }
                 )
             )
-            Text(
-                text = "TỈNH",
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                letterSpacing = 1.sp,
-                modifier = Modifier.padding(top = 4.dp, bottom = 8.dp)
-            )
 
-            CompactSelectionDropdown(
-                selectedValue = uiState.selectedProvince?.name.orEmpty(),
-                options = uiState.provinces,
-                optionLabel = { it.name },
-                onOptionSelected = { viewModel.selectProvince(it.id) },
+            DestinationPlacePicker(
+                label = "Điểm đến",
+                selectedProvince = uiState.selectedProvince,
+                selectedPlace = uiState.selectedPlace,
+                provinces = uiState.provinces,
+                places = uiState.places,
+                isLoading = uiState.isLoadingLocations,
                 enabled = !uiState.isSaving && uiState.provinces.isNotEmpty(),
-                placeholder = ""
+                placeholder = "Chọn địa điểm",
+                modifier = Modifier.padding(top = 4.dp, bottom = 12.dp),
+                onProvinceSelected = { viewModel.selectProvince(it) },
+                onPlaceSelected = { viewModel.selectPlace(it) }
             )
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            Text(
-                text = "ĐIỂM ĐẾN",
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                letterSpacing = 1.sp,
-                modifier = Modifier.padding(top = 4.dp, bottom = 8.dp)
-            )
-
-            CompactSelectionDropdown(
-                selectedValue = uiState.selectedPlace?.let { "${it.name} • ${it.province.name}" }.orEmpty(),
-                options = uiState.places,
-                optionLabel = { "${it.name} • ${it.province.name}" },
-                onOptionSelected = { viewModel.selectPlace(it.id) },
-                enabled = !uiState.isSaving && uiState.selectedProvinceId != null && uiState.places.isNotEmpty(),
-                placeholder = ""
-            )
-
-            if (uiState.isLoadingLocations) {
-                Spacer(modifier = Modifier.height(8.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    androidx.compose.material3.CircularProgressIndicator(
-                        modifier = Modifier.size(14.dp),
-                        strokeWidth = 2.dp,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                    Spacer(modifier = Modifier.size(8.dp))
-                    Text(
-                        text = "Đang tải danh sách điểm đến...",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
 
             TripDateRangeFieldInput(
                 label = "Ngày đi và ngày về",
@@ -208,7 +179,7 @@ fun CreateGroupScreen(
                     }
                     else -> ""
                 },
-                placeholder = "dd/mm/yyyy - dd/mm/yyyy",
+                placeholder = "",
                 onClick = {
                     focusManager.clearFocus()
                     dateSelectionStep = TripDateSelectionStep.START
@@ -216,24 +187,15 @@ fun CreateGroupScreen(
             )
 
             EditProfileField(
-                label = "Ngân sách tối thiểu",
-                value = uiState.budgetMin,
-                onValueChange = viewModel::updateBudgetMin,
+                label = "Ngân sách dự kiến",
+                value = budgetMaxFieldVal,
+                onValueChange = { newValue ->
+                    val formatted = NumberUtils.formatTextFieldValue(newValue)
+                    budgetMaxFieldVal = formatted
+                    viewModel.updateBudgetMax(formatted.text)
+                },
                 keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Decimal,
-                    imeAction = ImeAction.Next
-                ),
-                keyboardActions = KeyboardActions(
-                    onNext = { focusManager.moveFocus(FocusDirection.Down) }
-                )
-            )
-
-            EditProfileField(
-                label = "Ngân sách tối đa",
-                value = uiState.budgetMax,
-                onValueChange = viewModel::updateBudgetMax,
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Decimal,
+                    keyboardType = KeyboardType.Number,
                     imeAction = ImeAction.Done
                 ),
                 keyboardActions = KeyboardActions(
@@ -271,15 +233,15 @@ fun CreateGroupScreen(
         val currentStep by rememberUpdatedState(selectedStep)
         val currentStartDate by rememberUpdatedState(startDateObj)
 
-        val initialDate = when (selectedStep) {
-            TripDateSelectionStep.START -> startDateObj ?: today
-            TripDateSelectionStep.END -> startDateObj?.plusDays(1) ?: today
-            null -> today
+        val initialMillis = when (selectedStep) {
+            TripDateSelectionStep.START -> {
+                startDateObj?.atStartOfDay(ZoneOffset.UTC)?.toInstant()?.toEpochMilli() ?: System.currentTimeMillis()
+            }
+            TripDateSelectionStep.END -> {
+                startDateObj?.atStartOfDay(ZoneOffset.UTC)?.toInstant()?.toEpochMilli() ?: System.currentTimeMillis()
+            }
+            null -> System.currentTimeMillis()
         }
-        val initialMillis = initialDate
-            .atStartOfDay(ZoneOffset.UTC)
-            .toInstant()
-            .toEpochMilli()
 
         val selectableDates = remember {
             object : SelectableDates {
@@ -304,24 +266,15 @@ fun CreateGroupScreen(
             }
         }
 
-        val datePickerState = rememberDatePickerState(
-            initialSelectedDateMillis = initialMillis,
-            yearRange = today.year..today.year + 1,
-            selectableDates = selectableDates
-        )
+        var selectedDateMillisState by remember { mutableStateOf<Long?>(null) }
         var datePickerErrorMessage by remember { mutableStateOf<String?>(null) }
-
-        LaunchedEffect(selectedStep, uiState.startDate, uiState.endDate) {
-            datePickerErrorMessage = null
-            datePickerState.selectedDateMillis = initialMillis
-        }
 
         DatePickerDialog(
             onDismissRequest = { dateSelectionStep = null },
             confirmButton = {
                 TextButton(
                     onClick = {
-                        val selectedMillis = datePickerState.selectedDateMillis ?: return@TextButton
+                        val selectedMillis = selectedDateMillisState ?: return@TextButton
                         val selectedDate = Instant.ofEpochMilli(selectedMillis)
                             .atZone(ZoneOffset.UTC)
                             .toLocalDate()
@@ -329,7 +282,7 @@ fun CreateGroupScreen(
                         val isValid = when (currentStep) {
                             TripDateSelectionStep.START -> viewModel.canSelectStartDate(selectedDate)
                             TripDateSelectionStep.END -> {
-                                val startDate = currentStartDate
+                                val startDate = startDateObj
                                 startDate != null && viewModel.canSelectEndDate(startDate, selectedDate)
                             }
                             null -> false
@@ -372,7 +325,58 @@ fun CreateGroupScreen(
             }
         ) {
             Column {
-                DatePicker(state = datePickerState)
+                // Hoisted Custom Header with absolute layout/spacing control
+                Column(
+                    modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 20.dp, bottom = 12.dp)
+                ) {
+                    Text(
+                        text = if (currentStep == TripDateSelectionStep.START) "Chọn ngày bắt đầu" else "Chọn ngày kết thúc",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    val formattedSelectedDate = selectedDateMillisState?.let {
+                        Instant.ofEpochMilli(it).atZone(ZoneOffset.UTC).toLocalDate().format(displayDateFormatter)
+                    } ?: ""
+                    Text(
+                        text = if (formattedSelectedDate.isNotBlank()) formattedSelectedDate else "Chọn ngày",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+
+                androidx.compose.material3.HorizontalDivider(
+                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f),
+                    thickness = 1.dp
+                )
+
+                key(selectedStep, startDateObj) {
+                    val datePickerState = rememberDatePickerState(
+                        initialSelectedDateMillis = initialMillis,
+                        yearRange = today.year..today.year + 1,
+                        selectableDates = selectableDates
+                    )
+
+                    LaunchedEffect(datePickerState.selectedDateMillis) {
+                        selectedDateMillisState = datePickerState.selectedDateMillis
+                    }
+
+                    DatePicker(
+                        state = datePickerState,
+                        title = null,
+                        headline = null,
+                        showModeToggle = false,
+                        colors = DatePickerDefaults.colors(
+                            todayDateBorderColor = Color.Transparent,
+                            todayContentColor = if (currentStep == TripDateSelectionStep.START) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                            }
+                        )
+                    )
+                }
                 if (datePickerErrorMessage != null) {
                     Text(
                         text = datePickerErrorMessage ?: "",
@@ -384,8 +388,10 @@ fun CreateGroupScreen(
             }
         }
     }
+
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun TripDateRangeFieldInput(
     label: String,
@@ -456,70 +462,3 @@ private fun parseDisplayDate(value: String, formatter: DateTimeFormatter): Local
     }.getOrNull()
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun <T> CompactSelectionDropdown(
-    selectedValue: String,
-    options: List<T>,
-    optionLabel: (T) -> String,
-    onOptionSelected: (T) -> Unit,
-    enabled: Boolean,
-    placeholder: String
-) {
-    var expanded by remember { mutableStateOf(false) }
-
-    ExposedDropdownMenuBox(
-        expanded = expanded,
-        onExpandedChange = { if (enabled) expanded = !expanded }
-    ) {
-        OutlinedTextField(
-            value = selectedValue,
-            onValueChange = {},
-            readOnly = true,
-            enabled = enabled,
-            placeholder = {
-                Text(
-                    text = placeholder,
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-                )
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .menuAnchor(),
-            shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
-                unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-                disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
-                disabledBorderColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f),
-                disabledTextColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
-            ),
-            textStyle = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface),
-            trailingIcon = {
-                ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
-            },
-            singleLine = true
-        )
-
-        androidx.compose.material3.DropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false },
-            modifier = Modifier
-                .fillMaxWidth(0.92f)
-                .heightIn(max = 320.dp)
-        ) {
-            options.forEach { option ->
-                androidx.compose.material3.DropdownMenuItem(
-                    text = { Text(optionLabel(option)) },
-                    onClick = {
-                        expanded = false
-                        onOptionSelected(option)
-                    }
-                )
-            }
-        }
-    }
-}

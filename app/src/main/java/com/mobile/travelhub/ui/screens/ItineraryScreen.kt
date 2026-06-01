@@ -146,7 +146,7 @@ fun ItineraryScreen(
             ItineraryTopBar(
                 title = if (state.groupName.isBlank()) "Itinerary" else state.groupName,
                 subtitle = "Version ${state.version}",
-                isLeader = state.isLeader,
+                isLeader = state.isLeader && !state.isCompleted,
                 showBackButton = showBackButton,
                 onAddItinerary = viewModel::startAddingStop,
                 onBack = onBack
@@ -208,7 +208,7 @@ fun ItineraryDayDetailScreen(
             ItineraryTopBar(
                 title = selectedDay?.label ?: "Day detail",
                 subtitle = selectedDay?.dateLabel ?: state.groupName,
-                isLeader = state.isLeader,
+                isLeader = state.isLeader && !state.isCompleted,
                 showBackButton = showBackButton,
                 onAddItinerary = viewModel::startAddingStop,
                 onBack = onBack
@@ -218,7 +218,7 @@ fun ItineraryDayDetailScreen(
         ItineraryDayDetailContent(
             day = selectedDay,
             isLoading = state.isLoadingActivities,
-            isEditMode = state.isEditMode,
+            isEditMode = state.isEditMode && !state.isCompleted,
             paddingValues = paddingValues,
             onAddStop = viewModel::startAddingStop,
             onReorderEvents = viewModel::reorderDayEvents,
@@ -318,7 +318,7 @@ private fun ItineraryPopupContent(
                         color = OnSurface
                     )
                 }
-                if (state.isLeader) {
+                if (state.isLeader && !state.isCompleted) {
                     ItineraryAddButton(onAddItinerary = onAddItinerary)
                 }
                 IconButton(onClick = onDismiss) {

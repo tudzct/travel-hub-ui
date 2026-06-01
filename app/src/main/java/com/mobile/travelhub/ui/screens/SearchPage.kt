@@ -994,6 +994,7 @@ private fun FeedPostResponse.toHomePostUiModel(
         id = id,
         ownerId = owner.id,
         username = owner.username.takeIf { it.isNotBlank() } ?: "unknown",
+        ownerAvatarUrl = owner.avatarUrl?.takeIf { it.isNotBlank() },
         subtitle = location?.takeIf { it.isNotBlank() } ?: "STUDIO NULL",
         description = description.takeIf { it.isNotBlank() } ?: "",
         imageUrls = imageUrls.filter { it.isNotBlank() },

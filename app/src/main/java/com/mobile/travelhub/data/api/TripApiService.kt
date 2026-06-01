@@ -44,6 +44,11 @@ interface TripApiService {
         @Body request: JoinTripRequest
     ): JoinTripResultResponse
 
+    @GET("api/trips/invite/{code}")
+    suspend fun getTripByInviteCode(
+        @Path("code") code: String
+    ): com.mobile.travelhub.data.model.TripInfoResponse
+
     @GET("api/trips/{tripId}/invite-code")
     suspend fun getInviteCode(
         @Path("tripId") tripId: Long

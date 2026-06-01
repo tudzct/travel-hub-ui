@@ -89,14 +89,14 @@ fun ItineraryOverviewContent(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Icon(
-                                imageVector = Icons.Default.Edit,
+                                imageVector = if (state.isCompleted) Icons.Default.Lock else Icons.Default.Edit,
                                 contentDescription = null,
-                                tint = OnSurfaceVariant.copy(alpha = 0.55f),
+                                tint = OnSurfaceVariant.copy(alpha = if (state.isCompleted) 0.4f else 0.55f),
                                 modifier = Modifier.size(14.dp)
                             )
                             Text(
-                                text = "Long press a place to edit",
-                                color = OnSurfaceVariant.copy(alpha = 0.72f),
+                                text = if (state.isCompleted) "Chuyến đi đã hoàn thành (Chế độ chỉ xem)" else "Long press a place to edit",
+                                color = OnSurfaceVariant.copy(alpha = if (state.isCompleted) 0.5f else 0.72f),
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Medium
                             )

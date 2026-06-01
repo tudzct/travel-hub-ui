@@ -101,5 +101,7 @@ data class CommentOwnerResponse(
 
 data class PostOwner(
     val id: Long,
-    val username: String
+    val username: String,
+    @SerializedName(value = "avatarUrl", alternate = ["avatar_url", "userAvatar", "user_avatar"])
+    val avatarUrl: String? = null
 )

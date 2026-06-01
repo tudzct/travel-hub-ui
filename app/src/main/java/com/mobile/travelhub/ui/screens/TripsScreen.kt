@@ -39,6 +39,12 @@ import coil.compose.AsyncImage
 import com.mobile.travelhub.R
 import com.mobile.travelhub.ui.theme.*
 import com.mobile.travelhub.viewmodels.TripsViewModel
+import java.time.LocalDate
+import java.time.temporal.ChronoUnit
+import java.time.format.DateTimeFormatter
+import java.util.Locale
+
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -266,10 +272,8 @@ fun TripsScreen(
                     onJoinTrip = { joinCode, onDone ->
                         viewModel.joinTrip(joinCode) { success, message ->
                             Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
-                            if (success) {
-                                onDone()
-                                showAddTripSheet = false
-                            }
+                            onDone()
+                            showAddTripSheet = false
                         }
                     },
                     isJoining = state.isJoining,
@@ -303,6 +307,12 @@ fun ActiveJourneyCardV2(
     trip: com.mobile.travelhub.viewmodels.UpcomingTripUiModel?,
     onNavigateToGroupDetail: (Long, String) -> Unit
 ) {
+    val dayLabel = remember {
+        val today = LocalDate.now()
+        val formatter = DateTimeFormatter.ofPattern("dd/MM", Locale.getDefault())
+        today.format(formatter)
+    }
+
     Card(
         shape = RoundedCornerShape(32.dp),
         colors = CardDefaults.cardColors(containerColor = SurfaceContainerLowest),
@@ -358,7 +368,7 @@ fun ActiveJourneyCardV2(
                         .background(SunsetOrange)
                         .padding(horizontal = 8.dp, vertical = 4.dp)
                 ) {
-                    Text("Ngày 3 / 8", fontWeight = FontWeight.ExtraBold, fontSize = 10.sp, color = Color.White)
+                    Text(dayLabel, fontWeight = FontWeight.ExtraBold, fontSize = 10.sp, color = Color.White)
                 }
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
@@ -372,6 +382,11 @@ fun ActiveJourneyCardV2(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Default.LocationOn, null, tint = Color.White.copy(alpha = 0.8f), modifier = Modifier.size(14.dp))
                     Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        trip?.location ?: "",
+                        color = Color.White.copy(alpha = 0.8f),
+                        fontSize = 13.sp
+                    )
                 }
             }
         }

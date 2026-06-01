@@ -29,7 +29,7 @@ data class CreateGroupUiState(
     val isLoadingLocations: Boolean = false,
     val startDate: String = "",
     val endDate: String = "",
-    val budgetMin: String = "",
+    val budgetMin: String = "0",
     val budgetMax: String = "",
     val isSaving: Boolean = false,
     val errorMessage: String? = null
@@ -120,13 +120,20 @@ class CreateGroupViewModel @Inject constructor(
         }
 
         val place = _uiState.value.places.firstOrNull { it.id == placeId } ?: return
-        _uiState.update {
-            it.copy(
-                selectedPlaceId = placeId,
-                destination = formatDestination(place),
-                destinationCoverImageUrl = place.mainImage,
-                errorMessage = null
-            )
+        // Fetch place detail to get full images list and use first image as cover
+        viewModelScope.launch {
+            _uiState.update {
+                it.copy(selectedPlaceId = placeId, destination = formatDestination(place), destinationCoverImageUrl = null, errorMessage = null)
+            }
+            runCatching { placeRepository.getPlaceDetail(placeId) }
+                .onSuccess { detail ->
+                    val firstImage = detail.images.firstOrNull()?.imageUrl ?: place.mainImage
+                    _uiState.update { it.copy(destinationCoverImageUrl = firstImage) }
+                }
+                .onFailure {
+                    // fallback to mainImage
+                    _uiState.update { it.copy(destinationCoverImageUrl = place.mainImage) }
+                }
         }
     }
 
@@ -142,10 +149,6 @@ class CreateGroupViewModel @Inject constructor(
 
     fun updateEndDate(value: String) {
         _uiState.update { it.copy(endDate = value, errorMessage = null) }
-    }
-
-    fun updateBudgetMin(value: String) {
-        _uiState.update { it.copy(budgetMin = value, errorMessage = null) }
     }
 
     fun updateBudgetMax(value: String) {
@@ -278,8 +281,9 @@ class CreateGroupViewModel @Inject constructor(
                 startDate = startDate.toString(),
                 endDate = endDate.toString(),
                 coverImageUrl = state.destinationCoverImageUrl,
-                budgetMin = state.budgetMin.trim().toDoubleOrNull(),
-                budgetMax = state.budgetMax.trim().toDoubleOrNull()
+                placeId = state.selectedPlaceId,
+                budgetMin = state.budgetMin.replace(".", "").trim().toDoubleOrNull() ?: 0.0,
+                budgetMax = state.budgetMax.replace(".", "").trim().toDoubleOrNull()
             )
 
             tripRepository.createTrip(request)
