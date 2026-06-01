@@ -472,6 +472,7 @@ fun NavGraph(
                         launchSingleTop = true
                     }
                 },
+                onPlaceClick = ::navigateToPlaceDetail,
                 onTravelerClick = { userId, currentUser ->
                     val route = if (currentUser) {
                         Screen.Profile.route
