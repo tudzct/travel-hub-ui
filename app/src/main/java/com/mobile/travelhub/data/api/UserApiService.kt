@@ -5,6 +5,7 @@ import com.mobile.travelhub.data.model.PaginationResponse
 import com.mobile.travelhub.data.model.PreferenceResponse
 import com.mobile.travelhub.data.model.PreferenceUpdateRequest
 import com.mobile.travelhub.data.model.ProfileUpdateRequest
+import com.mobile.travelhub.data.model.ChangePasswordRequest
 import com.mobile.travelhub.data.model.GetPostsResponse
 import com.mobile.travelhub.data.model.UserProfileResponse
 import com.mobile.travelhub.data.model.UserSummaryResponse
@@ -82,6 +83,11 @@ interface UserApiService {
     suspend fun updateMyProfile(
         @Body request: ProfileUpdateRequest
     ): UserProfileResponse
+
+    @PUT("api/users/me/password")
+    suspend fun changePassword(
+        @Body request: ChangePasswordRequest
+    )
 
     @PUT("api/users/{id}")
     suspend fun updateProfile(

@@ -155,17 +155,18 @@ class HomeViewModel @Inject constructor(
 
     fun onSaveClicked(postId: Long) {
         val currentPost = _uiState.value.posts.firstOrNull { it.id == postId } ?: return
-        if (currentPost.isSaveLoading || currentPost.isSaved) return
+        if (currentPost.isSaveLoading) return
+        val targetSaved = !currentPost.isSaved
 
         updatePost(postId) {
             it.copy(
-                isSaved = true,
+                isSaved = targetSaved,
                 isSaveLoading = true
             )
         }
 
         viewModelScope.launch {
-            savePostUseCase(postId)
+            savePostUseCase(postId, currentlySaved = currentPost.isSaved)
                 .onSuccess { response ->
                     updatePost(postId) {
                         it.copy(

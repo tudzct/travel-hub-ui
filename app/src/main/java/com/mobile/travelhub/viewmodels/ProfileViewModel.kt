@@ -8,6 +8,7 @@ import com.mobile.travelhub.data.PostRepository
 import com.mobile.travelhub.data.api.UserApiService
 import com.mobile.travelhub.data.httpStatusCode
 import com.mobile.travelhub.data.model.FeedPostResponse
+import com.mobile.travelhub.data.model.ChangePasswordRequest
 import com.mobile.travelhub.data.model.PostCommentResponse
 import com.mobile.travelhub.data.model.ProfileUpdateRequest
 import com.mobile.travelhub.data.model.UserProfileResponse
@@ -53,6 +54,9 @@ class ProfileViewModel @Inject constructor(
 
     private val _updateStatus = MutableStateFlow<UiState<Boolean>>(UiState.Idle)
     val updateStatus: StateFlow<UiState<Boolean>> = _updateStatus.asStateFlow()
+
+    private val _changePasswordState = MutableStateFlow<UiState<Boolean>>(UiState.Idle)
+    val changePasswordState: StateFlow<UiState<Boolean>> = _changePasswordState.asStateFlow()
 
     private val _profilePostsState = MutableStateFlow(ProfilePostsUiState(isLoading = true))
     val profilePostsState: StateFlow<ProfilePostsUiState> = _profilePostsState.asStateFlow()
@@ -192,23 +196,30 @@ class ProfileViewModel @Inject constructor(
 
     fun onSaveClicked(postId: Long) {
         val currentPost = _profilePostsState.value.posts.firstOrNull { it.id == postId } ?: return
-        if (currentPost.isSaveLoading || currentPost.isSaved) return
+        if (currentPost.isSaveLoading) return
+        val targetSaved = !currentPost.isSaved
 
         updatePost(postId) {
             it.copy(
-                isSaved = true,
+                isSaved = targetSaved,
                 isSaveLoading = true
             )
         }
 
         viewModelScope.launch {
-            postRepository.savePost(postId)
+            postRepository.toggleSavedPost(postId, currentlySaved = currentPost.isSaved)
                 .onSuccess { response ->
-                    updatePost(postId) {
-                        it.copy(
-                            isSaved = response.saved,
-                            isSaveLoading = false
-                        )
+                    if (!response.saved && _profilePostsState.value.selectedTab == ProfilePostsTab.SAVED) {
+                        _profilePostsState.update { state ->
+                            state.copy(posts = state.posts.filterNot { it.id == postId })
+                        }
+                    } else {
+                        updatePost(postId) {
+                            it.copy(
+                                isSaved = response.saved,
+                                isSaveLoading = false
+                            )
+                        }
                     }
                 }
                 .onFailure { throwable ->
@@ -452,6 +463,52 @@ class ProfileViewModel @Inject constructor(
             Log.e("API_ERROR", errorMsg, e)
             _updateStatus.value = UiState.Error(errorMsg)
         }
+    }
+
+    fun changePassword(
+        currentPassword: String,
+        newPassword: String,
+        confirmPassword: String
+    ) {
+        val validationError = validateChangePassword(currentPassword, newPassword, confirmPassword)
+        if (validationError != null) {
+            _changePasswordState.value = UiState.Error(validationError)
+            return
+        }
+        viewModelScope.launch {
+            _changePasswordState.value = UiState.Loading
+            try {
+                withContext(Dispatchers.IO) {
+                    userApiService.changePassword(
+                        ChangePasswordRequest(
+                            currentPassword = currentPassword,
+                            newPassword = newPassword
+                        )
+                    )
+                }
+                _changePasswordState.value = UiState.Success(true)
+            } catch (e: Exception) {
+                val errorMsg = e.localizedMessage ?: "Không thể đổi mật khẩu"
+                Log.e("API_ERROR", "Lỗi đổi mật khẩu: $errorMsg", e)
+                _changePasswordState.value = UiState.Error(errorMsg)
+            }
+        }
+    }
+
+    fun clearChangePasswordState() {
+        _changePasswordState.value = UiState.Idle
+    }
+
+    private fun validateChangePassword(
+        currentPassword: String,
+        newPassword: String,
+        confirmPassword: String
+    ): String? {
+        if (currentPassword.isBlank()) return "Vui lòng nhập mật khẩu hiện tại"
+        if (newPassword.length < 8) return "Mật khẩu mới phải có ít nhất 8 ký tự"
+        if (newPassword != confirmPassword) return "Mật khẩu mới không khớp"
+        if (currentPassword == newPassword) return "Mật khẩu mới phải khác mật khẩu hiện tại"
+        return null
     }
 
     fun toggleFollow(

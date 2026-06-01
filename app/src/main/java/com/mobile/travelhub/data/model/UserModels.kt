@@ -65,6 +65,11 @@ data class ProfileUpdateRequest(
     val followingCount: Int = 0
 )
 
+data class ChangePasswordRequest(
+    val currentPassword: String,
+    val newPassword: String
+)
+
 data class PageResponse<T>(
     val content: List<T> = emptyList(),
     val totalPages: Int = 0,

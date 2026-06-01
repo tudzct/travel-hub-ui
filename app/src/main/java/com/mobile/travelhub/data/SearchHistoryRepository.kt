@@ -73,7 +73,7 @@ class SearchHistoryRepository @Inject constructor(
         }
 
         val jsonArray = JSONArray()
-        searches.forEach { jsonArray.put(it) }
+        searches.take(MAX_RECENT_SEARCHES).forEach { jsonArray.put(it) }
         prefs.edit()
             .putString(recentSearchesKey, jsonArray.toString())
             .apply()
@@ -88,6 +88,6 @@ class SearchHistoryRepository @Inject constructor(
     companion object {
         private const val PREFS_NAME = "travel_hub_search"
         private const val KEY_RECENT_SEARCHES_PREFIX = "recent_searches_user_"
-        private const val MAX_RECENT_SEARCHES = 10
+        private const val MAX_RECENT_SEARCHES = 5
     }
 }

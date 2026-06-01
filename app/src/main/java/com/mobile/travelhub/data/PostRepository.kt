@@ -82,6 +82,18 @@ class PostRepository @Inject constructor(
         }
     }
 
+    suspend fun searchPosts(description: String, page: Int = 0, pageSize: Int = 10): Result<List<FeedPostResponse>> {
+        return withContext(Dispatchers.IO) {
+            runCatching {
+                postApiService.searchPosts(
+                    description = description,
+                    page = page,
+                    pageSize = pageSize
+                ).data.map(::mergeLocalPostState)
+            }
+        }
+    }
+
     suspend fun getPost(postId: Long): Result<FeedPostResponse> {
         return withContext(Dispatchers.IO) {
             runCatching {
@@ -184,6 +196,30 @@ class PostRepository @Inject constructor(
         }
     }
 
+    suspend fun unsavePost(postId: Long): Result<SavePostResponse> {
+        return withContext(Dispatchers.IO) {
+            runCatching {
+                val response = postApiService.unsavePost(postId = postId)
+                updateSavedPost(postId = postId, saved = response.saved)
+                response
+            }.recoverCatching { throwable ->
+                if (throwable is HttpException) {
+                    val errorBody = throwable.response()?.errorBody()?.string()
+                    throw IOException("Failed to unsave post. Server returned ${throwable.code()}: $errorBody", throwable)
+                }
+                throw throwable
+            }
+        }
+    }
+
+    suspend fun toggleSavedPost(postId: Long, currentlySaved: Boolean): Result<SavePostResponse> {
+        return if (currentlySaved) {
+            unsavePost(postId)
+        } else {
+            savePost(postId)
+        }
+    }
+
     suspend fun addComment(postId: Long, content: String): Result<PostCommentResponse> {
         return withContext(Dispatchers.IO) {
             runCatching {
@@ -265,8 +301,8 @@ class PostRepository @Inject constructor(
     private fun mergeLocalPostState(post: FeedPostResponse): FeedPostResponse {
         val localLiked = getLikedPostIds().contains(post.id.toString())
         val localSaved = getSavedPostIds().contains(post.id.toString())
-        val mergedLiked = (post.likedByCurrentUser == true) || localLiked
-        val mergedSaved = (post.savedByCurrentUser == true) || localSaved
+        val mergedLiked = post.likedByCurrentUser ?: localLiked
+        val mergedSaved = post.savedByCurrentUser ?: localSaved
         return post.copy(
             likedByCurrentUser = mergedLiked,
             savedByCurrentUser = mergedSaved

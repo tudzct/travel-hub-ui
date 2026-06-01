@@ -807,12 +807,12 @@ fun FeedPostCard(
                 ) {
                     IconButton(
                         onClick = onSaveClick,
-                        enabled = actionsEnabled && !post.isSaveLoading && !post.isSaved,
+                        enabled = actionsEnabled && !post.isSaveLoading,
                         modifier = Modifier.size(28.dp)
                     ) {
                         Icon(
                             imageVector = if (post.isSaved) Icons.Filled.Bookmark else Icons.Outlined.BookmarkBorder,
-                            contentDescription = "Save",
+                            contentDescription = if (post.isSaved) "Unsave" else "Save",
                             modifier = Modifier.size(26.dp),
                             tint = if (post.isSaved) PrimaryBlue else VerdantOnSurface
                         )
