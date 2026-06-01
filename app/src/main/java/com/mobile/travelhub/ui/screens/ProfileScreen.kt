@@ -15,12 +15,14 @@ import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.History
+import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.outlined.PhotoCamera
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -48,6 +50,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -56,11 +60,14 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -108,6 +115,7 @@ fun ProfileScreen(
     }
     val profilePostsState by viewModel.profilePostsState.collectAsState()
     val unauthorized by viewModel.unauthorized.collectAsState()
+    val changePasswordState by viewModel.changePasswordState.collectAsState()
 
     LaunchedEffect(isViewingOwnProfile, viewingUserId) {
         if (isViewingOwnProfile) {
@@ -205,7 +213,10 @@ fun ProfileScreen(
         onCommentDismissed = viewModel::onCommentDismissed,
         onCommentInputChanged = viewModel::onCommentInputChanged,
         onCommentSubmit = viewModel::submitComment,
-        onAvatarSelected = onAvatarSelected
+        onAvatarSelected = onAvatarSelected,
+        changePasswordState = changePasswordState,
+        onChangePassword = viewModel::changePassword,
+        onClearChangePasswordState = viewModel::clearChangePasswordState
     )
 }
 
@@ -237,7 +248,10 @@ private fun ProfileScreenContent(
     onCommentDismissed: () -> Unit,
     onCommentInputChanged: (String) -> Unit,
     onCommentSubmit: () -> Unit,
-    onAvatarSelected: (Uri) -> Unit
+    onAvatarSelected: (Uri) -> Unit,
+    changePasswordState: UiState<Boolean>,
+    onChangePassword: (String, String, String) -> Unit,
+    onClearChangePasswordState: () -> Unit
 ) {
     val profileTitle = (profileState as? UiState.Success)
         ?.data
@@ -253,7 +267,14 @@ private fun ProfileScreenContent(
         uri?.let(onAvatarSelected)
     }
     var showNotifications by remember { mutableStateOf(false) }
+    var showChangePasswordDialog by remember { mutableStateOf(false) }
     var hideDrawerContentForNavigation by remember { mutableStateOf(false) }
+
+    LaunchedEffect(changePasswordState) {
+        if (changePasswordState is UiState.Success) {
+            showChangePasswordDialog = false
+        }
+    }
 
     ModalNavigationDrawer(
         drawerState = drawerState,
@@ -288,6 +309,22 @@ private fun ProfileScreenContent(
                                 modifier = Modifier.padding(horizontal = 12.dp)
                             )
                         }
+                        NavigationDrawerItem(
+                            label = { Text("Đổi mật khẩu") },
+                            selected = false,
+                            onClick = {
+                                onClearChangePasswordState()
+                                showChangePasswordDialog = true
+                                coroutineScope.launch { drawerState.close() }
+                            },
+                            icon = {
+                                Icon(
+                                    imageVector = Icons.Outlined.Lock,
+                                    contentDescription = null
+                                )
+                            },
+                            modifier = Modifier.padding(horizontal = 12.dp)
+                        )
                         NavigationDrawerItem(
                             label = { Text("Logout") },
                             selected = false,
@@ -729,12 +766,141 @@ private fun ProfileScreenContent(
                             onCommentSubmit = onCommentSubmit
                         )
                     }
+                    if (showChangePasswordDialog) {
+                        ChangePasswordDialog(
+                            state = changePasswordState,
+                            onDismiss = {
+                                showChangePasswordDialog = false
+                                onClearChangePasswordState()
+                            },
+                            onSubmit = onChangePassword
+                        )
+                    }
                 }
             }
         }
 
 @Composable
-private fun ProfilePostsTabRow(
+private fun ChangePasswordDialog(
+    state: UiState<Boolean>,
+    onDismiss: () -> Unit,
+    onSubmit: (String, String, String) -> Unit
+) {
+    var currentPassword by remember { mutableStateOf("") }
+    var newPassword by remember { mutableStateOf("") }
+    var confirmPassword by remember { mutableStateOf("") }
+    val isLoading = state is UiState.Loading
+    val errorMessage = (state as? UiState.Error)?.message
+    val canSubmit = currentPassword.isNotBlank() &&
+        newPassword.isNotBlank() &&
+        confirmPassword.isNotBlank() &&
+        !isLoading
+
+    Dialog(
+        onDismissRequest = {
+            if (!isLoading) onDismiss()
+        },
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp),
+            shape = RoundedCornerShape(28.dp),
+            color = SurfaceContainerLowest
+        ) {
+            Column(
+                modifier = Modifier.padding(20.dp),
+                verticalArrangement = Arrangement.spacedBy(18.dp)
+            ) {
+                Text(
+                    text = "Đổi mật khẩu",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = OnSurface
+                )
+                PasswordDialogField(
+                    value = currentPassword,
+                    onValueChange = { currentPassword = it },
+                    label = "Mật khẩu hiện tại"
+                )
+                PasswordDialogField(
+                    value = newPassword,
+                    onValueChange = { newPassword = it },
+                    label = "Mật khẩu mới"
+                )
+                PasswordDialogField(
+                    value = confirmPassword,
+                    onValueChange = { confirmPassword = it },
+                    label = "Nhập lại mật khẩu mới"
+                )
+                if (!errorMessage.isNullOrBlank()) {
+                    Text(
+                        text = errorMessage,
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Button(
+                        onClick = onDismiss,
+                        enabled = !isLoading,
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = SurfaceContainerLow,
+                            contentColor = OnSurfaceVariant
+                        )
+                    ) {
+                        Text("Hủy")
+                    }
+                    Button(
+                        onClick = { onSubmit(currentPassword, newPassword, confirmPassword) },
+                        enabled = canSubmit,
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = PrimaryBlue,
+                            contentColor = Color.White
+                        )
+                    ) {
+                        if (isLoading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(18.dp),
+                                strokeWidth = 2.dp,
+                                color = Color.White
+                            )
+                        } else {
+                            Text("Lưu")
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun PasswordDialogField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    label: String
+) {
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
+        label = { Text(label) },
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(18.dp),
+        singleLine = true,
+        visualTransformation = PasswordVisualTransformation(),
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password)
+    )
+}
+
+	@Composable
+	private fun ProfilePostsTabRow(
     selectedTab: ProfilePostsTab,
     onTabSelected: (ProfilePostsTab) -> Unit
 ) {
