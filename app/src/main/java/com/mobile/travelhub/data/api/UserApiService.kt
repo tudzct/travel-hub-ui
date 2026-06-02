@@ -2,8 +2,6 @@ package com.mobile.travelhub.data.api
 
 import com.mobile.travelhub.data.model.PageResponse
 import com.mobile.travelhub.data.model.PaginationResponse
-import com.mobile.travelhub.data.model.PreferenceResponse
-import com.mobile.travelhub.data.model.PreferenceUpdateRequest
 import com.mobile.travelhub.data.model.ProfileUpdateRequest
 import com.mobile.travelhub.data.model.ChangePasswordRequest
 import com.mobile.travelhub.data.model.GetPostsResponse
@@ -111,14 +109,4 @@ interface UserApiService {
         @Path("targetUserId") targetUserId: Long
     )
 
-    @PUT("api/users/{id}/preferences")
-    suspend fun updatePreferences(
-        @Path("id") id: Long,
-        @Body request: PreferenceUpdateRequest
-    ): PreferenceResponse
-
-    @GET("api/users/{id}/preferences")
-    suspend fun getPreferences(
-        @Path("id") id: Long
-    ): PreferenceResponse
 }

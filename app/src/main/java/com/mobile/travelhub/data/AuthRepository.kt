@@ -74,18 +74,6 @@ class AuthRepository @Inject constructor(
 
     fun getAccessToken(): String? = getSavedSession()?.accessToken?.takeIf { it.isNotBlank() }
 
-    fun updateOnboardingStatus(isOnboarded: Boolean) {
-        val currentSession = getSavedSession() ?: return
-        saveSession(
-            AuthResponse(
-                accessToken = currentSession.accessToken,
-                refreshToken = currentSession.refreshToken,
-                userId = currentSession.userId,
-                isOnboarded = isOnboarded
-            )
-        )
-    }
-
     private fun executeAuthCall(callFactory: () -> retrofit2.Call<AuthResponse>): Result<AuthResponse> {
         return runCatching {
             val response = callFactory().execute()
