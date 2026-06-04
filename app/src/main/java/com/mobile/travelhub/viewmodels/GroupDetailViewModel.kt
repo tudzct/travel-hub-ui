@@ -2,12 +2,20 @@ package com.mobile.travelhub.viewmodels
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.mobile.travelhub.data.TripRepository
 import com.mobile.travelhub.data.PlaceRepository
+import com.mobile.travelhub.data.TripRepository
 import com.mobile.travelhub.data.httpStatusCode
-import com.mobile.travelhub.data.model.*
+import com.mobile.travelhub.data.model.ActiveTripResponse
+import com.mobile.travelhub.data.model.PastTripResponse
+import com.mobile.travelhub.data.model.TripDashboardResponse
+import com.mobile.travelhub.data.model.TripDayResponse
+import com.mobile.travelhub.data.model.TripDetailResponse
+import com.mobile.travelhub.data.model.TripJoinRequestResponse
+import com.mobile.travelhub.data.model.TripInviteCodeResponse
+import com.mobile.travelhub.data.model.UpcomingTripResponse
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -75,99 +83,137 @@ class GroupDetailViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(GroupDetailUiState())
     val uiState: StateFlow<GroupDetailUiState> = _uiState.asStateFlow()
 
-    fun loadGroup(tripId: Long, groupName: String) {
+    fun loadGroup(tripId: Long, groupName: String, isSilent: Boolean = false) {
         viewModelScope.launch {
+            val cachedDetail = tripRepository.getCachedTripDetail(tripId)
+            val cachedDays = tripRepository.getCachedTripDays(tripId)
+            val currentState = _uiState.value
+            val hasVisibleContent = currentState.tripId == tripId && currentState.groupName.isNotBlank()
+            val hasCachedContent = cachedDetail != null && cachedDays != null
+
+            if (!isSilent) {
+                if (hasVisibleContent) {
+                    _uiState.update {
+                        it.copy(
+                            isLoading = true,
+                            errorMessage = null,
+                            isKickedOut = false,
+                            tripId = tripId
+                        )
+                    }
+                } else if (hasCachedContent) {
+                    val cachedState = GroupDetailUiState(
+                        isLoading = true,
+                        tripId = tripId
+                    ).mergeTripDetail(cachedDetail!!).copy(
+                        days = cachedDays!!.map { day ->
+                            GroupDayUiModel(
+                                dayIndex = day.dayNumber,
+                                label = "Day ${day.dayNumber}",
+                                dateLabel = day.date,
+                                stopCount = day.activities.size,
+                                firstStopTitles = day.activities.take(3).map { activity -> activity.title }
+                            )
+                        },
+                        totalStops = cachedDays.sumOf { it.activities.size },
+                        isLoading = true,
+                        errorMessage = null,
+                        isKickedOut = false
+                    )
+
+                    _uiState.update { cachedState }
+                } else {
+                    _uiState.update {
+                        GroupDetailUiState(
+                            isLoading = true,
+                            tripId = tripId
+                        )
+                    }
+                }
+            }
+
             _uiState.update {
                 it.copy(
-                    isLoading = true,
                     tripId = tripId,
-                    groupName = groupName,
-                    errorMessage = null
+                    errorMessage = if (isSilent) it.errorMessage else null,
+                    isKickedOut = if (isSilent) it.isKickedOut else false
                 )
             }
 
-            // Lấy thông tin sơ bộ từ dashboard (nếu có) để hiển thị nhanh
-            tripRepository.getDashboard()
-                .onSuccess { dashboard ->
-                    val snapshot = dashboard.findTripById(tripId)
-                    if (snapshot != null) {
-                        val isPastTrip = dashboard.pastTrips.any { it.tripId == tripId } ||
-                                snapshot.statusLabel.contains("hoàn thành", ignoreCase = true) ||
-                                isPastDate(snapshot.endDate)
-                        _uiState.update { state ->
-                            state.copy(
-                                location = snapshot.location,
-                                startDate = snapshot.startDate.orEmpty(),
-                                endDate = snapshot.endDate.orEmpty(),
-                                coverImageUrl = snapshot.coverImageUrl,
-                                placeId = snapshot.placeId,
-                                statusLabel = if (isPastTrip) "Đã hoàn thành" else snapshot.statusLabel,
-                                isCompleted = isPastTrip
-                            )
-                        }
-                    }
-                }
+            val detailDeferred = async { tripRepository.getTripDetail(tripId) }
+            val daysDeferred = if (isSilent) null else async { tripRepository.listTripDays(tripId) }
 
-            // Lấy thông tin chi tiết trip
-            tripRepository.getTripDetail(tripId)
-                .onSuccess { detail ->
-                    _uiState.update { state ->
-                        state.mergeTripDetail(detail)
-                    }
-                    val hasInviteCode = _uiState.value.inviteCode?.isNotBlank() == true
-                    if (!hasInviteCode) {
-                        loadInviteCode(tripId)
+            val detailResult = detailDeferred.await()
+            val daysResult = daysDeferred?.await()
+
+            if (detailResult.isFailure || (daysResult != null && daysResult.isFailure)) {
+                val throwable = detailResult.exceptionOrNull() ?: daysResult?.exceptionOrNull()
+                val isKicked = throwable?.httpStatusCode() == 403 ||
+                        throwable?.httpStatusCode() == 404 ||
+                        throwable?.message?.contains("Forbidden", ignoreCase = true) == true ||
+                        throwable?.message?.contains("not found", ignoreCase = true) == true ||
+                        throwable?.message?.contains("not an active member", ignoreCase = true) == true ||
+                        throwable?.message?.contains("not a member", ignoreCase = true) == true
+
+                _uiState.update { state ->
+                    if (state.groupName.isNotBlank() && !isKicked) {
+                        state.copy(isLoading = false, errorMessage = null)
                     } else {
-                        _uiState.update { state ->
-                            state.copy(isInviteCodeLoading = false)
-                        }
-                    }
-                    if (detail.myRole.equals("LEADER", ignoreCase = true)) {
-                        loadJoinRequests(tripId)
-                    } else {
-                        _uiState.update { state ->
-                            state.copy(
-                                joinRequests = emptyList(),
-                                isJoinRequestsLoading = false
-                            )
-                        }
-                    }
-                }
-                .onFailure { throwable ->
-                    val isKicked = throwable.httpStatusCode() == 403 ||
-                            throwable.message?.contains("Forbidden", ignoreCase = true) == true ||
-                            throwable.message?.contains("not an active member", ignoreCase = true) == true ||
-                            throwable.message?.contains("not a member", ignoreCase = true) == true
-                    
-                    _uiState.update {
-                        it.copy(
+                        state.copy(
                             isLoading = false,
-                            errorMessage = throwable.message ?: "Không tải được chi tiết chuyến đi",
+                            errorMessage = throwable?.message ?: "Không tải được chi tiết chuyến đi",
                             isKickedOut = isKicked
                         )
                     }
                 }
+                return@launch
+            }
 
-            tripRepository.listTripDays(tripId)
-                .onSuccess { tripDays ->
-                    _uiState.update { state ->
-                        state.copy(
-                            isLoading = false,
-                            days = tripDays.map { day ->
-                                GroupDayUiModel(
-                                    dayIndex = day.dayNumber,
-                                    label = "Day ${day.dayNumber}",
-                                    dateLabel = day.date,
-                                    stopCount = day.activities.size,
-                                    firstStopTitles = day.activities.take(3).map { activity -> activity.title }
-                                )
-                            },
-                            totalStops = tripDays.sumOf { it.activities.size }
-                        )
-                    }
+            val detail = detailResult.getOrNull() ?: return@launch
+
+            _uiState.update { state ->
+                val merged = state.mergeTripDetail(detail)
+                if (daysResult != null) {
+                    val tripDays = daysResult.getOrNull() ?: emptyList()
+                    merged.copy(
+                        days = tripDays.map { day ->
+                            GroupDayUiModel(
+                                dayIndex = day.dayNumber,
+                                label = "Day ${day.dayNumber}",
+                                dateLabel = day.date,
+                                stopCount = day.activities.size,
+                                firstStopTitles = day.activities.take(3).map { activity -> activity.title }
+                            )
+                        },
+                        totalStops = tripDays.sumOf { it.activities.size },
+                        isLoading = false,
+                        errorMessage = null
+                    )
+                } else {
+                    merged.copy(
+                        isLoading = false,
+                        errorMessage = null
+                    )
                 }
+            }
 
-            _uiState.update { it.copy(isLoading = false) }
+            val hasInviteCode = _uiState.value.inviteCode?.isNotBlank() == true
+            if (!hasInviteCode) {
+                loadInviteCode(tripId)
+            } else {
+                _uiState.update { state -> state.copy(isInviteCodeLoading = false) }
+            }
+
+            if (detail.myRole.equals("LEADER", ignoreCase = true)) {
+                loadJoinRequests(tripId, isSilent)
+            } else {
+                _uiState.update { state ->
+                    state.copy(
+                        joinRequests = emptyList(),
+                        isJoinRequestsLoading = false
+                    )
+                }
+            }
         }
     }
 
@@ -195,9 +241,11 @@ class GroupDetailViewModel @Inject constructor(
         }
     }
 
-    private fun loadJoinRequests(tripId: Long) {
+    private fun loadJoinRequests(tripId: Long, isSilent: Boolean = false) {
         viewModelScope.launch {
-            _uiState.update { it.copy(isJoinRequestsLoading = true) }
+            if (!isSilent) {
+                _uiState.update { it.copy(isJoinRequestsLoading = true) }
+            }
             tripRepository.getJoinRequests(tripId)
                 .onSuccess { requests ->
                     _uiState.update {
@@ -233,7 +281,6 @@ class GroupDetailViewModel @Inject constructor(
             tripRepository.approveJoinRequest(tripId, userId)
                 .onSuccess {
                     loadJoinRequests(tripId)
-                    // Reload members list
                     tripRepository.getTripDetail(tripId).onSuccess { detail ->
                         _uiState.update { it.mergeTripDetail(detail) }
                     }
@@ -286,7 +333,7 @@ class GroupDetailViewModel @Inject constructor(
     fun leaveGroup(onDone: (Boolean, String) -> Unit) {
         val tripId = uiState.value.tripId
         if (tripId == -1L) return
-        
+
         viewModelScope.launch {
             tripRepository.leaveTrip(tripId)
                 .onSuccess {
@@ -313,7 +360,7 @@ class GroupDetailViewModel @Inject constructor(
     fun removeMember(userId: Long, onDone: (Boolean, String) -> Unit) {
         val tripId = uiState.value.tripId
         if (tripId == -1L) return
-        
+
         viewModelScope.launch {
             tripRepository.removeTripMember(tripId, userId)
                 .onSuccess {
@@ -417,11 +464,12 @@ class GroupDetailViewModel @Inject constructor(
     }
 
     private fun GroupDetailUiState.mergeTripDetail(detail: TripDetailResponse): GroupDetailUiState {
-         val completed = this.isCompleted ||
-                 detail.tripInfo.status.equals("COMPLETED", ignoreCase = true) ||
-                 detail.tripInfo.status?.contains("hoàn thành", ignoreCase = true) == true ||
-                 isPastDate(detail.tripInfo.endDate)
-         return copy(
+        val completed = this.isCompleted ||
+                detail.tripInfo.status.equals("COMPLETED", ignoreCase = true) ||
+                detail.tripInfo.status?.contains("hoàn thành", ignoreCase = true) == true ||
+                isPastDate(detail.tripInfo.endDate)
+
+        return copy(
             groupName = detail.tripInfo.name,
             location = detail.tripInfo.location,
             startDate = detail.tripInfo.startDate.orEmpty(),
@@ -445,17 +493,17 @@ class GroupDetailViewModel @Inject constructor(
     }
 
     private fun isPastDate(dateText: String?): Boolean {
-         if (dateText.isNullOrBlank()) return false
-         val normalized = dateText.substringBefore("T")
-         val date = runCatching { LocalDate.parse(normalized) }
-             .recoverCatching {
-                 LocalDate.parse(
-                     normalized,
-                     DateTimeFormatter.ofPattern("dd/MM/yyyy", Locale.getDefault())
-                 )
-             }
-             .getOrNull() ?: return false
-         return date.isBefore(LocalDate.now())
+        if (dateText.isNullOrBlank()) return false
+        val normalized = dateText.substringBefore("T")
+        val date = runCatching { LocalDate.parse(normalized) }
+            .recoverCatching {
+                LocalDate.parse(
+                    normalized,
+                    DateTimeFormatter.ofPattern("dd/MM/yyyy", Locale.getDefault())
+                )
+            }
+            .getOrNull() ?: return false
+        return date.isBefore(LocalDate.now())
     }
 
     private data class DashboardTripSnapshot(

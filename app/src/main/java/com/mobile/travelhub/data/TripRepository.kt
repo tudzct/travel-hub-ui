@@ -29,6 +29,19 @@ class TripRepository @Inject constructor(
     private val tripMemberApiService: TripMemberApiService,
     private val tripExpenseApiService: TripExpenseApiService
 ) {
+    private val detailCache = java.util.concurrent.ConcurrentHashMap<Long, TripDetailResponse>()
+    private val daysCache = java.util.concurrent.ConcurrentHashMap<Long, List<TripDayResponse>>()
+    private val expenseCache = java.util.concurrent.ConcurrentHashMap<Long, TripExpenseResponse>()
+
+    fun getCachedTripDetail(tripId: Long): TripDetailResponse? = detailCache[tripId]
+    fun getCachedTripDays(tripId: Long): List<TripDayResponse>? = daysCache[tripId]
+    fun getCachedTripExpenses(tripId: Long): TripExpenseResponse? = expenseCache[tripId]
+    fun clearCache(tripId: Long) {
+        detailCache.remove(tripId)
+        daysCache.remove(tripId)
+        expenseCache.remove(tripId)
+    }
+
     suspend fun getDashboard(): Result<TripDashboardResponse> {
         return runCatching { tripApiService.getDashboard() }
     }
@@ -38,7 +51,11 @@ class TripRepository @Inject constructor(
     }
 
     suspend fun getTripDetail(tripId: Long): Result<TripDetailResponse> {
-        return runCatching { tripApiService.getTripDetail(tripId) }
+        return runCatching {
+            val response = tripApiService.getTripDetail(tripId)
+            detailCache[tripId] = response
+            response
+        }
     }
 
     suspend fun updateTrip(tripId: Long, request: UpdateTripRequest): Result<Unit> {
@@ -46,7 +63,10 @@ class TripRepository @Inject constructor(
     }
 
     suspend fun deleteTrip(tripId: Long): Result<Unit> {
-        return runCatching { tripApiService.deleteTrip(tripId) }
+        return runCatching {
+            tripApiService.deleteTrip(tripId)
+            clearCache(tripId)
+        }
     }
 
     suspend fun joinTrip(request: JoinTripRequest): Result<JoinTripResultResponse> {
@@ -82,7 +102,10 @@ class TripRepository @Inject constructor(
     }
 
     suspend fun leaveTrip(tripId: Long): Result<Unit> {
-        return runCatching { tripMemberApiService.leaveTrip(tripId) }
+        return runCatching {
+            tripMemberApiService.leaveTrip(tripId)
+            clearCache(tripId)
+        }
     }
 
     suspend fun updateTripMemberRole(
@@ -94,7 +117,11 @@ class TripRepository @Inject constructor(
     }
 
     suspend fun listTripExpenses(tripId: Long): Result<TripExpenseResponse> {
-        return runCatching { tripExpenseApiService.listExpenses(tripId) }
+        return runCatching {
+            val response = tripExpenseApiService.listExpenses(tripId)
+            expenseCache[tripId] = response
+            response
+        }
     }
 
     suspend fun addTripExpense(
@@ -117,6 +144,10 @@ class TripRepository @Inject constructor(
     }
 
     suspend fun listTripDays(tripId: Long): Result<List<TripDayResponse>> {
-        return runCatching { itineraryApiService.listTripDays(tripId) }
+        return runCatching {
+            val response = itineraryApiService.listTripDays(tripId)
+            daysCache[tripId] = response
+            response
+        }
     }
 }

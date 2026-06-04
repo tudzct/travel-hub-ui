@@ -17,7 +17,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import com.mobile.travelhub.ui.components.modifiers.shimmerEffect
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CalendarMonth
@@ -101,7 +103,7 @@ fun UpcomingTripsScreen(
             item {
                 Column(modifier = Modifier.padding(bottom = 4.dp)) {
                     Text(
-                        text = "Có ${upcomingTrips.size} chuyến đi sắp tới",
+                        text = if (state.isLoading) "Đang tìm chuyến đi..." else "Có ${upcomingTrips.size} chuyến đi sắp tới",
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.ExtraBold,
                         color = OnSurface
@@ -110,8 +112,8 @@ fun UpcomingTripsScreen(
             }
 
             if (state.isLoading) {
-                item {
-                    CircularProgressIndicator(color = PrimaryBlue)
+                items(3) {
+                    UpcomingTripCardSkeleton()
                 }
             }
 
@@ -131,6 +133,77 @@ fun UpcomingTripsScreen(
                     UpcomingTripFullCard(
                         trip = trip,
                         onClick = { onNavigateToGroupDetail(trip.tripId, trip.name) }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun UpcomingTripCardSkeleton() {
+    Card(
+        shape = RoundedCornerShape(28.dp),
+        colors = CardDefaults.cardColors(containerColor = SurfaceContainerLowest),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(220.dp)
+                    .shimmerEffect()
+            )
+            Column(
+                modifier = Modifier.padding(18.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(16.dp)
+                            .clip(CircleShape)
+                            .shimmerEffect()
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Box(
+                        modifier = Modifier
+                            .width(120.dp)
+                            .height(13.dp)
+                            .clip(RoundedCornerShape(4.dp))
+                            .shimmerEffect()
+                    )
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(16.dp)
+                            .clip(CircleShape)
+                            .shimmerEffect()
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Box(
+                        modifier = Modifier
+                            .width(120.dp)
+                            .height(13.dp)
+                            .clip(RoundedCornerShape(4.dp))
+                            .shimmerEffect()
+                    )
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(16.dp)
+                            .clip(CircleShape)
+                            .shimmerEffect()
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Box(
+                        modifier = Modifier
+                            .width(80.dp)
+                            .height(13.dp)
+                            .clip(RoundedCornerShape(4.dp))
+                            .shimmerEffect()
                     )
                 }
             }
