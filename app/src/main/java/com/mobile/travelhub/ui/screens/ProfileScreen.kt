@@ -11,6 +11,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.AddCircle
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material.icons.outlined.FavoriteBorder
@@ -542,6 +543,28 @@ private fun ProfileScreenContent(
                                         }
                                     }
 
+                                    // Location section
+                                    if (!profile.location.isNullOrBlank()) {
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Row(
+                                            modifier = Modifier.padding(horizontal = 16.dp),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.LocationOn,
+                                                contentDescription = "Location",
+                                                tint = Color.Gray,
+                                                modifier = Modifier.size(16.dp)
+                                            )
+                                            Spacer(modifier = Modifier.width(4.dp))
+                                            Text(
+                                                text = profile.location,
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                color = Color.Gray
+                                            )
+                                        }
+                                    }
+
                                     Spacer(modifier = Modifier.height(16.dp))
 
                                     // Action Buttons
@@ -554,7 +577,7 @@ private fun ProfileScreenContent(
                                         if (isViewingOwnProfile) {
                                             Button(
                                                 onClick = onNavigateToEditProfile,
-                                                modifier = Modifier.weight(1f).height(36.dp),
+                                                modifier = Modifier.fillMaxWidth().height(36.dp),
                                                 shape = RoundedCornerShape(8.dp),
                                                 colors = ButtonDefaults.buttonColors(
                                                     containerColor = Color(0xFFEAEAF0),
@@ -563,18 +586,6 @@ private fun ProfileScreenContent(
                                                 contentPadding = PaddingValues(0.dp)
                                             ) {
                                                 Text("Edit Profile", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold)
-                                            }
-                                            Button(
-                                                onClick = { /* Share Profile Action */ },
-                                                modifier = Modifier.weight(1f).height(36.dp),
-                                                shape = RoundedCornerShape(8.dp),
-                                                colors = ButtonDefaults.buttonColors(
-                                                    containerColor = Color(0xFFEAEAF0),
-                                                    contentColor = Color.Black
-                                                ),
-                                                contentPadding = PaddingValues(0.dp)
-                                            ) {
-                                                Text("Share Profile", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold)
                                             }
                                         } else {
                                             Button(
@@ -588,31 +599,11 @@ private fun ProfileScreenContent(
                                                     containerColor = if (profile.isFollowing) Color(0xFFEAEAF0) else PrimaryBlue,
                                                     contentColor = if (profile.isFollowing) Color.Black else Color.White
                                                 ),
-                                                modifier = Modifier.weight(1f).height(36.dp),
+                                                modifier = Modifier.fillMaxWidth().height(36.dp),
                                                 contentPadding = PaddingValues(0.dp)
                                             ) {
                                                 Text(
                                                     text = if (profile.isFollowing) "Following" else "Follow",
-                                                    style = MaterialTheme.typography.labelMedium,
-                                                    fontWeight = FontWeight.SemiBold
-                                                )
-                                            }
-
-                                            Button(
-                                                onClick = {
-                                                    viewingUserId?.let(onReloadOtherUserProfile)
-                                                    onNavigateToChat?.invoke()
-                                                },
-                                                shape = RoundedCornerShape(8.dp),
-                                                colors = ButtonDefaults.buttonColors(
-                                                    containerColor = Color(0xFFEAEAF0),
-                                                    contentColor = Color.Black
-                                                ),
-                                                modifier = Modifier.weight(1f).height(36.dp),
-                                                contentPadding = PaddingValues(0.dp)
-                                            ) {
-                                                Text(
-                                                    text = "Message",
                                                     style = MaterialTheme.typography.labelMedium,
                                                     fontWeight = FontWeight.SemiBold
                                                 )
