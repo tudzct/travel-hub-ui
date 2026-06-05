@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mobile.travelhub.data.PlaceRepository
 import com.mobile.travelhub.data.httpStatusCode
+import com.mobile.travelhub.data.userMessage
 import com.mobile.travelhub.data.model.ProvinceResponse
 import com.mobile.travelhub.data.model.TravelPlaceDetailResponse
 import com.mobile.travelhub.data.model.TravelPlaceListItemResponse
@@ -95,7 +96,7 @@ class PlaceDetailViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(
                         isLoading = false,
-                        errorMessage = throwable.message ?: "Unable to load place detail",
+                        errorMessage = throwable.userMessage("Không thể tải chi tiết địa điểm"),
                         relatedPlacesLoading = true,
                         reviewPreviewLoading = true
                     )
@@ -147,7 +148,7 @@ class PlaceDetailViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(
                         isLoading = false,
-                        errorMessage = throwable.message ?: "Unable to load place"
+                        errorMessage = throwable.userMessage("Không thể tải địa điểm")
                     )
                 }
             }
@@ -188,7 +189,7 @@ class PlaceDetailViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(
                         relatedPlacesLoading = false,
-                        relatedPlacesErrorMessage = throwable.message ?: "Unable to load related places"
+                        relatedPlacesErrorMessage = throwable.userMessage("Không thể tải địa điểm liên quan")
                     )
                 }
             }
@@ -216,7 +217,7 @@ class PlaceDetailViewModel @Inject constructor(
                     _uiState.update {
                         it.copy(
                             reviewPreviewLoading = false,
-                            reviewErrorMessage = throwable.message ?: "Unable to load reviews"
+                            reviewErrorMessage = throwable.userMessage("Không thể tải đánh giá")
                         )
                     }
                 }
@@ -326,6 +327,6 @@ class PlaceDetailViewModel @Inject constructor(
             }
         }
 
-        throw lastError ?: IllegalStateException("Request failed")
+        throw lastError ?: IllegalStateException("Yêu cầu không thành công")
     }
 }

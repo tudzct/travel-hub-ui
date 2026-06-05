@@ -2,6 +2,7 @@ package com.mobile.travelhub.viewmodels
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.mobile.travelhub.data.userMessage
 import com.mobile.travelhub.data.model.FeedPostResponse
 import com.mobile.travelhub.data.model.PostCommentResponse
 import com.mobile.travelhub.usecase.AddCommentUseCase
@@ -103,7 +104,7 @@ class HomeViewModel @Inject constructor(
                         it.copy(
                             isLoading = false,
                             posts = emptyList(),
-                            errorMessage = throwable.message ?: "Failed to load posts"
+                            errorMessage = throwable.userMessage("Không thể tải bài viết")
                         )
                     }
                 }
@@ -157,7 +158,7 @@ class HomeViewModel @Inject constructor(
                         )
                     }
                     _uiState.update {
-                        it.copy(errorMessage = throwable.message ?: "Failed to update like")
+                        it.copy(errorMessage = throwable.userMessage("Không thể cập nhật lượt thích"))
                     }
                 }
         }
@@ -193,7 +194,7 @@ class HomeViewModel @Inject constructor(
                         )
                     }
                     _uiState.update {
-                        it.copy(errorMessage = throwable.message ?: "Failed to save post")
+                        it.copy(errorMessage = throwable.userMessage("Không thể lưu bài viết"))
                     }
                 }
         }
@@ -237,7 +238,7 @@ class HomeViewModel @Inject constructor(
         val content = currentState.commentInput.trim()
 
         if (content.isBlank()) {
-            _uiState.update { it.copy(commentErrorMessage = "Comment cannot be empty") }
+            _uiState.update { it.copy(commentErrorMessage = "Vui lòng nhập bình luận") }
             return
         }
 
@@ -273,7 +274,7 @@ class HomeViewModel @Inject constructor(
                     _uiState.update {
                         it.copy(
                             isCommentSubmitting = false,
-                            commentErrorMessage = throwable.message ?: "Failed to add comment"
+                            commentErrorMessage = throwable.userMessage("Không thể thêm bình luận")
                         )
                     }
                 }
@@ -298,7 +299,7 @@ class HomeViewModel @Inject constructor(
                     _uiState.update {
                         it.copy(
                             isCommentsLoading = false,
-                            commentsErrorMessage = throwable.message ?: "Failed to load comments"
+                            commentsErrorMessage = throwable.userMessage("Không thể tải bình luận")
                         )
                     }
                 }

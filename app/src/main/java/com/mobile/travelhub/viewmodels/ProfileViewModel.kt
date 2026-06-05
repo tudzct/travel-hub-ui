@@ -7,6 +7,7 @@ import com.mobile.travelhub.data.AuthRepository
 import com.mobile.travelhub.data.PostRepository
 import com.mobile.travelhub.data.api.UserApiService
 import com.mobile.travelhub.data.httpStatusCode
+import com.mobile.travelhub.data.userMessage
 import com.mobile.travelhub.data.model.FeedPostResponse
 import com.mobile.travelhub.data.model.ChangePasswordRequest
 import com.mobile.travelhub.data.model.PostCommentResponse
@@ -85,7 +86,7 @@ class ProfileViewModel @Inject constructor(
                 if (e.httpStatusCode() == 401) {
                     _unauthorized.value = true
                 }
-                val errorMsg = "Lỗi gọi API Profile (/api/users/me): ${e.localizedMessage}"
+                val errorMsg = e.userMessage("Không thể tải hồ sơ")
                 Log.e("API_ERROR", errorMsg, e)
                 _profileState.value = UiState.Error(errorMsg)
             }
@@ -142,7 +143,7 @@ class ProfileViewModel @Inject constructor(
                     _profilePostsState.value = ProfilePostsUiState(
                         isLoading = false,
                         selectedTab = tab,
-                        errorMessage = throwable.message ?: "Không thể tải bài viết"
+                        errorMessage = throwable.userMessage("Không thể tải bài viết")
                     )
                 }
         }
@@ -188,7 +189,7 @@ class ProfileViewModel @Inject constructor(
                         )
                     }
                     _profilePostsState.update {
-                        it.copy(errorMessage = throwable.message ?: "Không thể cập nhật lượt thích")
+                        it.copy(errorMessage = throwable.userMessage("Không thể cập nhật lượt thích"))
                     }
                 }
         }
@@ -230,7 +231,7 @@ class ProfileViewModel @Inject constructor(
                         )
                     }
                     _profilePostsState.update {
-                        it.copy(errorMessage = throwable.message ?: "Không thể lưu bài viết")
+                        it.copy(errorMessage = throwable.userMessage("Không thể lưu bài viết"))
                     }
                 }
         }
@@ -274,7 +275,7 @@ class ProfileViewModel @Inject constructor(
         val content = currentState.commentInput.trim()
 
         if (content.isBlank()) {
-            _profilePostsState.update { it.copy(commentErrorMessage = "Comment cannot be empty") }
+            _profilePostsState.update { it.copy(commentErrorMessage = "Vui lòng nhập bình luận") }
             return
         }
 
@@ -310,7 +311,7 @@ class ProfileViewModel @Inject constructor(
                     _profilePostsState.update {
                         it.copy(
                             isCommentSubmitting = false,
-                            commentErrorMessage = throwable.message ?: "Failed to add comment"
+                            commentErrorMessage = throwable.userMessage("Không thể thêm bình luận")
                         )
                     }
                 }
@@ -335,7 +336,7 @@ class ProfileViewModel @Inject constructor(
                     _profilePostsState.update {
                         it.copy(
                             isCommentsLoading = false,
-                            commentsErrorMessage = throwable.message ?: "Failed to load comments"
+                            commentsErrorMessage = throwable.userMessage("Không thể tải bình luận")
                         )
                     }
                 }
@@ -360,7 +361,7 @@ class ProfileViewModel @Inject constructor(
                 _otherUserProfileState.value = UiState.Success(response)
                 Log.d("API_SUCCESS", "Tải Other Profile thành công: $response")
             } catch (e: Exception) {
-                val errorMsg = "Lỗi gọi API Other Profile (/api/users/$userId): ${e.localizedMessage}"
+                val errorMsg = e.userMessage("Không thể tải hồ sơ người dùng")
                 Log.e("API_ERROR", errorMsg, e)
                 _otherUserProfileState.value = UiState.Error(errorMsg)
             }
@@ -396,7 +397,7 @@ class ProfileViewModel @Inject constructor(
                 val response = userApiService.getFollowers(userId)
                 _followersState.value = UiState.Success(response.content)
             } catch (e: Exception) {
-                val errorMsg = "Lỗi gọi API Followers: ${e.localizedMessage}"
+                val errorMsg = e.userMessage("Không thể tải danh sách người theo dõi")
                 Log.e("API_ERROR", errorMsg, e)
                 _followersState.value = UiState.Error(errorMsg)
             }
@@ -413,7 +414,7 @@ class ProfileViewModel @Inject constructor(
                 val response = userApiService.getFollowing(userId)
                 _followingState.value = UiState.Success(response.content)
             } catch (e: Exception) {
-                val errorMsg = "Lỗi gọi API Following: ${e.localizedMessage}"
+                val errorMsg = e.userMessage("Không thể tải danh sách đang theo dõi")
                 Log.e("API_ERROR", errorMsg, e)
                 _followingState.value = UiState.Error(errorMsg)
             }
@@ -459,7 +460,7 @@ class ProfileViewModel @Inject constructor(
             _updateStatus.value = UiState.Success(true)
             Log.d("API_SUCCESS", "Cập nhật Profile thành công!")
         } catch (e: Exception) {
-            val errorMsg = "Lỗi cập nhật Profile (PUT): ${e.localizedMessage}"
+            val errorMsg = e.userMessage("Không thể cập nhật hồ sơ")
             Log.e("API_ERROR", errorMsg, e)
             _updateStatus.value = UiState.Error(errorMsg)
         }
@@ -488,7 +489,7 @@ class ProfileViewModel @Inject constructor(
                 }
                 _changePasswordState.value = UiState.Success(true)
             } catch (e: Exception) {
-                val errorMsg = e.localizedMessage ?: "Không thể đổi mật khẩu"
+                val errorMsg = e.userMessage("Không thể đổi mật khẩu")
                 Log.e("API_ERROR", "Lỗi đổi mật khẩu: $errorMsg", e)
                 _changePasswordState.value = UiState.Error(errorMsg)
             }
@@ -533,7 +534,7 @@ class ProfileViewModel @Inject constructor(
                 loadFollowers(connectionsOwnerUserId)
                 loadFollowing(connectionsOwnerUserId)
             } catch (e: Exception) {
-                Log.e("API_ERROR", "Lỗi follow/unfollow: ${e.localizedMessage}", e)
+                Log.e("API_ERROR", "Lỗi theo dõi/bỏ theo dõi: ${e.userMessage("Không thể cập nhật trạng thái theo dõi")}", e)
             }
         }
     }
@@ -558,7 +559,7 @@ class ProfileViewModel @Inject constructor(
             } catch (e: Exception) {
                 _otherUserProfileState.value = previousOtherProfileState
                 _profileState.value = previousOwnProfileState
-                Log.e("API_ERROR", "Lỗi follow/unfollow other profile: ${e.localizedMessage}", e)
+                Log.e("API_ERROR", "Lỗi theo dõi/bỏ theo dõi hồ sơ khác: ${e.userMessage("Không thể cập nhật trạng thái theo dõi")}", e)
             }
         }
     }

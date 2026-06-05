@@ -210,7 +210,7 @@ fun PlaceListScreenContent(
                     item {
                         FeedEmptyState(
                             title = "Không thể tải bài viết",
-                            message = homeUiState.errorMessage ?: "Failed to load posts",
+                            message = homeUiState.errorMessage ?: "Không thể tải bài viết",
                             fullScreen = false,
                             onRetry = onRetryPosts
                         )
@@ -561,7 +561,7 @@ private fun FeedEmptyState(
                 )
                 if (onRetry != null) {
                     TextButton(onClick = onRetry) {
-                        Text("Retry")
+                        Text("Thử lại")
                     }
                 }
             }

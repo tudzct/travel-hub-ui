@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mobile.travelhub.data.PlaceRepository
 import com.mobile.travelhub.data.httpStatusCode
+import com.mobile.travelhub.data.userMessage
 import com.mobile.travelhub.data.model.TravelPlaceReviewResponse
 import com.mobile.travelhub.data.model.UpsertTravelPlaceReviewRequest
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -86,7 +87,7 @@ class ReviewViewModel @Inject constructor(
                             401 -> "Bạn cần đăng nhập để review"
                             403 -> "Bạn không có quyền thực hiện thao tác này"
                             404 -> "Không tìm thấy địa điểm"
-                            else -> throwable.message ?: "Không thể gửi review"
+                            else -> throwable.userMessage("Không thể gửi đánh giá")
                         }
                     )
                 }

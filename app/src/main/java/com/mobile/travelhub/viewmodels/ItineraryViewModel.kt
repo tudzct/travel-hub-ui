@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mobile.travelhub.data.ItineraryRepository
 import com.mobile.travelhub.data.TripRepository
+import com.mobile.travelhub.data.userMessage
 import com.mobile.travelhub.data.model.ItineraryDay
 import com.mobile.travelhub.data.model.ItineraryEvent
 import com.mobile.travelhub.data.model.ItineraryEventColors
@@ -53,7 +54,7 @@ class ItineraryViewModel @Inject constructor(
                     _uiState.update {
                         it.copy(
                             isLoadingActivities = false,
-                            errorMessage = throwable.message ?: "Unable to load itinerary"
+                            errorMessage = throwable.userMessage("Không thể tải lịch trình")
                         )
                     }
                 }
@@ -370,7 +371,7 @@ class ItineraryViewModel @Inject constructor(
                     _uiState.update {
                         it.copy(
                             isLoadingActivities = false,
-                            errorMessage = throwable.message ?: "Unable to update itinerary"
+                            errorMessage = throwable.userMessage("Không thể cập nhật lịch trình")
                         )
                     }
                 }

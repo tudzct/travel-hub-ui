@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.mobile.travelhub.data.LocationRepository
 import com.mobile.travelhub.data.PlaceRepository
 import com.mobile.travelhub.data.TripRepository
+import com.mobile.travelhub.data.userMessage
 import com.mobile.travelhub.data.model.CreateTripRequest
 import com.mobile.travelhub.data.model.AdminProvinceResponse
 import com.mobile.travelhub.data.model.TravelPlaceListItemResponse
@@ -171,7 +172,7 @@ class CreateGroupViewModel @Inject constructor(
                     _uiState.update {
                         it.copy(
                             isLoadingLocations = false,
-                            errorMessage = throwable.message ?: "Unable to load provinces"
+                            errorMessage = throwable.userMessage("Không thể tải danh sách tỉnh/thành phố")
                         )
                     }
                 }
@@ -194,7 +195,7 @@ class CreateGroupViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(
                         isLoadingLocations = false,
-                        errorMessage = throwable.message ?: "Unable to load places"
+                        errorMessage = throwable.userMessage("Không thể tải danh sách địa điểm")
                     )
                 }
             }
@@ -295,7 +296,7 @@ class CreateGroupViewModel @Inject constructor(
                     _uiState.update {
                         it.copy(
                             isSaving = false,
-                            errorMessage = throwable.message ?: "Không tạo được chuyến đi"
+                            errorMessage = throwable.userMessage("Không tạo được chuyến đi")
                         )
                     }
                 }

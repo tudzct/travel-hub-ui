@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mobile.travelhub.data.AuthRepository
 import com.mobile.travelhub.data.TripRepository
+import com.mobile.travelhub.data.userMessage
 import com.mobile.travelhub.data.model.CreateTripExpenseRequest
 import com.mobile.travelhub.data.model.UpdateTripExpenseRequest
 import com.mobile.travelhub.data.model.TripExpenseContributionResponse
@@ -148,7 +149,7 @@ class CostEstimateViewModel @Inject constructor(
                     _uiState.update {
                         it.copy(
                             isLoading = false,
-                            errorMessage = throwable.message ?: "Không tải được dữ liệu chi phí"
+                            errorMessage = throwable.userMessage("Không tải được dữ liệu chi phí")
                         )
                     }
                 }
@@ -196,7 +197,7 @@ class CostEstimateViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(
                         isAddingExpense = false,
-                        errorMessage = throwable.message ?: "Không thêm được chi phí"
+                        errorMessage = throwable.userMessage("Không thêm được chi phí")
                     )
                 }
             }
@@ -244,7 +245,7 @@ class CostEstimateViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(
                         isAddingExpense = false,
-                        errorMessage = throwable.message ?: "Không cập nhật được chi phí"
+                        errorMessage = throwable.userMessage("Không cập nhật được chi phí")
                     )
                 }
             }
@@ -275,7 +276,7 @@ class CostEstimateViewModel @Inject constructor(
                     _uiState.update {
                         it.copy(
                             isLoading = false,
-                            errorMessage = throwable.message ?: "Không xóa được chi phí"
+                            errorMessage = throwable.userMessage("Không xóa được chi phí")
                         )
                     }
                 }

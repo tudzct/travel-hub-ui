@@ -57,6 +57,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.mobile.travelhub.R
+import com.mobile.travelhub.data.userMessage
 import com.mobile.travelhub.ui.components.EditProfileField
 import com.mobile.travelhub.viewmodels.ProfileViewModel
 import com.mobile.travelhub.viewmodels.UiState
@@ -127,7 +128,7 @@ fun EditProfileScreen(
                     }
                 }
             } catch (e: Exception) {
-                Toast.makeText(context, "Lỗi upload ảnh: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
+                Toast.makeText(context, e.userMessage("Không thể tải ảnh lên"), Toast.LENGTH_LONG).show()
             } finally {
                 isSaving = false
             }
@@ -279,7 +280,7 @@ fun EditProfileScreen(
                             previewBitmap = previewBitmap
                         )
                     } catch (e: Exception) {
-                        Toast.makeText(context, "Không thể đọc ảnh đã chọn: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
+                        Toast.makeText(context, e.userMessage("Không thể đọc ảnh đã chọn"), Toast.LENGTH_LONG).show()
                     }
                 }
             }

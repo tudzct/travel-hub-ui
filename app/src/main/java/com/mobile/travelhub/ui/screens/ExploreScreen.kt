@@ -189,19 +189,19 @@ private fun FeaturedLocationsSection(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = "Unable to load featured locations.",
+                    text = "Không thể tải địa điểm nổi bật.",
                     color = OnSurfaceVariant,
                     fontSize = 13.sp
                 )
                 TextButton(onClick = onRetry) {
-                    Text("Retry", color = PrimaryBlue)
+                    Text("Thử lại", color = PrimaryBlue)
                 }
             }
         }
 
         locations.isEmpty() -> {
             Text(
-                text = "No featured locations yet.",
+                text = "Chưa có địa điểm nổi bật.",
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
                 color = OnSurfaceVariant,
                 fontSize = 13.sp
@@ -457,19 +457,19 @@ private fun TopTravelersPreview(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = "Unable to load top travelers.",
+                    text = "Không thể tải danh sách người dùng nổi bật.",
                     color = OnSurfaceVariant,
                     fontSize = 13.sp
                 )
                 TextButton(onClick = onRetry) {
-                    Text("Retry", color = PrimaryBlue)
+                    Text("Thử lại", color = PrimaryBlue)
                 }
             }
         }
 
         state.items.isEmpty() -> {
             Text(
-                text = "No ranked travelers in this period.",
+                text = "Chưa có người dùng nổi bật trong giai đoạn này.",
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp),
                 color = OnSurfaceVariant,
                 fontSize = 13.sp

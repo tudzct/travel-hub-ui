@@ -32,11 +32,11 @@ class AuthRepository @Inject constructor(
 
     fun refreshSession(): Result<AuthSession> {
         val currentSession = getSavedSession()
-            ?: return Result.failure(IllegalStateException("No active session. Please login again."))
+            ?: return Result.failure(IllegalStateException("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại."))
 
         val refreshToken = currentSession.refreshToken.trim()
         if (refreshToken.isEmpty()) {
-            return Result.failure(IllegalStateException("Refresh token is missing. Please login again."))
+            return Result.failure(IllegalStateException("Phiên đăng nhập không hợp lệ. Vui lòng đăng nhập lại."))
         }
 
         return executeAuthCall {
@@ -79,11 +79,11 @@ class AuthRepository @Inject constructor(
             val response = callFactory().execute()
             if (!response.isSuccessful) {
                 val errorBody = response.errorBody()?.string()
-                throw IOException("Request failed (${response.code()}): $errorBody")
+                throw IOException(apiErrorMessageFromText(errorBody) ?: "Yêu cầu không thành công (${response.code()}).")
             }
 
             response.body()
-                ?: throw IOException("Empty response body")
+                ?: throw IOException("Máy chủ không trả về dữ liệu.")
         }
     }
 

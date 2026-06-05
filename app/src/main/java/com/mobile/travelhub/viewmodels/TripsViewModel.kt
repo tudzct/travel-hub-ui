@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mobile.travelhub.data.TripRepository
 import com.mobile.travelhub.data.httpStatusCode
+import com.mobile.travelhub.data.userMessage
 import com.mobile.travelhub.data.model.PastTripResponse
 import com.mobile.travelhub.data.model.TripDashboardResponse
 import com.mobile.travelhub.data.model.UpcomingTripResponse
@@ -79,7 +80,7 @@ class TripsViewModel @Inject constructor(
                     _uiState.update {
                         it.copy(
                             isLoading = false,
-                            errorMessage = if (isSilent && hasData) it.errorMessage else (throwable.message ?: "Không tải được danh sách chuyến đi")
+                            errorMessage = if (isSilent && hasData) it.errorMessage else throwable.userMessage("Không tải được danh sách chuyến đi")
                         )
                     }
                 }
@@ -181,7 +182,7 @@ class TripsViewModel @Inject constructor(
     }
 
     private fun joinTripErrorMessage(throwable: Throwable): String {
-        val raw = throwable.message ?: ""
+        val raw = throwable.userMessage("Không tham gia được chuyến đi")
         if (raw.contains("kết thúc", ignoreCase = true) || raw.contains("đã hoàn thành", ignoreCase = true) || raw.contains("ended", ignoreCase = true)) {
             return "Chuyến đi đã kết thúc"
         }
@@ -190,7 +191,7 @@ class TripsViewModel @Inject constructor(
             400 -> "Mã chuyến đi không hợp lệ"
             404 -> "Không tìm thấy chuyến đi"
             409 -> "Bạn đã gửi yêu cầu hoặc đã là thành viên của nhóm này"
-            else -> throwable.message ?: "Không tham gia được chuyến đi"
+            else -> throwable.userMessage("Không tham gia được chuyến đi")
         }
     }
 }

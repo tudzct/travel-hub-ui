@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mobile.travelhub.data.PlaceRepository
 import com.mobile.travelhub.data.httpStatusCode
+import com.mobile.travelhub.data.userMessage
 import com.mobile.travelhub.data.model.TravelPlaceReviewResponse
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -55,7 +56,7 @@ class ReviewListViewModel @Inject constructor(
                     _uiState.update {
                         it.copy(
                             isLoading = false,
-                            errorMessage = throwable.message ?: "Không thể tải review"
+                            errorMessage = throwable.userMessage("Không thể tải đánh giá")
                         )
                     }
                 }
@@ -84,6 +85,6 @@ class ReviewListViewModel @Inject constructor(
             }
         }
 
-        throw lastError ?: IllegalStateException("Request failed")
+        throw lastError ?: IllegalStateException("Yêu cầu không thành công")
     }
 }

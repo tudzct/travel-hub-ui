@@ -10,6 +10,7 @@ import com.mobile.travelhub.data.model.AuthSession
 import com.mobile.travelhub.data.model.LoginRequest
 import com.mobile.travelhub.data.model.RegisterRequest
 import com.mobile.travelhub.data.model.toSession
+import com.mobile.travelhub.data.userMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -74,7 +75,7 @@ class AuthViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(
                         isLoading = false,
-                        errorMessage = throwable.message ?: "Login failed"
+                        errorMessage = throwable.userMessage("Đăng nhập không thành công")
                     )
                 }
             }
@@ -118,7 +119,7 @@ class AuthViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(
                         isLoading = false,
-                        errorMessage = throwable.message ?: "Register failed"
+                        errorMessage = throwable.userMessage("Đăng ký không thành công")
                     )
                 }
             }
@@ -138,11 +139,11 @@ class AuthViewModel @Inject constructor(
 
     private fun validateLogin(email: String, password: String): String? {
         if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-            return "Please enter a valid email"
+            return "Vui lòng nhập email hợp lệ"
         }
 
         if (password.length < 8) {
-            return "Password must be at least 8 characters"
+            return "Mật khẩu phải có ít nhất 8 ký tự"
         }
 
         return null
@@ -150,15 +151,15 @@ class AuthViewModel @Inject constructor(
 
     private fun validateRegister(email: String, username: String, password: String): String? {
         if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-            return "Please enter a valid email"
+            return "Vui lòng nhập email hợp lệ"
         }
 
         if (username.length < 3) {
-            return "Username must be at least 3 characters"
+            return "Tên người dùng phải có ít nhất 3 ký tự"
         }
 
         if (password.length < 8) {
-            return "Password must be at least 8 characters"
+            return "Mật khẩu phải có ít nhất 8 ký tự"
         }
 
         return null
@@ -167,7 +168,7 @@ class AuthViewModel @Inject constructor(
     private suspend fun registerDeviceToken() {
         deviceTokenRepository.registerCurrentDeviceToken()
             .onFailure { throwable ->
-                Log.w(TAG, "Failed to register device token", throwable)
+                Log.w(TAG, "Không thể đăng ký token thiết bị", throwable)
             }
     }
 

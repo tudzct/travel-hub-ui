@@ -3,6 +3,7 @@ package com.mobile.travelhub.viewmodels
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mobile.travelhub.data.PlaceRepository
+import com.mobile.travelhub.data.userMessage
 import com.mobile.travelhub.data.model.TravelPlaceListItemResponse
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -55,7 +56,7 @@ class PlaceListViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(
                         isLoading = false,
-                        errorMessage = throwable.message ?: "Unable to load places"
+                        errorMessage = throwable.userMessage("Không thể tải danh sách địa điểm")
                     )
                 }
             }

@@ -127,7 +127,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
         serviceScope.launch {
             deviceTokenRepository.registerDeviceToken(token)
                 .onFailure { throwable ->
-                    Log.w(TAG, "Failed to register device token", throwable)
+                    Log.w(TAG, "Không thể đăng ký token thiết bị", throwable)
                 }
         }
     }

@@ -77,6 +77,7 @@ import coil.compose.AsyncImage
 
 import com.mobile.travelhub.R
 import com.mobile.travelhub.data.model.UserProfileResponse
+import com.mobile.travelhub.data.userMessage
 import com.mobile.travelhub.ui.components.FeedPostCard
 import com.mobile.travelhub.ui.components.FeedPostCardSkeleton
 import com.mobile.travelhub.ui.components.HomeCommentsBottomSheet
@@ -164,7 +165,7 @@ fun ProfileScreen(
                     avatarUrl = uploadedUrl
                 )
             } catch (e: Exception) {
-                Toast.makeText(context, "Lỗi upload ảnh: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
+                Toast.makeText(context, e.userMessage("Không thể tải ảnh lên"), Toast.LENGTH_LONG).show()
             }
         }
     }

@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mobile.travelhub.data.LocationRepository
 import com.mobile.travelhub.data.PlaceRepository
+import com.mobile.travelhub.data.userMessage
 import com.mobile.travelhub.data.api.UserApiService
 import com.mobile.travelhub.data.model.AdminProvinceResponse
 import com.mobile.travelhub.data.model.TravelPlaceListItemResponse
@@ -103,17 +104,17 @@ class CreatePostViewModel @Inject constructor(
         if (current.isSubmitting) return
 
         if (current.description.isBlank()) {
-            _uiState.update { it.copy(errorMessage = "Description is required") }
+            _uiState.update { it.copy(errorMessage = "Vui lòng nhập mô tả bài viết") }
             return
         }
 
         if (current.selectedImages.isEmpty()) {
-            _uiState.update { it.copy(errorMessage = "Please select at least one image") }
+            _uiState.update { it.copy(errorMessage = "Vui lòng chọn ít nhất một ảnh") }
             return
         }
 
         if (current.selectedPlaceId == null) {
-            _uiState.update { it.copy(errorMessage = "Please select a place") }
+            _uiState.update { it.copy(errorMessage = "Vui lòng chọn địa điểm") }
             return
         }
 
@@ -141,7 +142,7 @@ class CreatePostViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(
                         isSubmitting = false,
-                        errorMessage = throwable.message ?: "Failed to create post"
+                        errorMessage = throwable.userMessage("Không thể tạo bài viết")
                     )
                 }
             }
@@ -165,7 +166,7 @@ class CreatePostViewModel @Inject constructor(
                     _uiState.update {
                         it.copy(
                             isLoadingLocations = false,
-                            errorMessage = throwable.message ?: "Unable to load provinces"
+                            errorMessage = throwable.userMessage("Không thể tải danh sách tỉnh/thành phố")
                         )
                     }
                 }
@@ -190,7 +191,7 @@ class CreatePostViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(
                         isLoadingLocations = false,
-                        errorMessage = throwable.message ?: "Unable to load places"
+                        errorMessage = throwable.userMessage("Không thể tải danh sách địa điểm")
                     )
                 }
             }

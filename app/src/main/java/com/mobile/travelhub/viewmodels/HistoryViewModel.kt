@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mobile.travelhub.data.PlaceRepository
 import com.mobile.travelhub.data.httpStatusCode
+import com.mobile.travelhub.data.userMessage
 import com.mobile.travelhub.data.model.TravelPlaceViewHistoryResponse
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -52,7 +53,7 @@ class HistoryViewModel @Inject constructor(
                             unauthorized = throwable.httpStatusCode() == 401,
                             errorMessage = when (throwable.httpStatusCode()) {
                                 401 -> "Bạn cần đăng nhập để xem lịch sử"
-                                else -> throwable.message ?: "Không thể tải lịch sử xem"
+                                else -> throwable.userMessage("Không thể tải lịch sử xem")
                             }
                         )
                     }
