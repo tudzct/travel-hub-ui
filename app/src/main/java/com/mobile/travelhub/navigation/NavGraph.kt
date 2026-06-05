@@ -159,7 +159,7 @@ sealed class Screen(
                 "place" -> PlaceDetail
                 "history" -> ViewHistory
                 "top-travelers" -> TopTravelers
-                "profile_user" -> Profile
+                "profile_user" -> OtherProfile
                 "edit_profile" -> EditProfile
                 "followers_following" -> FollowersFollowing
                 "create_group" -> CreateGroup
@@ -641,9 +641,14 @@ fun NavGraph(
                 },
                 onNavigateToUserProfile = ::navigateToUserProfile,
                 onBack = {
-                    val poppedToOwnProfile = navController.popBackStack(Screen.Profile.route, false)
-                    if (!poppedToOwnProfile) {
-                        navController.popBackStack()
+                    val navigatedBack = navController.navigateUp()
+                    if (!navigatedBack) {
+                        navController.navigate(Screen.Explore.route) {
+                            popUpTo(navController.graph.findStartDestination().id) {
+                                saveState = true
+                            }
+                            launchSingleTop = true
+                        }
                     }
                 }
             )

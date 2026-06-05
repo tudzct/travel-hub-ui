@@ -51,7 +51,6 @@ fun ExpandableDescription(
             style = textStyle,
             color = textColor,
             maxLines = if (expanded) Int.MAX_VALUE else collapsedMaxLines,
-            overflow = TextOverflow.Ellipsis,
             onTextLayout = { layoutResult ->
                 if (!expanded) {
                     canExpand = layoutResult.hasVisualOverflow
