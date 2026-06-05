@@ -3,8 +3,8 @@ package com.mobile.travelhub.viewmodels
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mobile.travelhub.data.AuthRepository
+import com.mobile.travelhub.data.PostRepository
 import com.mobile.travelhub.data.SearchHistoryRepository
-import com.mobile.travelhub.data.api.PostApiService
 import com.mobile.travelhub.data.api.UserApiService
 import com.mobile.travelhub.data.model.FeedPostResponse
 import com.mobile.travelhub.data.model.PostCommentResponse
@@ -50,7 +50,7 @@ data class SearchUiState(
 class SearchViewModel @Inject constructor(
     private val authRepository: AuthRepository,
     private val searchHistoryRepository: SearchHistoryRepository,
-    private val postApiService: PostApiService,
+    private val postRepository: PostRepository,
     private val userApiService: UserApiService,
     private val likePostUseCase: LikePostUseCase,
     private val unlikePostUseCase: UnlikePostUseCase,
@@ -140,11 +140,11 @@ class SearchViewModel @Inject constructor(
 
             val postsResult = async {
                 runCatching {
-                    postApiService.searchPosts(
+                    postRepository.searchPosts(
                         description = trimmedQuery,
                         page = 0,
                         pageSize = 20
-                    ).data
+                    ).getOrThrow()
                 }
             }
             val usersResult = async {
@@ -327,13 +327,15 @@ class SearchViewModel @Inject constructor(
 
     fun onSaveClicked(postId: Long) {
         val currentPost = _uiState.value.posts.firstOrNull { it.id == postId } ?: return
-        if (postId in _uiState.value.savingPostIds || currentPost.savedByCurrentUser == true) return
+        if (postId in _uiState.value.savingPostIds) return
+        val currentlySaved = currentPost.savedByCurrentUser == true
+        val targetSaved = !currentlySaved
 
         viewModelScope.launch {
             _uiState.update { it.copy(savingPostIds = it.savingPostIds + postId) }
-            updatePost(postId) { post -> post.copy(savedByCurrentUser = true) }
+            updatePost(postId) { post -> post.copy(savedByCurrentUser = targetSaved) }
 
-            savePostUseCase(postId)
+            savePostUseCase(postId, currentlySaved = currentlySaved)
                 .onSuccess { response ->
                     updatePost(postId) { post -> post.copy(savedByCurrentUser = response.saved) }
                 }

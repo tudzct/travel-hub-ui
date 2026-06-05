@@ -36,6 +36,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil.compose.AsyncImage
+import com.mobile.travelhub.ui.components.modifiers.shimmerEffect
 import com.mobile.travelhub.R
 import com.mobile.travelhub.ui.theme.*
 import com.mobile.travelhub.viewmodels.TripsViewModel
@@ -68,6 +69,12 @@ fun TripsScreen(
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose {
             lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
+    LaunchedEffect(Unit) {
+        while (true) {
+            kotlinx.coroutines.delay(15000L)
+            viewModel.refreshDashboard(isSilent = true)
         }
     }
     val listState = rememberLazyListState()
@@ -155,8 +162,14 @@ fun TripsScreen(
                         color = OnSurface
                     )
                     Spacer(modifier = Modifier.height(16.dp))
-                    if (state.isLoading) {
-                        LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                    if (state.isLoading && state.activeTrip == null) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(200.dp)
+                                .clip(RoundedCornerShape(32.dp))
+                                .shimmerEffect()
+                        )
                     } else {
                         ActiveJourneyCardV2(
                             trip = state.activeTrip,
@@ -194,7 +207,44 @@ fun TripsScreen(
 
             item {
                 Column(modifier = Modifier.padding(horizontal = 24.dp)) {
-                    if (state.upcomingTrips.isEmpty()) {
+                    if (state.isLoading && state.upcomingTrips.isEmpty()) {
+                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            repeat(2) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(24.dp))
+                                        .background(SurfaceContainerLowest)
+                                        .padding(12.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(70.dp)
+                                            .clip(RoundedCornerShape(16.dp))
+                                            .shimmerEffect()
+                                    )
+                                    Spacer(modifier = Modifier.width(16.dp))
+                                    Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                        Box(
+                                            modifier = Modifier
+                                                .width(140.dp)
+                                                .height(14.dp)
+                                                .clip(RoundedCornerShape(4.dp))
+                                                .shimmerEffect()
+                                        )
+                                        Box(
+                                            modifier = Modifier
+                                                .width(80.dp)
+                                                .height(10.dp)
+                                                .clip(RoundedCornerShape(4.dp))
+                                                .shimmerEffect()
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    } else if (state.upcomingTrips.isEmpty()) {
                         Text(
                             text = "Bạn chưa có chuyến đi nào sắp tới.",
                             color = OnSurfaceVariant,
@@ -226,7 +276,39 @@ fun TripsScreen(
                         modifier = Modifier.padding(horizontal = 24.dp)
                     )
                     Spacer(modifier = Modifier.height(16.dp))
-                    if (state.pastTrips.isEmpty()) {
+                    if (state.isLoading && state.pastTrips.isEmpty()) {
+                        LazyRow(
+                            contentPadding = PaddingValues(horizontal = 24.dp),
+                            horizontalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
+                            items(3) {
+                                Column(modifier = Modifier.width(130.dp)) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(130.dp)
+                                            .clip(RoundedCornerShape(24.dp))
+                                            .shimmerEffect()
+                                    )
+                                    Spacer(modifier = Modifier.height(12.dp))
+                                    Box(
+                                        modifier = Modifier
+                                            .width(90.dp)
+                                            .height(12.dp)
+                                            .clip(RoundedCornerShape(4.dp))
+                                            .shimmerEffect()
+                                    )
+                                    Spacer(modifier = Modifier.height(6.dp))
+                                    Box(
+                                        modifier = Modifier
+                                            .width(60.dp)
+                                            .height(10.dp)
+                                            .clip(RoundedCornerShape(4.dp))
+                                            .shimmerEffect()
+                                    )
+                                }
+                            }
+                        }
+                    } else if (state.pastTrips.isEmpty()) {
                         Text(
                             text = "Chưa có chuyến đi",
                             color = OnSurfaceVariant,
@@ -284,35 +366,12 @@ fun TripsScreen(
     }
 }
 
-@Composable
-fun StatChip(value: String, label: String, emoji: String, color: Color) {
-    Row(
-        modifier = Modifier
-            .clip(RoundedCornerShape(20.dp))
-            .background(color.copy(alpha = 0.08f))
-            .padding(horizontal = 16.dp, vertical = 14.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(emoji, fontSize = 24.sp)
-        Spacer(modifier = Modifier.width(12.dp))
-        Column {
-            Text(value, fontWeight = FontWeight.ExtraBold, fontSize = 18.sp, color = color)
-            Text(label, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = OnSurfaceVariant)
-        }
-    }
-}
 
 @Composable
 fun ActiveJourneyCardV2(
     trip: com.mobile.travelhub.viewmodels.UpcomingTripUiModel?,
     onNavigateToGroupDetail: (Long, String) -> Unit
 ) {
-    val dayLabel = remember {
-        val today = LocalDate.now()
-        val formatter = DateTimeFormatter.ofPattern("dd/MM", Locale.getDefault())
-        today.format(formatter)
-    }
-
     Card(
         shape = RoundedCornerShape(32.dp),
         colors = CardDefaults.cardColors(containerColor = SurfaceContainerLowest),
@@ -362,15 +421,6 @@ fun ActiveJourneyCardV2(
                     .align(Alignment.BottomStart)
                     .padding(24.dp)
             ) {
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(SunsetOrange)
-                        .padding(horizontal = 8.dp, vertical = 4.dp)
-                ) {
-                    Text(dayLabel, fontWeight = FontWeight.ExtraBold, fontSize = 10.sp, color = Color.White)
-                }
-                Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = trip?.name ?: "Chưa có chuyến đi đang diễn ra",
                     fontWeight = FontWeight.ExtraBold,
@@ -395,6 +445,14 @@ fun ActiveJourneyCardV2(
 
 @Composable
 fun PastMemoryCard(place: String, date: String, imageUrl: String? = null, onClick: () -> Unit = {}) {
+    val cleanDate = remember(date) {
+        val rawDate = date.split(" - ", " – ", " to ").firstOrNull()?.trim() ?: date
+        val normalized = rawDate.substringBefore("T")
+        runCatching {
+            val localDate = LocalDate.parse(normalized)
+            localDate.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))
+        }.getOrDefault(rawDate)
+    }
     Column(
         modifier = Modifier
             .width(130.dp)
@@ -428,7 +486,7 @@ fun PastMemoryCard(place: String, date: String, imageUrl: String? = null, onClic
         }
         Spacer(modifier = Modifier.height(12.dp))
         Text(place, fontWeight = FontWeight.ExtraBold, fontSize = 15.sp, color = OnSurface)
-        Text(date, fontSize = 12.sp, color = OnSurfaceVariant)
+        Text(cleanDate, fontSize = 12.sp, color = OnSurfaceVariant)
     }
 }
 

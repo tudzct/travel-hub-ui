@@ -5,7 +5,7 @@
 
     <style name="Theme.TravelHub.Starting" parent="Theme.SplashScreen">
         <item name="windowSplashScreenBackground">@android:color/white</item>
-        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/travel_hub_splash_art</item>
         <item name="postSplashScreenTheme">@style/Theme.TravelHub</item>
     </style>
 </resources>

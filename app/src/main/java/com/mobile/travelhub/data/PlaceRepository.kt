@@ -1,6 +1,7 @@
 package com.mobile.travelhub.data
 
 import com.mobile.travelhub.data.api.PlaceApiService
+import com.mobile.travelhub.data.api.FeaturedPlaceApiService
 import com.mobile.travelhub.data.model.PaginationResponse
 import com.mobile.travelhub.data.model.TravelPlaceDetailResponse
 import com.mobile.travelhub.data.model.TravelPlaceListItemResponse
@@ -12,7 +13,8 @@ import javax.inject.Singleton
 
 @Singleton
 class PlaceRepository @Inject constructor(
-    private val placeApiService: PlaceApiService
+    private val placeApiService: PlaceApiService,
+    private val featuredPlaceApiService: FeaturedPlaceApiService
 ) {
     suspend fun getPlaces(
         page: Int = 0,
@@ -21,6 +23,10 @@ class PlaceRepository @Inject constructor(
         keyword: String? = null
     ): PaginationResponse<TravelPlaceListItemResponse> {
         return placeApiService.getPlaces(page = page, pageSize = pageSize, provinceId = provinceId, keyword = keyword)
+    }
+
+    suspend fun getFeaturedPlaces(): List<TravelPlaceListItemResponse> {
+        return featuredPlaceApiService.getFeaturedPlaces()
     }
 
     suspend fun getRecommendedPlaces(

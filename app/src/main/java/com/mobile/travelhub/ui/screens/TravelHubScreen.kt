@@ -29,13 +29,11 @@ import com.mobile.travelhub.ui.components.layout.BottomNavItem
 import com.mobile.travelhub.ui.components.layout.RoundedTopNavigationBar
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.mobile.travelhub.viewmodels.AuthViewModel
-import com.mobile.travelhub.viewmodels.OnboardingViewModel
 import kotlinx.coroutines.delay
 
 @Composable
 fun TravelHubScreen(
-    authViewModel: AuthViewModel = hiltViewModel(),
-    onboardingViewModel: OnboardingViewModel = hiltViewModel()
+    authViewModel: AuthViewModel = hiltViewModel()
 ) {
     val navController = rememberNavController()
     val authUiState by authViewModel.uiState.collectAsState()
@@ -88,7 +86,6 @@ fun TravelHubScreen(
 
     val startDestination = when {
         !authUiState.isAuthenticated -> Screen.Login.route
-        !authUiState.isOnboarded -> Screen.OnboardingTripType.route
         else -> Screen.Home.route
     }
     val showBottomBar = Screen.fromRoute(currentRoute)?.showBottomBar == true
@@ -112,9 +109,7 @@ fun TravelHubScreen(
             onLogin = authViewModel::login,
             onRegister = authViewModel::register,
             onClearAuthError = authViewModel::clearError,
-            onLogout = authViewModel::logout,
-            onCompleteOnboarding = authViewModel::completeOnboarding,
-            onboardingViewModel = onboardingViewModel
+            onLogout = authViewModel::logout
         )
     }
 }

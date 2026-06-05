@@ -57,9 +57,12 @@ class TripsViewModel @Inject constructor(
         refreshDashboard()
     }
 
-    fun refreshDashboard() {
+    fun refreshDashboard(isSilent: Boolean = false) {
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+            val hasData = _uiState.value.activeTrip != null || _uiState.value.upcomingTrips.isNotEmpty() || _uiState.value.pastTrips.isNotEmpty()
+            if (!isSilent) {
+                _uiState.update { it.copy(isLoading = !hasData, errorMessage = null) }
+            }
             tripRepository.getDashboard()
                 .onSuccess { dashboard ->
                     _uiState.update {
@@ -76,7 +79,7 @@ class TripsViewModel @Inject constructor(
                     _uiState.update {
                         it.copy(
                             isLoading = false,
-                            errorMessage = throwable.message ?: "Không tải được danh sách chuyến đi"
+                            errorMessage = if (isSilent && hasData) it.errorMessage else (throwable.message ?: "Không tải được danh sách chuyến đi")
                         )
                     }
                 }

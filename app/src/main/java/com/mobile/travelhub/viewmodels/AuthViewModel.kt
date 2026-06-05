@@ -58,14 +58,15 @@ class AuthViewModel @Inject constructor(
             )
 
             result.onSuccess { response ->
-                authRepository.saveSession(response)
+                val onboardedResponse = response.copy(isOnboarded = true)
+                authRepository.saveSession(onboardedResponse)
                 registerDeviceToken()
                 _uiState.update {
                     it.copy(
                         isLoading = false,
                         isAuthenticated = true,
-                        isOnboarded = response.isOnboarded,
-                        session = response.toSession(),
+                        isOnboarded = true,
+                        session = onboardedResponse.toSession(),
                         errorMessage = null
                     )
                 }
@@ -101,14 +102,15 @@ class AuthViewModel @Inject constructor(
             )
 
             result.onSuccess { response ->
-                authRepository.saveSession(response)
+                val onboardedResponse = response.copy(isOnboarded = true)
+                authRepository.saveSession(onboardedResponse)
                 registerDeviceToken()
                 _uiState.update {
                     it.copy(
                         isLoading = false,
                         isAuthenticated = true,
-                        isOnboarded = response.isOnboarded,
-                        session = response.toSession(),
+                        isOnboarded = true,
+                        session = onboardedResponse.toSession(),
                         errorMessage = null
                     )
                 }
@@ -131,16 +133,6 @@ class AuthViewModel @Inject constructor(
         authRepository.clearSession()
         _uiState.update {
             it.copy(isAuthenticated = false, session = null, errorMessage = null)
-        }
-    }
-
-    fun completeOnboarding() {
-        authRepository.updateOnboardingStatus(isOnboarded = true)
-        _uiState.update {
-            it.copy(
-                isOnboarded = true,
-                session = it.session?.copy(isOnboarded = true)
-            )
         }
     }
 

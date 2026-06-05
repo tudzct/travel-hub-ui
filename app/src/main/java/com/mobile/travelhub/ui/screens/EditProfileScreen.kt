@@ -159,7 +159,7 @@ fun EditProfileScreen(
     }
     
         val hasChanges = name != originalName || handle != originalHandle || bio != originalBio ||
-            dob != originalDob || location != originalLocation || gender != originalGender ||
+            location != originalLocation || gender != originalGender ||
             pendingAvatar != null
 
     val handleBack = {
@@ -354,17 +354,12 @@ fun EditProfileScreen(
                 onValueChange = { bio = it }
             )
             EditProfileField(
-                label = "Date of Birth (YYYY-MM-DD)",
-                value = dob,
-                onValueChange = { dob = it }
-            )
-            EditProfileField(
                 label = "Location",
                 value = location,
                 onValueChange = { location = it }
             )
 
-            Spacer(modifier = Modifier.height(40.dp))
+            Spacer(modifier = Modifier.height(20.dp))
             
             Text(
                 text = "PRIVATE INFORMATION",

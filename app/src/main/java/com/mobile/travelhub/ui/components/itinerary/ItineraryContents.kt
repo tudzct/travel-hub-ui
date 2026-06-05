@@ -37,7 +37,7 @@ fun ItineraryOverviewContent(
     state: ItineraryUiState,
     paddingValues: PaddingValues,
     onOpenDayDetail: (Int) -> Unit,
-    onEditEvent: (ItineraryEvent) -> Unit,
+    onEditEvent: (ItineraryEvent) -> Unit
 ) {
     LazyColumn(
         modifier = Modifier
@@ -362,6 +362,7 @@ private fun ItineraryTimelineDay(
                     ItineraryTimelineEventCard(
                         title = event.title.ifBlank { event.placeName.ifBlank { "Địa điểm ${eventIndex + 1}" } },
                         timeRange = "${event.startTime} - ${event.endTime}",
+                        placeName = event.placeName,
                         badge = eventIndex + 1,
                         onClick = onOpenDayDetail,
                         onLongClick = { onEditEvent(event) }
@@ -377,6 +378,7 @@ private fun ItineraryTimelineDay(
 private fun ItineraryTimelineEventCard(
     title: String,
     timeRange: String,
+    placeName: String = "",
     badge: Int?,
     onClick: () -> Unit,
     onLongClick: (() -> Unit)? = null
@@ -449,47 +451,12 @@ private fun ItineraryTimelineEventCard(
                     fontWeight = FontWeight.ExtraBold,
                     fontSize = 14.sp
                 )
-                Surface(
-                    shape = RoundedCornerShape(999.dp),
-                    color = PrimaryBlue.copy(alpha = 0.18f)
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 9.dp),
-                        horizontalArrangement = Arrangement.spacedBy(5.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Schedule,
-                            contentDescription = null,
-                            tint = PrimaryBlue,
-                            modifier = Modifier.size(12.dp)
-                        )
-                        Text(
-                            text = timeRange,
-                            color = PrimaryBlue,
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
-
-                    Row(
-                        modifier = Modifier.padding(horizontal = 9.dp),
-                        horizontalArrangement = Arrangement.spacedBy(5.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Schedule,
-                            contentDescription = null,
-                            tint = PrimaryBlue,
-                            modifier = Modifier.size(12.dp)
-                        )
-                        Text(
-                            text = timeRange,
-                            color = PrimaryBlue,
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
+                    ActivityTimeChip(timeRange = timeRange)
+                    ActivityPlaceChip(placeName = placeName)
                 }
             }
         }

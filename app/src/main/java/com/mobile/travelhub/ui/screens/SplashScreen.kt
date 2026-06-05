@@ -31,7 +31,7 @@ fun SplashScreen() {
         verticalArrangement = Arrangement.Center
     ) {
         Image(
-            painter = painterResource(id = R.drawable.ic_launcher_foreground),
+            painter = painterResource(id = R.drawable.travel_hub_splash_art),
             contentDescription = "Travel Hub",
             modifier = Modifier.size(112.dp)
         )

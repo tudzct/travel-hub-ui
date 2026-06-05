@@ -31,7 +31,6 @@ import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -372,22 +371,6 @@ private fun PlaceHeroSection(
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Default.LocationOn,
-                        contentDescription = null,
-                        tint = Color.White.copy(alpha = 0.86f),
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = detail.province.name,
-                        style = MaterialTheme.typography.titleSmall,
-                        color = Color.White.copy(alpha = 0.86f),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
             }
 
             if (displayUrls.size > 1) {
@@ -470,12 +453,6 @@ private fun PlaceInfoSection(detail: PlaceDetailUiModel) {
                 value = it
             )
         }
-        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f))
-        InfoRow(
-            icon = Icons.Default.Visibility,
-            label = "Lượt xem",
-            value = "${detail.views ?: 0} lượt xem"
-        )
     }
 }
 

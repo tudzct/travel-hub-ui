@@ -74,14 +74,47 @@ class CostEstimateViewModel @Inject constructor(
             return
         }
 
+        val cachedExpenses = tripRepository.getCachedTripExpenses(tripId)
+        val cachedDetail = tripRepository.getCachedTripDetail(tripId)
+
         viewModelScope.launch {
+            val isSameTrip = _uiState.value.tripId == tripId
+            val hasData = isSameTrip || (cachedExpenses != null)
+            
             _uiState.update {
-                it.copy(
-                    isLoading = true,
-                    tripId = tripId,
-                    groupName = groupName,
-                    errorMessage = null
-                )
+                if (hasData) {
+                    val baseState = if (isSameTrip) it else CostEstimateUiState(tripId = tripId, groupName = groupName)
+                    val stateWithExpenses = if (cachedExpenses != null) {
+                        baseState.copy(
+                            totalSpent = cachedExpenses.summary.totalAmount ?: 0.0,
+                            myBalance = cachedExpenses.summary.myBalance ?: 0.0,
+                            contributions = cachedExpenses.contributions.map { it.toUiModel() },
+                            transactions = cachedExpenses.transactions.map { it.toUiModel() }
+                        )
+                    } else baseState
+                    
+                    val finalState = if (cachedDetail != null) {
+                        val isCompleted = cachedDetail.tripInfo.status.equals("COMPLETED", ignoreCase = true) ||
+                                cachedDetail.tripInfo.status?.contains("hoàn thành", ignoreCase = true) == true ||
+                                isPastDate(cachedDetail.tripInfo.endDate)
+                        stateWithExpenses.copy(
+                            budgetMin = cachedDetail.tripInfo.budgetMin,
+                            budgetMax = cachedDetail.tripInfo.budgetMax,
+                            isCompleted = isCompleted
+                        )
+                    } else stateWithExpenses
+
+                    finalState.copy(
+                        isLoading = false,
+                        errorMessage = null
+                    )
+                } else {
+                    CostEstimateUiState(
+                        isLoading = true,
+                        tripId = tripId,
+                        groupName = groupName
+                    )
+                }
             }
 
             tripRepository.getTripDetail(tripId)

@@ -8,7 +8,6 @@ import com.mobile.travelhub.data.model.LoginRequest
 import com.mobile.travelhub.data.model.RefreshTokenRequest
 import com.mobile.travelhub.data.model.RegisterRequest
 import com.mobile.travelhub.data.model.authResponseFromJson
-import com.mobile.travelhub.data.model.isExpired
 import com.mobile.travelhub.data.model.toJson
 import com.mobile.travelhub.data.model.toSession
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -66,11 +65,6 @@ class AuthRepository @Inject constructor(
                 return null
             }
 
-        if (session.isExpired) {
-            clearSession()
-            return null
-        }
-
         return session
     }
 
@@ -79,18 +73,6 @@ class AuthRepository @Inject constructor(
     }
 
     fun getAccessToken(): String? = getSavedSession()?.accessToken?.takeIf { it.isNotBlank() }
-
-    fun updateOnboardingStatus(isOnboarded: Boolean) {
-        val currentSession = getSavedSession() ?: return
-        saveSession(
-            AuthResponse(
-                accessToken = currentSession.accessToken,
-                refreshToken = currentSession.refreshToken,
-                userId = currentSession.userId,
-                isOnboarded = isOnboarded
-            )
-        )
-    }
 
     private fun executeAuthCall(callFactory: () -> retrofit2.Call<AuthResponse>): Result<AuthResponse> {
         return runCatching {

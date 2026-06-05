@@ -64,6 +64,15 @@ class ItineraryRepository @Inject constructor(
 
     suspend fun deleteEvent(groupName: String, eventId: String) {
         val stopId = eventId.toLongOrNull() ?: return
+        deleteEvent(groupName, stopId)
+    }
+
+    suspend fun deleteEvent(groupName: String, event: ItineraryEvent) {
+        val stopId = event.stopId ?: event.eventId.toLongOrNull() ?: return
+        deleteEvent(groupName, stopId)
+    }
+
+    private suspend fun deleteEvent(groupName: String, stopId: Long) {
         val tripId = tripId(groupName)
         itineraryApiService.deleteTripActivity(tripId, stopId)
         cacheTripDays(groupName, itineraryApiService.listTripDays(tripId))

@@ -13,6 +13,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import com.mobile.travelhub.viewmodels.ExpenseTransactionUiModel
+import com.mobile.travelhub.ui.components.modifiers.shimmerEffect
 
 
 import androidx.compose.material.icons.filled.ConfirmationNumber
@@ -116,88 +117,202 @@ fun CostEstimateScreen(
                 }
             }
 
-            if (uiState.isLoading) {
+            if (uiState.isLoading && uiState.transactions.isEmpty()) {
+                // Skeleton Budget Card
                 item {
-                    LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(140.dp)
+                            .clip(RoundedCornerShape(28.dp))
+                            .shimmerEffect()
+                    )
                 }
-            }
 
-            // Budget Summary Card
-            item {
-                BudgetSummaryCard(
-                    totalSpent = uiState.totalSpent,
-                    budgetMax = uiState.budgetMax ?: 0.0
-                )
-            }
+                // Skeleton Contributions Label
+                item {
+                    Box(
+                        modifier = Modifier
+                            .width(100.dp)
+                            .height(16.dp)
+                            .clip(RoundedCornerShape(4.dp))
+                            .shimmerEffect()
+                    )
+                }
 
-            // Individual Contributions
-            item {
-                Text(
-                    text = "Đã chi trả bởi",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 15.sp,
-                    color = OnSurface,
-                    modifier = Modifier.padding(bottom = 4.dp)
-                )
-            }
-
-            item {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    val contributions = uiState.contributions
-                    if (contributions.isEmpty()) {
-                        Text(
-                            text = "Chưa có khoản chi nào cho chuyến đi này.",
-                            color = OnSurfaceVariant,
-                            fontSize = 13.sp
-                        )
-                    } else {
-                        contributions.take(3).forEachIndexed { index, contribution ->
-                            MemberExpenseCircle(
-                                name = contribution.userName,
-                                amount = contribution.amountPaid,
-                                avatarUrl = contribution.avatarUrl,
-                                color = listOf(PrimaryBlue, SunsetOrange, Color(0xFF4CAF50))[index % 3],
-                                onClick = { onNavigateToProfile(contribution.userId) }
-                            )
+                // Skeleton Contributions list
+                item {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        repeat(3) {
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                modifier = Modifier
+                                    .width(90.dp)
+                                    .clip(RoundedCornerShape(20.dp))
+                                    .background(SurfaceContainerLowest)
+                                    .padding(vertical = 12.dp)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(40.dp)
+                                        .clip(CircleShape)
+                                        .shimmerEffect()
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Box(
+                                    modifier = Modifier
+                                        .width(48.dp)
+                                        .height(10.dp)
+                                        .clip(RoundedCornerShape(4.dp))
+                                        .shimmerEffect()
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Box(
+                                    modifier = Modifier
+                                        .width(56.dp)
+                                        .height(12.dp)
+                                        .clip(RoundedCornerShape(4.dp))
+                                        .shimmerEffect()
+                                )
+                            }
                         }
                     }
                 }
-            }
 
-            // Recent Expenses List
-            item {
-                Text(
-                    text = "Giao dịch gần đây",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 15.sp,
-                    color = OnSurface,
-                    modifier = Modifier.padding(top = 8.dp)
-                )
-            }
-
-            val recentExpenses = uiState.transactions
-
-            if (recentExpenses.isEmpty()) {
+                // Skeleton Recent Expenses Label
                 item {
-                    Text(
-                        text = "Chuyến đi này chưa có giao dịch nào.",
-                        color = OnSurfaceVariant,
-                        fontSize = 13.sp
+                    Box(
+                        modifier = Modifier
+                            .width(140.dp)
+                            .height(16.dp)
+                            .clip(RoundedCornerShape(4.dp))
+                            .shimmerEffect()
                     )
                 }
+
+                // Skeleton Transactions list
+                items(3) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(20.dp))
+                            .background(SurfaceContainerLowest)
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(44.dp)
+                                .clip(RoundedCornerShape(12.dp))
+                                .shimmerEffect()
+                        )
+                        Spacer(modifier = Modifier.width(16.dp))
+                        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Box(
+                                modifier = Modifier
+                                    .width(120.dp)
+                                    .height(14.dp)
+                                    .clip(RoundedCornerShape(4.dp))
+                                    .shimmerEffect()
+                            )
+                            Box(
+                                modifier = Modifier
+                                    .width(80.dp)
+                                    .height(10.dp)
+                                    .clip(RoundedCornerShape(4.dp))
+                                    .shimmerEffect()
+                            )
+                        }
+                        Box(
+                            modifier = Modifier
+                                .width(60.dp)
+                                .height(16.dp)
+                                .clip(RoundedCornerShape(4.dp))
+                                .shimmerEffect()
+                        )
+                    }
+                }
             } else {
-                items(recentExpenses) { expense ->
-                    ExpenseRow(
-                        expense = expense,
-                        onClick = {
-                            if (!uiState.isCompleted) {
-                                editingExpense = expense
+                // Budget Summary Card
+                item {
+                    BudgetSummaryCard(
+                        totalSpent = uiState.totalSpent,
+                        budgetMax = uiState.budgetMax ?: 0.0
+                    )
+                }
+
+                // Individual Contributions
+                item {
+                    Text(
+                        text = "Đã chi trả bởi",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 15.sp,
+                        color = OnSurface,
+                        modifier = Modifier.padding(bottom = 4.dp)
+                    )
+                }
+
+                item {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        val contributions = uiState.contributions
+                        if (contributions.isEmpty()) {
+                            Text(
+                                text = "Chưa có khoản chi nào cho chuyến đi này.",
+                                color = OnSurfaceVariant,
+                                fontSize = 13.sp
+                            )
+                        } else {
+                            contributions.take(3).forEachIndexed { index, contribution ->
+                                MemberExpenseCircle(
+                                    name = contribution.userName,
+                                    amount = contribution.amountPaid,
+                                    avatarUrl = contribution.avatarUrl,
+                                    color = listOf(PrimaryBlue, SunsetOrange, Color(0xFF4CAF50))[index % 3],
+                                    onClick = { onNavigateToProfile(contribution.userId) }
+                                )
                             }
                         }
+                    }
+                }
+
+                // Recent Expenses List
+                item {
+                    Text(
+                        text = "Giao dịch gần đây",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 15.sp,
+                        color = OnSurface,
+                        modifier = Modifier.padding(top = 8.dp)
                     )
+                }
+
+                val recentExpenses = uiState.transactions
+
+                if (recentExpenses.isEmpty()) {
+                    item {
+                        Text(
+                            text = "Chuyến đi này chưa có giao dịch nào.",
+                            color = OnSurfaceVariant,
+                            fontSize = 13.sp
+                        )
+                    }
+                } else {
+                    items(recentExpenses) { expense ->
+                        ExpenseRow(
+                            expense = expense,
+                            onClick = {
+                                if (!uiState.isCompleted) {
+                                    editingExpense = expense
+                                }
+                            }
+                        )
+                    }
                 }
             }
 
@@ -480,14 +595,6 @@ fun ExpenseRow(
         Text(NumberUtils.formatVnd(expense.amount), fontWeight = FontWeight.ExtraBold, fontSize = 16.sp, color = PrimaryBlue)
     }
 }
-
-data class ExpenseItemData(
-    val title: String,
-    val paidBy: String,
-    val amount: Double,
-    val category: String,
-    val dateLabel: String = ""
-)
 
 private fun expenseCategoryIcon(category: String): ImageVector {
     return when (category.uppercase()) {

@@ -56,6 +56,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.mobile.travelhub.R
+import com.mobile.travelhub.ui.components.modifiers.shimmerEffect
 import com.mobile.travelhub.ui.theme.*
 import com.mobile.travelhub.viewmodels.GroupDetailViewModel
 import androidx.compose.runtime.LaunchedEffect
@@ -96,9 +97,15 @@ fun GroupDetailScreen(
     val isLeader = uiState.myRole.equals("LEADER", ignoreCase = true)
     val isCompleted = uiState.isCompleted
     val pendingRequestCount = uiState.joinRequests.size
+    val isInitialLoading = uiState.isLoading && uiState.groupName.isBlank()
+    val showInitialError = !uiState.isLoading && uiState.groupName.isBlank() && uiState.errorMessage != null
 
     LaunchedEffect(tripId, groupName) {
-        viewModel.loadGroup(tripId = tripId, groupName = groupName)
+        viewModel.loadGroup(tripId = tripId, groupName = groupName, isSilent = false)
+        while (true) {
+            kotlinx.coroutines.delay(10000L)
+            viewModel.loadGroup(tripId = tripId, groupName = groupName, isSilent = true)
+        }
     }
 
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -125,6 +132,7 @@ fun GroupDetailScreen(
             .fillMaxSize()
             .background(SurfaceBg)
     ) {
+        if (!showInitialError) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -136,63 +144,71 @@ fun GroupDetailScreen(
                     .fillMaxWidth()
                     .height(380.dp)
             ) {
-                val coverImageUrl = uiState.coverImageUrl?.takeIf { it.isNotBlank() }
-                val images = remember(coverImageUrl, uiState.placeImages) {
-                    val list = mutableListOf<String>()
-                    if (coverImageUrl != null) {
-                        list.add(coverImageUrl)
-                    }
-                    uiState.placeImages.forEach { img ->
-                        if (img != coverImageUrl && img.isNotBlank()) {
-                            list.add(img)
-                        }
-                    }
-                    list.distinct()
-                }
-
-                if (images.isNotEmpty()) {
-                    val topPagerState = rememberPagerState(
-                        initialPage = 0,
-                        pageCount = { images.size }
+                if (isInitialLoading) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .shimmerEffect()
                     )
-                    HorizontalPager(
-                        state = topPagerState,
-                        modifier = Modifier.fillMaxSize()
-                    ) { page ->
-                        AsyncImage(
-                            model = images[page],
+                } else {
+                    val coverImageUrl = uiState.coverImageUrl?.takeIf { it.isNotBlank() }
+                    val images = remember(coverImageUrl, uiState.placeImages) {
+                        val list = mutableListOf<String>()
+                        if (coverImageUrl != null) {
+                            list.add(coverImageUrl)
+                        }
+                        uiState.placeImages.forEach { img ->
+                            if (img != coverImageUrl && img.isNotBlank()) {
+                                list.add(img)
+                            }
+                        }
+                        list.distinct()
+                    }
+
+                    if (images.isNotEmpty()) {
+                        val topPagerState = rememberPagerState(
+                            initialPage = 0,
+                            pageCount = { images.size }
+                        )
+                        HorizontalPager(
+                            state = topPagerState,
+                            modifier = Modifier.fillMaxSize()
+                        ) { page ->
+                            AsyncImage(
+                                model = images[page],
+                                contentDescription = null,
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        }
+
+                        if (images.size > 1) {
+                            Row(
+                                Modifier
+                                    .wrapContentSize()
+                                    .align(Alignment.TopCenter)
+                                    .padding(top = 60.dp),
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                repeat(images.size) { iteration ->
+                                    val color = if (topPagerState.currentPage == iteration) Color.White else Color.White.copy(alpha = 0.5f)
+                                    Box(
+                                        modifier = Modifier
+                                            .size(6.dp)
+                                            .clip(CircleShape)
+                                            .background(color)
+                                    )
+                                }
+                            }
+                        }
+                    } else {
+                        Image(
+                            painter = painterResource(id = R.drawable.ic_launcher_background),
                             contentDescription = null,
                             contentScale = ContentScale.Crop,
                             modifier = Modifier.fillMaxSize()
                         )
                     }
-
-                    if (images.size > 1) {
-                        Row(
-                            Modifier
-                                .wrapContentSize()
-                                .align(Alignment.TopCenter)
-                                .padding(top = 60.dp),
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            repeat(images.size) { iteration ->
-                                val color = if (topPagerState.currentPage == iteration) Color.White else Color.White.copy(alpha = 0.5f)
-                                Box(
-                                    modifier = Modifier
-                                        .size(6.dp)
-                                        .clip(CircleShape)
-                                        .background(color)
-                                )
-                            }
-                        }
-                    }
-                } else {
-                    Image(
-                        painter = painterResource(id = R.drawable.ic_launcher_background),
-                        contentDescription = null,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize()
-                    )
                 }
 
                 Box(
@@ -210,37 +226,72 @@ fun GroupDetailScreen(
                         .align(Alignment.BottomStart)
                         .padding(24.dp)
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(24.dp))
-                            .background(SunsetOrange)
-                            .padding(horizontal = 12.dp, vertical = 6.dp)
-                    ) {
+                    if (isInitialLoading) {
+                        Box(
+                            modifier = Modifier
+                                .width(96.dp)
+                                .height(24.dp)
+                                .clip(RoundedCornerShape(24.dp))
+                                .shimmerEffect()
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Box(
+                            modifier = Modifier
+                                .width(260.dp)
+                                .height(42.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                                .shimmerEffect()
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier
+                                    .size(16.dp)
+                                    .clip(CircleShape)
+                                    .shimmerEffect()
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Box(
+                                modifier = Modifier
+                                    .width(180.dp)
+                                    .height(14.dp)
+                                    .clip(RoundedCornerShape(4.dp))
+                                    .shimmerEffect()
+                            )
+                        }
+                    } else {
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(24.dp))
+                                .background(SunsetOrange)
+                                .padding(horizontal = 12.dp, vertical = 6.dp)
+                        ) {
+                            Text(
+                                text = uiState.statusLabel.ifBlank { "Đang tải" },
+                                fontWeight = FontWeight.ExtraBold,
+                                fontSize = 10.sp,
+                                color = Color.White
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(12.dp))
                         Text(
-                            text = uiState.statusLabel.ifBlank { "Đang tải" },
+                            text = uiState.groupName.ifBlank { groupName },
                             fontWeight = FontWeight.ExtraBold,
-                            fontSize = 10.sp,
-                            color = Color.White
+                            fontSize = 36.sp,
+                            color = Color.White,
+                            lineHeight = 40.sp,
+                            letterSpacing = (-1).sp
                         )
-                    }
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Text(
-                        text = uiState.groupName.ifBlank { groupName },
-                        fontWeight = FontWeight.ExtraBold,
-                        fontSize = 36.sp,
-                        color = Color.White,
-                        lineHeight = 40.sp,
-                        letterSpacing = (-1).sp
-                    )
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.LocationOn, null, modifier = Modifier.size(16.dp), tint = Color.White.copy(alpha = 0.8f))
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = uiState.location.ifBlank { "Đang tải điểm đến" },
-                            fontSize = 14.sp,
-                            color = Color.White.copy(alpha = 0.8f)
-                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.LocationOn, null, modifier = Modifier.size(16.dp), tint = Color.White.copy(alpha = 0.8f))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = uiState.location.ifBlank { "Đang tải điểm đến" },
+                                fontSize = 14.sp,
+                                color = Color.White.copy(alpha = 0.8f)
+                            )
+                        }
                     }
                 }
             }
@@ -249,8 +300,13 @@ fun GroupDetailScreen(
                 contentPadding = PaddingValues(horizontal = 24.dp, vertical = 24.dp),
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                item { FeatureCard(Icons.Default.CalendarMonth, "Lịch trình", PrimaryBlue) { showItinerarySheet = true } }
-                item { FeatureCard(Icons.Default.Payments, "Chi phí", Color(0xFFE91E63), { onNavigateToCost(tripId) }) }
+                if (isInitialLoading) {
+                    item { FeatureCardSkeleton() }
+                    item { FeatureCardSkeleton() }
+                } else {
+                    item { FeatureCard(Icons.Default.CalendarMonth, "Lịch trình", PrimaryBlue) { showItinerarySheet = true } }
+                    item { FeatureCard(Icons.Default.Payments, "Chi phí", Color(0xFFE91E63), { onNavigateToCost(tripId) }) }
+                }
             }
 
             Column(modifier = Modifier.padding(horizontal = 24.dp)) {
@@ -271,11 +327,19 @@ fun GroupDetailScreen(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(modifier = Modifier.padding(20.dp)) {
-                        TripDetailRow("Lịch trình", listOf(uiState.startDate, uiState.endDate).filter { it.isNotBlank() }.joinToString(" - ").ifBlank { "Chưa có từ API" })
-                        HorizontalDivider(color = SurfaceContainerLow, modifier = Modifier.padding(vertical = 12.dp))
-                        TripDetailRow("Số điểm dừng", uiState.totalStops.toString())
-                        HorizontalDivider(color = SurfaceContainerLow, modifier = Modifier.padding(vertical = 12.dp))
-                        TripDetailRow("Trạng thái", uiState.statusLabel.ifBlank { "Chưa xác định" })
+                        if (isInitialLoading) {
+                            TripDetailRowSkeleton()
+                            HorizontalDivider(color = SurfaceContainerLow, modifier = Modifier.padding(vertical = 12.dp))
+                            TripDetailRowSkeleton()
+                            HorizontalDivider(color = SurfaceContainerLow, modifier = Modifier.padding(vertical = 12.dp))
+                            TripDetailRowSkeleton()
+                        } else {
+                            TripDetailRow("Lịch trình", listOf(uiState.startDate, uiState.endDate).filter { it.isNotBlank() }.joinToString(" - ").ifBlank { "Chưa có từ API" })
+                            HorizontalDivider(color = SurfaceContainerLow, modifier = Modifier.padding(vertical = 12.dp))
+                            TripDetailRow("Số điểm dừng", uiState.totalStops.toString())
+                            HorizontalDivider(color = SurfaceContainerLow, modifier = Modifier.padding(vertical = 12.dp))
+                            TripDetailRow("Trạng thái", uiState.statusLabel.ifBlank { "Chưa xác định" })
+                        }
                     }
                 }
 
@@ -305,13 +369,34 @@ fun GroupDetailScreen(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(modifier = Modifier.padding(20.dp)) {
-                        Text(
-                            text = "${uiState.members.size} thành viên",
-                            color = OnSurface,
-                            fontWeight = FontWeight.Bold
-                        )
+                        if (isInitialLoading) {
+                            Box(
+                                modifier = Modifier
+                                    .width(120.dp)
+                                    .height(14.dp)
+                                    .clip(RoundedCornerShape(4.dp))
+                                    .shimmerEffect()
+                            )
+                        } else {
+                            Text(
+                                text = "${uiState.members.size} thành viên",
+                                color = OnSurface,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
                         Spacer(modifier = Modifier.height(16.dp))
-                        if (uiState.members.isEmpty()) {
+                        if (isInitialLoading) {
+                            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                                repeat(4) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(44.dp)
+                                            .clip(CircleShape)
+                                            .shimmerEffect()
+                                    )
+                                }
+                            }
+                        } else if (uiState.members.isEmpty()) {
                             Text(
                                 text = "Chưa có dữ liệu thành viên.",
                                 color = OnSurfaceVariant,
@@ -579,6 +664,13 @@ fun GroupDetailScreen(
             }
         }
 
+        if (showInitialError) {
+            GroupDetailInitialErrorState(
+                message = uiState.errorMessage.orEmpty(),
+                onRetry = { viewModel.loadGroup(tripId = tripId, groupName = groupName) }
+            )
+        }
+
         if (showItinerarySheet) {
             ItineraryPopupSheet(
                 tripId = tripId,
@@ -721,8 +813,9 @@ fun GroupDetailScreen(
     }
 }
 
-@Composable
+}
 
+@Composable
 fun FeatureCard(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, color: Color, onClick: () -> Unit) {
     Column(
         modifier = Modifier
@@ -754,8 +847,90 @@ fun FeatureCard(icon: androidx.compose.ui.graphics.vector.ImageVector, label: St
             fontSize = 14.sp,
             color = OnSurface,
             maxLines = 2
-
         )
+    }
+}
+
+@Composable
+private fun FeatureCardSkeleton() {
+    Column(
+        modifier = Modifier
+            .width(90.dp)
+            .padding(vertical = 12.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(48.dp)
+                .clip(CircleShape)
+                .shimmerEffect()
+        )
+
+        Box(
+            modifier = Modifier
+                .width(60.dp)
+                .height(14.dp)
+                .clip(RoundedCornerShape(4.dp))
+                .shimmerEffect()
+        )
+    }
+}
+
+@Composable
+private fun TripDetailRowSkeleton() {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .width(88.dp)
+                .height(12.dp)
+                .clip(RoundedCornerShape(4.dp))
+                .shimmerEffect()
+        )
+        Box(
+            modifier = Modifier
+                .width(140.dp)
+                .height(12.dp)
+                .clip(RoundedCornerShape(4.dp))
+                .shimmerEffect()
+        )
+    }
+}
+
+@Composable
+private fun GroupDetailInitialErrorState(
+    message: String,
+    onRetry: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(SurfaceBg)
+            .padding(24.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = "Không thể tải chi tiết chuyến đi",
+            fontWeight = FontWeight.ExtraBold,
+            fontSize = 20.sp,
+            color = OnSurface
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = message.ifBlank { "Vui lòng thử lại sau." },
+            fontSize = 14.sp,
+            color = OnSurfaceVariant,
+            textAlign = TextAlign.Center
+        )
+        Spacer(modifier = Modifier.height(20.dp))
+        Button(onClick = onRetry) {
+            Text("Thử lại")
+        }
     }
 }
 
@@ -771,30 +946,6 @@ fun TripDetailRow(label: String, value: String) {
     }
 }
 
-@Composable
-fun ActivityItem(text: String, time: String) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
-            .background(SurfaceContainerLowest)
-            .padding(16.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Box(
-            modifier = Modifier
-                .size(8.dp)
-                .clip(CircleShape)
-                .background(PrimaryBlue)
-        )
-        Spacer(modifier = Modifier.width(16.dp))
-        Column {
-            Text(text, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = OnSurface)
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(time, fontSize = 12.sp, color = OnSurfaceVariant)
-        }
-    }
-}
 
 @Composable
 fun JoinRequestActionItem(
