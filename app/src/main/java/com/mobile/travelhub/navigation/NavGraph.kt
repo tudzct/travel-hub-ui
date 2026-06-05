@@ -227,7 +227,7 @@ private fun HomeDrawerScaffold(
                             modifier = Modifier.padding(horizontal = 12.dp)
                         )
                         NavigationDrawerItem(
-                            label = { androidx.compose.material3.Text("Logout") },
+                            label = { androidx.compose.material3.Text("Đăng xuất") },
                             selected = false,
                             onClick = {
                                 coroutineScope.launch { drawerState.close() }
