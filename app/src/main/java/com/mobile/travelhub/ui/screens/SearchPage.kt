@@ -530,7 +530,7 @@ private fun UserCarouselSection(
             }
             errorMessage != null -> UserCarouselStatusCard(
                 message = errorMessage,
-                actionLabel = "Retry",
+                actionLabel = "Thử lại",
                 onActionClick = onRetry
             )
             users.isEmpty() -> EmptySearchState(query = query, resultType = "users")
@@ -916,7 +916,7 @@ private fun SearchErrorState(
             style = MaterialTheme.typography.bodyMedium
         )
         TextButton(onClick = onRetry) {
-            Text(text = "Retry", color = PrimaryBlue)
+            Text(text = "Thử lại", color = PrimaryBlue)
         }
     }
 }

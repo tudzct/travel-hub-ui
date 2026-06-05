@@ -60,7 +60,7 @@ fun PostDetailScreen(
                     uiState.errorMessage != null && uiState.post == null -> {
                         item {
                             PostDetailError(
-                                message = uiState.errorMessage ?: "Failed to load post",
+                                message = uiState.errorMessage ?: "Không thể tải bài viết",
                                 onRetry = viewModel::refreshPost
                             )
                         }
@@ -148,7 +148,7 @@ private fun PostDetailError(
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         Text(
-            text = "Unable to load post",
+            text = "Không thể tải bài viết",
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold
         )
@@ -158,7 +158,7 @@ private fun PostDetailError(
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         TextButton(onClick = onRetry) {
-            Text("Retry")
+            Text("Thử lại")
         }
     }
 }

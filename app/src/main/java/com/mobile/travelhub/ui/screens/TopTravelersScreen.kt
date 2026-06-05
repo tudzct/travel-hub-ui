@@ -120,11 +120,11 @@ fun TopTravelersScreen(
                         verticalArrangement = Arrangement.Center
                     ) {
                         Text(
-                            text = "Unable to load top travelers.",
+                            text = "Không thể tải danh sách người dùng nổi bật.",
                             color = OnSurfaceVariant
                         )
                         TextButton(onClick = viewModel::refresh) {
-                            Text("Retry", color = PrimaryBlue)
+                            Text("Thử lại", color = PrimaryBlue)
                         }
                     }
                 }
@@ -132,7 +132,7 @@ fun TopTravelersScreen(
                 state.items.isEmpty() -> {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Text(
-                            text = "No ranked travelers in this period.",
+                            text = "Chưa có người dùng nổi bật trong giai đoạn này.",
                             color = OnSurfaceVariant
                         )
                     }

@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.mobile.travelhub.data.AuthRepository
 import com.mobile.travelhub.data.PostRepository
 import com.mobile.travelhub.data.SearchHistoryRepository
+import com.mobile.travelhub.data.userMessage
 import com.mobile.travelhub.data.api.UserApiService
 import com.mobile.travelhub.data.model.FeedPostResponse
 import com.mobile.travelhub.data.model.PostCommentResponse
@@ -177,7 +178,7 @@ class SearchViewModel @Inject constructor(
                         it.copy(
                             posts = emptyList(),
                             isLoadingPosts = false,
-                            postsErrorMessage = throwable.message ?: "Failed to search posts"
+                            postsErrorMessage = throwable.userMessage("Không thể tìm kiếm bài viết")
                         )
                     }
                 }
@@ -198,7 +199,7 @@ class SearchViewModel @Inject constructor(
                         it.copy(
                             users = emptyList(),
                             isLoadingUsers = false,
-                            usersErrorMessage = throwable.message ?: "Failed to search users"
+                            usersErrorMessage = throwable.userMessage("Không thể tìm kiếm người dùng")
                         )
                     }
                 }
@@ -317,7 +318,7 @@ class SearchViewModel @Inject constructor(
                         )
                     }
                     _uiState.update {
-                        it.copy(postsErrorMessage = throwable.message ?: "Failed to update like")
+                        it.copy(postsErrorMessage = throwable.userMessage("Không thể cập nhật lượt thích"))
                     }
                 }
 
@@ -342,7 +343,7 @@ class SearchViewModel @Inject constructor(
                 .onFailure { throwable ->
                     updatePost(postId) { post -> post.copy(savedByCurrentUser = currentPost.savedByCurrentUser) }
                     _uiState.update {
-                        it.copy(postsErrorMessage = throwable.message ?: "Failed to save post")
+                        it.copy(postsErrorMessage = throwable.userMessage("Không thể lưu bài viết"))
                     }
                 }
 
@@ -386,7 +387,7 @@ class SearchViewModel @Inject constructor(
         val content = currentState.commentInput.trim()
 
         if (content.isBlank()) {
-            _uiState.update { it.copy(commentErrorMessage = "Comment cannot be empty") }
+            _uiState.update { it.copy(commentErrorMessage = "Vui lòng nhập bình luận") }
             return
         }
         if (currentState.isCommentSubmitting) return
@@ -419,7 +420,7 @@ class SearchViewModel @Inject constructor(
                     _uiState.update {
                         it.copy(
                             isCommentSubmitting = false,
-                            commentErrorMessage = throwable.message ?: "Failed to add comment"
+                            commentErrorMessage = throwable.userMessage("Không thể thêm bình luận")
                         )
                     }
                 }
@@ -444,7 +445,7 @@ class SearchViewModel @Inject constructor(
                     _uiState.update {
                         it.copy(
                             isCommentsLoading = false,
-                            commentsErrorMessage = throwable.message ?: "Failed to load comments"
+                            commentsErrorMessage = throwable.userMessage("Không thể tải bình luận")
                         )
                     }
                 }

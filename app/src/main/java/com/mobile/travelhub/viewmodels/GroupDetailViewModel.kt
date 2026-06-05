@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.mobile.travelhub.data.PlaceRepository
 import com.mobile.travelhub.data.TripRepository
 import com.mobile.travelhub.data.httpStatusCode
+import com.mobile.travelhub.data.userMessage
 import com.mobile.travelhub.data.model.ActiveTripResponse
 import com.mobile.travelhub.data.model.PastTripResponse
 import com.mobile.travelhub.data.model.TripDashboardResponse
@@ -161,7 +162,7 @@ class GroupDetailViewModel @Inject constructor(
                     } else {
                         state.copy(
                             isLoading = false,
-                            errorMessage = throwable?.message ?: "Không tải được chi tiết chuyến đi",
+                            errorMessage = throwable?.userMessage("Không tải được chi tiết chuyến đi") ?: "Không tải được chi tiết chuyến đi",
                             isKickedOut = isKicked
                         )
                     }
@@ -289,7 +290,7 @@ class GroupDetailViewModel @Inject constructor(
                     _uiState.update { state ->
                         state.copy(
                             isJoinRequestsLoading = false,
-                            errorMessage = throwable.message ?: "Không thể chấp nhận yêu cầu vào nhóm"
+                            errorMessage = throwable.userMessage("Không thể chấp nhận yêu cầu vào nhóm")
                         )
                     }
                 }
@@ -309,7 +310,7 @@ class GroupDetailViewModel @Inject constructor(
                     _uiState.update { state ->
                         state.copy(
                             isJoinRequestsLoading = false,
-                            errorMessage = throwable.message ?: "Không thể từ chối yêu cầu vào nhóm"
+                            errorMessage = throwable.userMessage("Không thể từ chối yêu cầu vào nhóm")
                         )
                     }
                 }
@@ -340,7 +341,7 @@ class GroupDetailViewModel @Inject constructor(
                     onDone(true, "Đã rời khỏi nhóm")
                 }
                 .onFailure { throwable ->
-                    onDone(false, throwable.message ?: "Không thể rời nhóm")
+                    onDone(false, throwable.userMessage("Không thể rời nhóm"))
                 }
         }
     }
@@ -352,7 +353,7 @@ class GroupDetailViewModel @Inject constructor(
                     onDone(true, "Đã xóa nhóm")
                 }
                 .onFailure { throwable ->
-                    onDone(false, throwable.message ?: "Không xóa được nhóm")
+                    onDone(false, throwable.userMessage("Không xóa được nhóm"))
                 }
         }
     }
@@ -370,7 +371,7 @@ class GroupDetailViewModel @Inject constructor(
                     onDone(true, "Đã xóa thành viên")
                 }
                 .onFailure { throwable ->
-                    onDone(false, throwable.message ?: "Không thể xóa thành viên")
+                    onDone(false, throwable.userMessage("Không thể xóa thành viên"))
                 }
         }
     }

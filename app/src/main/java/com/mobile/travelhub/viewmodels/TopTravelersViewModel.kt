@@ -2,6 +2,7 @@ package com.mobile.travelhub.viewmodels
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.mobile.travelhub.data.userMessage
 import com.mobile.travelhub.data.api.UserApiService
 import com.mobile.travelhub.data.model.TopTravelerPeriod
 import com.mobile.travelhub.data.model.TopTravelerResponse
@@ -74,7 +75,7 @@ class TopTravelersViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(
                         isLoadingMore = false,
-                        errorMessage = throwable.message ?: "Unable to load more travelers"
+                        errorMessage = throwable.userMessage("Không thể tải thêm người dùng")
                     )
                 }
             }
@@ -102,7 +103,7 @@ class TopTravelersViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(
                         items = it.items.updateFollowing(traveler.id, wasFollowing),
-                        actionErrorMessage = throwable.message ?: "Unable to update following status"
+                        actionErrorMessage = throwable.userMessage("Không thể cập nhật trạng thái theo dõi")
                     )
                 }
             }
@@ -141,7 +142,7 @@ class TopTravelersViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(
                         isLoading = false,
-                        errorMessage = throwable.message ?: "Unable to load top travelers"
+                        errorMessage = throwable.userMessage("Không thể tải danh sách người dùng nổi bật")
                     )
                 }
             }

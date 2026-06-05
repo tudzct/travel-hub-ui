@@ -23,7 +23,6 @@ import java.io.IOException
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
-import retrofit2.HttpException
 
 @Singleton
 class PostRepository @Inject constructor(
@@ -37,9 +36,9 @@ class PostRepository @Inject constructor(
     suspend fun createPost(description: String, imageUris: List<Uri>, travelPlaceId: Long): Result<Unit> {
         return withContext(Dispatchers.IO) {
             runCatching {
-                require(description.isNotBlank()) { "Description is required" }
-                require(imageUris.isNotEmpty()) { "Please select at least one image" }
-                require(travelPlaceId > 0) { "Please select a place" }
+                require(description.isNotBlank()) { "Vui lòng nhập mô tả bài viết" }
+                require(imageUris.isNotEmpty()) { "Vui lòng chọn ít nhất một ảnh" }
+                require(travelPlaceId > 0) { "Vui lòng chọn địa điểm" }
 
                 val objectNames = imageUris.map { uri ->
                     val objectName = uploadToSupabase(uri)
@@ -47,26 +46,16 @@ class PostRepository @Inject constructor(
                     objectName
                 }
 
-                try {
-                    android.util.Log.d("PostRepository", "Calling createPost with: $objectNames")
-                    postApiService.createPost(
-                        request = PostCreateRequest(
-                            description = description.trim(),
-                            imageUrls = objectNames,
-                            travelPlaceId = travelPlaceId
-                        )
+                android.util.Log.d("PostRepository", "Calling createPost with: $objectNames")
+                postApiService.createPost(
+                    request = PostCreateRequest(
+                        description = description.trim(),
+                        imageUrls = objectNames,
+                        travelPlaceId = travelPlaceId
                     )
-                    android.util.Log.d("PostRepository", "createPost returned success")
-                    Unit
-                } catch (exception: HttpException) {
-                    if (exception.code() == 401) {
-                        throw IOException("Unauthorized at /api/posts. Access token is missing, expired, or malformed.")
-                    }
-                    val errorBody = exception.response()?.errorBody()?.string()
-                    throw IOException("Failed to create post. Server returned ${exception.code()}: $errorBody")
-                } catch (e: Exception) {
-                    throw IOException("Failed to create post: ${e.message}", e)
-                }
+                )
+                android.util.Log.d("PostRepository", "createPost returned success")
+                Unit
             }
         }
     }
@@ -114,7 +103,7 @@ class PostRepository @Inject constructor(
                 getAllPosts(page = 0, pageSize = 100)
                     .getOrThrow()
                     .firstOrNull { post -> post.id == postId }
-                    ?: throw IOException("Post not found")
+                    ?: throw IOException("Không tìm thấy bài viết")
             }
         }
     }
@@ -165,12 +154,6 @@ class PostRepository @Inject constructor(
                 val response = postApiService.likePost(postId = postId)
                 updateLikedPost(postId = postId, liked = true)
                 response
-            }.recoverCatching { throwable ->
-                if (throwable is HttpException) {
-                    val errorBody = throwable.response()?.errorBody()?.string()
-                    throw IOException("Failed to like post. Server returned ${throwable.code()}: $errorBody", throwable)
-                }
-                throw throwable
             }
         }
     }
@@ -181,12 +164,6 @@ class PostRepository @Inject constructor(
                 val response = postApiService.unlikePost(postId = postId)
                 updateLikedPost(postId = postId, liked = false)
                 response
-            }.recoverCatching { throwable ->
-                if (throwable is HttpException) {
-                    val errorBody = throwable.response()?.errorBody()?.string()
-                    throw IOException("Failed to unlike post. Server returned ${throwable.code()}: $errorBody", throwable)
-                }
-                throw throwable
             }
         }
     }
@@ -197,12 +174,6 @@ class PostRepository @Inject constructor(
                 val response = postApiService.savePost(postId = postId)
                 updateSavedPost(postId = postId, saved = response.saved)
                 response
-            }.recoverCatching { throwable ->
-                if (throwable is HttpException) {
-                    val errorBody = throwable.response()?.errorBody()?.string()
-                    throw IOException("Failed to save post. Server returned ${throwable.code()}: $errorBody", throwable)
-                }
-                throw throwable
             }
         }
     }
@@ -213,12 +184,6 @@ class PostRepository @Inject constructor(
                 val response = postApiService.unsavePost(postId = postId)
                 updateSavedPost(postId = postId, saved = response.saved)
                 response
-            }.recoverCatching { throwable ->
-                if (throwable is HttpException) {
-                    val errorBody = throwable.response()?.errorBody()?.string()
-                    throw IOException("Failed to unsave post. Server returned ${throwable.code()}: $errorBody", throwable)
-                }
-                throw throwable
             }
         }
     }
@@ -234,17 +199,11 @@ class PostRepository @Inject constructor(
     suspend fun addComment(postId: Long, content: String): Result<PostCommentResponse> {
         return withContext(Dispatchers.IO) {
             runCatching {
-                require(content.isNotBlank()) { "Comment cannot be empty" }
+                require(content.isNotBlank()) { "Vui lòng nhập bình luận" }
                 postApiService.addComment(
                     postId = postId,
                     request = CreateCommentRequest(content = content.trim())
                 )
-            }.recoverCatching { throwable ->
-                if (throwable is HttpException) {
-                    val errorBody = throwable.response()?.errorBody()?.string()
-                    throw IOException("Failed to add comment. Server returned ${throwable.code()}: $errorBody", throwable)
-                }
-                throw throwable
             }
         }
     }
@@ -257,12 +216,6 @@ class PostRepository @Inject constructor(
                     page = page,
                     pageSize = pageSize
                 )
-            }.recoverCatching { throwable ->
-                if (throwable is HttpException) {
-                    val errorBody = throwable.response()?.errorBody()?.string()
-                    throw IOException("Failed to load comments. Server returned ${throwable.code()}: $errorBody", throwable)
-                }
-                throw throwable
             }
         }
     }
@@ -270,10 +223,10 @@ class PostRepository @Inject constructor(
     private suspend fun uploadToSupabase(uri: Uri): String {
         val contentResolver = context.contentResolver
         val bytes = contentResolver.openInputStream(uri)?.use { it.readBytes() }
-            ?: throw IOException("Unable to read selected image")
+            ?: throw IOException("Không thể đọc ảnh đã chọn")
         val mimeType = contentResolver.getType(uri) ?: "image/jpeg"
         val bucketName = BuildConfig.SUPABASE_STORAGE_BUCKET.takeIf { it.isNotBlank() }
-            ?: throw IOException("SUPABASE_STORAGE_BUCKET is not configured")
+            ?: throw IOException("Chưa cấu hình kho lưu trữ ảnh")
         val objectPath = buildStorageObjectPath(uri = uri, mimeType = mimeType)
 
         runCatching {
@@ -285,7 +238,7 @@ class PostRepository @Inject constructor(
                 contentType = ContentType.parse(mimeType)
             }
         }.getOrElse { throwable ->
-            throw IOException("Upload failed: ${throwable.message}", throwable)
+            throw IOException("Không thể tải ảnh lên. Vui lòng thử lại sau.", throwable)
         }
 
         return objectPath

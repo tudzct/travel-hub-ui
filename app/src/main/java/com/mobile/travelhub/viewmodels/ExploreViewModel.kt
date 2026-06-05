@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mobile.travelhub.data.PlaceRepository
 import com.mobile.travelhub.data.SearchHistoryRepository
+import com.mobile.travelhub.data.userMessage
 import com.mobile.travelhub.data.model.TravelPlaceListItemResponse
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -63,7 +64,7 @@ class ExploreViewModel @Inject constructor(
                     it.copy(
                         featuredLocations = emptyList(),
                         isLoadingFeaturedLocations = false,
-                        featuredLocationsError = throwable.message ?: "Unable to load featured locations"
+                        featuredLocationsError = throwable.userMessage("Không thể tải địa điểm nổi bật")
                     )
                 }
             }

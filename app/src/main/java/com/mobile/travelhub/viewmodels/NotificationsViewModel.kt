@@ -2,6 +2,7 @@ package com.mobile.travelhub.viewmodels
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.mobile.travelhub.data.userMessage
 import com.mobile.travelhub.data.api.UserApiService
 import com.mobile.travelhub.data.model.NotificationResponse
 import com.mobile.travelhub.usecase.GetNotificationsUseCase
@@ -55,7 +56,7 @@ class NotificationsViewModel @Inject constructor(
                     _uiState.update {
                         it.copy(
                             isMarkingAllRead = false,
-                            errorMessage = throwable.message ?: "Failed to mark notifications as read"
+                            errorMessage = throwable.userMessage("Không thể đánh dấu thông báo đã đọc")
                         )
                     }
                 }
@@ -85,7 +86,7 @@ class NotificationsViewModel @Inject constructor(
                         it.copy(
                             isLoading = false,
                             notifications = emptyList(),
-                            errorMessage = throwable.message ?: "Failed to load notifications"
+                            errorMessage = throwable.userMessage("Không thể tải thông báo")
                         )
                     }
                 }
