@@ -38,6 +38,7 @@ fun ItineraryTopBar(
     isLeader: Boolean,
     showBackButton: Boolean,
     onAddItinerary: (() -> Unit)? = null,
+    onAssistantClick: (() -> Unit)? = null,
     onBack: () -> Unit
 ) {
     TopAppBar(
@@ -68,6 +69,15 @@ fun ItineraryTopBar(
             }
         },
         actions = {
+            if (onAssistantClick != null) {
+                IconButton(onClick = onAssistantClick) {
+                    Icon(
+                        imageVector = Icons.Default.AutoAwesome,
+                        contentDescription = "Open travel assistant",
+                        tint = PrimaryBlue
+                    )
+                }
+            }
             if (isLeader && onAddItinerary != null) {
                 ItineraryAddButton(onAddItinerary = onAddItinerary)
             }
