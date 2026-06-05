@@ -62,7 +62,8 @@ data class BottomNavItem(
 @Composable
 fun RoundedTopNavigationBar(
     items: List<BottomNavItem>,
-    navController: NavHostController
+    navController: NavHostController,
+    onHomeReselected: () -> Unit = {}
 ) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
@@ -126,9 +127,21 @@ fun RoundedTopNavigationBar(
                             indication = null
                         ) {
                             if (screen == null) return@clickable
-                            if (screen == Screen.Profile && isProfileRoute(currentRoute) && currentRoute != Screen.Profile.route) {
+                            val currentBaseRoute = baseRoute(currentRoute)
+                            if (screen == Screen.Home) {
+                                onHomeReselected()
+                                if (currentBaseRoute != Screen.Home.route) {
+                                    navController.navigate(screen.route) {
+                                        popUpTo(navController.graph.findStartDestination().id) {
+                                            saveState = true
+                                        }
+                                        launchSingleTop = true
+                                        restoreState = true
+                                    }
+                                }
+                            } else if (screen == Screen.Profile && isProfileRoute(currentRoute) && currentRoute != Screen.Profile.route) {
                                 backPressedDispatcher?.onBackPressed()
-                            } else if (baseRoute(currentRoute) != screen.route) {
+                            } else if (currentBaseRoute != screen.route) {
                                 navController.navigate(screen.route) {
                                     popUpTo(navController.graph.findStartDestination().id) {
                                         saveState = true

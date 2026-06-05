@@ -107,7 +107,7 @@ fun CreatePostScreenContent(
         // ── Submit Button ──
         Box(modifier = Modifier.padding(horizontal = 20.dp)) {
             PrimaryProfileButton(
-                text = if (uiState.isSubmitting) "Posting..." else "Post",
+                text = if (uiState.isSubmitting) "Đăng bài..." else "Đăng bài",
                 onClick = onSubmitPost,
                 modifier = Modifier.fillMaxWidth()
             )
@@ -198,13 +198,13 @@ private fun UserHeaderSection(
             ) {
                 Icon(
                     imageVector = Icons.Rounded.Public,
-                    contentDescription = "Public",
+                    contentDescription = "Công khai",
                     modifier = Modifier.size(12.dp),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Spacer(modifier = Modifier.width(3.dp))
                 Text(
-                    text = "Public",
+                    text = "Công khai",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 10.sp
@@ -245,7 +245,7 @@ private fun DescriptionInputSection(
                 Box {
                     if (description.isEmpty()) {
                         Text(
-                            text = "What's on your mind?",
+                            text = "Bạn đang nghĩ gì?",
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                         )
@@ -269,14 +269,14 @@ private fun TravelPlaceSection(
 ) {
     Column(modifier = Modifier.padding(horizontal = 20.dp)) {
         DestinationPlacePicker(
-            label = "Travel place",
+            label = "Địa điểm du lịch",
             selectedProvince = uiState.selectedProvince,
             selectedPlace = uiState.selectedPlace,
             provinces = uiState.provinces,
             places = uiState.places,
             isLoading = uiState.isLoadingLocations,
             enabled = !uiState.isSubmitting && uiState.provinces.isNotEmpty(),
-            placeholder = "Select place",
+            placeholder = "Chọn địa điểm",
             onProvinceSelected = onSelectProvince,
             onPlaceSelected = onSelectPlace
         )
@@ -302,7 +302,7 @@ private fun SelectedImagesSection(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "SELECTED IMAGES: ${selectedImages.size}/${CreatePostViewModel.MAX_IMAGE_COUNT}",
+                text = "ẢNH: ${selectedImages.size}/${CreatePostViewModel.MAX_IMAGE_COUNT}",
                 style = MaterialTheme.typography.labelMedium,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -353,7 +353,7 @@ private fun SelectedImagesSection(
                     ) {
                         AsyncImage(
                             model = uri,
-                            contentDescription = "Selected image",
+                            contentDescription = "Chọn ảnh",
                             contentScale = ContentScale.Crop,
                             modifier = Modifier
                                 .fillMaxSize()
@@ -373,7 +373,7 @@ private fun SelectedImagesSection(
                         ) {
                             Icon(
                                 imageVector = Icons.Outlined.Close,
-                                contentDescription = "Remove image",
+                                contentDescription = "Xóa ảnh",
                                 modifier = Modifier.size(14.dp),
                                 tint = Color.White
                             )
@@ -400,7 +400,7 @@ private fun SelectedImagesSection(
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "No images selected",
+                        text = "Chưa có ảnh nào",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
                     )

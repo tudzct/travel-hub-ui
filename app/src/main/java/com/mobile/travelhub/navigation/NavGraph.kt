@@ -236,7 +236,7 @@ private fun HomeDrawerScaffold(
                             modifier = Modifier.padding(horizontal = 12.dp)
                         )
                         NavigationDrawerItem(
-                            label = { androidx.compose.material3.Text("Logout") },
+                            label = { androidx.compose.material3.Text("Đăng xuất") },
                             selected = false,
                             onClick = {
                                 coroutineScope.launch { drawerState.close() }
@@ -278,6 +278,7 @@ fun NavGraph(
     innerPadding: PaddingValues,
     startDestination: String,
     authUiState: AuthUiState,
+    homeReloadSignal: Int = 0,
     onLogin: (String, String) -> Unit,
     onRegister: (String, String, String) -> Unit,
     onClearAuthError: () -> Unit,
@@ -382,6 +383,7 @@ fun NavGraph(
                 onClearChangePasswordState = profileViewModel::clearChangePasswordState
             ) { openMenu ->
                 PlaceListScreen(
+                    reloadSignal = homeReloadSignal,
                     onPlaceClick = ::navigateToPlaceDetail,
                     onSearchClick = {
                         navController.navigate(Screen.Search.route) {

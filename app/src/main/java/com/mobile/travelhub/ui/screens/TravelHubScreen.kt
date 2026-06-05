@@ -40,6 +40,7 @@ fun TravelHubScreen(
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
     var showSplash by remember { mutableStateOf(true) }
+    var homeReloadSignal by remember { mutableStateOf(0) }
 
     LaunchedEffect(Unit) {
         delay(1200)
@@ -96,7 +97,8 @@ fun TravelHubScreen(
             if (showBottomBar) {
                 RoundedTopNavigationBar(
                     items = navItems,
-                    navController = navController
+                    navController = navController,
+                    onHomeReselected = { homeReloadSignal++ }
                 )
             }
         }
@@ -106,6 +108,7 @@ fun TravelHubScreen(
             innerPadding = innerPadding,
             startDestination = startDestination,
             authUiState = authUiState,
+            homeReloadSignal = homeReloadSignal,
             onLogin = authViewModel::login,
             onRegister = authViewModel::register,
             onClearAuthError = authViewModel::clearError,
