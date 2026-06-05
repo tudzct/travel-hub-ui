@@ -73,6 +73,7 @@ fun GroupDetailScreen(
     groupName: String,
     onBack: () -> Unit,
     onNavigateToCost: (Long) -> Unit,
+    onNavigateToAssistant: (Long, String) -> Unit,
     onNavigateToProfile: (Long) -> Unit = {},
     viewModel: GroupDetailViewModel = hiltViewModel()
 ) {
@@ -675,7 +676,11 @@ fun GroupDetailScreen(
             ItineraryPopupSheet(
                 tripId = tripId,
                 groupName = groupName,
-                onDismiss = { showItinerarySheet = false }
+                onDismiss = { showItinerarySheet = false },
+                onOpenAssistant = {
+                    showItinerarySheet = false
+                    onNavigateToAssistant(tripId, groupName)
+                }
             )
         }
 

@@ -76,7 +76,16 @@ sealed class Screen(
     data object UpcomingTrips : Screen("trips_upcoming", 15, true)
     data object CreatePost : Screen("create_post", showBottomBar = true)
     data object Profile : Screen("profile", 2, true)
-    data object Chat : Screen("chat", 3, true)
+    data object Chat : Screen("chat", 3) {
+        const val TRIP_ID_ARG = "tripId"
+        const val GROUP_NAME_ARG = "groupName"
+        const val ROUTE_WITH_ARGS = "chat?tripId={tripId}&groupName={groupName}"
+
+        fun createRoute(tripId: Long? = null, groupName: String = ""): String {
+            val normalizedTripId = tripId?.takeIf { it > 0L } ?: -1L
+            return "chat?tripId=$normalizedTripId&groupName=${Uri.encode(groupName)}"
+        }
+    }
     data object Notifications : Screen("notifications", 4)
     data object PostDetail : Screen("post/{postId}", 6) {
         fun createRoute(postId: Long): String = "post/$postId"
@@ -406,6 +415,11 @@ fun NavGraph(
                         launchSingleTop = true
                     }
                 },
+                onAssistantClick = {
+                    navController.navigate(Screen.Chat.createRoute()) {
+                        launchSingleTop = true
+                    }
+                },
                 onPlaceClick = ::navigateToPlaceDetail,
                 onTravelerClick = { userId, currentUser ->
                     val route = if (currentUser) {
@@ -662,6 +676,11 @@ fun NavGraph(
                 groupName = groupName,
                 onBack = { navController.popBackStack() },
                 onNavigateToCost = { costTripId -> navController.navigate(Screen.CostEstimate.createRoute(costTripId)) { launchSingleTop = true } },
+                onNavigateToAssistant = { assistantTripId, assistantGroupName ->
+                    navController.navigate(Screen.Chat.createRoute(assistantTripId, assistantGroupName)) {
+                        launchSingleTop = true
+                    }
+                },
                 onNavigateToProfile = ::navigateToUserProfile
             )
         }
@@ -679,6 +698,11 @@ fun NavGraph(
                 tripId = tripId,
                 groupName = groupName,
                 onBack = { navController.popBackStack() },
+                onOpenAssistant = {
+                    navController.navigate(Screen.Chat.createRoute(tripId, groupName)) {
+                        launchSingleTop = true
+                    }
+                },
                 onOpenDayDetail = { dayIndex ->
                     navController.navigate(Screen.ItineraryDayDetail.createRoute(tripId, groupName, dayIndex)) {
                         launchSingleTop = true
@@ -702,7 +726,43 @@ fun NavGraph(
                 tripId = tripId,
                 groupName = groupName,
                 dayIndex = dayIndex,
-                onBack = { navController.popBackStack() }
+                onBack = { navController.popBackStack() },
+                onOpenAssistant = {
+                    navController.navigate(Screen.Chat.createRoute(tripId, groupName)) {
+                        launchSingleTop = true
+                    }
+                }
+            )
+        }
+
+        composable(
+            route = Screen.Chat.ROUTE_WITH_ARGS,
+            arguments = listOf(
+                navArgument(Screen.Chat.TRIP_ID_ARG) {
+                    type = NavType.LongType
+                    defaultValue = -1L
+                },
+                navArgument(Screen.Chat.GROUP_NAME_ARG) {
+                    type = NavType.StringType
+                    defaultValue = ""
+                }
+            )
+        ) { backStackEntry ->
+            val tripId = backStackEntry.arguments
+                ?.getLong(Screen.Chat.TRIP_ID_ARG)
+                ?.takeIf { it > 0L }
+            val groupName = backStackEntry.arguments
+                ?.getString(Screen.Chat.GROUP_NAME_ARG)
+                .orEmpty()
+            TravelAssistantScreen(
+                tripId = tripId,
+                groupName = groupName,
+                onBack = { navController.navigateUp() },
+                onPlaceClick = { placeId ->
+                    navController.navigate(Screen.PlaceDetail.createRoute(placeId)) {
+                        launchSingleTop = true
+                    }
+                }
             )
         }
 

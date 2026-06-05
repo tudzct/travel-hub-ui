@@ -22,12 +22,14 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -63,6 +65,7 @@ fun ExploreScreen(
     activateSearch: Boolean = false,
     refreshTopTravelersKey: Int = 0,
     onSearchClick: () -> Unit = {},
+    onAssistantClick: () -> Unit = {},
     onPlaceClick: (TravelPlaceListItemResponse) -> Unit = {},
     onTravelerClick: (Long, Boolean) -> Unit = { _, _ -> },
     onSeeAllTopTravelers: (TopTravelerPeriod) -> Unit = {},
@@ -83,13 +86,44 @@ fun ExploreScreen(
             .verticalScroll(rememberScrollState())
             .padding(top = 10.dp, bottom = 24.dp)
     ) {
-        Text(
-            text = "Explore",
-            modifier = Modifier.padding(horizontal = 16.dp),
-            color = OnSurface,
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.ExtraBold
-        )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Explore",
+                color = OnSurface,
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.ExtraBold
+            )
+            Surface(
+                color = Color(0xFFE7F4FC),
+                shape = RoundedCornerShape(18.dp),
+                modifier = Modifier.clickable(onClick = onAssistantClick)
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.AutoAwesome,
+                        contentDescription = null,
+                        tint = PrimaryBlue,
+                        modifier = Modifier.size(17.dp)
+                    )
+                    Text(
+                        text = "Trợ lý AI",
+                        modifier = Modifier.padding(start = 6.dp),
+                        color = OnSurface,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 12.sp
+                    )
+                }
+            }
+        }
 
         LaunchedEffect(activateSearch) {
             if (activateSearch) {
