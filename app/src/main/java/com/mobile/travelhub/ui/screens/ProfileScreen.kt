@@ -772,7 +772,7 @@ private fun ProfileScreenContent(
         }
 
 @Composable
-private fun ChangePasswordDialog(
+fun ChangePasswordDialog(
     state: UiState<Boolean>,
     onDismiss: () -> Unit,
     onSubmit: (String, String, String) -> Unit
