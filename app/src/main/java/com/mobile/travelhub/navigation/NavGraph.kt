@@ -354,7 +354,10 @@ fun NavGraph(
             LoginScreen(
                 uiState = authUiState,
                 onLogin = onLogin,
-                onNavigateToRegister = { navController.navigate(Screen.Register.route) },
+                onNavigateToRegister = {
+                    onClearAuthError()
+                    navController.navigate(Screen.Register.route)
+                },
                 onDismissError = onClearAuthError
             )
         }
@@ -362,7 +365,10 @@ fun NavGraph(
             RegisterScreen(
                 uiState = authUiState,
                 onRegister = onRegister,
-                onNavigateToLogin = { navController.popBackStack() },
+                onNavigateToLogin = {
+                    onClearAuthError()
+                    navController.popBackStack()
+                },
                 onDismissError = onClearAuthError
             )
         }
