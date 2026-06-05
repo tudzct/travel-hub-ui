@@ -269,6 +269,7 @@ fun NavGraph(
     innerPadding: PaddingValues,
     startDestination: String,
     authUiState: AuthUiState,
+    homeReloadSignal: Int = 0,
     onLogin: (String, String) -> Unit,
     onRegister: (String, String, String) -> Unit,
     onClearAuthError: () -> Unit,
@@ -373,6 +374,7 @@ fun NavGraph(
                 onClearChangePasswordState = profileViewModel::clearChangePasswordState
             ) { openMenu ->
                 PlaceListScreen(
+                    reloadSignal = homeReloadSignal,
                     onPlaceClick = ::navigateToPlaceDetail,
                     onSearchClick = {
                         navController.navigate(Screen.Search.route) {

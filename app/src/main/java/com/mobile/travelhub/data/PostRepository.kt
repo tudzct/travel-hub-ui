@@ -82,6 +82,17 @@ class PostRepository @Inject constructor(
         }
     }
 
+    suspend fun getRandomPosts(page: Int = 0, pageSize: Int = 10): Result<List<FeedPostResponse>> {
+        return withContext(Dispatchers.IO) {
+            runCatching {
+                postApiService.getRandomPosts(
+                    page = page,
+                    pageSize = pageSize
+                ).data.map(::mergeLocalPostState)
+            }
+        }
+    }
+
     suspend fun searchPosts(description: String, page: Int = 0, pageSize: Int = 10): Result<List<FeedPostResponse>> {
         return withContext(Dispatchers.IO) {
             runCatching {

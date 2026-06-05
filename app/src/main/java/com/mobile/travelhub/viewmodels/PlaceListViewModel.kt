@@ -6,11 +6,14 @@ import com.mobile.travelhub.data.PlaceRepository
 import com.mobile.travelhub.data.model.TravelPlaceListItemResponse
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+
+private const val MIN_RELOAD_LOADING_MS = 500L
 
 data class PlaceListUiState(
     val isLoading: Boolean = false,
@@ -32,10 +35,13 @@ class PlaceListViewModel @Inject constructor(
 
     fun refresh() {
         viewModelScope.launch {
+            val loadingStartedAt = System.currentTimeMillis()
             _uiState.update { it.copy(isLoading = true, errorMessage = null) }
             runCatching {
                 placeRepository.getRecommendedPlaces()
             }.onSuccess { response ->
+                delayRemainingLoadingTime(loadingStartedAt)
+
                 _uiState.update {
                     it.copy(
                         isLoading = false,
@@ -44,6 +50,8 @@ class PlaceListViewModel @Inject constructor(
                     )
                 }
             }.onFailure { throwable ->
+                delayRemainingLoadingTime(loadingStartedAt)
+
                 _uiState.update {
                     it.copy(
                         isLoading = false,
@@ -51,6 +59,13 @@ class PlaceListViewModel @Inject constructor(
                     )
                 }
             }
+        }
+    }
+
+    private suspend fun delayRemainingLoadingTime(loadingStartedAt: Long) {
+        val remainingMillis = MIN_RELOAD_LOADING_MS - (System.currentTimeMillis() - loadingStartedAt)
+        if (remainingMillis > 0) {
+            delay(remainingMillis)
         }
     }
 }

@@ -5,23 +5,22 @@ import androidx.lifecycle.viewModelScope
 import com.mobile.travelhub.data.model.FeedPostResponse
 import com.mobile.travelhub.data.model.PostCommentResponse
 import com.mobile.travelhub.usecase.AddCommentUseCase
-import com.mobile.travelhub.usecase.GetAllPostsUseCase
 import com.mobile.travelhub.usecase.GetPostCommentsUseCase
+import com.mobile.travelhub.usecase.GetRandomPostsUseCase
 import com.mobile.travelhub.usecase.LikePostUseCase
 import com.mobile.travelhub.usecase.SavePostUseCase
 import com.mobile.travelhub.usecase.UnlikePostUseCase
 import com.mobile.travelhub.utils.PostsUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
-import java.util.TimeZone
 import javax.inject.Inject
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+
+private const val MIN_RELOAD_LOADING_MS = 500L
 
 data class HomePostUiModel(
     val id: Long,
@@ -62,7 +61,7 @@ data class HomeUiState(
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
-    private val getAllPostsUseCase: GetAllPostsUseCase,
+    private val getRandomPostsUseCase: GetRandomPostsUseCase,
     private val likePostUseCase: LikePostUseCase,
     private val unlikePostUseCase: UnlikePostUseCase,
     private val savePostUseCase: SavePostUseCase,
@@ -79,13 +78,15 @@ class HomeViewModel @Inject constructor(
 
     fun refreshPosts() {
         viewModelScope.launch {
+            val loadingStartedAt = System.currentTimeMillis()
             _uiState.update { it.copy(isLoading = true, errorMessage = null) }
 
-            getAllPostsUseCase(page = 0, pageSize = 20)
+            getRandomPostsUseCase(page = 0, pageSize = 20)
                 .onSuccess { posts ->
                     val safePosts = posts.mapNotNull { post ->
                         runCatching { toUiModel(post) }.getOrNull()
                     }
+                    delayRemainingLoadingTime(loadingStartedAt)
 
                     _uiState.update {
                         it.copy(
@@ -96,6 +97,8 @@ class HomeViewModel @Inject constructor(
                     }
                 }
                 .onFailure { throwable ->
+                    delayRemainingLoadingTime(loadingStartedAt)
+
                     _uiState.update {
                         it.copy(
                             isLoading = false,
@@ -104,6 +107,13 @@ class HomeViewModel @Inject constructor(
                         )
                     }
                 }
+        }
+    }
+
+    private suspend fun delayRemainingLoadingTime(loadingStartedAt: Long) {
+        val remainingMillis = MIN_RELOAD_LOADING_MS - (System.currentTimeMillis() - loadingStartedAt)
+        if (remainingMillis > 0) {
+            delay(remainingMillis)
         }
     }
 

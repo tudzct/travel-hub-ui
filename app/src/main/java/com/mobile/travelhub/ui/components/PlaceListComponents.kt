@@ -25,10 +25,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
@@ -91,6 +91,7 @@ import com.mobile.travelhub.ui.theme.PrimaryBlue
 fun PlaceListScreenContent(
     placeUiState: PlaceListUiState,
     homeUiState: HomeUiState,
+    listState: LazyListState,
     onPlaceClick: (TravelPlaceListItemResponse) -> Unit,
     onMenuClick: () -> Unit,
     onSearchClick: () -> Unit,
@@ -108,7 +109,6 @@ fun PlaceListScreenContent(
     val activeComments = homeUiState.activeCommentPostId
         ?.let { homeUiState.commentsByPostId[it] }
         .orEmpty()
-    val listState = rememberLazyListState()
     var previousScrollIndex by remember { mutableIntStateOf(0) }
     var previousScrollOffset by remember { mutableIntStateOf(0) }
     var isTopBarVisible by remember { mutableStateOf(true) }
@@ -162,7 +162,7 @@ fun PlaceListScreenContent(
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             when {
-                placeUiState.isLoading && placeUiState.items.isEmpty() -> {
+                placeUiState.isLoading -> {
                     item {
                         LocationsRailSkeleton()
                     }
@@ -200,7 +200,7 @@ fun PlaceListScreenContent(
                 }
             }
             when {
-                homeUiState.isLoading && homeUiState.posts.isEmpty() -> {
+                homeUiState.isLoading -> {
                     items(3) {
                         FeedPostCardSkeleton()
                     }
