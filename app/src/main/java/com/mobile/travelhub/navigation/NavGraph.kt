@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.outlined.History
+import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ModalDrawerSheet
@@ -47,6 +48,7 @@ import com.mobile.travelhub.viewmodels.AuthUiState
 import androidx.navigation.navArgument
 import com.mobile.travelhub.ui.screens.*
 import com.mobile.travelhub.viewmodels.ProfileViewModel
+import com.mobile.travelhub.viewmodels.UiState
 import kotlinx.coroutines.launch
 
 private const val PLACE_DETAIL_PLACE_KEY = "place_detail_place"
@@ -163,11 +165,21 @@ sealed class Screen(
 private fun HomeDrawerScaffold(
     onNavigateToHistory: () -> Unit,
     onLogout: () -> Unit,
+    changePasswordState: UiState<Boolean>,
+    onChangePassword: (String, String, String) -> Unit,
+    onClearChangePasswordState: () -> Unit,
     content: @Composable (openMenu: () -> Unit) -> Unit
 ) {
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val coroutineScope = rememberCoroutineScope()
     var hideDrawerContentForNavigation by remember { mutableStateOf(false) }
+    var showChangePasswordDialog by remember { mutableStateOf(false) }
+
+    LaunchedEffect(changePasswordState) {
+        if (changePasswordState is UiState.Success) {
+            showChangePasswordDialog = false
+        }
+    }
 
     ModalNavigationDrawer(
         drawerState = drawerState,
@@ -199,6 +211,22 @@ private fun HomeDrawerScaffold(
                             modifier = Modifier.padding(horizontal = 12.dp)
                         )
                         NavigationDrawerItem(
+                            label = { androidx.compose.material3.Text("Đổi mật khẩu") },
+                            selected = false,
+                            onClick = {
+                                onClearChangePasswordState()
+                                showChangePasswordDialog = true
+                                coroutineScope.launch { drawerState.close() }
+                            },
+                            icon = {
+                                Icon(
+                                    imageVector = Icons.Outlined.Lock,
+                                    contentDescription = null
+                                )
+                            },
+                            modifier = Modifier.padding(horizontal = 12.dp)
+                        )
+                        NavigationDrawerItem(
                             label = { androidx.compose.material3.Text("Logout") },
                             selected = false,
                             onClick = {
@@ -221,6 +249,16 @@ private fun HomeDrawerScaffold(
         content {
             hideDrawerContentForNavigation = false
             coroutineScope.launch { drawerState.open() }
+        }
+        if (showChangePasswordDialog) {
+            ChangePasswordDialog(
+                state = changePasswordState,
+                onDismiss = {
+                    showChangePasswordDialog = false
+                    onClearChangePasswordState()
+                },
+                onSubmit = onChangePassword
+            )
         }
     }
 }
@@ -319,6 +357,8 @@ fun NavGraph(
             )
         }
         composable(Screen.Home.route) {
+            val profileViewModel: ProfileViewModel = hiltViewModel()
+            val changePasswordState by profileViewModel.changePasswordState.collectAsState()
             HomeDrawerScaffold(
                 onNavigateToHistory = { navController.navigate(Screen.ViewHistory.route) { launchSingleTop = true } },
                 onLogout = {
@@ -327,7 +367,10 @@ fun NavGraph(
                         popUpTo(navController.graph.findStartDestination().id) { inclusive = false }
                         launchSingleTop = true
                     }
-                }
+                },
+                changePasswordState = changePasswordState,
+                onChangePassword = profileViewModel::changePassword,
+                onClearChangePasswordState = profileViewModel::clearChangePasswordState
             ) { openMenu ->
                 PlaceListScreen(
                     onPlaceClick = ::navigateToPlaceDetail,
