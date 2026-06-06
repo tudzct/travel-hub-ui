@@ -22,7 +22,6 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.outlined.PhotoCamera
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -82,6 +81,7 @@ import com.mobile.travelhub.ui.components.FeedPostCardSkeleton
 import com.mobile.travelhub.ui.components.HomeCommentsBottomSheet
 import com.mobile.travelhub.ui.components.InlineLoadingSkeleton
 import com.mobile.travelhub.ui.components.LoadingContentSkeleton
+import com.mobile.travelhub.ui.components.SimpleFormTextField
 import com.mobile.travelhub.ui.theme.*
 import com.mobile.travelhub.viewmodels.HomePostUiModel
 import com.mobile.travelhub.viewmodels.ProfileViewModel
@@ -876,12 +876,11 @@ private fun PasswordDialogField(
     onValueChange: (String) -> Unit,
     label: String
 ) {
-    OutlinedTextField(
+    SimpleFormTextField(
         value = value,
         onValueChange = onValueChange,
-        label = { Text(label) },
+        placeholder = label,
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(18.dp),
         singleLine = true,
         visualTransformation = PasswordVisualTransformation(),
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password)

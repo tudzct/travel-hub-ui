@@ -55,7 +55,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.compose.ui.tooling.preview.Preview
 import com.mobile.travelhub.ui.theme.SurfaceBg
 import com.mobile.travelhub.ui.theme.TravelHubTheme
-import com.mobile.travelhub.ui.components.LoadingListSkeleton
+import com.mobile.travelhub.ui.components.SkeletonBlock
 import java.time.Instant
 import java.time.Duration
 import com.mobile.travelhub.viewmodels.NotificationFilter
@@ -145,10 +145,7 @@ private fun NotificationsPopupContent(
                 contentAlignment = Alignment.Center
             ) {
                 if (isLoading) {
-                    LoadingListSkeleton(
-                        modifier = Modifier.fillMaxSize(),
-                        itemCount = 6
-                    )
+                    NotificationsListSkeleton()
                 } else if (filteredNotifications.isEmpty()) {
                     if (isPopupVisible) {
                         EmptyNotificationsPopup(onDismiss = { isPopupVisible = false })
@@ -287,6 +284,89 @@ private fun NotificationsScreenPreview() {
             isMarkingAllRead = false,
             onMarkAllRead = {}
         )
+    }
+}
+
+@Composable
+private fun NotificationsListSkeleton() {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        items(6, contentType = { "notification-skeleton" }) { index ->
+            NotificationCardSkeleton(isHighlighted = index < 3)
+        }
+    }
+}
+
+@Composable
+private fun NotificationCardSkeleton(
+    isHighlighted: Boolean
+) {
+    Surface(
+        shape = RoundedCornerShape(18.dp),
+        color = if (isHighlighted) {
+            MaterialTheme.colorScheme.primary.copy(alpha = 0.08f)
+        } else {
+            MaterialTheme.colorScheme.surface
+        },
+        tonalElevation = if (isHighlighted) 2.dp else 0.dp,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            SkeletonBlock(
+                modifier = Modifier.size(44.dp),
+                shape = CircleShape
+            )
+
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(7.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    SkeletonBlock(
+                        modifier = Modifier
+                            .fillMaxWidth(0.5f)
+                            .height(15.dp),
+                        shape = RoundedCornerShape(5.dp)
+                    )
+                    if (isHighlighted) {
+                        SkeletonBlock(
+                            modifier = Modifier.size(7.dp),
+                            shape = CircleShape
+                        )
+                    }
+                }
+                SkeletonBlock(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(12.dp),
+                    shape = RoundedCornerShape(4.dp)
+                )
+                SkeletonBlock(
+                    modifier = Modifier
+                        .fillMaxWidth(0.72f)
+                        .height(12.dp),
+                    shape = RoundedCornerShape(4.dp)
+                )
+            }
+
+            SkeletonBlock(
+                modifier = Modifier
+                    .size(width = 36.dp, height = 11.dp),
+                shape = RoundedCornerShape(4.dp)
+            )
+        }
     }
 }
 

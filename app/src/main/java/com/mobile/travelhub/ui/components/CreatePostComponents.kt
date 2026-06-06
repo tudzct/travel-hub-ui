@@ -21,7 +21,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Close
@@ -36,7 +35,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -224,37 +222,20 @@ private fun DescriptionInputSection(
     onDescriptionChange: (String) -> Unit,
     isSubmitting: Boolean
 ) {
-    Box(
+    SimpleFormTextField(
+        value = description,
+        onValueChange = onDescriptionChange,
+        placeholder = "Bạn đang nghĩ gì?",
+        enabled = !isSubmitting,
+        singleLine = false,
+        minLines = 4,
+        maxLines = 8,
+        textStyle = MaterialTheme.typography.bodyLarge.copy(lineHeight = 24.sp),
         modifier = Modifier
             .fillMaxWidth()
-            .heightIn(min = 120.dp)
             .padding(horizontal = 20.dp)
             .padding(bottom = 16.dp)
-    ) {
-        BasicTextField(
-            value = description,
-            onValueChange = onDescriptionChange,
-            enabled = !isSubmitting,
-            textStyle = MaterialTheme.typography.bodyLarge.copy(
-                color = MaterialTheme.colorScheme.onSurface,
-                lineHeight = 24.sp
-            ),
-            cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
-            modifier = Modifier.fillMaxWidth(),
-            decorationBox = { innerTextField ->
-                Box {
-                    if (description.isEmpty()) {
-                        Text(
-                            text = "Bạn đang nghĩ gì?",
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-                        )
-                    }
-                    innerTextField()
-                }
-            }
-        )
-    }
+    )
 }
 
 // ──────────────────────────────────────────────────────────────────────────────

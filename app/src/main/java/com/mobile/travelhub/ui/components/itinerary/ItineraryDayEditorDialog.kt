@@ -12,7 +12,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -29,6 +28,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.mobile.travelhub.data.model.ItineraryDay
+import com.mobile.travelhub.ui.components.SimpleFormTextField
 import com.mobile.travelhub.ui.theme.OnSurface
 import com.mobile.travelhub.ui.theme.OnSurfaceVariant
 import com.mobile.travelhub.ui.theme.PrimaryBlue
@@ -92,16 +92,16 @@ fun ItineraryDayEditorDialog(
                     }
                 }
 
-                OutlinedTextField(
+                SimpleFormTextField(
                     value = label,
                     onValueChange = { label = it },
-                    label = { Text("Day label") },
+                    placeholder = "Day label",
                     modifier = Modifier.fillMaxWidth()
                 )
-                OutlinedTextField(
+                SimpleFormTextField(
                     value = dateLabel,
                     onValueChange = { dateLabel = it },
-                    label = { Text("Date label") },
+                    placeholder = "Date label",
                     modifier = Modifier.fillMaxWidth()
                 )
 

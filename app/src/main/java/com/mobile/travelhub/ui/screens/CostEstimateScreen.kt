@@ -14,6 +14,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import com.mobile.travelhub.viewmodels.ExpenseTransactionUiModel
 import com.mobile.travelhub.ui.components.modifiers.shimmerEffect
+import com.mobile.travelhub.ui.components.SimpleFormTextField
 
 
 import androidx.compose.material.icons.filled.ConfirmationNumber
@@ -386,33 +387,23 @@ fun AddExpenseContent(
         )
         Spacer(modifier = Modifier.height(24.dp))
         
-        OutlinedTextField(
+        SimpleFormTextField(
             value = expenseTitle,
             onValueChange = { expenseTitle = it },
-            label = { Text("Tên khoản chi (VD: Ăn trưa, Vé tàu...)") },
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = PrimaryBlue,
-                unfocusedBorderColor = SurfaceContainerLow
-            )
+            placeholder = "Tên khoản chi (VD: Ăn trưa, Vé tàu...)",
+            modifier = Modifier.fillMaxWidth()
         )
         
         Spacer(modifier = Modifier.height(16.dp))
 
-        OutlinedTextField(
+        SimpleFormTextField(
             value = expenseAmountValue,
             onValueChange = { newValue ->
                 val formatted = NumberUtils.formatTextFieldValue(newValue)
                 expenseAmountValue = formatted
             },
-            label = { Text("Số tiền (VND)") },
+            placeholder = "Số tiền (VND)",
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = PrimaryBlue,
-                unfocusedBorderColor = SurfaceContainerLow
-            ),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
         )
 
@@ -422,22 +413,17 @@ fun AddExpenseContent(
             expanded = expanded,
             onExpandedChange = { expanded = !expanded }
         ) {
-            OutlinedTextField(
+            SimpleFormTextField(
                 value = selectedCategory,
                 onValueChange = {},
                 readOnly = true,
-                label = { Text("Danh mục") },
+                placeholder = "Danh mục",
                 trailingIcon = {
                     Icon(Icons.Default.ArrowDropDown, contentDescription = null)
                 },
                 modifier = Modifier
                     .menuAnchor()
-                    .fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = PrimaryBlue,
-                    unfocusedBorderColor = SurfaceContainerLow
-                )
+                    .fillMaxWidth()
             )
             ExposedDropdownMenu(
                 expanded = expanded,
@@ -678,33 +664,23 @@ fun EditExpenseContent(
         }
         Spacer(modifier = Modifier.height(24.dp))
         
-        OutlinedTextField(
+        SimpleFormTextField(
             value = expenseTitle,
             onValueChange = { expenseTitle = it },
-            label = { Text("Tên khoản chi (VD: Ăn trưa, Vé tàu...)") },
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = PrimaryBlue,
-                unfocusedBorderColor = SurfaceContainerLow
-            )
+            placeholder = "Tên khoản chi (VD: Ăn trưa, Vé tàu...)",
+            modifier = Modifier.fillMaxWidth()
         )
         
         Spacer(modifier = Modifier.height(16.dp))
 
-        OutlinedTextField(
+        SimpleFormTextField(
             value = expenseAmountValue,
             onValueChange = { newValue ->
                 val formatted = NumberUtils.formatTextFieldValue(newValue)
                 expenseAmountValue = formatted
             },
-            label = { Text("Số tiền (VND)") },
+            placeholder = "Số tiền (VND)",
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = PrimaryBlue,
-                unfocusedBorderColor = SurfaceContainerLow
-            ),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
         )
 
@@ -714,22 +690,17 @@ fun EditExpenseContent(
             expanded = expanded,
             onExpandedChange = { expanded = !expanded }
         ) {
-            OutlinedTextField(
+            SimpleFormTextField(
                 value = selectedCategory,
                 onValueChange = {},
                 readOnly = true,
-                label = { Text("Danh mục") },
+                placeholder = "Danh mục",
                 trailingIcon = {
                     Icon(Icons.Default.ArrowDropDown, contentDescription = null)
                 },
                 modifier = Modifier
                     .menuAnchor()
-                    .fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = PrimaryBlue,
-                    unfocusedBorderColor = SurfaceContainerLow
-                )
+                    .fillMaxWidth()
             )
             ExposedDropdownMenu(
                 expanded = expanded,

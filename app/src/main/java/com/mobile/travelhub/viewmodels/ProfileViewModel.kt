@@ -3,6 +3,7 @@ package com.mobile.travelhub.viewmodels
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.mobile.travelhub.data.AvatarRepository
 import com.mobile.travelhub.data.AuthRepository
 import com.mobile.travelhub.data.PostRepository
 import com.mobile.travelhub.data.api.UserApiService
@@ -28,15 +29,13 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import okhttp3.MediaType.Companion.toMediaTypeOrNull
-import okhttp3.MultipartBody
-import okhttp3.RequestBody.Companion.toRequestBody
 
 @HiltViewModel
 class ProfileViewModel @Inject constructor(
     private val authRepository: AuthRepository,
     private val userApiService: UserApiService,
-    private val postRepository: PostRepository
+    private val postRepository: PostRepository,
+    private val avatarRepository: AvatarRepository
 ) : ViewModel() {
     private val sessionUserId: Long
         get() = authRepository.getSavedSession()?.userId?.toLong() ?: -1L
@@ -372,20 +371,12 @@ class ProfileViewModel @Inject constructor(
         imageBytes: ByteArray,
         mimeType: String,
         fileName: String
-    ): String = withContext(Dispatchers.IO) {
-        userApiService.uploadAvatar(buildAvatarPart(imageBytes, mimeType, fileName)).string().trim().trim('"')
-    }
-
-    private fun buildAvatarPart(
-        bytes: ByteArray,
-        mimeType: String,
-        fileName: String
-    ): MultipartBody.Part {
-        val safeMimeType = mimeType.ifBlank { "image/jpeg" }
-        val safeFileName = fileName.ifBlank { "avatar.jpg" }
-        val requestBody = bytes.toRequestBody(safeMimeType.toMediaTypeOrNull())
-        return MultipartBody.Part.createFormData("file", safeFileName, requestBody)
-    }
+    ): String = avatarRepository.uploadAvatar(
+        userId = sessionUserId,
+        imageBytes = imageBytes,
+        mimeType = mimeType,
+        fileName = fileName
+    )
 
     fun loadFollowers(userId: Long = sessionUserId) {
         viewModelScope.launch {

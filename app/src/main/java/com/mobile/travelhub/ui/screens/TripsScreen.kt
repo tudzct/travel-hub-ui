@@ -37,6 +37,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.mobile.travelhub.ui.components.modifiers.shimmerEffect
+import com.mobile.travelhub.ui.components.SimpleFormTextField
 import com.mobile.travelhub.R
 import com.mobile.travelhub.ui.theme.*
 import com.mobile.travelhub.viewmodels.TripsViewModel
@@ -549,17 +550,12 @@ fun AddTripOptionsContent(
             )
             Spacer(modifier = Modifier.height(24.dp))
 
-            OutlinedTextField(
+            SimpleFormTextField(
                 value = joinCode,
                 onValueChange = { joinCode = it.uppercase().take(8) },
-                label = { Text("Mã chuyến đi") },
+                placeholder = "Mã chuyến đi",
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
-                singleLine = true,
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = PrimaryBlue,
-                    unfocusedBorderColor = SurfaceContainerLow
-                )
+                singleLine = true
             )
             Spacer(modifier = Modifier.height(24.dp))
             Button(

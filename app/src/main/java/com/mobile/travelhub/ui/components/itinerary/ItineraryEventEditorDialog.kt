@@ -29,7 +29,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -50,6 +49,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.mobile.travelhub.data.model.ItineraryEvent
+import com.mobile.travelhub.ui.components.SimpleFormTextField
 import com.mobile.travelhub.ui.theme.OnSurface
 import com.mobile.travelhub.ui.theme.OnSurfaceVariant
 import com.mobile.travelhub.ui.theme.OutlineVariant
@@ -319,13 +319,14 @@ private fun ItineraryEditorField(
     minLines: Int = 1,
     keyboardType: KeyboardType = KeyboardType.Text
 ) {
-    OutlinedTextField(
+    SimpleFormTextField(
         value = value,
         onValueChange = onValueChange,
-        label = { Text(label) },
+        placeholder = label,
         modifier = modifier.fillMaxWidth(),
+        singleLine = minLines == 1,
         minLines = minLines,
-        shape = RoundedCornerShape(18.dp),
+        maxLines = if (minLines == 1) 1 else 6,
         keyboardOptions = KeyboardOptions(keyboardType = keyboardType)
     )
 }

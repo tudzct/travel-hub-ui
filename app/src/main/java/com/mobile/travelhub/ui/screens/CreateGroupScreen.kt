@@ -21,8 +21,6 @@ import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.SelectableDates
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -61,6 +59,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.mobile.travelhub.ui.components.DestinationPlacePicker
 import com.mobile.travelhub.ui.components.EditProfileField
 import com.mobile.travelhub.ui.components.PrimaryProfileButton
+import com.mobile.travelhub.ui.components.SimpleFormTextField
 import com.mobile.travelhub.viewmodels.CreateGroupViewModel
 import com.mobile.travelhub.utils.NumberUtils
 import java.time.Instant
@@ -412,42 +411,22 @@ private fun TripDateRangeFieldInput(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(bottom = 8.dp)
         )
-        OutlinedTextField(
+        SimpleFormTextField(
             value = value,
             onValueChange = {},
+            placeholder = placeholder,
             readOnly = true,
             enabled = false,
             modifier = Modifier
                 .fillMaxWidth()
                 .clickable(onClick = onClick),
-            shape = RoundedCornerShape(12.dp),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
-                unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-                disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
-                disabledBorderColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f),
-                disabledTextColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-            ),
-            textStyle = MaterialTheme.typography.bodyLarge.copy(
-                color = MaterialTheme.colorScheme.onSurface
-            ),
-            placeholder = {
-                Text(
-                    text = placeholder,
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-                )
-            },
             trailingIcon = {
                 Icon(
                     Icons.Default.CalendarMonth,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-            },
-            singleLine = true
+            }
         )
     }
 }

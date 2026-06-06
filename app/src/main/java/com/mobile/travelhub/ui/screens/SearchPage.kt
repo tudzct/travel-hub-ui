@@ -22,7 +22,6 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.Send
@@ -49,7 +48,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -240,63 +238,41 @@ private fun SearchInput(
     onClear: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    BasicTextField(
+    SimpleFormTextField(
         value = query,
         onValueChange = onQueryChange,
+        placeholder = "Search posts or users",
         singleLine = true,
         textStyle = MaterialTheme.typography.bodyMedium.copy(
             color = OnSurface,
             fontSize = 14.sp
         ),
-        cursorBrush = SolidColor(PrimaryBlue),
         modifier = modifier
-            .height(44.dp)
-            .clip(RoundedCornerShape(8.dp))
-            .background(Color(0xFFEFF2FA)),
-        decorationBox = { innerTextField ->
-            Row(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 12.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    imageVector = Icons.Outlined.Search,
-                    contentDescription = null,
-                    tint = OnSurfaceVariant,
-                    modifier = Modifier.size(19.dp)
-                )
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(start = 10.dp),
-                    contentAlignment = Alignment.CenterStart
+            .height(56.dp),
+        leadingIcon = {
+            Icon(
+                imageVector = Icons.Outlined.Search,
+                contentDescription = null,
+                tint = OnSurfaceVariant,
+                modifier = Modifier.size(19.dp)
+            )
+        },
+        trailingIcon = if (query.isNotEmpty()) {
+            {
+                IconButton(
+                    onClick = onClear,
+                    modifier = Modifier.size(32.dp)
                 ) {
-                    if (query.isEmpty()) {
-                        Text(
-                            text = "Search posts or users",
-                            color = OnSurfaceVariant,
-                            fontSize = 14.sp,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-                    innerTextField()
-                }
-                if (query.isNotEmpty()) {
-                    IconButton(
-                        onClick = onClear,
-                        modifier = Modifier.size(32.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Outlined.Close,
-                            contentDescription = "Clear search",
-                            tint = OnSurfaceVariant,
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
+                    Icon(
+                        imageVector = Icons.Outlined.Close,
+                        contentDescription = "Clear search",
+                        tint = OnSurfaceVariant,
+                        modifier = Modifier.size(18.dp)
+                    )
                 }
             }
+        } else {
+            null
         }
     )
 }
