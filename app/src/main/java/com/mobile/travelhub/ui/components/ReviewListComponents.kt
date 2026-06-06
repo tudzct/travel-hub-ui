@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
@@ -41,7 +40,7 @@ fun ReviewListScreenContent(
 
         when {
             uiState.isLoading -> {
-                CircularProgressIndicator()
+                LoadingListSkeleton(itemCount = 4)
             }
 
             uiState.errorMessage != null -> {

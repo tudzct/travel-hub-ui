@@ -25,7 +25,6 @@ import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.PersonAdd
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.HorizontalDivider
@@ -56,6 +55,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.compose.ui.tooling.preview.Preview
 import com.mobile.travelhub.ui.theme.SurfaceBg
 import com.mobile.travelhub.ui.theme.TravelHubTheme
+import com.mobile.travelhub.ui.components.LoadingListSkeleton
 import java.time.Instant
 import java.time.Duration
 import com.mobile.travelhub.viewmodels.NotificationFilter
@@ -145,7 +145,10 @@ private fun NotificationsPopupContent(
                 contentAlignment = Alignment.Center
             ) {
                 if (isLoading) {
-                    CircularProgressIndicator()
+                    LoadingListSkeleton(
+                        modifier = Modifier.fillMaxSize(),
+                        itemCount = 6
+                    )
                 } else if (filteredNotifications.isEmpty()) {
                     if (isPopupVisible) {
                         EmptyNotificationsPopup(onDismiss = { isPopupVisible = false })

@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -32,9 +31,6 @@ import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Tag
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -54,14 +50,12 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import coil.compose.AsyncImage
 import com.mobile.travelhub.R
 import com.mobile.travelhub.data.model.FeedPostResponse
 import com.mobile.travelhub.data.model.UserProfileResponse
@@ -69,13 +63,16 @@ import com.mobile.travelhub.ui.components.CommentItem
 import com.mobile.travelhub.ui.components.FeedPostCard
 import com.mobile.travelhub.ui.components.FeedPostCardSkeleton
 import com.mobile.travelhub.ui.components.SimpleFormTextField
-import com.mobile.travelhub.ui.components.modifiers.shimmerEffect
+import com.mobile.travelhub.ui.components.InlineLoadingSkeleton
+import com.mobile.travelhub.ui.components.LoadingContentSkeleton
+import com.mobile.travelhub.ui.components.LoadingListSkeleton
+import com.mobile.travelhub.ui.components.UserResultCard
+import com.mobile.travelhub.ui.components.UserResultCardSkeleton
 import com.mobile.travelhub.ui.theme.OnSurface
 import com.mobile.travelhub.ui.theme.OnSurfaceVariant
 import com.mobile.travelhub.ui.theme.OutlineVariant
 import com.mobile.travelhub.ui.theme.PrimaryBlue
 import com.mobile.travelhub.ui.theme.SurfaceBg
-import com.mobile.travelhub.ui.theme.SurfaceContainer
 import com.mobile.travelhub.utils.PostsUtils
 import com.mobile.travelhub.viewmodels.HomeCommentUiModel
 import com.mobile.travelhub.viewmodels.HomePostUiModel
@@ -406,7 +403,7 @@ private fun SearchCommentsSheet(
                     .padding(vertical = 24.dp),
                 contentAlignment = Alignment.Center
             ) {
-                CircularProgressIndicator(color = PrimaryBlue)
+                LoadingListSkeleton(itemCount = 3)
             }
             !commentsErrorMessage.isNullOrBlank() -> Text(
                 text = commentsErrorMessage,
@@ -470,11 +467,7 @@ private fun SearchCommentsSheet(
                     .background(PrimaryBlue)
             ) {
                 if (isCommentSubmitting) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(16.dp),
-                        strokeWidth = 2.dp,
-                        color = Color.White
-                    )
+                    InlineLoadingSkeleton(modifier = Modifier.size(16.dp))
                 } else {
                     Icon(
                         imageVector = Icons.AutoMirrored.Outlined.Send,
@@ -524,7 +517,7 @@ private fun UserCarouselSection(
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     items(4, contentType = { "user-skeleton" }) {
-                        UserCarouselCardSkeleton()
+                        UserResultCardSkeleton()
                     }
                 }
             }
@@ -544,8 +537,12 @@ private fun UserCarouselSection(
                         key = { it.id },
                         contentType = { "user" }
                     ) { user ->
-                        UserCarouselCard(
-                            user = user,
+                        UserResultCard(
+                            name = user.name,
+                            username = user.username,
+                            avatarUrl = user.avatarUrl,
+                            followersCount = user.followersCount,
+                            isFollowing = user.isFollowing,
                             isFollowLoading = user.id in followingRequestUserIds,
                             onFollowClick = { onToggleFollow(user) },
                             onClick = { onUserClick(user.id) }
@@ -589,50 +586,6 @@ private fun UserCarouselStatusCard(
                 Text(text = actionLabel, color = PrimaryBlue)
             }
         }
-    }
-}
-
-@Composable
-private fun UserCarouselCardSkeleton() {
-    Column(
-        modifier = Modifier
-            .width(156.dp)
-            .height(188.dp)
-            .clip(RoundedCornerShape(8.dp))
-            .background(Color.White)
-            .padding(horizontal = 12.dp, vertical = 14.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Box(
-            modifier = Modifier
-                .size(66.dp)
-                .clip(CircleShape)
-                .shimmerEffect()
-        )
-        Spacer(modifier = Modifier.height(12.dp))
-        Box(
-            modifier = Modifier
-                .fillMaxWidth(0.78f)
-                .height(16.dp)
-                .clip(RoundedCornerShape(6.dp))
-                .shimmerEffect()
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        Box(
-            modifier = Modifier
-                .fillMaxWidth(0.58f)
-                .height(13.dp)
-                .clip(RoundedCornerShape(6.dp))
-                .shimmerEffect()
-        )
-        Spacer(modifier = Modifier.height(14.dp))
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(34.dp)
-                .clip(RoundedCornerShape(18.dp))
-                .shimmerEffect()
-        )
     }
 }
 
@@ -726,127 +679,6 @@ private fun SearchSuggestionRow(
 }
 
 @Composable
-private fun UserCarouselCard(
-    user: UserProfileResponse,
-    isFollowLoading: Boolean,
-    onFollowClick: () -> Unit,
-    onClick: () -> Unit
-) {
-    val title = user.name.takeIf { it.isNotBlank() } ?: user.username
-    val metadata = buildString {
-        append(formatFollowerCount(user.followersCount))
-        append(" follower")
-        if (user.followersCount != 1) append("s")
-    }
-
-    Column(
-        modifier = Modifier
-            .width(156.dp)
-            .height(188.dp)
-            .clip(RoundedCornerShape(8.dp))
-            .background(Color.White)
-            .clickable(onClick = onClick)
-            .padding(horizontal = 12.dp, vertical = 14.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        UserResultAvatar(
-            avatarUrl = user.avatarUrl,
-            name = title
-        )
-        Spacer(modifier = Modifier.height(10.dp))
-        Text(
-            text = title,
-            color = OnSurface,
-            style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.Bold,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
-        Spacer(modifier = Modifier.height(3.dp))
-        Text(
-            text = metadata,
-            color = OnSurfaceVariant,
-            style = MaterialTheme.typography.bodySmall,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
-        Spacer(modifier = Modifier.weight(1f))
-        FollowButton(
-            isFollowing = user.isFollowing,
-            isLoading = isFollowLoading,
-            onClick = onFollowClick
-        )
-    }
-}
-
-@Composable
-private fun UserResultAvatar(
-    avatarUrl: String?,
-    name: String
-) {
-    Box(
-        modifier = Modifier
-            .size(66.dp)
-            .clip(CircleShape)
-            .border(2.dp, PrimaryBlue, CircleShape)
-            .padding(3.dp)
-            .clip(CircleShape)
-            .background(Color(0xFFEFF2FA)),
-        contentAlignment = Alignment.Center
-    ) {
-        if (avatarUrl.isNullOrBlank()) {
-            Icon(
-                imageVector = Icons.Outlined.Person,
-                contentDescription = null,
-                tint = OnSurfaceVariant,
-                modifier = Modifier.size(34.dp)
-            )
-        } else {
-            AsyncImage(
-                model = avatarUrl,
-                contentDescription = "$name avatar",
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize()
-            )
-        }
-    }
-}
-
-@Composable
-private fun FollowButton(
-    isFollowing: Boolean,
-    isLoading: Boolean,
-    onClick: () -> Unit
-) {
-    Button(
-        onClick = onClick,
-        enabled = !isLoading,
-        colors = ButtonDefaults.buttonColors(
-            containerColor = if (isFollowing) SurfaceContainer else PrimaryBlue,
-            contentColor = if (isFollowing) OnSurface else Color.White,
-            disabledContainerColor = if (isFollowing) SurfaceContainer else PrimaryBlue.copy(alpha = 0.62f),
-            disabledContentColor = if (isFollowing) OnSurfaceVariant else Color.White.copy(alpha = 0.82f)
-        ),
-        shape = RoundedCornerShape(18.dp),
-        contentPadding = PaddingValues(horizontal = 20.dp, vertical = 0.dp),
-        modifier = Modifier
-            .height(38.dp)
-            .widthIn(min = 104.dp)
-    ) {
-        Text(
-            text = when {
-                isLoading -> "..."
-                isFollowing -> "Following"
-                else -> "Follow"
-            },
-            style = MaterialTheme.typography.labelLarge,
-            fontWeight = FontWeight.Bold,
-            maxLines = 1
-        )
-    }
-}
-
-@Composable
 private fun SearchRowContainer(
     onClick: () -> Unit,
     content: @Composable RowScope.() -> Unit
@@ -892,10 +724,7 @@ private fun LoadingSearchState() {
             .padding(top = 48.dp),
         contentAlignment = Alignment.Center
     ) {
-        CircularProgressIndicator(
-            color = PrimaryBlue,
-            modifier = Modifier.size(32.dp)
-        )
+        LoadingContentSkeleton(modifier = Modifier.fillMaxWidth())
     }
 }
 
@@ -967,21 +796,6 @@ private enum class SearchLeadingIcon {
     History,
     Tag,
     User
-}
-
-private fun formatFollowerCount(count: Int): String {
-    val safeCount = count.coerceAtLeast(0)
-    return when {
-        safeCount >= 1_000_000 -> {
-            val millions = safeCount / 1_000_000f
-            "${"%.1f".format(millions).trimEnd('0').trimEnd('.')}M"
-        }
-        safeCount >= 1_000 -> {
-            val thousands = safeCount / 1_000f
-            "${"%.1f".format(thousands).trimEnd('0').trimEnd('.')}K"
-        }
-        else -> safeCount.toString()
-    }
 }
 
 private fun FeedPostResponse.toHomePostUiModel(

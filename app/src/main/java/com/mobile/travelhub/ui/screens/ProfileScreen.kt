@@ -22,7 +22,6 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.outlined.PhotoCamera
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.HorizontalDivider
@@ -81,6 +80,8 @@ import com.mobile.travelhub.data.userMessage
 import com.mobile.travelhub.ui.components.FeedPostCard
 import com.mobile.travelhub.ui.components.FeedPostCardSkeleton
 import com.mobile.travelhub.ui.components.HomeCommentsBottomSheet
+import com.mobile.travelhub.ui.components.InlineLoadingSkeleton
+import com.mobile.travelhub.ui.components.LoadingContentSkeleton
 import com.mobile.travelhub.ui.theme.*
 import com.mobile.travelhub.viewmodels.HomePostUiModel
 import com.mobile.travelhub.viewmodels.ProfileViewModel
@@ -419,7 +420,7 @@ private fun ProfileScreenContent(
                     Box(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
                         when (val state = profileState) {
                             is UiState.Loading -> {
-                                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center), color = PrimaryBlue)
+                                LoadingContentSkeleton(modifier = Modifier.fillMaxSize())
                             }
                             is UiState.Error -> {
                                 ErrorLayout(message = state.message) {
@@ -858,11 +859,7 @@ fun ChangePasswordDialog(
                         )
                     ) {
                         if (isLoading) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(18.dp),
-                                strokeWidth = 2.dp,
-                                color = Color.White
-                            )
+                            InlineLoadingSkeleton(modifier = Modifier.size(18.dp))
                         } else {
                             Text("Lưu")
                         }

@@ -34,7 +34,6 @@ import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -69,6 +68,10 @@ import com.mobile.travelhub.data.model.TravelPlaceListItemResponse
 import com.mobile.travelhub.data.model.TravelPlaceReviewResponse
 import com.mobile.travelhub.ui.components.ExpandableDescription
 import com.mobile.travelhub.ui.components.SimpleFormTextField
+import com.mobile.travelhub.ui.components.InlineLoadingSkeleton
+import com.mobile.travelhub.ui.components.LoadingContentSkeleton
+import com.mobile.travelhub.ui.components.LoadingListSkeleton
+import com.mobile.travelhub.ui.components.SkeletonBlock
 import com.mobile.travelhub.ui.theme.OnSurface
 import com.mobile.travelhub.ui.theme.OnSurfaceVariant
 import com.mobile.travelhub.ui.theme.PrimaryBlue
@@ -138,10 +141,7 @@ fun PlaceDetailScreen(
     ) {
         when {
             uiState.isLoading && uiState.detail == null -> {
-                CircularProgressIndicator(
-                    modifier = Modifier.align(Alignment.Center),
-                    color = MaterialTheme.colorScheme.primary
-                )
+                LoadingContentSkeleton(modifier = Modifier.fillMaxSize())
             }
 
             uiState.errorMessage != null && uiState.detail == null -> {
@@ -534,7 +534,7 @@ private fun RelatedPlacesSection(
                         .padding(vertical = 16.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                    LoadingListSkeleton(itemCount = 2)
                 }
             }
 
@@ -750,7 +750,7 @@ private fun ReviewPreviewSection(
 
         when {
             isLoading -> {
-                CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                LoadingListSkeleton(itemCount = 2)
             }
 
             errorMessage != null -> {
@@ -924,10 +924,10 @@ private fun ReviewBottomSheet(
                 )
             ) {
                 if (uiState.isSubmitting) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(18.dp),
-                        color = MaterialTheme.colorScheme.onPrimary,
-                        strokeWidth = 2.dp
+                    SkeletonBlock(
+                        modifier = Modifier
+                            .fillMaxWidth(0.34f)
+                            .height(10.dp)
                     )
                 } else {
                     Text("Gửi đánh giá")

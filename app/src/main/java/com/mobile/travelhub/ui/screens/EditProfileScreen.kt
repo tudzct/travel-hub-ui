@@ -19,7 +19,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -59,6 +58,8 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.mobile.travelhub.R
 import com.mobile.travelhub.data.userMessage
 import com.mobile.travelhub.ui.components.EditProfileField
+import com.mobile.travelhub.ui.components.InlineLoadingSkeleton
+import com.mobile.travelhub.ui.components.LoadingContentSkeleton
 import com.mobile.travelhub.viewmodels.ProfileViewModel
 import com.mobile.travelhub.viewmodels.UiState
 
@@ -191,7 +192,11 @@ fun EditProfileScreen(
                 },
                 actions = {
                     if (isSaving) {
-                        CircularProgressIndicator(modifier = Modifier.size(24.dp).padding(end = 16.dp))
+                        InlineLoadingSkeleton(
+                            modifier = Modifier
+                                .size(24.dp)
+                                .padding(end = 16.dp)
+                        )
                     } else {
                         TextButton(onClick = { saveProfile() }) {
                             Text(
@@ -217,9 +222,7 @@ fun EditProfileScreen(
                 .padding(horizontal = 24.dp)
         ) {
             if (profileState is UiState.Loading) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
-                }
+                LoadingContentSkeleton()
                 return@Scaffold
             }
             

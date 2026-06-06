@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
@@ -27,6 +26,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil3.compose.AsyncImage
+import com.mobile.travelhub.ui.components.LoadingListSkeleton
 import com.mobile.travelhub.viewmodels.HistoryViewModel
 import java.time.Instant
 import java.time.ZoneId
@@ -65,7 +65,7 @@ fun ViewHistoryScreen(
 
         when {
             uiState.isLoading -> {
-                CircularProgressIndicator()
+                LoadingListSkeleton(itemCount = 5)
             }
 
             uiState.errorMessage != null && uiState.items.isEmpty() -> {

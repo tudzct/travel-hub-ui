@@ -15,6 +15,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -23,9 +25,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.filled.AutoAwesome
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -40,17 +39,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import coil.compose.AsyncImage
 import com.mobile.travelhub.data.model.TopTravelerPeriod
 import com.mobile.travelhub.data.model.TopTravelerResponse
 import com.mobile.travelhub.data.model.TravelPlaceListItemResponse
 import com.mobile.travelhub.ui.components.FeaturedLocationCard
+import com.mobile.travelhub.ui.components.UserResultCard
+import com.mobile.travelhub.ui.components.UserResultCardSkeleton
 import com.mobile.travelhub.ui.components.modifiers.shimmerEffect
 import com.mobile.travelhub.ui.theme.OnSurface
 import com.mobile.travelhub.ui.theme.OnSurfaceVariant
@@ -169,7 +168,6 @@ fun ExploreScreen(
         )
     }
 }
-
 @Composable
 private fun FeaturedLocationsSection(
     locations: List<TravelPlaceListItemResponse>,
@@ -437,17 +435,13 @@ private fun TopTravelersPreview(
     )
     when {
         state.isLoading -> {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 18.dp),
-                horizontalArrangement = Arrangement.Center
+            LazyRow(
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 14.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(28.dp),
-                    color = PrimaryBlue,
-                    strokeWidth = 2.dp
-                )
+                items(4, contentType = { "top-traveler-skeleton" }) {
+                    UserResultCardSkeleton()
+                }
             }
         }
 
@@ -477,19 +471,25 @@ private fun TopTravelersPreview(
         }
 
         else -> {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState())
-                    .padding(horizontal = 16.dp, vertical = 14.dp),
+            LazyRow(
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 14.dp),
                 horizontalArrangement = Arrangement.spacedBy(26.dp)
             ) {
-                state.items.forEach { traveler ->
-                    TravelerItem(
-                        traveler = traveler,
-                        followRequestInProgress = traveler.id in state.requestingFollowIds,
+                items(
+                    items = state.items,
+                    key = { it.id },
+                    contentType = { "top-traveler" }
+                ) { traveler ->
+                    UserResultCard(
+                        name = traveler.name.orEmpty(),
+                        username = traveler.username,
+                        avatarUrl = traveler.avatarUrl,
+                        followersCount = traveler.followersCount,
+                        isFollowing = traveler.following,
+                        isFollowLoading = traveler.id in state.requestingFollowIds,
+                        isCurrentUser = traveler.currentUser,
                         onClick = { onTravelerClick(traveler.id, traveler.currentUser) },
-                        onToggleFollow = { onToggleFollow(traveler) }
+                        onFollowClick = { onToggleFollow(traveler) }
                     )
                 }
             }
@@ -515,65 +515,6 @@ private fun TopTravelerPeriodSelector(
                     Text(if (period == TopTravelerPeriod.WEEK) "Week" else "Month")
                 }
             )
-        }
-    }
-}
-
-@Composable
-private fun TravelerItem(
-    traveler: TopTravelerResponse,
-    followRequestInProgress: Boolean,
-    onClick: () -> Unit,
-    onToggleFollow: () -> Unit
-) {
-    val displayName = traveler.name?.takeIf { it.isNotBlank() } ?: traveler.username
-    Column(
-        modifier = Modifier
-            .width(72.dp)
-            .clickable(onClick = onClick),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        AsyncImage(
-            model = traveler.avatarUrl,
-            contentDescription = displayName,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier
-                .size(54.dp)
-                .clip(CircleShape)
-                .border(
-                    width = if (traveler.following) 2.dp else 0.dp,
-                    color = if (traveler.following) PrimaryBlue else Color.Transparent,
-                    shape = CircleShape
-                )
-        )
-        Text(
-            text = if (traveler.currentUser) "You" else displayName,
-            modifier = Modifier.padding(top = 7.dp),
-            color = OnSurface,
-            fontSize = 11.sp,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
-        if (!traveler.currentUser) {
-            Button(
-                onClick = onToggleFollow,
-                enabled = !followRequestInProgress,
-                modifier = Modifier
-                    .padding(top = 6.dp)
-                    .height(24.dp),
-                shape = RoundedCornerShape(14.dp),
-                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = if (traveler.following) PrimaryBlue else Color(0xFFF3F5FA),
-                    contentColor = if (traveler.following) Color.White else OnSurfaceVariant
-                )
-            ) {
-                Text(
-                    text = if (traveler.following) "Following" else "Follow",
-                    fontSize = 9.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            }
         }
     }
 }

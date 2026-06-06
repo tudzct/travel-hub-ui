@@ -1,34 +1,26 @@
 package com.mobile.travelhub.ui.screens
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -39,21 +31,17 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import coil.compose.AsyncImage
 import com.mobile.travelhub.data.model.TopTravelerPeriod
-import com.mobile.travelhub.data.model.TopTravelerResponse
+import com.mobile.travelhub.ui.components.UserResultCard
+import com.mobile.travelhub.ui.components.UserResultCardSkeleton
 import com.mobile.travelhub.ui.theme.OnSurface
 import com.mobile.travelhub.ui.theme.OnSurfaceVariant
 import com.mobile.travelhub.ui.theme.PrimaryBlue
 import com.mobile.travelhub.ui.theme.SurfaceBg
-import com.mobile.travelhub.ui.theme.SurfaceContainerLow
 import com.mobile.travelhub.viewmodels.TopTravelersViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -108,9 +96,7 @@ fun TopTravelersScreen(
 
             when {
                 state.isLoading -> {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator(color = PrimaryBlue)
-                    }
+                    TopTravelerGridSkeleton()
                 }
 
                 state.errorMessage != null && state.items.isEmpty() -> {
@@ -139,31 +125,38 @@ fun TopTravelersScreen(
                 }
 
                 else -> {
-                    LazyColumn(
+                    LazyVerticalGrid(
+                        columns = GridCells.Fixed(2),
                         modifier = Modifier.fillMaxSize(),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         if (state.actionErrorMessage != null) {
-                            item {
+                            item(span = { GridItemSpan(maxLineSpan) }) {
                                 Text(
                                     text = state.actionErrorMessage.orEmpty(),
-                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                                    modifier = Modifier.padding(vertical = 4.dp),
                                     color = MaterialTheme.colorScheme.error,
                                     fontSize = 12.sp
                                 )
                             }
                         }
-                        itemsIndexed(state.items, key = { _, traveler -> traveler.id }) { index, traveler ->
-                            RankedTravelerRow(
-                                rank = index + 1,
-                                traveler = traveler,
-                                followRequestInProgress = traveler.id in state.requestingFollowIds,
+                        items(state.items, key = { traveler -> traveler.id }) { traveler ->
+                            UserResultCard(
+                                name = traveler.name.orEmpty(),
+                                username = traveler.username,
+                                avatarUrl = traveler.avatarUrl,
+                                followersCount = traveler.followersCount,
+                                isFollowing = traveler.following,
+                                isFollowLoading = traveler.id in state.requestingFollowIds,
+                                isCurrentUser = traveler.currentUser,
                                 onClick = { onTravelerClick(traveler.id, traveler.currentUser) },
-                                onToggleFollow = { viewModel.toggleFollow(traveler) }
+                                onFollowClick = { viewModel.toggleFollow(traveler) }
                             )
                         }
                         if (state.page + 1 < state.totalPages) {
-                            item {
+                            item(span = { GridItemSpan(maxLineSpan) }) {
                                 Box(
                                     modifier = Modifier
                                         .fillMaxWidth()
@@ -171,11 +164,7 @@ fun TopTravelersScreen(
                                     contentAlignment = Alignment.Center
                                 ) {
                                     if (state.isLoadingMore) {
-                                        CircularProgressIndicator(
-                                            modifier = Modifier.size(24.dp),
-                                            strokeWidth = 2.dp,
-                                            color = PrimaryBlue
-                                        )
+                                        UserResultCardSkeleton()
                                     } else {
                                         TextButton(onClick = viewModel::loadMore) {
                                             Text("Load more", color = PrimaryBlue)
@@ -209,75 +198,18 @@ private fun PeriodSelector(
 }
 
 @Composable
-private fun RankedTravelerRow(
-    rank: Int,
-    traveler: TopTravelerResponse,
-    followRequestInProgress: Boolean,
-    onClick: () -> Unit,
-    onToggleFollow: () -> Unit
+private fun TopTravelerGridSkeleton(
+    modifier: Modifier = Modifier
 ) {
-    val displayName = traveler.name?.takeIf { it.isNotBlank() } ?: traveler.username
-    Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp)
-            .clickable(onClick = onClick),
-        color = SurfaceContainerLow,
-        shape = RoundedCornerShape(8.dp)
+    LazyVerticalGrid(
+        columns = GridCells.Fixed(2),
+        modifier = modifier.fillMaxSize(),
+        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "#$rank",
-                modifier = Modifier.width(38.dp),
-                fontWeight = FontWeight.Bold,
-                color = PrimaryBlue
-            )
-            AsyncImage(
-                model = traveler.avatarUrl,
-                contentDescription = displayName,
-                modifier = Modifier
-                    .size(46.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.surfaceVariant),
-                contentScale = ContentScale.Crop
-            )
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(start = 12.dp)
-            ) {
-                Text(
-                    text = if (traveler.currentUser) "$displayName (You)" else displayName,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    fontWeight = FontWeight.SemiBold,
-                    color = OnSurface
-                )
-                Text(
-                    text = "${traveler.score} points",
-                    fontSize = 12.sp,
-                    color = OnSurfaceVariant
-                )
-            }
-            if (!traveler.currentUser) {
-                Button(
-                    onClick = onToggleFollow,
-                    enabled = !followRequestInProgress,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = if (traveler.following) PrimaryBlue else MaterialTheme.colorScheme.surface,
-                        contentColor = if (traveler.following) MaterialTheme.colorScheme.onPrimary else PrimaryBlue
-                    ),
-                    shape = RoundedCornerShape(20.dp)
-                ) {
-                    Text(
-                        text = if (traveler.following) "Following" else "Follow",
-                        fontSize = 12.sp
-                    )
-                }
-            }
+        items(6) {
+            UserResultCardSkeleton()
         }
     }
 }

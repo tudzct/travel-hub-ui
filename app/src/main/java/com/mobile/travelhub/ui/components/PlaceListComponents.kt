@@ -43,7 +43,6 @@ import androidx.compose.material.icons.outlined.ChatBubbleOutline
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.Place
 import androidx.compose.material.icons.outlined.Search
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -97,6 +96,7 @@ fun PlaceListScreenContent(
     onSearchClick: () -> Unit,
     onRetryPlaces: () -> Unit,
     onRetryPosts: () -> Unit,
+    onLoadMorePosts: () -> Unit,
     onLikeClick: (Long) -> Unit,
     onSaveClick: (Long) -> Unit,
     onCommentClick: (Long) -> Unit,
@@ -220,7 +220,7 @@ fun PlaceListScreenContent(
                 else -> {
                     itemsIndexed(
                         items = homeUiState.posts,
-                        key = { index, post -> "${post.id}-$index" }
+                        key = { _, post -> post.id }
                     ) { _, post ->
                         FeedPostCard(
                             post = post,
@@ -229,6 +229,30 @@ fun PlaceListScreenContent(
                             onCommentClick = { onCommentClick(post.id) },
                             onAuthorClick = { onAuthorClick(post.ownerId) }
                         )
+                    }
+
+                    if (homeUiState.isLoadingMore) {
+                        item(key = "posts-loading-more") {
+                            FeedPostCardSkeleton()
+                        }
+                    } else if (!homeUiState.loadMoreErrorMessage.isNullOrBlank()) {
+                        item(key = "posts-load-more-error") {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Text(
+                                    text = homeUiState.loadMoreErrorMessage,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.error
+                                )
+                                TextButton(onClick = onLoadMorePosts) {
+                                    Text("Thử lại")
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -276,14 +300,7 @@ fun HomeCommentsBottomSheet(
         Spacer(modifier = Modifier.height(12.dp))
 
         if (isCommentsLoading) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 24.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator()
-            }
+            LoadingListSkeleton(itemCount = 3)
         } else if (!commentsErrorMessage.isNullOrBlank()) {
             Text(
                 text = commentsErrorMessage,
@@ -349,11 +366,7 @@ fun HomeCommentsBottomSheet(
                     .background(VerdantPrimary)
             ) {
                 if (isCommentSubmitting) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(16.dp),
-                        strokeWidth = 2.dp,
-                        color = Color.White
-                    )
+                    InlineLoadingSkeleton(modifier = Modifier.size(16.dp))
                 } else {
                     Icon(
                         imageVector = Icons.AutoMirrored.Outlined.Send,

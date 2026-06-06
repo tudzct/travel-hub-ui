@@ -24,7 +24,6 @@ import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
 import androidx.compose.material.icons.rounded.Place
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -181,11 +180,7 @@ private fun DestinationPickerAnchor(
             Spacer(modifier = Modifier.width(10.dp))
 
             if (isLoading) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(18.dp),
-                    strokeWidth = 2.dp,
-                    color = MaterialTheme.colorScheme.primary
-                )
+                InlineLoadingSkeleton(modifier = Modifier.size(18.dp))
             } else {
                 Icon(
                     imageVector = Icons.Rounded.KeyboardArrowDown,
@@ -409,18 +404,12 @@ private fun PlaceOptionRow(
 
 @Composable
 private fun LoadingPlaceList() {
-    Box(
+    LoadingListSkeleton(
         modifier = Modifier
             .fillMaxWidth()
             .height(160.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        CircularProgressIndicator(
-            modifier = Modifier.size(28.dp),
-            strokeWidth = 3.dp,
-            color = MaterialTheme.colorScheme.primary
-        )
-    }
+        itemCount = 2
+    )
 }
 
 @Composable

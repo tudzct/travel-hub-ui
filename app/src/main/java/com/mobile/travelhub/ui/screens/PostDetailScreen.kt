@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -30,6 +29,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.mobile.travelhub.ui.components.FeedPostCard
 import com.mobile.travelhub.ui.components.FeedPostCardSkeleton
 import com.mobile.travelhub.ui.components.HomeCommentsBottomSheet
+import com.mobile.travelhub.ui.components.LoadingContentSkeleton
 import com.mobile.travelhub.viewmodels.PostDetailViewModel
 
 @Composable
@@ -83,9 +83,7 @@ fun PostDetailScreen(
         }
 
         if (uiState.isLoading && uiState.post != null) {
-            CircularProgressIndicator(
-                modifier = Modifier.align(Alignment.Center)
-            )
+            LoadingContentSkeleton(modifier = Modifier.fillMaxSize())
         }
 
         if (uiState.isCommentSheetVisible) {

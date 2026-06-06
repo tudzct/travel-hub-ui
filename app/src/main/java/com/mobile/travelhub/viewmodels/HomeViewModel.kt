@@ -6,8 +6,8 @@ import com.mobile.travelhub.data.userMessage
 import com.mobile.travelhub.data.model.FeedPostResponse
 import com.mobile.travelhub.data.model.PostCommentResponse
 import com.mobile.travelhub.usecase.AddCommentUseCase
+import com.mobile.travelhub.usecase.GetAllPostsUseCase
 import com.mobile.travelhub.usecase.GetPostCommentsUseCase
-import com.mobile.travelhub.usecase.GetRandomPostsUseCase
 import com.mobile.travelhub.usecase.LikePostUseCase
 import com.mobile.travelhub.usecase.SavePostUseCase
 import com.mobile.travelhub.usecase.UnlikePostUseCase
@@ -49,8 +49,12 @@ data class HomeCommentUiModel(
 
 data class HomeUiState(
     val isLoading: Boolean = false,
+    val isLoadingMore: Boolean = false,
     val posts: List<HomePostUiModel> = emptyList(),
     val errorMessage: String? = null,
+    val loadMoreErrorMessage: String? = null,
+    val page: Int = 0,
+    val totalPages: Int = 0,
     val activeCommentPostId: Long? = null,
     val commentInput: String = "",
     val isCommentsLoading: Boolean = false,
@@ -62,7 +66,7 @@ data class HomeUiState(
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
-    private val getRandomPostsUseCase: GetRandomPostsUseCase,
+    private val getAllPostsUseCase: GetAllPostsUseCase,
     private val likePostUseCase: LikePostUseCase,
     private val unlikePostUseCase: UnlikePostUseCase,
     private val savePostUseCase: SavePostUseCase,
@@ -72,19 +76,31 @@ class HomeViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow(HomeUiState(isLoading = true))
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
+    private var feedGeneration = 0
 
     init {
         refreshPosts()
     }
 
     fun refreshPosts() {
+        val generation = ++feedGeneration
         viewModelScope.launch {
             val loadingStartedAt = System.currentTimeMillis()
-            _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+            _uiState.update {
+                it.copy(
+                    isLoading = true,
+                    isLoadingMore = false,
+                    errorMessage = null,
+                    loadMoreErrorMessage = null,
+                    page = 0,
+                    totalPages = 0
+                )
+            }
 
-            getRandomPostsUseCase(page = 0, pageSize = 20)
-                .onSuccess { posts ->
-                    val safePosts = posts.mapNotNull { post ->
+            getAllPostsUseCase(page = 0, pageSize = POSTS_PAGE_SIZE)
+                .onSuccess { response ->
+                    if (generation != feedGeneration) return@onSuccess
+                    val safePosts = response.data.mapNotNull { post ->
                         runCatching { toUiModel(post) }.getOrNull()
                     }
                     delayRemainingLoadingTime(loadingStartedAt)
@@ -93,11 +109,14 @@ class HomeViewModel @Inject constructor(
                         it.copy(
                             isLoading = false,
                             posts = safePosts,
-                            errorMessage = null
+                            errorMessage = null,
+                            page = response.pageNumber,
+                            totalPages = response.totalPages
                         )
                     }
                 }
                 .onFailure { throwable ->
+                    if (generation != feedGeneration) return@onFailure
                     delayRemainingLoadingTime(loadingStartedAt)
 
                     _uiState.update {
@@ -105,6 +124,64 @@ class HomeViewModel @Inject constructor(
                             isLoading = false,
                             posts = emptyList(),
                             errorMessage = throwable.userMessage("Không thể tải bài viết")
+                        )
+                    }
+                }
+        }
+    }
+
+    fun loadMorePosts() {
+        val state = _uiState.value
+        if (
+            state.isLoading ||
+            state.isLoadingMore ||
+            state.page + 1 >= state.totalPages
+        ) {
+            return
+        }
+
+        val nextPage = state.page + 1
+        val generation = feedGeneration
+        viewModelScope.launch {
+            _uiState.update {
+                it.copy(
+                    isLoadingMore = true,
+                    loadMoreErrorMessage = null
+                )
+            }
+
+            getAllPostsUseCase(page = nextPage, pageSize = POSTS_PAGE_SIZE)
+                .onSuccess { response ->
+                    if (generation != feedGeneration) return@onSuccess
+                    val existingIds = _uiState.value.posts.asSequence()
+                        .map { it.id }
+                        .toHashSet()
+                    val newPosts = response.data
+                        .asSequence()
+                        .filter { it.id !in existingIds }
+                        .mapNotNull { post -> runCatching { toUiModel(post) }.getOrNull() }
+                        .toList()
+
+                    _uiState.update {
+                        it.copy(
+                            posts = it.posts + newPosts,
+                            isLoadingMore = false,
+                            loadMoreErrorMessage = null,
+                            page = response.pageNumber,
+                            totalPages = response.totalPages
+                        )
+                    }
+
+                    if (newPosts.isEmpty() && response.pageNumber + 1 < response.totalPages) {
+                        loadMorePosts()
+                    }
+                }
+                .onFailure { throwable ->
+                    if (generation != feedGeneration) return@onFailure
+                    _uiState.update {
+                        it.copy(
+                            isLoadingMore = false,
+                            loadMoreErrorMessage = throwable.userMessage("Không thể tải thêm bài viết")
                         )
                     }
                 }
@@ -370,4 +447,7 @@ class HomeViewModel @Inject constructor(
         )
     }
 
+    private companion object {
+        const val POSTS_PAGE_SIZE = 10
+    }
 }
