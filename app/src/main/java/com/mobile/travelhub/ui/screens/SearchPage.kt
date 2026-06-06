@@ -65,6 +65,7 @@ import com.mobile.travelhub.ui.components.InlineLoadingSkeleton
 import com.mobile.travelhub.ui.components.LoadingContentSkeleton
 import com.mobile.travelhub.ui.components.LoadingListSkeleton
 import com.mobile.travelhub.ui.components.RetryButton
+import com.mobile.travelhub.ui.components.SearchBar
 import com.mobile.travelhub.ui.components.UserResultCard
 import com.mobile.travelhub.ui.components.UserResultCardSkeleton
 import com.mobile.travelhub.ui.theme.OnSurface
@@ -236,26 +237,12 @@ private fun SearchInput(
     onClear: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    SimpleFormTextField(
+    SearchBar(
         value = query,
         onValueChange = onQueryChange,
         placeholder = "Search posts or users",
-        singleLine = true,
-        textStyle = MaterialTheme.typography.bodyMedium.copy(
-            color = OnSurface,
-            fontSize = 14.sp
-        ),
-        modifier = modifier
-            .height(56.dp),
-        leadingIcon = {
-            Icon(
-                imageVector = Icons.Outlined.Search,
-                contentDescription = null,
-                tint = OnSurfaceVariant,
-                modifier = Modifier.size(19.dp)
-            )
-        },
-        trailingIcon = if (query.isNotEmpty()) {
+        modifier = modifier,
+        trailingContent = if (query.isNotEmpty()) {
             {
                 IconButton(
                     onClick = onClear,

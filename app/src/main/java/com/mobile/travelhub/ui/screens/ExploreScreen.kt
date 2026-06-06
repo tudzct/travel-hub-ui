@@ -61,6 +61,7 @@ import com.mobile.travelhub.data.model.TopTravelerResponse
 import com.mobile.travelhub.data.model.TravelPlaceListItemResponse
 import com.mobile.travelhub.ui.components.FeaturedLocationCard
 import com.mobile.travelhub.ui.components.RetryButton
+import com.mobile.travelhub.ui.components.SearchBar
 import com.mobile.travelhub.ui.components.UserResultCard
 import com.mobile.travelhub.ui.components.UserResultCardSkeleton
 import com.mobile.travelhub.ui.components.modifiers.shimmerEffect
@@ -300,34 +301,13 @@ private fun FeaturedLocationsSkeleton() {
 private fun SearchField(
     onClick: () -> Unit
 ) {
-    Row(
+    SearchBar(
+        value = "",
+        placeholder = "Search posts or users",
+        onClick = onClick,
         modifier = Modifier
             .padding(horizontal = 16.dp, vertical = 14.dp)
-            .fillMaxWidth()
-            .height(42.dp)
-            .clip(RoundedCornerShape(8.dp))
-            .background(Color(0xFFEFF2FA))
-            .clickable(onClick = onClick)
-            .padding(horizontal = 14.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Icon(
-            imageVector = Icons.Outlined.Search,
-            contentDescription = null,
-            tint = OnSurfaceVariant,
-            modifier = Modifier.size(19.dp)
-        )
-        Text(
-            text = "Search destinations, people, or hashtags",
-            modifier = Modifier
-                .weight(1f)
-                .padding(start = 10.dp),
-            color = OnSurfaceVariant,
-            fontSize = 14.sp,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
-    }
+    )
 }
 
 @Composable
