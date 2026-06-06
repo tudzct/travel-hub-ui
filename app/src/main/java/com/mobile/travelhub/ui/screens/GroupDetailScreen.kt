@@ -136,12 +136,6 @@ fun GroupDetailScreen(
         }
     }
 
-    LaunchedEffect(uiState.placeId) {
-        uiState.placeId?.let { placeId ->
-            viewModel.loadPlaceImages(placeId)
-        }
-    }
-
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -179,6 +173,7 @@ fun GroupDetailScreen(
                         }
                         list.distinct()
                     }
+
 
                     if (images.isNotEmpty()) {
                         val topPagerState = rememberPagerState(

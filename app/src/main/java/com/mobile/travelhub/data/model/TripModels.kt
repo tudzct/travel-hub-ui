@@ -116,7 +116,8 @@ data class TripInfoResponse(
     val budgetMax: Double? = null,
     val status: String? = null,
     val inviteCode: String? = null,
-    val maxMembers: Int? = null
+    val maxMembers: Int? = null,
+    val imageUrls: List<String> = emptyList()
 )
 
 data class TripMemberResponse(

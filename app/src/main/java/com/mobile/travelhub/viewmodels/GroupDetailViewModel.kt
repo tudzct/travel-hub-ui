@@ -2,7 +2,6 @@ package com.mobile.travelhub.viewmodels
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.mobile.travelhub.data.PlaceRepository
 import com.mobile.travelhub.data.TripRepository
 import com.mobile.travelhub.data.httpStatusCode
 import com.mobile.travelhub.data.userMessage
@@ -77,8 +76,7 @@ data class GroupDetailUiState(
 
 @HiltViewModel
 class GroupDetailViewModel @Inject constructor(
-    private val tripRepository: TripRepository,
-    private val placeRepository: PlaceRepository
+    private val tripRepository: TripRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(GroupDetailUiState())
@@ -336,20 +334,6 @@ class GroupDetailViewModel @Inject constructor(
         }
     }
 
-    fun loadPlaceImages(placeId: Long?) {
-        if (placeId == null) return
-        viewModelScope.launch {
-            runCatching { placeRepository.getPlaceDetail(placeId) }
-                .onSuccess { detail ->
-                    val imgs = detail.images.map { it.imageUrl }
-                    _uiState.update { it.copy(placeImages = imgs) }
-                }
-                .onFailure {
-                    _uiState.update { it.copy(placeImages = emptyList()) }
-                }
-        }
-    }
-
     fun leaveGroup(onDone: (Boolean, String) -> Unit) {
         val tripId = uiState.value.tripId
         if (tripId == -1L) return
@@ -488,7 +472,6 @@ class GroupDetailViewModel @Inject constructor(
                 detail.tripInfo.status.equals("COMPLETED", ignoreCase = true) ||
                 detail.tripInfo.status?.contains("hoàn thành", ignoreCase = true) == true ||
                 isPastDate(detail.tripInfo.endDate)
-
         return copy(
             groupName = detail.tripInfo.name,
             location = detail.tripInfo.location,
@@ -496,6 +479,7 @@ class GroupDetailViewModel @Inject constructor(
             endDate = detail.tripInfo.endDate.orEmpty(),
             coverImageUrl = detail.tripInfo.coverImageUrl,
             placeId = detail.tripInfo.placeId,
+            placeImages = detail.tripInfo.imageUrls,
             statusLabel = getTripStatusLabel(detail.tripInfo.status, detail.tripInfo.startDate, detail.tripInfo.endDate),
             myRole = detail.myRole,
             inviteCode = detail.tripInfo.inviteCode?.takeIf { it.isNotBlank() } ?: inviteCode,
