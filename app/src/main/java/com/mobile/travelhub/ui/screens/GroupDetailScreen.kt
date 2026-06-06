@@ -65,6 +65,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.zIndex
 import coil.compose.AsyncImage
 
 enum class GroupRole { LEADER, NON_MEMBER, PENDING }
@@ -200,8 +201,9 @@ fun GroupDetailScreen(
                             Row(
                                 Modifier
                                     .wrapContentSize()
-                                    .align(Alignment.TopCenter)
-                                    .padding(top = 60.dp),
+                                    .align(Alignment.BottomCenter)
+                                    .padding(bottom = 16.dp)
+                                    .zIndex(1f),
                                 horizontalArrangement = Arrangement.spacedBy(6.dp)
                             ) {
                                 repeat(images.size) { iteration ->
@@ -274,19 +276,6 @@ fun GroupDetailScreen(
                             )
                         }
                     } else {
-                        Box(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(24.dp))
-                                .background(SunsetOrange)
-                                .padding(horizontal = 12.dp, vertical = 6.dp)
-                        ) {
-                            Text(
-                                text = uiState.statusLabel.ifBlank { "Đang tải" },
-                                fontWeight = FontWeight.ExtraBold,
-                                fontSize = 10.sp,
-                                color = Color.White
-                            )
-                        }
                         Spacer(modifier = Modifier.height(12.dp))
                         Text(
                             text = uiState.groupName.ifBlank { groupName },
