@@ -49,6 +49,8 @@ fun CreatePostScreenContent(
     onDescriptionChange: (String) -> Unit,
     onSelectProvince: (Long) -> Unit,
     onSelectPlace: (Long?) -> Unit,
+    onRetryProvinces: () -> Unit,
+    onRetryPlaces: () -> Unit,
     onOpenImagePicker: () -> Unit,
     onRemoveImage: (Uri) -> Unit,
     onSubmitPost: () -> Unit
@@ -86,7 +88,9 @@ fun CreatePostScreenContent(
         TravelPlaceSection(
             uiState = uiState,
             onSelectProvince = onSelectProvince,
-            onSelectPlace = onSelectPlace
+            onSelectPlace = onSelectPlace,
+            onRetryProvinces = onRetryProvinces,
+            onRetryPlaces = onRetryPlaces
         )
 
         Spacer(modifier = Modifier.height(24.dp))
@@ -246,7 +250,9 @@ private fun DescriptionInputSection(
 private fun TravelPlaceSection(
     uiState: CreatePostUiState,
     onSelectProvince: (Long) -> Unit,
-    onSelectPlace: (Long?) -> Unit
+    onSelectPlace: (Long?) -> Unit,
+    onRetryProvinces: () -> Unit,
+    onRetryPlaces: () -> Unit
 ) {
     Column(modifier = Modifier.padding(horizontal = 20.dp)) {
         DestinationPlacePicker(
@@ -256,10 +262,15 @@ private fun TravelPlaceSection(
             provinces = uiState.provinces,
             places = uiState.places,
             isLoading = uiState.isLoadingLocations,
-            enabled = !uiState.isSubmitting && uiState.provinces.isNotEmpty(),
+            enabled = !uiState.isSubmitting &&
+                (uiState.provinces.isNotEmpty() || uiState.provinceErrorMessage != null),
             placeholder = "Chọn địa điểm",
             onProvinceSelected = onSelectProvince,
-            onPlaceSelected = onSelectPlace
+            onPlaceSelected = onSelectPlace,
+            provinceErrorMessage = uiState.provinceErrorMessage,
+            placesErrorMessage = uiState.placesErrorMessage,
+            onRetryProvinces = onRetryProvinces,
+            onRetryPlaces = onRetryPlaces
         )
     }
 }

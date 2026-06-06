@@ -86,6 +86,25 @@ class GroupDetailViewModel @Inject constructor(
 
     fun loadGroup(tripId: Long, groupName: String, isSilent: Boolean = false) {
         viewModelScope.launch {
+            val freshlyCreatedDetail = if (isSilent) {
+                null
+            } else {
+                tripRepository.consumeFreshlyCreatedTripDetail(tripId)
+            }
+            if (freshlyCreatedDetail != null) {
+                _uiState.update {
+                    GroupDetailUiState(
+                        isLoading = false,
+                        tripId = tripId,
+                        days = emptyList(),
+                        totalStops = 0,
+                        errorMessage = null,
+                        isKickedOut = false
+                    ).mergeTripDetail(freshlyCreatedDetail)
+                }
+                return@launch
+            }
+
             val cachedDetail = tripRepository.getCachedTripDetail(tripId)
             val cachedDays = tripRepository.getCachedTripDays(tripId)
             val currentState = _uiState.value

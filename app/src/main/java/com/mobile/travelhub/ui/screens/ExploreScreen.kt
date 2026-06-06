@@ -48,6 +48,7 @@ import com.mobile.travelhub.data.model.TopTravelerPeriod
 import com.mobile.travelhub.data.model.TopTravelerResponse
 import com.mobile.travelhub.data.model.TravelPlaceListItemResponse
 import com.mobile.travelhub.ui.components.FeaturedLocationCard
+import com.mobile.travelhub.ui.components.RetryButton
 import com.mobile.travelhub.ui.components.UserResultCard
 import com.mobile.travelhub.ui.components.UserResultCardSkeleton
 import com.mobile.travelhub.ui.components.modifiers.shimmerEffect
@@ -191,9 +192,7 @@ private fun FeaturedLocationsSection(
                     color = OnSurfaceVariant,
                     fontSize = 13.sp
                 )
-                TextButton(onClick = onRetry) {
-                    Text("Thử lại", color = PrimaryBlue)
-                }
+                RetryButton(onClick = onRetry)
             }
         }
 
@@ -455,9 +454,7 @@ private fun TopTravelersPreview(
                     color = OnSurfaceVariant,
                     fontSize = 13.sp
                 )
-                TextButton(onClick = onRetry) {
-                    Text("Thử lại", color = PrimaryBlue)
-                }
+                RetryButton(onClick = onRetry)
             }
         }
 

@@ -248,9 +248,7 @@ fun PlaceListScreenContent(
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.error
                                 )
-                                TextButton(onClick = onLoadMorePosts) {
-                                    Text("Thử lại")
-                                }
+                                RetryButton(onClick = onLoadMorePosts)
                             }
                         }
                     }
@@ -573,9 +571,7 @@ private fun FeedEmptyState(
                     color = VerdantOnSurfaceVariant
                 )
                 if (onRetry != null) {
-                    TextButton(onClick = onRetry) {
-                        Text("Thử lại")
-                    }
+                    RetryButton(onClick = onRetry)
                 }
             }
         }

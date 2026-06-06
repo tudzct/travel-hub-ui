@@ -30,6 +30,7 @@ import com.mobile.travelhub.ui.components.FeedPostCard
 import com.mobile.travelhub.ui.components.FeedPostCardSkeleton
 import com.mobile.travelhub.ui.components.HomeCommentsBottomSheet
 import com.mobile.travelhub.ui.components.LoadingContentSkeleton
+import com.mobile.travelhub.ui.components.RetryButton
 import com.mobile.travelhub.viewmodels.PostDetailViewModel
 
 @Composable
@@ -155,8 +156,6 @@ private fun PostDetailError(
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
-        TextButton(onClick = onRetry) {
-            Text("Thử lại")
-        }
+        RetryButton(onClick = onRetry)
     }
 }

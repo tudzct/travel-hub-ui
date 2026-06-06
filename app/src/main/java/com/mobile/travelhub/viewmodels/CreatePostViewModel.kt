@@ -26,6 +26,8 @@ data class CreatePostUiState(
     val selectedProvinceId: Long? = null,
     val selectedPlaceId: Long? = null,
     val isLoadingLocations: Boolean = false,
+    val provinceErrorMessage: String? = null,
+    val placesErrorMessage: String? = null,
     val isSubmitting: Boolean = false,
     val errorMessage: String? = null,
     val isPostCreated: Boolean = false,
@@ -89,6 +91,7 @@ class CreatePostViewModel @Inject constructor(
                 selectedProvinceId = provinceId,
                 selectedPlaceId = null,
                 places = emptyList(),
+                placesErrorMessage = null,
                 errorMessage = null
             )
         }
@@ -97,6 +100,14 @@ class CreatePostViewModel @Inject constructor(
 
     fun selectPlace(placeId: Long?) {
         _uiState.update { it.copy(selectedPlaceId = placeId, errorMessage = null) }
+    }
+
+    fun retryLoadProvinces() {
+        loadProvinces()
+    }
+
+    fun retryLoadPlaces() {
+        _uiState.value.selectedProvinceId?.let(::loadPlaces)
     }
 
     fun submitPost() {
@@ -151,14 +162,20 @@ class CreatePostViewModel @Inject constructor(
 
     private fun loadProvinces() {
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoadingLocations = true, errorMessage = null) }
+            _uiState.update {
+                it.copy(
+                    isLoadingLocations = true,
+                    provinceErrorMessage = null
+                )
+            }
 
             runCatching { locationRepository.getProvinces() }
                 .onSuccess { provinces ->
                     _uiState.update {
                         it.copy(
                             provinces = provinces,
-                            isLoadingLocations = false
+                            isLoadingLocations = false,
+                            provinceErrorMessage = null
                         )
                     }
                 }
@@ -166,7 +183,7 @@ class CreatePostViewModel @Inject constructor(
                     _uiState.update {
                         it.copy(
                             isLoadingLocations = false,
-                            errorMessage = throwable.userMessage("Không thể tải danh sách tỉnh/thành phố")
+                            provinceErrorMessage = throwable.userMessage("Không thể tải danh sách tỉnh/thành phố")
                         )
                     }
                 }
@@ -175,7 +192,12 @@ class CreatePostViewModel @Inject constructor(
 
     private fun loadPlaces(provinceId: Long) {
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoadingLocations = true, errorMessage = null) }
+            _uiState.update {
+                it.copy(
+                    isLoadingLocations = true,
+                    placesErrorMessage = null
+                )
+            }
 
             runCatching {
                 placeRepository.getPlaces(page = 0, pageSize = 100, provinceId = provinceId).data
@@ -184,14 +206,16 @@ class CreatePostViewModel @Inject constructor(
                     it.copy(
                         places = places,
                         selectedPlaceId = null,
-                        isLoadingLocations = false
+                        isLoadingLocations = false,
+                        placesErrorMessage = null
                     )
                 }
             }.onFailure { throwable ->
                 _uiState.update {
                     it.copy(
                         isLoadingLocations = false,
-                        errorMessage = throwable.userMessage("Không thể tải danh sách địa điểm")
+                        places = emptyList(),
+                        placesErrorMessage = throwable.userMessage("Không thể tải danh sách địa điểm")
                     )
                 }
             }

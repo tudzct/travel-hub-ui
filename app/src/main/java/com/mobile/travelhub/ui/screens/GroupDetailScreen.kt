@@ -58,6 +58,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.mobile.travelhub.R
 import com.mobile.travelhub.ui.components.modifiers.shimmerEffect
 import com.mobile.travelhub.ui.components.InlineLoadingSkeleton
+import com.mobile.travelhub.ui.components.RetryButton
 import com.mobile.travelhub.ui.theme.*
 import com.mobile.travelhub.viewmodels.GroupDetailViewModel
 import androidx.compose.runtime.LaunchedEffect
@@ -111,10 +112,21 @@ fun GroupDetailScreen(
     }
 
     val lifecycleOwner = LocalLifecycleOwner.current
+    var hasReachedInitialResume by remember(lifecycleOwner) {
+        mutableStateOf(
+            lifecycleOwner.lifecycle.currentState.isAtLeast(
+                androidx.lifecycle.Lifecycle.State.RESUMED
+            )
+        )
+    }
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
-                viewModel.loadGroup(tripId = tripId, groupName = groupName)
+                if (hasReachedInitialResume) {
+                    viewModel.loadGroup(tripId = tripId, groupName = groupName)
+                } else {
+                    hasReachedInitialResume = true
+                }
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -934,9 +946,7 @@ private fun GroupDetailInitialErrorState(
             textAlign = TextAlign.Center
         )
         Spacer(modifier = Modifier.height(20.dp))
-        Button(onClick = onRetry) {
-            Text("Thử lại")
-        }
+        RetryButton(onClick = onRetry, filled = true)
     }
 }
 

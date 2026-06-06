@@ -21,6 +21,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.WarningAmber
 import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
 import androidx.compose.material.icons.rounded.Place
@@ -67,7 +68,11 @@ fun DestinationPlacePicker(
     modifier: Modifier = Modifier,
     placeholder: String = "Chọn địa điểm",
     onProvinceSelected: (Long) -> Unit,
-    onPlaceSelected: (Long) -> Unit
+    onPlaceSelected: (Long) -> Unit,
+    provinceErrorMessage: String? = null,
+    placesErrorMessage: String? = null,
+    onRetryProvinces: () -> Unit = {},
+    onRetryPlaces: () -> Unit = {}
 ) {
     var isSheetOpen by remember { mutableStateOf(false) }
     var isChoosingProvince by remember(selectedProvince?.id) { mutableStateOf(selectedProvince == null) }
@@ -117,7 +122,11 @@ fun DestinationPlacePicker(
                 onPlaceSelected = { placeId ->
                     onPlaceSelected(placeId)
                     isSheetOpen = false
-                }
+                },
+                provinceErrorMessage = provinceErrorMessage,
+                placesErrorMessage = placesErrorMessage,
+                onRetryProvinces = onRetryProvinces,
+                onRetryPlaces = onRetryPlaces
             )
         }
     }
@@ -228,7 +237,11 @@ private fun DestinationPickerSheet(
     isChoosingProvince: Boolean,
     onChooseProvince: () -> Unit,
     onProvinceSelected: (Long) -> Unit,
-    onPlaceSelected: (Long) -> Unit
+    onPlaceSelected: (Long) -> Unit,
+    provinceErrorMessage: String? = null,
+    placesErrorMessage: String? = null,
+    onRetryProvinces: () -> Unit = {},
+    onRetryPlaces: () -> Unit = {}
 ) {
     Column(
         modifier = Modifier
@@ -266,22 +279,35 @@ private fun DestinationPickerSheet(
         Spacer(modifier = Modifier.height(8.dp))
 
         if (isChoosingProvince) {
-            LazyColumn(
-                modifier = Modifier.heightIn(max = 520.dp),
-                verticalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                items(provinces, key = { it.id }) { province ->
-                    ProvinceOptionRow(
-                        province = province,
-                        selected = province.id == selectedProvince?.id,
-                        onClick = { onProvinceSelected(province.id) }
-                    )
+            when {
+                isLoading && provinces.isEmpty() -> LoadingPlaceList()
+                provinceErrorMessage != null && provinces.isEmpty() -> DestinationLoadError(
+                    title = "Không thể lấy danh sách tỉnh/thành phố",
+                    message = provinceErrorMessage,
+                    onRetry = onRetryProvinces
+                )
+                else -> LazyColumn(
+                    modifier = Modifier.heightIn(max = 520.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    items(provinces, key = { it.id }) { province ->
+                        ProvinceOptionRow(
+                            province = province,
+                            selected = province.id == selectedProvince?.id,
+                            onClick = { onProvinceSelected(province.id) }
+                        )
+                    }
+                    item { Spacer(modifier = Modifier.height(20.dp)) }
                 }
-                item { Spacer(modifier = Modifier.height(20.dp)) }
             }
         } else {
             when {
                 isLoading -> LoadingPlaceList()
+                placesErrorMessage != null -> DestinationLoadError(
+                    title = "Không thể lấy địa điểm",
+                    message = placesErrorMessage,
+                    onRetry = onRetryPlaces
+                )
                 places.isEmpty() -> EmptyPlaceList()
                 else -> LazyColumn(
                     modifier = Modifier.heightIn(max = 520.dp),
@@ -410,6 +436,44 @@ private fun LoadingPlaceList() {
             .height(160.dp),
         itemCount = 2
     )
+}
+
+@Composable
+private fun DestinationLoadError(
+    title: String,
+    message: String,
+    onRetry: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(200.dp)
+            .padding(horizontal = 20.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Icon(
+            imageVector = Icons.Default.WarningAmber,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.error,
+            modifier = Modifier.size(34.dp)
+        )
+        Spacer(modifier = Modifier.height(10.dp))
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = message,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        RetryButton(onClick = onRetry)
+    }
 }
 
 @Composable

@@ -160,11 +160,16 @@ fun CreateGroupScreen(
                 provinces = uiState.provinces,
                 places = uiState.places,
                 isLoading = uiState.isLoadingLocations,
-                enabled = !uiState.isSaving && uiState.provinces.isNotEmpty(),
+                enabled = !uiState.isSaving &&
+                    (uiState.provinces.isNotEmpty() || uiState.provinceErrorMessage != null),
                 placeholder = "Chọn địa điểm",
                 modifier = Modifier.padding(top = 4.dp, bottom = 12.dp),
                 onProvinceSelected = { viewModel.selectProvince(it) },
-                onPlaceSelected = { viewModel.selectPlace(it) }
+                onPlaceSelected = { viewModel.selectPlace(it) },
+                provinceErrorMessage = uiState.provinceErrorMessage,
+                placesErrorMessage = uiState.placesErrorMessage,
+                onRetryProvinces = viewModel::retryLoadProvinces,
+                onRetryPlaces = viewModel::retryLoadPlaces
             )
 
             TripDateRangeFieldInput(

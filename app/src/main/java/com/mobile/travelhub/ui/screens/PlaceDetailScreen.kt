@@ -71,6 +71,7 @@ import com.mobile.travelhub.ui.components.SimpleFormTextField
 import com.mobile.travelhub.ui.components.InlineLoadingSkeleton
 import com.mobile.travelhub.ui.components.LoadingContentSkeleton
 import com.mobile.travelhub.ui.components.LoadingListSkeleton
+import com.mobile.travelhub.ui.components.RetryButton
 import com.mobile.travelhub.ui.components.SkeletonBlock
 import com.mobile.travelhub.ui.theme.OnSurface
 import com.mobile.travelhub.ui.theme.OnSurfaceVariant
@@ -163,17 +164,16 @@ fun PlaceDetailScreen(
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                    Button(
+                    RetryButton(
                         onClick = {
                             if (initialPlace != null) {
                                 placeDetailViewModel.loadPlace(initialPlace)
                             } else {
                                 placeDetailViewModel.loadPlaceById(placeId)
                             }
-                        }
-                    ) {
-                        Text("Thử lại")
-                    }
+                        },
+                        filled = true
+                    )
                 }
             }
 

@@ -44,6 +44,8 @@ fun CreatePostScreen(
         onDescriptionChange = viewModel::updateDescription,
         onSelectProvince = viewModel::selectProvince,
         onSelectPlace = viewModel::selectPlace,
+        onRetryProvinces = viewModel::retryLoadProvinces,
+        onRetryPlaces = viewModel::retryLoadPlaces,
         onOpenImagePicker = {
             imagePickerLauncher.launch(
                 PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)

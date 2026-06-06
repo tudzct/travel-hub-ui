@@ -64,6 +64,7 @@ import com.mobile.travelhub.ui.components.SimpleFormTextField
 import com.mobile.travelhub.ui.components.InlineLoadingSkeleton
 import com.mobile.travelhub.ui.components.LoadingContentSkeleton
 import com.mobile.travelhub.ui.components.LoadingListSkeleton
+import com.mobile.travelhub.ui.components.RetryButton
 import com.mobile.travelhub.ui.components.UserResultCard
 import com.mobile.travelhub.ui.components.UserResultCardSkeleton
 import com.mobile.travelhub.ui.theme.OnSurface
@@ -499,7 +500,6 @@ private fun UserCarouselSection(
             }
             errorMessage != null -> UserCarouselStatusCard(
                 message = errorMessage,
-                actionLabel = "Thử lại",
                 onActionClick = onRetry
             )
             users.isEmpty() -> EmptySearchState(query = query, resultType = "users")
@@ -533,7 +533,6 @@ private fun UserCarouselSection(
 @Composable
 private fun UserCarouselStatusCard(
     message: String,
-    actionLabel: String? = null,
     onActionClick: (() -> Unit)? = null
 ) {
     Row(
@@ -557,10 +556,8 @@ private fun UserCarouselStatusCard(
             maxLines = 2,
             overflow = TextOverflow.Ellipsis
         )
-        if (actionLabel != null && onActionClick != null) {
-            TextButton(onClick = onActionClick) {
-                Text(text = actionLabel, color = PrimaryBlue)
-            }
+        if (onActionClick != null) {
+            RetryButton(onClick = onActionClick)
         }
     }
 }
@@ -720,9 +717,7 @@ private fun SearchErrorState(
             color = OnSurface,
             style = MaterialTheme.typography.bodyMedium
         )
-        TextButton(onClick = onRetry) {
-            Text(text = "Thử lại", color = PrimaryBlue)
-        }
+        RetryButton(onClick = onRetry)
     }
 }
 

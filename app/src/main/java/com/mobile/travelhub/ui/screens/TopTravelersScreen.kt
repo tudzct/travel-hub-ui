@@ -38,6 +38,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.mobile.travelhub.data.model.TopTravelerPeriod
 import com.mobile.travelhub.ui.components.UserResultCard
 import com.mobile.travelhub.ui.components.UserResultCardSkeleton
+import com.mobile.travelhub.ui.components.RetryButton
 import com.mobile.travelhub.ui.theme.OnSurface
 import com.mobile.travelhub.ui.theme.OnSurfaceVariant
 import com.mobile.travelhub.ui.theme.PrimaryBlue
@@ -109,9 +110,7 @@ fun TopTravelersScreen(
                             text = "Không thể tải danh sách người dùng nổi bật.",
                             color = OnSurfaceVariant
                         )
-                        TextButton(onClick = viewModel::refresh) {
-                            Text("Thử lại", color = PrimaryBlue)
-                        }
+                        RetryButton(onClick = viewModel::refresh)
                     }
                 }
 

@@ -21,7 +21,7 @@ interface TripApiService {
     @POST("api/trips")
     suspend fun createTrip(
         @Body request: CreateTripRequest
-    ): Long
+    ): TripDetailResponse
 
     @GET("api/trips/{tripId}")
     suspend fun getTripDetail(
