@@ -133,24 +133,17 @@ fun ExploreScreen(
 
         SearchField(onClick = onSearchClick)
 
-        if (uiState.recentSearches.isNotEmpty()) {
-            SectionLabel(text = "Recent Searches", topPadding = 18.dp)
-            HorizontalChipRow(
-                items = uiState.recentSearches,
-                leadingIcon = true
-            )
+//        if (uiState.recentSearches.isNotEmpty()) {
+//            SectionLabel(text = "Recent Searches", topPadding = 18.dp)
+//            HorizontalChipRow(
+//                items = uiState.recentSearches,
+//                leadingIcon = true
+//            )
+//
+//            SectionDivider()
+//        }
 
-            SectionDivider()
-        }
-
-        SectionTitle(text = "Trending Now")
-        HorizontalChipRow(
-            items = listOf("#BeachVibes", "#MountainClimbing", "#CityBreaks", "#FoodTour"),
-            leadingIcon = false,
-            filled = true
-        )
-
-        SectionTitle(text = "Featured Locations", topPadding = 24.dp)
+        SectionTitle(text = "Địa điểm nổi bật", topPadding = 24.dp)
         FeaturedLocationsSection(
             locations = uiState.featuredLocations,
             isLoading = uiState.isLoadingFeaturedLocations,

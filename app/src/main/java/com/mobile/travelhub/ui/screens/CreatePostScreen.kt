@@ -23,7 +23,7 @@ fun CreatePostScreen(
         contract = ActivityResultContracts.PickMultipleVisualMedia(maxItems = CreatePostViewModel.MAX_IMAGE_COUNT)
     ) { uris ->
         if (uris.isNotEmpty()) {
-            viewModel.setSelectedImages(uris)
+            viewModel.addSelectedImages(uris)
         }
     }
 

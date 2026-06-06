@@ -87,7 +87,6 @@ fun SearchPage(
     val uiState by viewModel.uiState.collectAsState()
     val focusRequester = remember { FocusRequester() }
     val keyboardController = LocalSoftwareKeyboardController.current
-    val trendingSearches = listOf("#BeachVibes", "#MountainClimbing", "#CityBreaks", "#FoodTour")
 
     LaunchedEffect(Unit) {
         focusRequester.requestFocus()
@@ -131,7 +130,6 @@ fun SearchPage(
         if (uiState.query.isBlank()) {
             SearchSuggestionsContent(
                 recentSearches = uiState.recentSearches,
-                trendingSearches = trendingSearches,
                 onRecentSearchClick = viewModel::applyRecentSearch,
                 onRecentSearchRemove = viewModel::removeRecentSearch,
                 onClearRecentSearches = viewModel::clearRecentSearches,
@@ -177,7 +175,6 @@ fun SearchPage(
 @Composable
 private fun SearchSuggestionsContent(
     recentSearches: List<String>,
-    trendingSearches: List<String>,
     onRecentSearchClick: (String) -> Unit,
     onRecentSearchRemove: (String) -> Unit,
     onClearRecentSearches: () -> Unit,
@@ -211,24 +208,24 @@ private fun SearchSuggestionsContent(
             }
         }
 
-        item(contentType = "trending-title") {
-            SearchSectionTitle(
-                text = "Trending Searches",
-                modifier = Modifier.padding(top = if (recentSearches.isEmpty()) 0.dp else 8.dp)
-            )
-        }
-        items(
-            items = trendingSearches,
-            key = { "trending-$it" },
-            contentType = { "trending-search" }
-        ) { search ->
-            SearchSuggestionRow(
-                text = search,
-                subtitle = "",
-                leadingIcon = SearchLeadingIcon.Tag,
-                onClick = { onTrendingSearchClick(search) }
-            )
-        }
+//        item(contentType = "trending-title") {
+//            SearchSectionTitle(
+//                text = "Trending Searches",
+//                modifier = Modifier.padding(top = if (recentSearches.isEmpty()) 0.dp else 8.dp)
+//            )
+//        }
+//        items(
+//            items = trendingSearches,
+//            key = { "trending-$it" },
+//            contentType = { "trending-search" }
+//        ) { search ->
+//            SearchSuggestionRow(
+//                text = search,
+//                subtitle = "",
+//                leadingIcon = SearchLeadingIcon.Tag,
+//                onClick = { onTrendingSearchClick(search) }
+//            )
+//        }
     }
 }
 

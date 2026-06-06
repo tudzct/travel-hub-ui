@@ -9,15 +9,13 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -30,6 +28,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -61,11 +60,15 @@ fun CreatePostScreenContent(
             .background(MaterialTheme.colorScheme.background)
             .verticalScroll(rememberScrollState())
     ) {
+        CreatePostTopBar(
+            isSubmitting = uiState.isSubmitting,
+            onSubmitPost = onSubmitPost
+        )
+
         // ── User Header Section ──
         UserHeaderSection(
             userName = uiState.userName,
-            userAvatarUrl = uiState.userAvatarUrl,
-            isSubmitting = uiState.isSubmitting
+            userAvatarUrl = uiState.userAvatarUrl
         )
 
         // ── Description Input ──
@@ -105,17 +108,7 @@ fun CreatePostScreenContent(
 
         Spacer(modifier = Modifier.height(28.dp))
 
-        // ── Submit Button ──
-        Box(modifier = Modifier.padding(horizontal = 20.dp)) {
-            PrimaryProfileButton(
-                text = if (uiState.isSubmitting) "Đăng bài..." else "Đăng bài",
-                onClick = onSubmitPost,
-                modifier = Modifier.fillMaxWidth()
-            )
-        }
-
         if (uiState.isSubmitting) {
-            Spacer(modifier = Modifier.height(16.dp))
             Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                 SkeletonBlock(
                     modifier = Modifier
@@ -130,6 +123,37 @@ fun CreatePostScreenContent(
     }
 }
 
+@Composable
+private fun CreatePostTopBar(
+    isSubmitting: Boolean,
+    onSubmitPost: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 20.dp, end = 8.dp, top = 8.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = "TẠO BÀI VIẾT",
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.Bold,
+            letterSpacing = 1.sp,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        TextButton(
+            onClick = onSubmitPost,
+            enabled = !isSubmitting
+        ) {
+            Text(
+                text = if (isSubmitting) "Đang đăng..." else "Đăng",
+                fontWeight = FontWeight.Bold
+            )
+        }
+    }
+}
+
 // ──────────────────────────────────────────────────────────────────────────────
 // User Header — Avatar + Name + Public badge
 // ──────────────────────────────────────────────────────────────────────────────
@@ -137,8 +161,7 @@ fun CreatePostScreenContent(
 @Composable
 private fun UserHeaderSection(
     userName: String,
-    userAvatarUrl: String?,
-    isSubmitting: Boolean
+    userAvatarUrl: String?
 ) {
     Row(
         modifier = Modifier
@@ -287,7 +310,6 @@ private fun SelectedImagesSection(
     onRemoveImage: (Uri) -> Unit
 ) {
     Column(modifier = Modifier.padding(horizontal = 20.dp)) {
-        // Header row: title + count + button
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -301,103 +323,117 @@ private fun SelectedImagesSection(
                 letterSpacing = 1.sp
             )
 
-            // Select Images button
-            Row(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(8.dp))
-                    .clickable(enabled = !isSubmitting, onClick = onOpenImagePicker)
-                    .border(
-                        width = 1.dp,
-                        color = MaterialTheme.colorScheme.primary,
-                        shape = RoundedCornerShape(8.dp)
-                    )
-                    .padding(horizontal = 12.dp, vertical = 6.dp),
-                verticalAlignment = Alignment.CenterVertically
+            if (selectedImages.isNotEmpty() &&
+                selectedImages.size < CreatePostViewModel.MAX_IMAGE_COUNT
             ) {
-                Icon(
-                    imageVector = Icons.Outlined.Image,
-                    contentDescription = null,
-                    modifier = Modifier.size(16.dp),
-                    tint = MaterialTheme.colorScheme.primary
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-                Text(
-                    text = "Select Images",
-                    style = MaterialTheme.typography.labelSmall,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.primary
-                )
+                TextButton(
+                    onClick = onOpenImagePicker,
+                    enabled = !isSubmitting
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.Image,
+                        contentDescription = null,
+                        modifier = Modifier.size(17.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "Thêm ảnh",
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
             }
         }
 
         Spacer(modifier = Modifier.height(14.dp))
 
         if (selectedImages.isNotEmpty()) {
-            // Image thumbnails
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                items(selectedImages) { uri ->
-                    Box(
-                        modifier = Modifier
-                            .size(100.dp)
-                            .clip(RoundedCornerShape(12.dp))
-                    ) {
-                        AsyncImage(
-                            model = uri,
-                            contentDescription = "Chọn ảnh",
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .clip(RoundedCornerShape(12.dp))
-                        )
-
-                        // Remove button
-                        Box(
-                            modifier = Modifier
-                                .align(Alignment.TopEnd)
-                                .padding(4.dp)
-                                .size(22.dp)
-                                .clip(CircleShape)
-                                .background(Color.Black.copy(alpha = 0.55f))
-                                .clickable(enabled = !isSubmitting) { onRemoveImage(uri) },
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Outlined.Close,
-                                contentDescription = "Xóa ảnh",
-                                modifier = Modifier.size(14.dp),
-                                tint = Color.White
-                            )
-                        }
-                    }
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                selectedImages.forEach { uri ->
+                    PostImageItem(
+                        uri = uri,
+                        isSubmitting = isSubmitting,
+                        onRemove = { onRemoveImage(uri) }
+                    )
                 }
             }
         } else {
-            // Empty state
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(120.dp)
-                    .clip(RoundedCornerShape(14.dp))
-                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+                    .aspectRatio(4f / 3f)
+                    .clip(RoundedCornerShape(16.dp))
+                    .border(
+                        width = 1.dp,
+                        color = MaterialTheme.colorScheme.outlineVariant,
+                        shape = RoundedCornerShape(16.dp)
+                    )
+                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f))
+                    .clickable(enabled = !isSubmitting, onClick = onOpenImagePicker),
                 contentAlignment = Alignment.Center
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(
-                        imageVector = Icons.Outlined.Image,
-                        contentDescription = null,
-                        modifier = Modifier.size(32.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Box(
+                        modifier = Modifier
+                            .size(48.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.Image,
+                            contentDescription = null,
+                            modifier = Modifier.size(24.dp),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(12.dp))
                     Text(
-                        text = "Chưa có ảnh nào",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                        text = "Thêm ảnh",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
                     )
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun PostImageItem(
+    uri: Uri,
+    isSubmitting: Boolean,
+    onRemove: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .aspectRatio(4f / 3f)
+            .clip(RoundedCornerShape(16.dp))
+    ) {
+        AsyncImage(
+            model = uri,
+            contentDescription = "Ảnh bài viết",
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.fillMaxSize()
+        )
+
+        Box(
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(10.dp)
+                .size(32.dp)
+                .clip(CircleShape)
+                .background(Color.Black.copy(alpha = 0.58f))
+                .clickable(enabled = !isSubmitting, onClick = onRemove),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.Outlined.Close,
+                contentDescription = "Xóa ảnh",
+                modifier = Modifier.size(18.dp),
+                tint = Color.White
+            )
         }
     }
 }

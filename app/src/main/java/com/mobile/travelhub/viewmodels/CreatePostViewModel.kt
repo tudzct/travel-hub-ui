@@ -67,8 +67,14 @@ class CreatePostViewModel @Inject constructor(
         _uiState.update { it.copy(description = value) }
     }
 
-    fun setSelectedImages(images: List<Uri>) {
-        _uiState.update { it.copy(selectedImages = images.take(MAX_IMAGE_COUNT)) }
+    fun addSelectedImages(images: List<Uri>) {
+        _uiState.update { state ->
+            state.copy(
+                selectedImages = (state.selectedImages + images)
+                    .distinct()
+                    .take(MAX_IMAGE_COUNT)
+            )
+        }
     }
 
     fun removeImage(imageUri: Uri) {
