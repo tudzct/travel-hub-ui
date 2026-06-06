@@ -1,5 +1,13 @@
 package com.mobile.travelhub.ui.screens
 
+import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.togetherWith
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -32,9 +40,13 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -64,7 +76,8 @@ import com.mobile.travelhub.viewmodels.TopTravelersViewModel
 fun ExploreScreen(
     activateSearch: Boolean = false,
     refreshTopTravelersKey: Int = 0,
-    onSearchClick: () -> Unit = {},
+    onSearchActiveChange: (Boolean) -> Unit = {},
+    onSearchUserClick: (Long) -> Unit = {},
     onAssistantClick: () -> Unit = {},
     onPlaceClick: (TravelPlaceListItemResponse) -> Unit = {},
     onTravelerClick: (Long, Boolean) -> Unit = { _, _ -> },
@@ -74,64 +87,100 @@ fun ExploreScreen(
 ) {
     val topTravelersState by topTravelersViewModel.uiState.collectAsState()
     val uiState by exploreViewModel.uiState.collectAsState()
+    var isSearchExpanded by rememberSaveable { mutableStateOf(activateSearch) }
 
     LaunchedEffect(refreshTopTravelersKey) {
         topTravelersViewModel.loadPreview()
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(SurfaceBg)
-            .verticalScroll(rememberScrollState())
-            .padding(top = 10.dp, bottom = 24.dp)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "Explore",
-                color = OnSurface,
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.ExtraBold
+    LaunchedEffect(activateSearch) {
+        if (activateSearch) {
+            isSearchExpanded = true
+        }
+    }
+
+    LaunchedEffect(isSearchExpanded) {
+        onSearchActiveChange(isSearchExpanded)
+    }
+
+    DisposableEffect(Unit) {
+        onDispose { onSearchActiveChange(false) }
+    }
+
+    BackHandler(enabled = isSearchExpanded) {
+        isSearchExpanded = false
+    }
+
+    AnimatedContent(
+        targetState = isSearchExpanded,
+        transitionSpec = {
+            (
+                fadeIn(tween(220)) + scaleIn(
+                    initialScale = 0.96f,
+                    animationSpec = tween(220)
+                )
+            ).togetherWith(
+                fadeOut(tween(150)) + scaleOut(
+                    targetScale = 0.98f,
+                    animationSpec = tween(150)
+                )
             )
-            Surface(
-                color = Color(0xFFE7F4FC),
-                shape = RoundedCornerShape(18.dp),
-                modifier = Modifier.clickable(onClick = onAssistantClick)
+        },
+        label = "explore-search-expand"
+    ) { searchExpanded ->
+        if (searchExpanded) {
+            SearchPage(
+                onBack = { isSearchExpanded = false },
+                onUserClick = onSearchUserClick
+            )
+        } else {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(SurfaceBg)
+                    .verticalScroll(rememberScrollState())
+                    .padding(top = 10.dp, bottom = 24.dp)
             ) {
                 Row(
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.AutoAwesome,
-                        contentDescription = null,
-                        tint = PrimaryBlue,
-                        modifier = Modifier.size(17.dp)
-                    )
                     Text(
-                        text = "Trợ lý AI",
-                        modifier = Modifier.padding(start = 6.dp),
+                        text = "Explore",
                         color = OnSurface,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 12.sp
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.ExtraBold
                     )
+                    Surface(
+                        color = Color(0xFFE7F4FC),
+                        shape = RoundedCornerShape(18.dp),
+                        modifier = Modifier.clickable(onClick = onAssistantClick)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.AutoAwesome,
+                                contentDescription = null,
+                                tint = PrimaryBlue,
+                                modifier = Modifier.size(17.dp)
+                            )
+                            Text(
+                                text = "Trợ lý AI",
+                                modifier = Modifier.padding(start = 6.dp),
+                                color = OnSurface,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 12.sp
+                            )
+                        }
+                    }
                 }
-            }
-        }
 
-        LaunchedEffect(activateSearch) {
-            if (activateSearch) {
-                onSearchClick()
-            }
-        }
-
-        SearchField(onClick = onSearchClick)
+                SearchField(onClick = { isSearchExpanded = true })
 
 //        if (uiState.recentSearches.isNotEmpty()) {
 //            SectionLabel(text = "Recent Searches", topPadding = 18.dp)
@@ -143,23 +192,25 @@ fun ExploreScreen(
 //            SectionDivider()
 //        }
 
-        SectionTitle(text = "Địa điểm nổi bật", topPadding = 24.dp)
-        FeaturedLocationsSection(
-            locations = uiState.featuredLocations,
-            isLoading = uiState.isLoadingFeaturedLocations,
-            errorMessage = uiState.featuredLocationsError,
-            onRetry = exploreViewModel::loadFeaturedLocations,
-            onPlaceClick = onPlaceClick
-        )
+                SectionTitle(text = "Địa điểm nổi bật", topPadding = 24.dp)
+                FeaturedLocationsSection(
+                    locations = uiState.featuredLocations,
+                    isLoading = uiState.isLoadingFeaturedLocations,
+                    errorMessage = uiState.featuredLocationsError,
+                    onRetry = exploreViewModel::loadFeaturedLocations,
+                    onPlaceClick = onPlaceClick
+                )
 
-        TopTravelersPreview(
-            state = topTravelersState,
-            onPeriodSelected = topTravelersViewModel::loadPreview,
-            onRetry = topTravelersViewModel::refresh,
-            onTravelerClick = onTravelerClick,
-            onToggleFollow = topTravelersViewModel::toggleFollow,
-            onSeeAll = { onSeeAllTopTravelers(topTravelersState.period) }
-        )
+                TopTravelersPreview(
+                    state = topTravelersState,
+                    onPeriodSelected = topTravelersViewModel::loadPreview,
+                    onRetry = topTravelersViewModel::refresh,
+                    onTravelerClick = onTravelerClick,
+                    onToggleFollow = topTravelersViewModel::toggleFollow,
+                    onSeeAll = { onSeeAllTopTravelers(topTravelersState.period) }
+                )
+            }
+        }
     }
 }
 @Composable
@@ -463,7 +514,7 @@ private fun TopTravelersPreview(
         else -> {
             LazyRow(
                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 14.dp),
-                horizontalArrangement = Arrangement.spacedBy(26.dp)
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 items(
                     items = state.items,

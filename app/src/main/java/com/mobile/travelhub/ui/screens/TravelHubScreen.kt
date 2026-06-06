@@ -41,6 +41,7 @@ fun TravelHubScreen(
     val currentRoute = navBackStackEntry?.destination?.route
     var showSplash by remember { mutableStateOf(true) }
     var homeReloadSignal by remember { mutableStateOf(0) }
+    var isExploreSearchExpanded by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         delay(1200)
@@ -89,7 +90,11 @@ fun TravelHubScreen(
         !authUiState.isAuthenticated -> Screen.Login.route
         else -> Screen.Home.route
     }
-    val showBottomBar = Screen.fromRoute(currentRoute)?.showBottomBar == true
+    val isExploreRoute = currentRoute
+        ?.substringBefore("?")
+        ?.substringBefore("/") == Screen.Explore.route
+    val showBottomBar = Screen.fromRoute(currentRoute)?.showBottomBar == true &&
+        !(isExploreRoute && isExploreSearchExpanded)
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -109,6 +114,7 @@ fun TravelHubScreen(
             startDestination = startDestination,
             authUiState = authUiState,
             homeReloadSignal = homeReloadSignal,
+            onExploreSearchActiveChange = { isExploreSearchExpanded = it },
             onLogin = authViewModel::login,
             onRegister = authViewModel::register,
             onClearAuthError = authViewModel::clearError,

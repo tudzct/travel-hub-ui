@@ -279,6 +279,7 @@ fun NavGraph(
     startDestination: String,
     authUiState: AuthUiState,
     homeReloadSignal: Int = 0,
+    onExploreSearchActiveChange: (Boolean) -> Unit = {},
     onLogin: (String, String) -> Unit,
     onRegister: (String, String, String) -> Unit,
     onClearAuthError: () -> Unit,
@@ -418,11 +419,8 @@ fun NavGraph(
                     ?.getBoolean(Screen.Explore.ACTIVATE_SEARCH_ARG)
                     ?: false,
                 refreshTopTravelersKey = topTravelersRefreshKey,
-                onSearchClick = {
-                    navController.navigate(Screen.Search.route) {
-                        launchSingleTop = true
-                    }
-                },
+                onSearchActiveChange = onExploreSearchActiveChange,
+                onSearchUserClick = ::navigateToUserProfile,
                 onAssistantClick = {
                     navController.navigate(Screen.Chat.createRoute()) {
                         launchSingleTop = true
