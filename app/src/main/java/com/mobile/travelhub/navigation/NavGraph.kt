@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
-import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material3.DrawerState
 import androidx.compose.material3.DrawerValue
@@ -25,7 +24,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
@@ -204,29 +202,6 @@ private fun HomeDrawerScaffold(
                     Column(
                         modifier = Modifier.padding(top = 56.dp)
                     ) {
-                        NavigationDrawerItem(
-                            label = {
-                                androidx.compose.material3.Text(
-                                    stringResource(R.string.recently_viewed_places)
-                                )
-                            },
-                            selected = false,
-                            onClick = {
-                                hideDrawerContentForNavigation = true
-                                coroutineScope.launch {
-                                    drawerState.snapTo(DrawerValue.Closed)
-                                    withFrameNanos { }
-                                    onNavigateToHistory()
-                                }
-                            },
-                            icon = {
-                                Icon(
-                                    imageVector = Icons.Outlined.History,
-                                    contentDescription = null
-                                )
-                            },
-                            modifier = Modifier.padding(horizontal = 12.dp)
-                        )
                         NavigationDrawerItem(
                             label = {
                                 androidx.compose.material3.Text(

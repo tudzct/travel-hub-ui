@@ -15,7 +15,6 @@ import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material.icons.outlined.FavoriteBorder
-import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.filled.Refresh
@@ -45,7 +44,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -303,28 +301,6 @@ private fun ProfileScreenContent(
                     Column(
                         modifier = Modifier.padding(top = 56.dp)
                     ) {
-                        val navigateToHistory = onNavigateToHistory
-                        if (navigateToHistory != null) {
-                            NavigationDrawerItem(
-                                label = { Text(stringResource(R.string.ui_e311ba4976)) },
-                                selected = false,
-                                onClick = {
-                                    hideDrawerContentForNavigation = true
-                                    coroutineScope.launch {
-                                        activeDrawerState.snapTo(DrawerValue.Closed)
-                                        withFrameNanos { }
-                                        navigateToHistory()
-                                    }
-                                },
-                                icon = {
-                                    Icon(
-                                        imageVector = Icons.Outlined.History,
-                                        contentDescription = null
-                                    )
-                                },
-                                modifier = Modifier.padding(horizontal = 12.dp)
-                            )
-                        }
                         NavigationDrawerItem(
                             label = { Text(stringResource(R.string.ui_d4e1de2330)) },
                             selected = false,
