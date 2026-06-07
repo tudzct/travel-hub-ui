@@ -34,7 +34,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.filled.AutoAwesome
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -61,6 +60,7 @@ import com.mobile.travelhub.data.model.TopTravelerPeriod
 import com.mobile.travelhub.data.model.TopTravelerResponse
 import com.mobile.travelhub.data.model.TravelPlaceListItemResponse
 import com.mobile.travelhub.ui.components.FeaturedLocationCard
+import com.mobile.travelhub.ui.components.PillFilterChip
 import com.mobile.travelhub.ui.components.RetryButton
 import com.mobile.travelhub.ui.components.SearchBar
 import com.mobile.travelhub.ui.components.UserResultCard
@@ -449,7 +449,7 @@ private fun TopTravelersPreview(
 ) {
     SectionTitleRow(
         title = stringResource(R.string.ui_8e40b4b1c6),
-        action = "See All",
+        action = "Xem tất cả",
         topPadding = 36.dp,
         onActionClick = onSeeAll
     )
@@ -531,12 +531,16 @@ private fun TopTravelerPeriodSelector(
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         TopTravelerPeriod.entries.forEach { period ->
-            FilterChip(
+            PillFilterChip(
                 selected = selectedPeriod == period,
                 onClick = { if (selectedPeriod != period) onPeriodSelected(period) },
-                label = {
-                    Text(if (period == TopTravelerPeriod.WEEK) "Week" else "Month")
-                }
+                label = stringResource(
+                    if (period == TopTravelerPeriod.WEEK) {
+                        R.string.top_travelers_week
+                    } else {
+                        R.string.top_travelers_month
+                    }
+                )
             )
         }
     }

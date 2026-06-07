@@ -17,7 +17,6 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -40,6 +39,7 @@ import com.mobile.travelhub.data.model.TopTravelerPeriod
 import com.mobile.travelhub.ui.components.UserResultCard
 import com.mobile.travelhub.ui.components.UserResultCardSkeleton
 import com.mobile.travelhub.ui.components.RetryButton
+import com.mobile.travelhub.ui.components.PillFilterChip
 import com.mobile.travelhub.ui.theme.OnSurface
 import com.mobile.travelhub.ui.theme.OnSurfaceVariant
 import com.mobile.travelhub.ui.theme.PrimaryBlue
@@ -189,10 +189,16 @@ private fun PeriodSelector(
 ) {
     Row(modifier = modifier, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         TopTravelerPeriod.entries.forEach { period ->
-            FilterChip(
+            PillFilterChip(
                 selected = period == selectedPeriod,
                 onClick = { if (period != selectedPeriod) onPeriodSelected(period) },
-                label = { Text(if (period == TopTravelerPeriod.WEEK) "Week" else "Month") }
+                label = stringResource(
+                    if (period == TopTravelerPeriod.WEEK) {
+                        R.string.top_travelers_week
+                    } else {
+                        R.string.top_travelers_month
+                    }
+                )
             )
         }
     }

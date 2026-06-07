@@ -279,4 +279,6 @@
     <string name="join_code_copied">Đã sao chép mã tham gia</string>
     <string name="join_request_accepted">Đã chấp nhận %1$s</string>
     <string name="join_request_rejected">Đã từ chối %1$s</string>
+    <string name="top_travelers_week">Tuần</string>
+    <string name="top_travelers_month">Tháng</string>
 </resources>

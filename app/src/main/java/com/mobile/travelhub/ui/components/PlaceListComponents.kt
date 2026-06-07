@@ -37,7 +37,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Send
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material.icons.outlined.ChatBubbleOutline
 import androidx.compose.material.icons.outlined.FavoriteBorder
@@ -77,6 +76,7 @@ import coil.compose.AsyncImage
 import com.mobile.travelhub.R
 import com.mobile.travelhub.data.model.TravelPlaceListItemResponse
 import com.mobile.travelhub.ui.components.modifiers.shimmerEffect
+import com.mobile.travelhub.ui.components.layout.MainMenuButton
 import com.mobile.travelhub.viewmodels.HomeCommentUiModel
 import com.mobile.travelhub.viewmodels.HomePostUiModel
 import com.mobile.travelhub.viewmodels.HomeUiState
@@ -361,12 +361,7 @@ fun HomeCommentsBottomSheet(
                 modifier = Modifier.weight(1f),
                 enabled = !isCommentSubmitting,
                 singleLine = false,
-                maxLines = 3,
-                shape = RoundedCornerShape(24.dp),
-                focusedContainerColor = Color.White,
-                unfocusedContainerColor = Color.White,
-                disabledContainerColor = Color(0xFFF4F4F4),
-                focusedIndicatorColor = VerdantPrimary
+                maxLines = 3
             )
             Spacer(modifier = Modifier.width(8.dp))
             IconButton(
@@ -425,16 +420,10 @@ private fun FeedTopBar(
                 .align(Alignment.BottomCenter)
                 .padding(horizontal = 6.dp)
         ) {
-            IconButton(
+            MainMenuButton(
                 onClick = onMenuClick,
                 modifier = Modifier.align(Alignment.CenterStart)
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.Menu,
-                    contentDescription = stringResource(R.string.ui_197101e9db),
-                    tint = VerdantOnSurface
-                )
-            }
+            )
             Text(
                 text = stringResource(R.string.ui_a59ca6e82e),
                 modifier = Modifier.align(Alignment.Center),
@@ -493,6 +482,8 @@ private fun LocationsRail(
                 country = place.province.name,
                 city = place.name,
                 imageUrl = place.mainImage,
+                averageRating = place.averageRating,
+                reviewCount = place.reviewCount,
                 modifier = Modifier
                     .width(220.dp)
                     .height(270.dp),
