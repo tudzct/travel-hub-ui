@@ -23,6 +23,7 @@ import androidx.compose.material.icons.automirrored.outlined.DirectionsWalk
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.PostAdd
 import androidx.compose.material.icons.filled.TravelExplore
 import androidx.compose.material.icons.outlined.AccountCircle
 import androidx.compose.material.icons.outlined.Add
@@ -209,7 +210,7 @@ fun RoundedTopNavigationBarPreview() {
             BottomNavItem(
                 Screen.CreatePost,
                 Icons.Outlined.Add,
-                Icons.Filled.Add,
+                Icons.Filled.PostAdd,
                 stringResource(R.string.nav_create)
             ),
             BottomNavItem(

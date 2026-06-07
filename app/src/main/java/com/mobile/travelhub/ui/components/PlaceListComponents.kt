@@ -199,6 +199,16 @@ fun PlaceListScreenContent(
                     }
                 }
             }
+
+            item(key = "locations-posts-spacer") {
+                Spacer(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(4.dp)
+                        .background(Color(0xFFE0E0E0))
+                )
+            }
+
             when {
                 homeUiState.isLoading -> {
                     items(3) {

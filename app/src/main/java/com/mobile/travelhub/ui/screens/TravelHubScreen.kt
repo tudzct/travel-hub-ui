@@ -8,10 +8,12 @@ import androidx.compose.material.icons.automirrored.outlined.DirectionsWalk
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.PostAdd
 import androidx.compose.material.icons.filled.TravelExplore
 import androidx.compose.material.icons.outlined.AccountCircle
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.PostAdd
 import androidx.compose.material.icons.outlined.TravelExplore
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
@@ -76,9 +78,9 @@ fun TravelHubScreen(
         ),
         BottomNavItem(
             screen = Screen.CreatePost,
-            icon = Icons.Outlined.Add,
-            selectedIcon = Icons.Filled.Add,
-            label = stringResource(R.string.ui_6e157c5da4)
+            icon = Icons.Outlined.PostAdd,
+            selectedIcon = Icons.Filled.PostAdd,
+            label = stringResource(R.string.nav_create)
         ),
         BottomNavItem(
             screen = Screen.Profile,
