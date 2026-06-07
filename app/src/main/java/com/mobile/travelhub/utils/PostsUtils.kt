@@ -41,10 +41,11 @@ object  PostsUtils {
 
         val minutes = durationMillis / 60_000
         return when {
-            minutes < 1 -> "Just Now"
-            minutes < 60 -> "${minutes}m ago"
-            minutes < 60 * 24 -> "${minutes / 60}h ago"
-            else -> "${minutes / (60 * 24)}d ago"
+            minutes < 1 -> "Vừa xong"
+            minutes < 60 -> "${minutes} phút"
+            minutes < 60 * 24 -> "${minutes / 60} giờ"
+            minutes < 60 * 24 * 7 -> "${minutes / (60 * 24)} ngày"
+            else -> SimpleDateFormat("dd/MM/yyyy", Locale("vi")).format(Date(createdAtMillis))
         }
     }
 }

@@ -164,7 +164,9 @@ fun PlaceListScreenContent(
             when {
                 placeUiState.isLoading -> {
                     item {
-                        LocationsRailSkeleton()
+                        LocationsRailSection {
+                            LocationsRailSkeleton()
+                        }
                     }
                 }
 
@@ -192,10 +194,12 @@ fun PlaceListScreenContent(
 
                 else -> {
                     item {
-                        LocationsRail(
-                            places = placeUiState.items.take(10),
-                            onPlaceClick = onPlaceClick
-                        )
+                        LocationsRailSection {
+                            LocationsRail(
+                                places = placeUiState.items.take(10),
+                                onPlaceClick = onPlaceClick
+                            )
+                        }
                     }
                 }
             }
@@ -457,6 +461,22 @@ private fun FeedTopBar(
 @Composable
 fun FeedTopBarPreview(){
     FeedTopBar(onMenuClick = {}, onSearchClick = {})
+}
+
+@Composable
+private fun LocationsRailSection(
+    content: @Composable () -> Unit
+) {
+    Column {
+        Text(
+            text = stringResource(R.string.you_might_like),
+            modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 10.dp),
+            color = VerdantOnSurface,
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.ExtraBold
+        )
+        content()
+    }
 }
 
 @Composable
@@ -759,36 +779,15 @@ fun FeedPostCard(
             }
         }
 
-
         Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
             Row(
-                modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text(
-                    text = stringResource(R.string.like_count, post.likeCount),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = VerdantOnSurface
-                )
-                Text(
-                    text = stringResource(R.string.comment_count, post.commentCount),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = VerdantOnSurface
-                )
-            }
-//            Spacer(
-//                modifier = Modifier
-//                    .fillMaxWidth()
-//                    .height(1.dp)
-//                    .background(Color(0xFFE0E0E0))
-//            )
-            Row(
                 modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.Top
             ) {
-                Box(
+                Column(
                     modifier = Modifier.weight(1f),
-                    contentAlignment = Alignment.Center
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     IconButton(
                         onClick = onLikeClick,
@@ -802,10 +801,16 @@ fun FeedPostCard(
                             modifier = Modifier.size(26.dp)
                         )
                     }
+                    Text(
+                        text = stringResource(R.string.like_count, post.likeCount),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = VerdantOnSurface
+                    )
                 }
-                Box(
+                Column(
                     modifier = Modifier.weight(1f),
-                    contentAlignment = Alignment.Center
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     IconButton(
                         onClick = onCommentClick,
@@ -819,10 +824,16 @@ fun FeedPostCard(
                             tint = VerdantOnSurface
                         )
                     }
+                    Text(
+                        text = stringResource(R.string.comment_count, post.commentCount),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = VerdantOnSurface
+                    )
                 }
-                Box(
+                Column(
                     modifier = Modifier.weight(1f),
-                    contentAlignment = Alignment.Center
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     IconButton(
                         onClick = onSaveClick,
@@ -836,6 +847,11 @@ fun FeedPostCard(
                             tint = if (post.isSaved) PrimaryBlue else VerdantOnSurface
                         )
                     }
+                    Text(
+                        text = stringResource(R.string.save_count, post.saveCount),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = VerdantOnSurface
+                    )
                 }
             }
         }
@@ -911,37 +927,41 @@ fun FeedPostCardSkeleton(
         Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.Top
             ) {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    repeat(3) {
+                repeat(2) {
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
                         Box(
                             modifier = Modifier
                                 .size(26.dp)
                                 .clip(CircleShape)
                                 .shimmerEffect()
                         )
+                        Box(
+                            modifier = Modifier
+                                .width(72.dp)
+                                .height(10.dp)
+                                .clip(RoundedCornerShape(50))
+                                .shimmerEffect()
+                        )
                     }
                 }
                 Box(
-                    modifier = Modifier
-                        .size(26.dp)
-                        .clip(CircleShape)
-                        .shimmerEffect()
-                )
+                    modifier = Modifier.weight(1f),
+                    contentAlignment = Alignment.TopCenter
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(26.dp)
+                            .clip(CircleShape)
+                            .shimmerEffect()
+                    )
+                }
             }
-            Spacer(modifier = Modifier.height(12.dp))
-            Box(
-                modifier = Modifier
-                    .width(84.dp)
-                    .height(12.dp)
-                    .clip(RoundedCornerShape(50))
-                    .shimmerEffect()
-            )
             Spacer(modifier = Modifier.height(8.dp))
             Box(
                 modifier = Modifier
@@ -983,6 +1003,7 @@ fun FeedPostCardPreview() {
             imageUrls = listOf("sample.jpg"),
             likeCount = 142,
             commentCount = 4,
+            saveCount = 28,
             isLiked = true,
             isLikeLoading = false,
             isSaved = false,

@@ -776,6 +776,7 @@ private fun FeedPostResponse.toHomePostUiModel(
         imageUrls = imageUrls.filter { it.isNotBlank() },
         likeCount = likeCount?.coerceAtLeast(0) ?: 0,
         commentCount = commentCount?.coerceAtLeast(0) ?: 0,
+        saveCount = saveCount?.coerceAtLeast(0) ?: 0,
         isLiked = likedByCurrentUser == true,
         isLikeLoading = isLikeLoading,
         isSaved = savedByCurrentUser == true,

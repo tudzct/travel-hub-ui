@@ -25,6 +25,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material.icons.rounded.Public
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -64,6 +65,7 @@ fun CreatePostScreenContent(
     ) {
         CreatePostTopBar(
             isSubmitting = uiState.isSubmitting,
+            canSubmit = uiState.canSubmit,
             onSubmitPost = onSubmitPost
         )
 
@@ -128,6 +130,7 @@ fun CreatePostScreenContent(
 @Composable
 private fun CreatePostTopBar(
     isSubmitting: Boolean,
+    canSubmit: Boolean,
     onSubmitPost: () -> Unit
 ) {
     Row(
@@ -146,7 +149,10 @@ private fun CreatePostTopBar(
         )
         TextButton(
             onClick = onSubmitPost,
-            enabled = !isSubmitting
+            enabled = canSubmit,
+            colors = ButtonDefaults.textButtonColors(
+                disabledContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+            )
         ) {
             Text(
                 text = if (isSubmitting) "Đang đăng..." else "Đăng",

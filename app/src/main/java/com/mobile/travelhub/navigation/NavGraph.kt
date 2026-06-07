@@ -27,6 +27,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -74,10 +75,10 @@ sealed class Screen(
         }
     }
     data object Search : Screen("search", 2)
-    data object Trips : Screen("trips", 1, true)
+    data object Trips : Screen("trips", 3, true)
     data object UpcomingTrips : Screen("trips_upcoming", 15, true)
-    data object CreatePost : Screen("create_post", showBottomBar = true)
-    data object Profile : Screen("profile", 2, true)
+    data object CreatePost : Screen("create_post", 2, true)
+    data object Profile : Screen("profile", 4, true)
     data object Chat : Screen("chat", 3) {
         const val TRIP_ID_ARG = "tripId"
         const val GROUP_NAME_ARG = "groupName"
@@ -197,7 +198,8 @@ private fun HomeDrawerScaffold(
         drawerContent = {
             if (!hideDrawerContentForNavigation) {
                 ModalDrawerSheet(
-                    modifier = Modifier.width(280.dp)
+                    modifier = Modifier.width(280.dp),
+                    drawerContainerColor = Color.White
                 ) {
                     Column(
                         modifier = Modifier.padding(top = 56.dp)
@@ -334,18 +336,55 @@ fun NavGraph(
         }
     }
 
+    fun bottomNavIndex(route: String?): Int? {
+        val baseRoute = route
+            ?.substringBefore("?")
+            ?.substringBefore("/")
+
+        return when (baseRoute) {
+            Screen.Home.route -> Screen.Home.index
+            Screen.Explore.route -> Screen.Explore.index
+            Screen.CreatePost.route -> Screen.CreatePost.index
+            Screen.Trips.route -> Screen.Trips.index
+            Screen.Profile.route -> Screen.Profile.index
+            else -> null
+        }
+    }
+
     NavHost(
         navController = navController,
         startDestination = startDestination,
         enterTransition = {
+            val initialIndex = bottomNavIndex(initialState.destination.route)
+            val targetIndex = bottomNavIndex(targetState.destination.route)
+            val direction = if (
+                initialIndex != null &&
+                targetIndex != null &&
+                targetIndex < initialIndex
+            ) {
+                SlideDirection.Right
+            } else {
+                SlideDirection.Left
+            }
             slideIntoContainer(
-                towards = SlideDirection.Left,
+                towards = direction,
                 animationSpec = tween(300)
             )
         },
         exitTransition = {
+            val initialIndex = bottomNavIndex(initialState.destination.route)
+            val targetIndex = bottomNavIndex(targetState.destination.route)
+            val direction = if (
+                initialIndex != null &&
+                targetIndex != null &&
+                targetIndex < initialIndex
+            ) {
+                SlideDirection.Right
+            } else {
+                SlideDirection.Left
+            }
             slideOutOfContainer(
-                towards = SlideDirection.Left,
+                towards = direction,
                 animationSpec = tween(300)
             )
         },

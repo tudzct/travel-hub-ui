@@ -71,16 +71,16 @@ fun TravelHubScreen(
             label = stringResource(R.string.ui_b965ae66fc)
         ),
         BottomNavItem(
-            screen = Screen.Trips,
-            icon = Icons.AutoMirrored.Outlined.DirectionsWalk,
-            selectedIcon = Icons.AutoMirrored.Filled.DirectionsWalk,
-            label = stringResource(R.string.ui_b1bed287e1)
-        ),
-        BottomNavItem(
             screen = Screen.CreatePost,
             icon = Icons.Outlined.PostAdd,
             selectedIcon = Icons.Filled.PostAdd,
             label = stringResource(R.string.nav_create)
+        ),
+        BottomNavItem(
+            screen = Screen.Trips,
+            icon = Icons.AutoMirrored.Outlined.DirectionsWalk,
+            selectedIcon = Icons.AutoMirrored.Filled.DirectionsWalk,
+            label = stringResource(R.string.ui_b1bed287e1)
         ),
         BottomNavItem(
             screen = Screen.Profile,

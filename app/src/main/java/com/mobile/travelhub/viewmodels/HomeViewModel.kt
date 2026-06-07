@@ -33,6 +33,7 @@ data class HomePostUiModel(
     val imageUrls: List<String>,
     val likeCount: Int,
     val commentCount: Int,
+    val saveCount: Int,
     val isLiked: Boolean,
     val isLikeLoading: Boolean,
     val isSaved: Boolean,
@@ -245,10 +246,12 @@ class HomeViewModel @Inject constructor(
         val currentPost = _uiState.value.posts.firstOrNull { it.id == postId } ?: return
         if (currentPost.isSaveLoading) return
         val targetSaved = !currentPost.isSaved
+        val targetSaveCount = (currentPost.saveCount + if (targetSaved) 1 else -1).coerceAtLeast(0)
 
         updatePost(postId) {
             it.copy(
                 isSaved = targetSaved,
+                saveCount = targetSaveCount,
                 isSaveLoading = true
             )
         }
@@ -259,6 +262,7 @@ class HomeViewModel @Inject constructor(
                     updatePost(postId) {
                         it.copy(
                             isSaved = response.saved,
+                            saveCount = response.saveCount.coerceAtLeast(0),
                             isSaveLoading = false
                         )
                     }
@@ -267,6 +271,7 @@ class HomeViewModel @Inject constructor(
                     updatePost(postId) {
                         it.copy(
                             isSaved = currentPost.isSaved,
+                            saveCount = currentPost.saveCount,
                             isSaveLoading = false
                         )
                     }
@@ -414,6 +419,7 @@ class HomeViewModel @Inject constructor(
             imageUrls = safeImageUrls,
             likeCount = post.likeCount?.coerceAtLeast(0) ?: 0,
             commentCount = post.commentCount?.coerceAtLeast(0) ?: 0,
+            saveCount = post.saveCount?.coerceAtLeast(0) ?: 0,
             isLiked = post.likedByCurrentUser == true,
             isLikeLoading = false,
             isSaved = post.savedByCurrentUser == true,

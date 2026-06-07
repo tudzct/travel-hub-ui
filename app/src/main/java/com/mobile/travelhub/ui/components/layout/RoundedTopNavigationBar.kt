@@ -202,16 +202,16 @@ fun RoundedTopNavigationBarPreview() {
                 stringResource(R.string.nav_explore)
             ),
             BottomNavItem(
-                Screen.Trips,
-                Icons.AutoMirrored.Outlined.DirectionsWalk,
-                Icons.AutoMirrored.Filled.DirectionsWalk,
-                stringResource(R.string.nav_itinerary)
-            ),
-            BottomNavItem(
                 Screen.CreatePost,
                 Icons.Outlined.Add,
                 Icons.Filled.PostAdd,
                 stringResource(R.string.nav_create)
+            ),
+            BottomNavItem(
+                Screen.Trips,
+                Icons.AutoMirrored.Outlined.DirectionsWalk,
+                Icons.AutoMirrored.Filled.DirectionsWalk,
+                stringResource(R.string.nav_itinerary)
             ),
             BottomNavItem(
                 Screen.Profile,

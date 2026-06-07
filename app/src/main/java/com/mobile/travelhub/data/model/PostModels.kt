@@ -59,7 +59,9 @@ data class FeedPostResponse(
     @SerializedName(value = "likeCount", alternate = ["likesCount", "likes", "like_count"]) 
     val likeCount: Int? = null,
     @SerializedName(value = "commentCount", alternate = ["commentsCount", "comments", "comment_count"]) 
-    val commentCount: Int? = null
+    val commentCount: Int? = null,
+    @SerializedName(value = "saveCount", alternate = ["savesCount", "savedCount", "save_count"])
+    val saveCount: Int? = null
 )
 
 data class LikePostResponse(
@@ -70,7 +72,8 @@ data class LikePostResponse(
 
 data class SavePostResponse(
     val postId: Long,
-    val saved: Boolean
+    val saved: Boolean,
+    val saveCount: Int
 )
 
 data class CreateCommentRequest(

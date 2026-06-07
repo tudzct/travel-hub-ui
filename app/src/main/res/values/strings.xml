@@ -243,6 +243,7 @@
     <string name="selected_image_count">ẢNH: %1$d/%2$d</string>
     <string name="like_count">%1$d lượt thích</string>
     <string name="comment_count">%1$d bình luận</string>
+    <string name="save_count">%1$d lượt lưu</string>
     <string name="day_number">Ngày %1$d</string>
     <string name="day_count">%1$d ngày</string>
     <string name="stop_count">%1$d điểm</string>
@@ -263,6 +264,7 @@
     <string name="nav_itinerary">Lịch trình</string>
     <string name="nav_create">Đăng bài</string>
     <string name="nav_profile">Hồ sơ</string>
+    <string name="you_might_like">Bạn có thể thích</string>
     <string name="recently_viewed_places">Địa điểm đã xem gần đây</string>
     <string name="change_password">Đổi mật khẩu</string>
     <string name="logout">Đăng xuất</string>

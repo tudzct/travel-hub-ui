@@ -45,6 +45,12 @@ data class CreatePostUiState(
             selectedPlace?.name,
             selectedPlace?.province?.name ?: selectedProvince?.name
         ).distinct().joinToString(", ")
+
+    val canSubmit: Boolean
+        get() = description.isNotBlank() &&
+            selectedImages.isNotEmpty() &&
+            selectedPlaceId != null &&
+            !isSubmitting
 }
 
 @HiltViewModel

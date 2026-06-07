@@ -198,10 +198,12 @@ class ProfileViewModel @Inject constructor(
         val currentPost = _profilePostsState.value.posts.firstOrNull { it.id == postId } ?: return
         if (currentPost.isSaveLoading) return
         val targetSaved = !currentPost.isSaved
+        val targetSaveCount = (currentPost.saveCount + if (targetSaved) 1 else -1).coerceAtLeast(0)
 
         updatePost(postId) {
             it.copy(
                 isSaved = targetSaved,
+                saveCount = targetSaveCount,
                 isSaveLoading = true
             )
         }
@@ -217,6 +219,7 @@ class ProfileViewModel @Inject constructor(
                         updatePost(postId) {
                             it.copy(
                                 isSaved = response.saved,
+                                saveCount = response.saveCount.coerceAtLeast(0),
                                 isSaveLoading = false
                             )
                         }
@@ -226,6 +229,7 @@ class ProfileViewModel @Inject constructor(
                     updatePost(postId) {
                         it.copy(
                             isSaved = currentPost.isSaved,
+                            saveCount = currentPost.saveCount,
                             isSaveLoading = false
                         )
                     }
@@ -627,6 +631,7 @@ class ProfileViewModel @Inject constructor(
             imageUrls = safeImageUrls,
             likeCount = post.likeCount?.coerceAtLeast(0) ?: 0,
             commentCount = post.commentCount?.coerceAtLeast(0) ?: 0,
+            saveCount = post.saveCount?.coerceAtLeast(0) ?: 0,
             isLiked = post.likedByCurrentUser == true,
             isLikeLoading = false,
             isSaved = post.savedByCurrentUser == true,
