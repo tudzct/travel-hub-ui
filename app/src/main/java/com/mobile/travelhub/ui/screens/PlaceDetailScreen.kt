@@ -1,10 +1,10 @@
 package com.mobile.travelhub.ui.screens
 
 import androidx.compose.ui.res.stringResource
-import android.content.Intent
-import android.app.Activity
 import android.net.Uri
 import android.content.ActivityNotFoundException
+import android.content.Intent
+import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -938,28 +938,55 @@ private fun openDirections(
     val label = listOf(detail.name, detail.province.name)
         .filter { it.isNotBlank() }
         .joinToString(", ")
+    val destination = detail.directionDestination(label)
+    if (destination.isBlank()) {
+        Toast.makeText(context, "Không thể mở chỉ đường cho địa điểm này", Toast.LENGTH_SHORT).show()
+        return
+    }
+
+    val appContext = context.applicationContext
+    val encodedDestination = Uri.encode(destination)
     val intents = listOf(
-        Intent(Intent.ACTION_VIEW, Uri.parse("geo:0,0?q=${Uri.encode(label)}")),
+        Intent(Intent.ACTION_VIEW, Uri.parse("geo:0,0?q=$encodedDestination"))
+            .setPackage(GOOGLE_MAPS_PACKAGE),
         Intent(
             Intent.ACTION_VIEW,
-            Uri.parse("https://www.google.com/maps/search/?api=1&query=${Uri.encode(label)}")
+            Uri.parse("https://www.google.com/maps/search/?api=1&query=$encodedDestination")
         ).apply {
             addCategory(Intent.CATEGORY_BROWSABLE)
         }
-    )
+    ).map { intent ->
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    }
 
     for (intent in intents) {
-        if (context !is Activity) {
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        }
         try {
-            if (intent.resolveActivity(context.packageManager) != null) {
-                context.startActivity(intent)
-                return
-            }
+            appContext.startActivity(intent)
+            return
+        } catch (_: ActivityNotFoundException) {
+            continue
         } catch (_: Exception) {
             continue
         }
+    }
+
+    Toast.makeText(context, "Không tìm thấy ứng dụng bản đồ phù hợp", Toast.LENGTH_SHORT).show()
+}
+
+private const val GOOGLE_MAPS_PACKAGE = "com.google.android.apps.maps"
+
+private fun PlaceDetailUiModel.directionDestination(fallbackLabel: String): String {
+    val latitude = lat
+    val longitude = lon
+    return if (
+        latitude != null &&
+        longitude != null &&
+        latitude.isFinite() &&
+        longitude.isFinite()
+    ) {
+        "$latitude,$longitude"
+    } else {
+        fallbackLabel
     }
 }
 
