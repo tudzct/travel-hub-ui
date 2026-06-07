@@ -53,7 +53,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.Dp
-import coil3.compose.AsyncImage
+import coil.compose.AsyncImage
 import com.mobile.travelhub.data.model.TravelPlaceReviewResponse
 import com.mobile.travelhub.ui.theme.OnSurface
 import com.mobile.travelhub.ui.theme.OnSurfaceVariant

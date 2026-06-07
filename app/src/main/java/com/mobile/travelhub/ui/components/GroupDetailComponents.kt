@@ -120,7 +120,7 @@ fun TripDetailRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .height(58.dp),
+            .height(42.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
@@ -134,6 +134,7 @@ fun TripDetailRow(
             text = label,
             modifier = Modifier.weight(1f),
             color = OnSurfaceVariant,
+            fontWeight = FontWeight.Bold,
             fontSize = 13.sp
         )
         if (pillText != null) {
@@ -144,7 +145,6 @@ fun TripDetailRow(
                     .background(Color(0xFF27AE60).copy(alpha = 0.16f))
                     .padding(horizontal = 6.dp, vertical = 1.dp),
                 color = Color(0xFF15935A),
-                fontWeight = FontWeight.SemiBold,
                 fontSize = 12.sp
             )
             trailingText?.let {
@@ -152,14 +152,12 @@ fun TripDetailRow(
                 Text(
                     text = it,
                     color = OnSurface,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Medium
+                    fontSize = 12.sp
                 )
             }
         } else {
             Text(
                 text = value,
-                fontWeight = FontWeight.Bold,
                 color = OnSurface,
                 fontSize = 13.sp,
                 maxLines = 1,

@@ -52,7 +52,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.mobile.travelhub.data.model.TopTravelerPeriod
 import com.mobile.travelhub.data.model.TopTravelerResponse
@@ -211,7 +210,7 @@ private fun FeaturedLocationsSection(
                 Text(
                     text = stringResource(R.string.ui_625c9f2021),
                     color = OnSurfaceVariant,
-                    fontSize = 13.sp
+                    style = MaterialTheme.typography.bodySmall
                 )
                 RetryButton(onClick = onRetry)
             }
@@ -222,7 +221,7 @@ private fun FeaturedLocationsSection(
                 text = stringResource(R.string.ui_6e8c44726f),
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
                 color = OnSurfaceVariant,
-                fontSize = 13.sp
+                style = MaterialTheme.typography.bodySmall
             )
         }
 
@@ -387,14 +386,14 @@ private fun ExploreChip(text: String, leadingIcon: Boolean, filled: Boolean) {
                 text = text,
                 modifier = Modifier.padding(start = 6.dp),
                 color = OnSurfaceVariant,
-                fontSize = 12.sp,
+                style = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.SemiBold
             )
         } else {
             Text(
                 text = text,
                 color = OnSurfaceVariant,
-                fontSize = 12.sp,
+                style = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.Bold
             )
         }
@@ -452,7 +451,7 @@ private fun TopTravelersPreview(
                 Text(
                     text = stringResource(R.string.ui_6725a49830),
                     color = OnSurfaceVariant,
-                    fontSize = 13.sp
+                    style = MaterialTheme.typography.bodySmall
                 )
                 RetryButton(onClick = onRetry)
             }
@@ -463,7 +462,7 @@ private fun TopTravelersPreview(
                 text = stringResource(R.string.ui_2ab957043f),
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp),
                 color = OnSurfaceVariant,
-                fontSize = 13.sp
+                style = MaterialTheme.typography.bodySmall
             )
         }
 

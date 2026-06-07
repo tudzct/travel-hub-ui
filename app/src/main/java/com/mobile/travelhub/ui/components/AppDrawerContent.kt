@@ -22,6 +22,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.outlined.DarkMode
+import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -50,6 +52,7 @@ import com.mobile.travelhub.data.model.UserProfileResponse
 fun TravelHubDrawerContent(
     profile: UserProfileResponse?,
     onProfileClick: () -> Unit,
+    onEditProfileClick: () -> Unit,
     onChangePasswordClick: () -> Unit,
     onLogoutClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -59,7 +62,7 @@ fun TravelHubDrawerContent(
         modifier = modifier
             .width(width)
             .fillMaxHeight()
-            .clip(RoundedCornerShape(topEnd = 28.dp, bottomEnd = 28.dp)),
+            .clip(RoundedCornerShape(topEnd = 16.dp, bottomEnd = 16.dp)),
         drawerContainerColor = Color.White
     ) {
         Column(
@@ -84,9 +87,18 @@ fun TravelHubDrawerContent(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 DrawerActionRow(
+                    icon = Icons.Outlined.Edit,
+                    title = "Chỉnh sửa thông tin",
+                    onClick = onEditProfileClick
+                )
+                DrawerActionRow(
+                    icon = Icons.Outlined.Lock,
+                    title = "Đổi mật khẩu",
+                    onClick = onChangePasswordClick
+                )
+                DrawerActionRow(
                     icon = Icons.AutoMirrored.Filled.ExitToApp,
                     title = "Đăng xuất",
-                    subtitle = "Đăng xuất tài khoản",
                     onClick = onLogoutClick
                 )
             }
@@ -195,7 +207,7 @@ private fun DrawerProfileHeader(
 private fun DrawerActionRow(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     title: String,
-    subtitle: String,
+    subtitle: String? = null,
     onClick: () -> Unit
 ) {
     Row(
@@ -206,20 +218,12 @@ private fun DrawerActionRow(
             .padding(horizontal = 14.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Box(
-            modifier = Modifier
-                .size(48.dp)
-                .clip(RoundedCornerShape(14.dp))
-                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                modifier = Modifier.size(28.dp),
-                tint = MaterialTheme.colorScheme.primary
-            )
-        }
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            modifier = Modifier.size(28.dp),
+            tint = MaterialTheme.colorScheme.primary
+        )
 
         Spacer(modifier = Modifier.width(16.dp))
 
@@ -230,12 +234,14 @@ private fun DrawerActionRow(
                 fontWeight = FontWeight.Bold,
                 color = Color(0xFF111827)
             )
-            Spacer(modifier = Modifier.height(6.dp))
-            Text(
-                text = subtitle,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            if (!subtitle.isNullOrBlank()) {
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
 
         Icon(

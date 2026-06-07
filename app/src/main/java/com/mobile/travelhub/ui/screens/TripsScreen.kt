@@ -16,10 +16,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.FlightTakeoff
 import androidx.compose.material.icons.filled.GroupAdd
+import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.Timer
-import androidx.compose.material.icons.filled.WbCloudy
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.platform.LocalLifecycleOwner
@@ -45,9 +44,7 @@ import com.mobile.travelhub.R
 import com.mobile.travelhub.ui.theme.*
 import com.mobile.travelhub.viewmodels.TripsViewModel
 import java.time.LocalDate
-import java.time.temporal.ChronoUnit
 import java.time.format.DateTimeFormatter
-import java.util.Locale
 
 
 
@@ -118,12 +115,22 @@ fun TripsScreen(
                 onClick = { showAddTripSheet = true },
                 containerColor = PrimaryBlue,
                 contentColor = Color.White,
-                shape = RoundedCornerShape(20.dp),
-                elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 4.dp)
+                shape = RoundedCornerShape(30.dp),
+                elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 8.dp),
+                modifier = Modifier
+                    .height(64.dp)
+                    .padding(end = 4.dp)
             ) {
-                Icon(Icons.Default.FlightTakeoff, contentDescription = stringResource(R.string.ui_77c36e7640))
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(stringResource(R.string.ui_ab38c564dc), fontWeight = FontWeight.Bold)
+                Icon(
+                    Icons.Default.FlightTakeoff,
+                    contentDescription = stringResource(R.string.ui_77c36e7640),
+                    modifier = Modifier.size(32.dp)
+                )
+                Spacer(modifier = Modifier.width(14.dp))
+                Text(
+                    stringResource(R.string.ui_ab38c564dc),
+                    fontWeight = FontWeight.Bold
+                )
             }
         }
     ) { padding ->
@@ -141,8 +148,7 @@ fun TripsScreen(
                         Text(
                             text = state.errorMessage.orEmpty(),
                             color = SunsetOrange,
-                            fontWeight = FontWeight.SemiBold,
-                            fontSize = 14.sp
+                            fontWeight = FontWeight.SemiBold
                         )
                     }
                     Spacer(modifier = Modifier.height(12.dp))
@@ -151,34 +157,33 @@ fun TripsScreen(
 
             // Personalized Header
             item {
-                Column(modifier = Modifier.padding(horizontal = 24.dp, vertical = 24.dp)) {
+                Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 28.dp)) {
                     Text(
                         text = stringResource(R.string.ui_8f23352824),
-                        fontSize = 16.sp,
                         color = OnSurfaceVariant,
-                        letterSpacing = 0.5.sp
+                        fontSize = 18.sp
                     )
-                    Spacer(modifier = Modifier.height(4.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         text = stringResource(R.string.ui_5a3d42db37),
                         fontWeight = FontWeight.ExtraBold,
-                        fontSize = 32.sp,
                         color = OnSurface,
-                        letterSpacing = (-1).sp
+                        fontSize = 38.sp,
+                        lineHeight = 44.sp
                     )
                 }
             }
 
             // Current Active Trip (More immersive)
             item {
-                Column(modifier = Modifier.padding(horizontal = 24.dp)) {
+                Column(modifier = Modifier.padding(horizontal = 20.dp)) {
                     Text(
                         stringResource(R.string.ui_0811963e56),
                         fontWeight = FontWeight.ExtraBold,
-                        fontSize = 18.sp,
-                        color = OnSurface
+                        color = OnSurface,
+                        fontSize = 18.sp
                     )
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(14.dp))
                     if (state.isLoading && state.activeTrip == null) {
                         ActiveTripSkeleton()
                     } else {
@@ -188,11 +193,11 @@ fun TripsScreen(
                         )
                     }
                 }
-                Spacer(modifier = Modifier.height(36.dp))
+                Spacer(modifier = Modifier.height(30.dp))
             }
             
             item {
-                Column(modifier = Modifier.padding(horizontal = 24.dp)) {
+                Column(modifier = Modifier.padding(horizontal = 20.dp)) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -201,14 +206,13 @@ fun TripsScreen(
                         Text(
                             text = stringResource(R.string.ui_9183bdeb31),
                             fontWeight = FontWeight.ExtraBold,
-                            fontSize = 18.sp,
-                            color = OnSurface
+                            color = OnSurface,
+                            fontSize = 22.sp
                         )
                         Text(
                             text = stringResource(R.string.ui_7e04025452),
                             color = PrimaryBlue,
                             fontWeight = FontWeight.Bold,
-                            fontSize = 13.sp,
                             modifier = Modifier.clickable(onClick = onNavigateToUpcomingTrips)
                         )
                     }
@@ -217,14 +221,13 @@ fun TripsScreen(
             }
 
             item {
-                Column(modifier = Modifier.padding(horizontal = 24.dp)) {
+                Column(modifier = Modifier.padding(horizontal = 20.dp)) {
                     if (state.isLoading && state.upcomingTrips.isEmpty()) {
                         UpcomingTripsSkeleton()
                     } else if (state.upcomingTrips.isEmpty()) {
                         Text(
                             text = stringResource(R.string.ui_a5bb058cec),
-                            color = OnSurfaceVariant,
-                            fontSize = 14.sp
+                            color = OnSurfaceVariant
                         )
                     } else {
                         state.upcomingTrips.forEachIndexed { index, trip ->
@@ -239,7 +242,7 @@ fun TripsScreen(
                     }
                 }
             }
-            item { Spacer(modifier = Modifier.height(36.dp)) }
+            item { Spacer(modifier = Modifier.height(32.dp)) }
 
             // Past Memories Section
             item {
@@ -247,19 +250,16 @@ fun TripsScreen(
                     Text(
                         text = stringResource(R.string.ui_f593bb6075),
                         fontWeight = FontWeight.ExtraBold,
-                        fontSize = 18.sp,
                         color = OnSurface,
-                        modifier = Modifier.padding(horizontal = 24.dp)
+                        fontSize = 22.sp,
+                        modifier = Modifier.padding(horizontal = 20.dp)
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     if (state.isLoading && state.pastTrips.isEmpty()) {
                         PastMemoriesSkeleton()
                     } else if (state.pastTrips.isEmpty()) {
-                        Text(
-                            text = stringResource(R.string.ui_8a9ea817b6),
-                            color = OnSurfaceVariant,
-                            fontSize = 14.sp,
-                            modifier = Modifier.padding(horizontal = 24.dp)
+                        EmptyJourneyJournalCard(
+                            modifier = Modifier.padding(horizontal = 20.dp)
                         )
                     } else {
                         LazyRow(
@@ -319,7 +319,7 @@ fun ActiveJourneyCardV2(
     onNavigateToGroupDetail: (Long, String) -> Unit
 ) {
     Card(
-        shape = RoundedCornerShape(32.dp),
+        shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = SurfaceContainerLowest),
         elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
         modifier = Modifier
@@ -331,7 +331,7 @@ fun ActiveJourneyCardV2(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(260.dp)
+                .height(248.dp)
         ) {
             val coverImageUrl = trip?.coverImageUrl?.takeIf { it.isNotBlank() }
             if (coverImageUrl != null) {
@@ -361,7 +361,11 @@ fun ActiveJourneyCardV2(
                     .fillMaxSize()
                     .background(
                         brush = Brush.verticalGradient(
-                            colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.8f))
+                            colors = listOf(
+                                Color.Transparent,
+                                Color.Black.copy(alpha = 0.18f),
+                                Color.Black.copy(alpha = 0.76f)
+                            )
                         )
                     )
             )
@@ -370,23 +374,22 @@ fun ActiveJourneyCardV2(
             Column(
                 modifier = Modifier
                     .align(Alignment.BottomStart)
-                    .padding(24.dp)
+                    .padding(start = 18.dp, end = 18.dp, bottom = 22.dp)
             ) {
                 Text(
                     text = trip?.name ?: "Chưa có chuyến đi diễn ra",
                     fontWeight = FontWeight.ExtraBold,
-                    fontSize = 24.sp,
-                    color = Color.White,
-                    letterSpacing = (-0.5).sp
+                    color = Color.White
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.LocationOn, null, tint = Color.White.copy(alpha = 0.8f), modifier = Modifier.size(14.dp))
-                    Spacer(modifier = Modifier.width(4.dp))
+                    Icon(Icons.Default.LocationOn, null, tint = Color.White, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        trip?.location ?: "",
-                        color = Color.White.copy(alpha = 0.8f),
-                        fontSize = 13.sp
+                        trip?.location?.takeIf { it.isNotBlank() }
+                            ?: "Hãy lên kế hoạch cho chuyến đi tiếp theo của bạn!",
+                        color = Color.White,
+                        fontWeight = FontWeight.Medium
                     )
                 }
             }
@@ -436,8 +439,8 @@ fun PastMemoryCard(place: String, date: String, imageUrl: String? = null, onClic
             }
         }
         Spacer(modifier = Modifier.height(12.dp))
-        Text(place, fontWeight = FontWeight.ExtraBold, fontSize = 15.sp, color = OnSurface)
-        Text(cleanDate, fontSize = 12.sp, color = OnSurfaceVariant)
+        Text(place, fontWeight = FontWeight.ExtraBold, color = OnSurface)
+        Text(cleanDate, color = OnSurfaceVariant)
     }
 }
 
@@ -462,7 +465,6 @@ fun AddTripOptionsContent(
             Text(
                 text = stringResource(R.string.ui_cac2fa7e3c),
                 fontWeight = FontWeight.ExtraBold,
-                fontSize = 20.sp,
                 color = OnSurface
             )
             Spacer(modifier = Modifier.height(24.dp))
@@ -489,13 +491,11 @@ fun AddTripOptionsContent(
             Text(
                 text = stringResource(R.string.ui_4732924c6b),
                 fontWeight = FontWeight.ExtraBold,
-                fontSize = 20.sp,
                 color = OnSurface
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = stringResource(R.string.ui_ab465c45bd),
-                fontSize = 14.sp,
                 color = OnSurfaceVariant
             )
             Spacer(modifier = Modifier.height(24.dp))
@@ -558,8 +558,8 @@ fun TripOptionItem(
         }
         Spacer(modifier = Modifier.width(16.dp))
         Column {
-            Text(title, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = OnSurface)
-            Text(desc, fontSize = 12.sp, color = OnSurfaceVariant)
+            Text(title, fontWeight = FontWeight.Bold, color = OnSurface)
+            Text(desc, color = OnSurfaceVariant)
         }
     }
 }
@@ -572,15 +572,15 @@ fun UpcomingTripItem(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(24.dp))
+            .clip(RoundedCornerShape(20.dp))
             .background(SurfaceContainerLowest)
             .clickable(onClick = onClick)
-            .padding(12.dp),
+            .padding(horizontal = 14.dp, vertical = 16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(
             modifier = Modifier
-                .size(70.dp)
+                .size(78.dp)
                 .clip(RoundedCornerShape(16.dp))
                 .background(SurfaceContainerLow)
         ) {
@@ -601,29 +601,60 @@ fun UpcomingTripItem(
                 )
             }
         }
-        Spacer(modifier = Modifier.width(16.dp))
+        Spacer(modifier = Modifier.width(18.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = trip.name,
                 fontWeight = FontWeight.ExtraBold,
-                fontSize = 16.sp,
                 color = OnSurface
             )
             Spacer(modifier = Modifier.height(6.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.Timer, null, modifier = Modifier.size(14.dp), tint = SunsetOrange)
-                Spacer(modifier = Modifier.width(4.dp))
+                Icon(Icons.Default.Timer, null, modifier = Modifier.size(16.dp))
+                Spacer(modifier = Modifier.width(6.dp))
                 Text(
                     text = if (trip.daysLeft > 0) {
                         "Còn ${trip.daysLeft} ngày nữa"
                     } else {
                         trip.startDate?.let { "Bắt đầu $it" } ?: "Đang chờ ngày khởi hành"
                     },
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = SunsetOrange
+                    fontWeight = FontWeight.Medium,
+                    fontSize = 13.sp
                 )
             }
+        }
+        Icon(
+            imageVector = Icons.Default.KeyboardArrowRight,
+            contentDescription = null,
+            tint = OnSurfaceVariant,
+            modifier = Modifier.size(34.dp)
+        )
+    }
+}
+
+@Composable
+private fun EmptyJourneyJournalCard(modifier: Modifier = Modifier) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(22.dp))
+            .background(SurfaceContainerLowest)
+            .padding(horizontal = 24.dp, vertical = 26.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Image(
+            painter = painterResource(id = R.drawable.img_no_trip),
+            contentDescription = null,
+            modifier = Modifier.size(width = 136.dp, height = 88.dp),
+            contentScale = ContentScale.Fit
+        )
+        Spacer(modifier = Modifier.width(18.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = "Chưa có chuyến đi",
+                fontWeight = FontWeight.ExtraBold,
+                color = OnSurface
+            )
         }
     }
 }

@@ -174,14 +174,10 @@ fun RegisterScreen(
             isLoading = uiState.isLoading,
             onClick = { onRegister(email, username, name, password) }
         )
-        Spacer(modifier = Modifier.height(34.dp))
-        AuthDivider()
-        Spacer(modifier = Modifier.height(24.dp))
-        GoogleAuthButton(text = "Tiếp tục với Google")
         Spacer(modifier = Modifier.height(30.dp))
         AuthFooterLink(
-            normalText = "Already have an account? ",
-            actionText = "Login",
+            normalText = "Đã có tài khoản? ",
+            actionText = "Đăng nhập",
             enabled = !uiState.isLoading,
             onClick = onNavigateToLogin,
             modifier = Modifier.padding(bottom = 28.dp)

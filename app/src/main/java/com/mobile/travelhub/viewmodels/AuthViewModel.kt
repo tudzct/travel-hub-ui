@@ -25,7 +25,8 @@ data class AuthUiState(
     val isAuthenticated: Boolean = false,
     val isOnboarded: Boolean = false,
     val session: AuthSession? = null,
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
+    val successMessage: String? = null
 )
 
 @HiltViewModel
@@ -47,12 +48,12 @@ class AuthViewModel @Inject constructor(
         val normalizedEmail = email.trim()
         val validationError = validateLogin(normalizedEmail, password)
         if (validationError != null) {
-            _uiState.update { it.copy(errorMessage = validationError) }
+            _uiState.update { it.copy(errorMessage = validationError, successMessage = null) }
             return
         }
 
         viewModelScope.launch(Dispatchers.IO) {
-            _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+            _uiState.update { it.copy(isLoading = true, errorMessage = null, successMessage = null) }
 
             val result = authRepository.login(
                 LoginRequest(email = normalizedEmail, password = password)
@@ -68,14 +69,16 @@ class AuthViewModel @Inject constructor(
                         isAuthenticated = true,
                         isOnboarded = true,
                         session = onboardedResponse.toSession(),
-                        errorMessage = null
+                        errorMessage = null,
+                        successMessage = null
                     )
                 }
             }.onFailure { throwable ->
                 _uiState.update {
                     it.copy(
                         isLoading = false,
-                        errorMessage = throwable.userMessage("Đăng nhập không thành công")
+                        errorMessage = throwable.userMessage("Đăng nhập không thành công"),
+                        successMessage = null
                     )
                 }
             }
@@ -88,12 +91,12 @@ class AuthViewModel @Inject constructor(
         val normalizedName = name.trim()
         val validationError = validateRegister(normalizedEmail, normalizedUsername, normalizedName, password)
         if (validationError != null) {
-            _uiState.update { it.copy(errorMessage = validationError) }
+            _uiState.update { it.copy(errorMessage = validationError, successMessage = null) }
             return
         }
 
         viewModelScope.launch(Dispatchers.IO) {
-            _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+            _uiState.update { it.copy(isLoading = true, errorMessage = null, successMessage = null) }
 
             val result = authRepository.register(
                 RegisterRequest(
@@ -114,14 +117,16 @@ class AuthViewModel @Inject constructor(
                         isAuthenticated = true,
                         isOnboarded = true,
                         session = onboardedResponse.toSession(),
-                        errorMessage = null
+                        errorMessage = null,
+                        successMessage = null
                     )
                 }
             }.onFailure { throwable ->
                 _uiState.update {
                     it.copy(
                         isLoading = false,
-                        errorMessage = throwable.userMessage("Đăng ký không thành công")
+                        errorMessage = throwable.userMessage("Đăng ký không thành công"),
+                        successMessage = null
                     )
                 }
             }
@@ -129,13 +134,13 @@ class AuthViewModel @Inject constructor(
     }
 
     fun clearError() {
-        _uiState.update { it.copy(errorMessage = null) }
+        _uiState.update { it.copy(errorMessage = null, successMessage = null) }
     }
 
     fun logout() {
         authRepository.clearSession()
         _uiState.update {
-            it.copy(isAuthenticated = false, session = null, errorMessage = null)
+            it.copy(isAuthenticated = false, session = null, errorMessage = null, successMessage = null)
         }
     }
 

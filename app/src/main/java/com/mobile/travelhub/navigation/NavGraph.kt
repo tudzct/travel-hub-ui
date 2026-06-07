@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
-import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material3.DrawerState
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.Icon
@@ -176,6 +175,7 @@ private fun HomeDrawerScaffold(
     drawerState: DrawerState,
     profile: UserProfileResponse?,
     onNavigateToProfile: () -> Unit,
+    onNavigateToEditProfile: () -> Unit,
     onNavigateToHistory: () -> Unit,
     onLogout: () -> Unit,
     changePasswordState: UiState<Boolean>,
@@ -203,6 +203,10 @@ private fun HomeDrawerScaffold(
                     onProfileClick = {
                         coroutineScope.launch { drawerState.close() }
                         onNavigateToProfile()
+                    },
+                    onEditProfileClick = {
+                        coroutineScope.launch { drawerState.close() }
+                        onNavigateToEditProfile()
                     },
                     onChangePasswordClick = {
                         onClearChangePasswordState()
@@ -395,6 +399,11 @@ fun NavGraph(
                     }
                 },
                 onNavigateToHistory = { navController.navigate(Screen.ViewHistory.route) { launchSingleTop = true } },
+                onNavigateToEditProfile = {
+                    navController.navigate(Screen.EditProfile.route) {
+                        launchSingleTop = true
+                    }
+                },
                 onLogout = {
                     onLogout()
                     navController.navigate(Screen.Login.route) {

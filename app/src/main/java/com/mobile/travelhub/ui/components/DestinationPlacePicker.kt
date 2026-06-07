@@ -72,6 +72,15 @@ fun DestinationPlacePicker(
     modifier: Modifier = Modifier,
     placeholder: String = "Chọn địa điểm",
     allowPlaceSelection: Boolean = true,
+    labelLeadingIcon: ImageVector? = null,
+    uppercaseLabel: Boolean = true,
+    compactAnchor: Boolean = false,
+    anchorContainerColor: Color? = null,
+    anchorBorderColor: Color? = null,
+    anchorTitleOverride: String? = null,
+    compactSupportingText: String? = null,
+    anchorTrailingIcon: ImageVector = Icons.Rounded.KeyboardArrowDown,
+    showCompactIconBackground: Boolean = true,
     onProvinceSelected: (Long) -> Unit,
     onPlaceSelected: (Long) -> Unit = {},
     provinceErrorMessage: String? = null,
@@ -120,6 +129,10 @@ fun DestinationPlacePicker(
             compact = compactAnchor,
             containerColor = anchorContainerColor,
             borderColor = anchorBorderColor,
+            titleOverride = anchorTitleOverride,
+            compactSupportingText = compactSupportingText,
+            trailingIcon = anchorTrailingIcon,
+            showCompactIconBackground = showCompactIconBackground,
             onClick = {
                 isChoosingProvince = !allowPlaceSelection || selectedProvince == null
                 isSheetOpen = true
@@ -174,6 +187,10 @@ private fun DestinationPickerAnchor(
     compact: Boolean,
     containerColor: Color?,
     borderColor: Color?,
+    titleOverride: String?,
+    compactSupportingText: String?,
+    trailingIcon: ImageVector,
+    showCompactIconBackground: Boolean,
     onClick: () -> Unit
 ) {
     val anchorShape = RoundedCornerShape(18.dp)
@@ -195,7 +212,7 @@ private fun DestinationPickerAnchor(
     ) {
         Row(
             modifier = Modifier.padding(
-                horizontal = if (compact) 16.dp else 14.dp,
+                horizontal = 14.dp,
                 vertical = if (compact) 16.dp else 14.dp
             ),
             verticalAlignment = Alignment.CenterVertically
@@ -205,7 +222,13 @@ private fun DestinationPickerAnchor(
                     modifier = Modifier
                         .size(36.dp)
                         .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)),
+                        .then(
+                            if (showCompactIconBackground) {
+                                Modifier.background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f))
+                            } else {
+                                Modifier
+                            }
+                        ),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
@@ -223,7 +246,8 @@ private fun DestinationPickerAnchor(
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = selectedPlace?.name
+                    text = titleOverride
+                        ?: selectedPlace?.name
                         ?: selectedProvince?.name
                         ?: placeholder,
                     style = MaterialTheme.typography.bodyLarge,
@@ -240,10 +264,20 @@ private fun DestinationPickerAnchor(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
-                Spacer(modifier = Modifier.height(2.dp))
+                if (compact && compactSupportingText != null) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = compactSupportingText,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
                 val title = selectedPlace?.province?.name
                     ?: selectedProvince?.let { if (allowPlaceSelection) "Đang xem ${it.name}" else it.name }
-
+                if (!compact && title != null) {
+                    Spacer(modifier = Modifier.height(2.dp))
                     title?.let {
                         Text(
                             text = it,
@@ -262,7 +296,7 @@ private fun DestinationPickerAnchor(
                 InlineLoadingSkeleton(modifier = Modifier.size(18.dp))
             } else {
                 Icon(
-                    imageVector = Icons.Rounded.KeyboardArrowDown,
+                    imageVector = trailingIcon,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )

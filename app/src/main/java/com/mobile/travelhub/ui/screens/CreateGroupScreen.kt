@@ -1,7 +1,9 @@
 package com.mobile.travelhub.ui.screens
 
 import androidx.compose.ui.res.stringResource
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -10,14 +12,20 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.CardTravel
+import androidx.compose.material.icons.rounded.KeyboardArrowDown
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -28,6 +36,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -54,13 +63,13 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.mobile.travelhub.ui.components.DestinationPlacePicker
-import com.mobile.travelhub.ui.components.EditProfileField
-import com.mobile.travelhub.ui.components.PrimaryProfileButton
-import com.mobile.travelhub.ui.components.SimpleFormTextField
 import com.mobile.travelhub.viewmodels.CreateGroupViewModel
 import com.mobile.travelhub.utils.NumberUtils
 import java.time.Instant
@@ -106,16 +115,24 @@ fun CreateGroupScreen(
         }
     }
 
+    val submitTrip = {
+        if (!uiState.isSaving) {
+            focusManager.clearFocus()
+            keyboardController?.hide()
+            viewModel.createTrip { id -> onCreate(id, uiState.name) }
+        }
+    }
+
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = {
                     Text(
-                        stringResource(R.string.ui_a9fed78742),
-                        style = MaterialTheme.typography.labelMedium,
+                        "Tạo chuyến đi mới",
+                        style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold,
-                        letterSpacing = 1.sp
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                 },
                 navigationIcon = {
@@ -124,8 +141,11 @@ fun CreateGroupScreen(
                     }
                 },
                 actions = {
-                    TextButton(onClick = onBack) {
-                        Text(stringResource(R.string.ui_34ca764caf))
+                    TextButton(
+                        onClick = submitTrip,
+                        enabled = !uiState.isSaving
+                    ) {
+                        Text(if (uiState.isSaving) "Đang tạo..." else "Tạo")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -141,12 +161,12 @@ fun CreateGroupScreen(
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 24.dp)
         ) {
-            Spacer(modifier = Modifier.height(12.dp))
-
-            EditProfileField(
+            CreateTripTextField(
                 label = stringResource(R.string.ui_ea611ea5b8),
                 value = uiState.name,
                 onValueChange = viewModel::updateName,
+                placeholder = "Nhập tên chuyến đi",
+                leadingIcon = Icons.Default.CardTravel,
                 keyboardOptions = KeyboardOptions(
                     imeAction = ImeAction.Next
                 ),
@@ -165,7 +185,13 @@ fun CreateGroupScreen(
                 enabled = !uiState.isSaving &&
                     (uiState.provinces.isNotEmpty() || uiState.provinceErrorMessage != null),
                 placeholder = stringResource(R.string.ui_9433146e77),
-                modifier = Modifier.padding(top = 4.dp, bottom = 12.dp),
+                modifier = Modifier.padding(top = 10.dp, bottom = 14.dp),
+                uppercaseLabel = false,
+                compactAnchor = true,
+                anchorContainerColor = MaterialTheme.colorScheme.surface,
+                anchorBorderColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.42f),
+                anchorTrailingIcon = Icons.Rounded.KeyboardArrowDown,
+                showCompactIconBackground = false,
                 onProvinceSelected = { viewModel.selectProvince(it) },
                 onPlaceSelected = { viewModel.selectPlace(it) },
                 provinceErrorMessage = uiState.provinceErrorMessage,
@@ -174,61 +200,53 @@ fun CreateGroupScreen(
                 onRetryPlaces = viewModel::retryLoadPlaces
             )
 
-            TripDateRangeFieldInput(
-                label = stringResource(R.string.ui_be882ba540),
-                value = when {
-                    uiState.startDate.isNotBlank() && uiState.endDate.isNotBlank() -> {
-                        "${uiState.startDate} - ${uiState.endDate}"
-                    }
-                    uiState.startDate.isNotBlank() -> {
-                        "${uiState.startDate} - Chọn ngày về"
-                    }
-                    else -> ""
-                },
-                placeholder = "",
+            TripDateFieldInput(
+                label = "Ngày đi",
+                value = uiState.startDate,
+                placeholder = "Chọn ngày đi",
                 onClick = {
                     focusManager.clearFocus()
                     dateSelectionStep = TripDateSelectionStep.START
                 }
             )
 
-            EditProfileField(
-                label = stringResource(R.string.ui_ed963f4527),
+            TripDateFieldInput(
+                label = "Ngày về",
+                value = uiState.endDate,
+                placeholder = "Chọn ngày về",
+                onClick = {
+                    focusManager.clearFocus()
+                    dateSelectionStep = if (uiState.startDate.isBlank()) {
+                        TripDateSelectionStep.START
+                    } else {
+                        TripDateSelectionStep.END
+                    }
+                }
+            )
+
+            CreateTripTextField(
+                label = "Ngân sách dự kiến (tùy chọn)",
                 value = budgetMaxFieldVal,
                 onValueChange = { newValue ->
                     val formatted = NumberUtils.formatTextFieldValue(newValue)
                     budgetMaxFieldVal = formatted
                     viewModel.updateBudgetMax(formatted.text)
                 },
+                placeholder = "Nhập ngân sách dự kiến",
+                leadingIcon = Icons.Default.AccountBalanceWallet,
+                trailingText = "VND",
                 keyboardOptions = KeyboardOptions(
                     keyboardType = KeyboardType.Number,
                     imeAction = ImeAction.Done
                 ),
                 keyboardActions = KeyboardActions(
                     onDone = {
-                        keyboardController?.hide()
-                        focusManager.clearFocus()
-                        if (!uiState.isSaving) {
-                            viewModel.createTrip { id -> onCreate(id, uiState.name) }
-                        }
+                        submitTrip()
                     }
                 )
             )
 
-            Spacer(modifier = Modifier.height(28.dp))
-
-            PrimaryProfileButton(
-                text = if (uiState.isSaving) "Đang tạo..." else "Tạo chuyến đi",
-                onClick = {
-                    if (!uiState.isSaving) {
-                        focusManager.clearFocus()
-                        viewModel.createTrip { id -> onCreate(id, uiState.name) }
-                    }
-                },
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Spacer(modifier = Modifier.height(40.dp))
+            Spacer(modifier = Modifier.height(24.dp))
         }
     }
 
@@ -308,7 +326,7 @@ fun CreateGroupScreen(
                             TripDateSelectionStep.START -> {
                                 viewModel.updateStartDate(formattedDate)
                                 viewModel.updateEndDate("")
-                                dateSelectionStep = TripDateSelectionStep.END
+                                dateSelectionStep = null
                                 datePickerErrorMessage = null
                             }
                             TripDateSelectionStep.END -> {
@@ -321,7 +339,7 @@ fun CreateGroupScreen(
                         }
                     }
                 ) {
-                    Text(if (selectedStep == TripDateSelectionStep.START) "Tiếp tục" else "Chọn")
+                    Text("Chọn")
                 }
             },
             dismissButton = {
@@ -397,9 +415,117 @@ fun CreateGroupScreen(
 
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun TripDateRangeFieldInput(
+private fun CreateTripTextField(
+    label: String,
+    value: TextFieldValue,
+    onValueChange: (TextFieldValue) -> Unit,
+    placeholder: String,
+    leadingIcon: ImageVector,
+    modifier: Modifier = Modifier,
+    trailingText: String? = null,
+    keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
+    keyboardActions: KeyboardActions = KeyboardActions.Default
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .then(modifier)
+            .padding(vertical = 10.dp),
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(bottom = 12.dp)
+        )
+        CreateTripFieldSurface {
+            Row(
+                modifier = Modifier.padding(horizontal = 14.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                CreateTripFieldIcon(leadingIcon)
+                Spacer(modifier = Modifier.width(12.dp))
+                BasicTextField(
+                    value = value,
+                    onValueChange = onValueChange,
+                    textStyle = MaterialTheme.typography.bodyLarge.copy(
+                        color = MaterialTheme.colorScheme.onSurface
+                    ),
+                    singleLine = true,
+                    keyboardOptions = keyboardOptions,
+                    keyboardActions = keyboardActions,
+                    cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                    modifier = Modifier.weight(1f),
+                    decorationBox = { innerTextField ->
+                        Box(contentAlignment = Alignment.CenterStart) {
+                            if (value.text.isBlank()) {
+                                Text(
+                                    text = placeholder,
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.46f),
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                            innerTextField()
+                        }
+                    }
+                )
+                if (trailingText != null) {
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text(
+                        text = trailingText,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.78f)
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun CreateTripTextField(
+    label: String,
+    value: String,
+    onValueChange: (String) -> Unit,
+    placeholder: String,
+    leadingIcon: ImageVector,
+    keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
+    keyboardActions: KeyboardActions = KeyboardActions.Default
+) {
+    var fieldValue by remember {
+        mutableStateOf(TextFieldValue(text = value, selection = TextRange(value.length)))
+    }
+
+    LaunchedEffect(value) {
+        if (value != fieldValue.text) {
+            fieldValue = TextFieldValue(
+                text = value,
+                selection = TextRange(value.length)
+            )
+        }
+    }
+
+    CreateTripTextField(
+        label = label,
+        value = fieldValue,
+        onValueChange = {
+            fieldValue = it
+            onValueChange(it.text)
+        },
+        placeholder = placeholder,
+        leadingIcon = leadingIcon,
+        keyboardOptions = keyboardOptions,
+        keyboardActions = keyboardActions
+    )
+}
+
+@Composable
+private fun TripDateFieldInput(
     label: String,
     value: String,
     placeholder: String,
@@ -408,32 +534,81 @@ private fun TripDateRangeFieldInput(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 12.dp)
-            .clickable(onClick = onClick),
+            .padding(vertical = 10.dp)
     ) {
         Text(
-            text = label.uppercase(),
-            style = MaterialTheme.typography.labelSmall,
+            text = label,
+            style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(bottom = 8.dp)
+            modifier = Modifier.padding(bottom = 12.dp)
         )
-        SimpleFormTextField(
-            value = value,
-            onValueChange = {},
-            placeholder = placeholder,
-            readOnly = true,
-            enabled = false,
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable(onClick = onClick),
-            trailingIcon = {
-                Icon(
-                    Icons.Default.CalendarMonth,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+        val interactionSource = remember { MutableInteractionSource() }
+        CreateTripFieldSurface(
+            modifier = Modifier.clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                onClick = onClick
+            )
+        ) {
+            Row(
+                modifier = Modifier.padding(horizontal = 14.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                CreateTripFieldIcon(Icons.Default.CalendarMonth)
+                Spacer(modifier = Modifier.width(12.dp))
+                Text(
+                    text = value.ifBlank { placeholder },
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = if (value.isBlank()) {
+                        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.46f)
+                    } else {
+                        MaterialTheme.colorScheme.onSurface
+                    },
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f)
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun CreateTripFieldSurface(
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit
+) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(64.dp)
+            .border(
+                width = 1.dp,
+                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.42f),
+                shape = RoundedCornerShape(22.dp)
+            )
+            .then(modifier),
+        shape = RoundedCornerShape(22.dp),
+        color = MaterialTheme.colorScheme.surface,
+        tonalElevation = 0.dp,
+        shadowElevation = 0.dp,
+        content = content
+    )
+}
+
+@Composable
+private fun CreateTripFieldIcon(icon: ImageVector) {
+    Box(
+        modifier = Modifier
+            .size(36.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(26.dp)
         )
     }
 }
@@ -447,4 +622,3 @@ private fun parseDisplayDate(value: String, formatter: DateTimeFormatter): Local
         LocalDate.parse(value, formatter)
     }.getOrNull()
 }
-

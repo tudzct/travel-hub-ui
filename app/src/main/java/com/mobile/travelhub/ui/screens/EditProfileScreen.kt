@@ -5,30 +5,41 @@ import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.outlined.AlternateEmail
+import androidx.compose.material.icons.outlined.ChevronRight
+import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.Email
+import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material.icons.outlined.PhotoCamera
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -48,18 +59,19 @@ import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.mobile.travelhub.R
 import com.mobile.travelhub.data.userMessage
 import com.mobile.travelhub.ui.components.DestinationPlacePicker
-import com.mobile.travelhub.ui.components.EditProfileField
 import com.mobile.travelhub.ui.components.InlineLoadingSkeleton
 import com.mobile.travelhub.ui.components.EditProfileLoadingSkeleton
 import com.mobile.travelhub.viewmodels.ProfileViewModel
@@ -211,43 +223,51 @@ fun EditProfileScreen(
     BackHandler(onBack = handleBack)
 
     Scaffold(
+        containerColor = EditProfileBackground,
         topBar = {
-            TopAppBar(
-                title = { 
-                    Text(
-                            stringResource(R.string.ui_a6ba1ffb26),
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = 1.sp
-                    ) 
-                },
-                navigationIcon = {
-                    IconButton(onClick = handleBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.ui_b52b36b726))
-                    }
-                },
-                actions = {
-                    if (isSaving) {
-                        InlineLoadingSkeleton(
-                            modifier = Modifier
-                                .size(24.dp)
-                                .padding(end = 16.dp)
-                        )
-                    } else {
-                        TextButton(onClick = { saveProfile() }) {
-                            Text(
-                                stringResource(R.string.ui_508156a39b),
-                                style = MaterialTheme.typography.labelMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                        }
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(64.dp)
+                    .background(EditProfileBackground)
+                    .padding(horizontal = 20.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                IconButton(
+                    onClick = handleBack,
+                    modifier = Modifier.align(Alignment.CenterStart)
+                ) {
+                    Icon(
+                        Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = stringResource(R.string.ui_b52b36b726),
+                        tint = EditProfileInk,
+                        modifier = Modifier.size(31.dp)
+                    )
+                }
+                Text(
+                    text = "Chỉnh sửa hồ sơ",
+                    color = EditProfileInk,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
                 )
-            )
+                if (isSaving) {
+                    InlineLoadingSkeleton(
+                        modifier = Modifier
+                            .align(Alignment.CenterEnd)
+                            .size(24.dp)
+                    )
+                } else {
+                    Text(
+                        text = "Lưu",
+                        color = MaterialTheme.colorScheme.primary,
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier
+                            .align(Alignment.CenterEnd)
+                            .clickable { saveProfile() }
+                    )
+                }
+            }
         }
     ) { innerPadding ->
         Column(
@@ -255,7 +275,7 @@ fun EditProfileScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 24.dp)
+                .padding(horizontal = 20.dp)
         ) {
             if (profileState is UiState.Loading) {
                 EditProfileLoadingSkeleton()
@@ -272,7 +292,6 @@ fun EditProfileScreen(
                         val originalBitmap = BitmapFactory.decodeByteArray(originalBytes, 0, originalBytes.size)
                             ?: throw IllegalStateException("Không thể giải mã ảnh đã chọn")
 
-                        // Scale and compress for profile avatar
                         val maxDimension = 500
                         val width = originalBitmap.width
                         val height = originalBitmap.height
@@ -330,77 +349,63 @@ fun EditProfileScreen(
                 }
             }
 
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 32.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                val existingAvatarUrl = (profileState as? UiState.Success)
+            Spacer(modifier = Modifier.height(30.dp))
+
+            EditProfileAvatarPicker(
+                avatarUrl = (profileState as? UiState.Success)
                     ?.data
                     ?.avatarUrl
-                    ?.takeIf { it.isNotBlank() }
-                val selectedAvatar = pendingAvatar
-                Box(
-                    modifier = Modifier
-                        .size(100.dp)
-                        .clickable {
-                            avatarPickerLauncher.launch(
-                                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
-                            )
-                        }
-                ) {
-                    if (selectedAvatar != null) {
-                        Image(
-                            bitmap = selectedAvatar.previewBitmap.asImageBitmap(),
-                            contentDescription = stringResource(R.string.ui_4dbfd0986a),
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.surfaceVariant),
-                            contentScale = ContentScale.Crop
-                        )
-                    } else if (existingAvatarUrl != null) {
-                        AsyncImage(
-                            model = existingAvatarUrl,
-                            contentDescription = stringResource(R.string.ui_4dbfd0986a),
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.surfaceVariant),
-                            contentScale = ContentScale.Crop
-                        )
-                    } else {
-                        Image(
-                            painter = painterResource(id = R.drawable.ic_launcher_foreground),
-                            contentDescription = stringResource(R.string.ui_4dbfd0986a),
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.surfaceVariant),
-                            contentScale = ContentScale.Crop
-                        )
-                    }
+                    ?.takeIf { it.isNotBlank() },
+                pendingAvatar = pendingAvatar,
+                onClick = {
+                    avatarPickerLauncher.launch(
+                        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                    )
                 }
-            }
+            )
 
-            EditProfileField(
-                label = stringResource(R.string.ui_64346b483c),
+            Spacer(modifier = Modifier.height(48.dp))
+
+            EditProfileSectionTitle("Thông tin cơ bản")
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            EditProfileInputCard(
+                icon = Icons.Outlined.Person,
+                label = "Họ và tên",
                 value = name,
                 onValueChange = { name = it }
             )
-            EditProfileField(
-                label = stringResource(R.string.ui_84c29015de),
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            EditProfileInputCard(
+                icon = Icons.Outlined.AlternateEmail,
+                label = "Tên người dùng",
                 value = handle,
                 onValueChange = { handle = it }
             )
-            EditProfileField(
-                label = stringResource(R.string.ui_b31fc969b4),
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            EditProfileInputCard(
+                icon = Icons.Outlined.Edit,
+                label = "Giới thiệu",
                 value = bio,
-                onValueChange = { bio = it }
+                onValueChange = { bio = it.take(120) },
+                placeholder = "Giới thiệu về bạn...",
+                maxLength = 120,
+                minHeight = 82.dp
             )
+
+            Spacer(modifier = Modifier.height(34.dp))
+
+            EditProfileSectionTitle("Địa điểm")
+
+            Spacer(modifier = Modifier.height(16.dp))
+
             DestinationPlacePicker(
-                label = stringResource(R.string.ui_d219c68101),
+                label = "",
                 selectedProvince = selectedProvince,
                 selectedPlace = null,
                 provinces = provincePickerState.provinces,
@@ -408,8 +413,15 @@ fun EditProfileScreen(
                 isLoading = provincePickerState.isLoading,
                 enabled = !isSaving &&
                     (provincePickerState.provinces.isNotEmpty() || provincePickerState.errorMessage != null),
-                placeholder = stringResource(R.string.ui_d219c68101),
+                placeholder = "Địa điểm",
                 allowPlaceSelection = false,
+                compactAnchor = true,
+                anchorContainerColor = Color.White,
+                anchorBorderColor = EditProfileBorder,
+                anchorTitleOverride = "Địa điểm",
+                compactSupportingText = selectedProvince?.name
+                    ?: "Chọn nơi bạn đang sống hoặc thường xuyên ghé thăm",
+                anchorTrailingIcon = Icons.Outlined.ChevronRight,
                 onProvinceSelected = { provinceId ->
                     viewModel.selectProfileProvince(provinceId)
                     location = provincePickerState.provinces
@@ -421,23 +433,22 @@ fun EditProfileScreen(
                 onRetryProvinces = viewModel::retryLoadProfileProvinces
             )
 
-            Spacer(modifier = Modifier.height(20.dp))
-            
-            Text(
-                text = stringResource(R.string.ui_6013ce3378),
-                style = MaterialTheme.typography.labelSmall,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(bottom = 16.dp)
-            )
-            
-            EditProfileField(
-                label = stringResource(R.string.ui_09ba557fd1),
+            Spacer(modifier = Modifier.height(34.dp))
+
+            EditProfileSectionTitle("Thông tin liên hệ")
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            EditProfileInputCard(
+                icon = Icons.Outlined.Email,
+                label = "Địa chỉ email",
                 value = email,
                 onValueChange = { email = it },
-                enabled = false
+                enabled = false,
+                iconInCircle = true
             )
-            Spacer(modifier = Modifier.height(40.dp))
+
+            Spacer(modifier = Modifier.height(56.dp))
         }
 
         if (showConfirmDialog) {
@@ -484,3 +495,202 @@ private data class PendingAvatar(
     val fileName: String,
     val previewBitmap: Bitmap
 )
+
+@Composable
+private fun EditProfileAvatarPicker(
+    avatarUrl: String?,
+    pendingAvatar: PendingAvatar?,
+    onClick: () -> Unit
+) {
+    Box(
+        modifier = Modifier.fillMaxWidth(),
+        contentAlignment = Alignment.Center
+    ) {
+        Box(
+            modifier = Modifier
+                .size(124.dp)
+                .clickable(onClick = onClick),
+            contentAlignment = Alignment.Center
+        ) {
+            if (pendingAvatar != null) {
+                Image(
+                    bitmap = pendingAvatar.previewBitmap.asImageBitmap(),
+                    contentDescription = stringResource(R.string.ui_4dbfd0986a),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clip(CircleShape)
+                        .background(EditProfileSoftBlue),
+                    contentScale = ContentScale.Crop
+                )
+            } else if (avatarUrl != null) {
+                AsyncImage(
+                    model = avatarUrl,
+                    contentDescription = stringResource(R.string.ui_4dbfd0986a),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clip(CircleShape)
+                        .background(EditProfileSoftBlue),
+                    contentScale = ContentScale.Crop
+                )
+            } else {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clip(CircleShape)
+                        .background(EditProfileSoftBlue),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.Person,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(72.dp)
+                    )
+                }
+            }
+
+            Surface(
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .shadow(8.dp, CircleShape)
+                    .size(45.dp),
+                shape = CircleShape,
+                color = Color.White
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = Icons.Outlined.PhotoCamera,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun EditProfileSectionTitle(text: String) {
+    Text(
+        text = text,
+        color = EditProfileInk,
+        style = MaterialTheme.typography.titleMedium,
+        fontWeight = FontWeight.Bold
+    )
+}
+
+@Composable
+private fun EditProfileInputCard(
+    icon: ImageVector,
+    label: String,
+    value: String,
+    onValueChange: (String) -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    placeholder: String = "",
+    maxLength: Int? = null,
+    minHeight: Dp = 70.dp,
+    iconInCircle: Boolean = false
+) {
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(minHeight)
+            .border(1.dp, EditProfileBorder, RoundedCornerShape(18.dp)),
+        shape = RoundedCornerShape(18.dp),
+        color = Color.White
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 18.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            EditProfileFieldIcon(icon = icon, inCircle = iconInCircle)
+
+            Spacer(modifier = Modifier.width(18.dp))
+
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.Center
+            ) {
+                Text(
+                    text = label,
+                    color = EditProfileMuted,
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Medium
+                )
+                Spacer(modifier = Modifier.height(5.dp))
+                BasicTextField(
+                    value = value,
+                    onValueChange = { nextValue ->
+                        onValueChange(maxLength?.let { nextValue.take(it) } ?: nextValue)
+                    },
+                    enabled = enabled,
+                    singleLine = maxLength == null,
+                    textStyle = MaterialTheme.typography.bodyLarge.copy(
+                        color = if (enabled) Color.Black else Color.Black,
+                        fontWeight = FontWeight.Normal
+                    ),
+                    modifier = Modifier.fillMaxWidth(),
+                    decorationBox = { innerTextField ->
+                        if (value.isBlank() && placeholder.isNotBlank()) {
+                            Text(
+                                text = placeholder,
+                                color = EditProfileMuted,
+                                style = MaterialTheme.typography.bodyLarge
+                            )
+                        }
+                        innerTextField()
+                    }
+                )
+            }
+
+            if (maxLength != null) {
+                Spacer(modifier = Modifier.width(10.dp))
+                Text(
+                    text = "${value.length}/$maxLength",
+                    color = EditProfileMuted,
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.align(Alignment.Bottom)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun EditProfileFieldIcon(
+    icon: ImageVector,
+    inCircle: Boolean
+) {
+    if (inCircle) {
+        Box(
+            modifier = Modifier
+                .size(46.dp)
+                .clip(CircleShape)
+                .background(EditProfileSoftBlue),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = EditProfileIcon,
+                modifier = Modifier.size(28.dp)
+            )
+        }
+    } else {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = EditProfileIcon,
+            modifier = Modifier.size(31.dp)
+        )
+    }
+}
+
+private val EditProfileBackground = Color(0xFFFFFFFF)
+private val EditProfileInk = Color(0xFF111827)
+private val EditProfileMuted = Color(0xFF5F6B7A)
+private val EditProfileIcon = Color(0xFF3F4A59)
+private val EditProfileBorder = Color(0xFFE8ECF2)
+private val EditProfileSoftBlue = Color(0xFFEAF3FF)

@@ -1009,7 +1009,7 @@ fun FeedPostCardPreview() {
 }
 
 
-private val VerdantPrimary = Color(0xFF60B2E5)
+private val VerdantPrimary = Color(0xFF1677F2)
 private val VerdantSurfaceContainer = Color(0xFFEFF6EA)
 private val VerdantOnSurface = Color(0xFF171D16)
 private val VerdantOnSurfaceVariant = Color(0xFF3E4A3D)

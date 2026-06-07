@@ -308,40 +308,33 @@ fun GroupDetailScreen(
 
                 Spacer(modifier = Modifier.height(18.dp))
 
-                Card(
-                    shape = RoundedCornerShape(18.dp),
-                    colors = CardDefaults.cardColors(containerColor = SurfaceContainerLowest),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, SurfaceContainerLow),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column(modifier = Modifier.padding(horizontal = 18.dp, vertical = 14.dp)) {
-                        if (isInitialLoading) {
-                            TripDetailRowSkeleton()
-                            HorizontalDivider(color = SurfaceContainerLow, modifier = Modifier.padding(vertical = 10.dp))
-                            TripDetailRowSkeleton()
-                            HorizontalDivider(color = SurfaceContainerLow, modifier = Modifier.padding(vertical = 10.dp))
-                            TripDetailRowSkeleton()
-                        } else {
-                            TripDetailRow(
-                                label = "Lịch trình",
-                                value = displayTripDateRange(uiState.startDate, uiState.endDate),
-                                icon = Icons.Default.CalendarMonth
-                            )
-                            HorizontalDivider(color = SurfaceContainerLow, modifier = Modifier.padding(vertical = 8.dp))
-                            TripDetailRow(
-                                label = "Số điểm dừng",
-                                value = uiState.totalStops.toString(),
-                                icon = Icons.Default.Star
-                            )
-                            HorizontalDivider(color = SurfaceContainerLow, modifier = Modifier.padding(vertical = 8.dp))
-                            TripDetailRow(
-                                label = "Trạng thái",
-                                value = uiState.statusLabel.ifBlank { "Chưa xác định" },
-                                icon = Icons.Default.CardTravel,
-                                pillText = displayTripStatus(uiState.statusLabel),
-                                trailingText = daysUntilStartLabel(uiState.startDate)
-                            )
-                        }
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    if (isInitialLoading) {
+                        TripDetailRowSkeleton()
+                        HorizontalDivider(color = SurfaceContainerLow, modifier = Modifier.padding(vertical = 10.dp))
+                        TripDetailRowSkeleton()
+                        HorizontalDivider(color = SurfaceContainerLow, modifier = Modifier.padding(vertical = 10.dp))
+                        TripDetailRowSkeleton()
+                    } else {
+                        TripDetailRow(
+                            label = "Lịch trình",
+                            value = displayTripDateRange(uiState.startDate, uiState.endDate),
+                            icon = Icons.Default.CalendarMonth
+                        )
+                        HorizontalDivider(color = SurfaceContainerLow, modifier = Modifier.padding(vertical = 8.dp))
+                        TripDetailRow(
+                            label = "Số điểm dừng",
+                            value = uiState.totalStops.toString(),
+                            icon = Icons.Default.Star
+                        )
+                        HorizontalDivider(color = SurfaceContainerLow, modifier = Modifier.padding(vertical = 8.dp))
+                        TripDetailRow(
+                            label = "Trạng thái",
+                            value = uiState.statusLabel.ifBlank { "Chưa xác định" },
+                            icon = Icons.Default.CardTravel,
+                            pillText = displayTripStatus(uiState.statusLabel),
+                            trailingText = daysUntilStartLabel(uiState.startDate)
+                        )
                     }
                 }
 
