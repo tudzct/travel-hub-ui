@@ -3,6 +3,7 @@ package com.mobile.travelhub.data.api
 import com.mobile.travelhub.data.model.PaginationResponse
 import com.mobile.travelhub.data.model.TravelPlaceDetailResponse
 import com.mobile.travelhub.data.model.TravelPlaceListItemResponse
+import com.mobile.travelhub.data.model.TravelPlaceReviewListSummaryResponse
 import com.mobile.travelhub.data.model.TravelPlaceReviewResponse
 import com.mobile.travelhub.data.model.TravelPlaceViewHistoryResponse
 import com.mobile.travelhub.data.model.UpsertTravelPlaceReviewRequest
@@ -45,8 +46,15 @@ interface PlaceApiService {
     suspend fun getReviews(
         @Path("placeId") placeId: Long,
         @Query("page") page: Int = 0,
-        @Query("pageSize") pageSize: Int = 10
+        @Query("pageSize") pageSize: Int = 10,
+        @Query("rating") rating: Int? = null,
+        @Query("sort") sort: String = "NEWEST"
     ): PaginationResponse<TravelPlaceReviewResponse>
+
+    @GET("api/places/{placeId}/reviews/summary")
+    suspend fun getReviewSummary(
+        @Path("placeId") placeId: Long
+    ): TravelPlaceReviewListSummaryResponse
 
     @PUT("api/places/{placeId}/review")
     suspend fun upsertReview(

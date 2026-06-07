@@ -54,6 +54,12 @@ data class TravelPlaceReviewSummaryResponse(
     val reviewCount: Long
 ) : Serializable
 
+data class TravelPlaceReviewListSummaryResponse(
+    val averageRating: Double,
+    val reviewCount: Long,
+    val ratingCounts: Map<String, Long> = emptyMap()
+) : Serializable
+
 data class TravelPlaceReviewAuthorResponse(
     val id: Long,
     val name: String,

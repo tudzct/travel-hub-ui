@@ -846,6 +846,7 @@ fun NavGraph(
                 onBack = { navController.navigateUp() },
                 onPlaceClick = ::navigateToPlaceDetail,
                 onShowAllReviews = { id -> navController.navigate(Screen.PlaceReviews.createRoute(id)) },
+                onReviewAuthorClick = ::navigateToUserProfile,
                 onRequireLogin = {
                     onLogout()
                     navController.navigate(Screen.Login.route) {
@@ -863,7 +864,15 @@ fun NavGraph(
             val placeId = backStackEntry.arguments?.getLong("placeId") ?: return@composable
             ReviewListScreen(
                 placeId = placeId,
-                onBack = { navController.navigateUp() }
+                onBack = { navController.navigateUp() },
+                onAuthorClick = ::navigateToUserProfile,
+                onRequireLogin = {
+                    onLogout()
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(navController.graph.findStartDestination().id) { inclusive = false }
+                        launchSingleTop = true
+                    }
+                }
             )
         }
 

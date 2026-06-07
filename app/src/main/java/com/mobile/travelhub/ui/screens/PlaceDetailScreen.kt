@@ -99,6 +99,7 @@ fun PlaceDetailScreen(
     onBack: () -> Unit,
     onPlaceClick: (TravelPlaceListItemResponse) -> Unit,
     onShowAllReviews: (Long) -> Unit,
+    onReviewAuthorClick: (Long) -> Unit,
     onRequireLogin: () -> Unit,
     placeDetailViewModel: PlaceDetailViewModel = hiltViewModel(),
     reviewViewModel: ReviewViewModel = hiltViewModel()
@@ -247,7 +248,8 @@ fun PlaceDetailScreen(
                             reviews = uiState.reviewPreview,
                             isLoading = uiState.reviewPreviewLoading,
                             errorMessage = uiState.reviewErrorMessage,
-                            onShowAll = { onShowAllReviews(detail.id) }
+                            onShowAll = { onShowAllReviews(detail.id) },
+                            onAuthorClick = onReviewAuthorClick
                         )
                     }
 
@@ -761,7 +763,8 @@ private fun ReviewPreviewSection(
     reviews: List<TravelPlaceReviewResponse>,
     isLoading: Boolean,
     errorMessage: String?,
-    onShowAll: () -> Unit
+    onShowAll: () -> Unit,
+    onAuthorClick: (Long) -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -810,7 +813,10 @@ private fun ReviewPreviewSection(
 
             else -> {
                 reviews.forEach { review ->
-                    ReviewPreviewCard(review = review)
+                    ReviewPreviewCard(
+                        review = review,
+                        onAuthorClick = { onAuthorClick(review.user.id) }
+                    )
                 }
             }
         }
@@ -819,7 +825,8 @@ private fun ReviewPreviewSection(
 
 @Composable
 private fun ReviewPreviewCard(
-    review: TravelPlaceReviewResponse
+    review: TravelPlaceReviewResponse,
+    onAuthorClick: () -> Unit
 ) {
     val displayName = review.user.name.ifBlank { review.user.username }
     Surface(
@@ -835,7 +842,11 @@ private fun ReviewPreviewCard(
                 .padding(horizontal = 14.dp, vertical = 14.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            ReviewAuthorAvatar(name = displayName)
+            ReviewAuthorAvatar(
+                name = displayName,
+                avatarUrl = review.user.avatarUrl,
+                onClick = onAuthorClick
+            )
 
             Column(
                 modifier = Modifier.weight(1f),
@@ -852,6 +863,7 @@ private fun ReviewPreviewCard(
                     ) {
                         Text(
                             text = displayName,
+                            modifier = Modifier.clickable(onClick = onAuthorClick),
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.Bold,
                             color = OnSurface,
@@ -907,7 +919,11 @@ private fun formatReviewTimestamp(raw: String?): String {
 }
 
 @Composable
-private fun ReviewAuthorAvatar(name: String) {
+private fun ReviewAuthorAvatar(
+    name: String,
+    avatarUrl: String?,
+    onClick: () -> Unit
+) {
     val initial = name.trim().firstOrNull()?.uppercaseChar()?.toString() ?: "?"
     val avatarColors = listOf(
         Color(0xFF9DBBFF),
@@ -922,15 +938,25 @@ private fun ReviewAuthorAvatar(name: String) {
         modifier = Modifier
             .size(36.dp)
             .clip(CircleShape)
-            .background(backgroundColor),
+            .background(backgroundColor)
+            .clickable(onClick = onClick),
         contentAlignment = Alignment.Center
     ) {
-        Text(
-            text = initial,
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
-            color = Color.White
-        )
+        if (!avatarUrl.isNullOrBlank()) {
+            AsyncImage(
+                model = avatarUrl,
+                contentDescription = name,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+            )
+        } else {
+            Text(
+                text = initial,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = Color.White
+            )
+        }
     }
 }
 
@@ -1069,7 +1095,8 @@ private fun PlaceActionSection(
                 .height(52.dp),
             shape = RoundedCornerShape(16.dp),
             colors = ButtonDefaults.buttonColors(
-                containerColor = PrimaryBlue
+                containerColor = PrimaryBlue,
+                contentColor = Color.White
             )
         ) {
             Text(

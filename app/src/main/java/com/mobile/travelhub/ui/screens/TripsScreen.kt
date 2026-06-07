@@ -519,7 +519,10 @@ fun AddTripOptionsContent(
                     .height(56.dp),
                 shape = RoundedCornerShape(20.dp),
                 enabled = !isJoining && joinCode.length == 8,
-                colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = PrimaryBlue,
+                    contentColor = Color.White
+                )
             ) {
                 Text(if (isJoining) "Đang gửi..." else "Gửi yêu cầu tham gia", fontWeight = FontWeight.Bold)
             }

@@ -633,7 +633,10 @@ private fun ProfileScreenContent(
                                                         onClick = {
                                                             onReloadPosts(if (isViewingOwnProfile) null else viewingUserId)
                                                         },
-                                                        colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
+                                                        colors = ButtonDefaults.buttonColors(
+                                                            containerColor = PrimaryBlue,
+                                                            contentColor = Color.White
+                                                        )
                                                     ) {
                                                         Icon(Icons.Default.Refresh, contentDescription = null)
                                                         Text(stringResource(R.string.ui_d3bc9864fe), modifier = Modifier.padding(start = 8.dp))
@@ -687,7 +690,10 @@ private fun ProfileScreenContent(
                                                         Button(
                                                             onClick = onNavigateToCreatePost,
                                                             shape = RoundedCornerShape(24.dp),
-                                                            colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
+                                                            colors = ButtonDefaults.buttonColors(
+                                                                containerColor = PrimaryBlue,
+                                                                contentColor = Color.White
+                                                            )
                                                         ) {
                                                             Text(stringResource(R.string.ui_454f9a145d), fontWeight = FontWeight.Bold)
                                                         }
@@ -913,7 +919,13 @@ fun ErrorLayout(message: String, onRetry: () -> Unit) {
     ) {
         Text(text = stringResource(R.string.ui_aca851b5d6), fontWeight = FontWeight.Bold, color = SunsetOrange)
         Text(text = message, textAlign = TextAlign.Center, color = OnSurfaceVariant, modifier = Modifier.padding(top = 8.dp, bottom = 24.dp))
-        Button(onClick = onRetry, colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)) {
+        Button(
+            onClick = onRetry,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = PrimaryBlue,
+                contentColor = Color.White
+            )
+        ) {
             Icon(Icons.Default.Refresh, contentDescription = null)
             Text(stringResource(R.string.ui_d3bc9864fe), modifier = Modifier.padding(start = 8.dp))
         }
