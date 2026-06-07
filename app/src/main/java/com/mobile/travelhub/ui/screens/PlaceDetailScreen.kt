@@ -726,7 +726,10 @@ private fun ReviewSummarySection(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                modifier = Modifier.weight(1f),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 Icon(
                     imageVector = Icons.Default.Star,
                     contentDescription = null,
@@ -747,7 +750,7 @@ private fun ReviewSummarySection(
                         text = if (reviewCount > 0) {
                             stringResource(R.string.review_count, reviewCount)
                         } else {
-                            "Chưa có đánh giá"
+                            "0 đánh giá"
                         },
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -786,7 +789,7 @@ private fun ReviewSummarySection(
 
 private fun placeRatingLabel(averageRating: Double, reviewCount: Long): String {
     if (reviewCount <= 0L || averageRating <= 0.0) {
-        return "Chưa có đánh giá"
+        return "0"
     }
     return String.format("%.1f", averageRating)
 }
@@ -1037,7 +1040,9 @@ private fun openDirections(
         Intent(
             Intent.ACTION_VIEW,
             Uri.parse("https://www.google.com/maps/search/?api=1&query=${Uri.encode(label)}")
-        )
+        ).apply {
+            addCategory(Intent.CATEGORY_BROWSABLE)
+        }
     )
 
     for (intent in intents) {
@@ -1049,8 +1054,6 @@ private fun openDirections(
                 context.startActivity(intent)
                 return
             }
-        } catch (_: ActivityNotFoundException) {
-            continue
         } catch (_: Exception) {
             continue
         }

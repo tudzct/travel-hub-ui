@@ -511,10 +511,6 @@ fun GroupDetailScreen(
                 tripId = tripId,
                 groupName = groupName,
                 onDismiss = { showItinerarySheet = false },
-                onOpenAssistant = {
-                    showItinerarySheet = false
-                    onNavigateToAssistant(tripId, groupName)
-                }
             )
         }
 

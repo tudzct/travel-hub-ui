@@ -44,7 +44,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
@@ -125,7 +124,6 @@ fun ItineraryScreen(
     groupName: String,
     onBack: () -> Unit,
     onOpenDayDetail: (Int) -> Unit,
-    onOpenAssistant: () -> Unit,
     showBackButton: Boolean = true,
     viewModel: ItineraryViewModel = hiltViewModel()
 ) {
@@ -152,7 +150,6 @@ fun ItineraryScreen(
                 isLeader = state.isLeader && !state.isCompleted,
                 showBackButton = showBackButton,
                 onAddItinerary = viewModel::startAddingStop,
-                onAssistantClick = onOpenAssistant,
                 onBack = onBack
             )
         }
@@ -183,7 +180,6 @@ fun ItineraryDayDetailScreen(
     groupName: String,
     dayIndex: Int,
     onBack: () -> Unit,
-    onOpenAssistant: () -> Unit,
     showBackButton: Boolean = true,
     viewModel: ItineraryViewModel = hiltViewModel()
 ) {
@@ -216,7 +212,6 @@ fun ItineraryDayDetailScreen(
                 isLeader = state.isLeader && !state.isCompleted,
                 showBackButton = showBackButton,
                 onAddItinerary = viewModel::startAddingStop,
-                onAssistantClick = onOpenAssistant,
                 onBack = onBack
             )
         }
@@ -250,7 +245,6 @@ fun ItineraryPopupSheet(
     tripId: Long? = null,
     groupName: String,
     onDismiss: () -> Unit,
-    onOpenAssistant: () -> Unit,
     viewModel: ItineraryViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsState()
@@ -276,7 +270,6 @@ fun ItineraryPopupSheet(
             snackbarHostState = snackbarHostState,
             onDismiss = onDismiss,
             onAddItinerary = viewModel::startAddingStop,
-            onOpenAssistant = onOpenAssistant,
             onOpenDayDetail = viewModel::selectDay,
             onEditEvent = viewModel::startEditing,
             modifier = Modifier
@@ -303,7 +296,6 @@ private fun ItineraryPopupContent(
     snackbarHostState: SnackbarHostState,
     onDismiss: () -> Unit,
     onAddItinerary: () -> Unit,
-    onOpenAssistant: () -> Unit,
     onOpenDayDetail: (Int) -> Unit,
     onEditEvent: (ItineraryEvent) -> Unit,
     modifier: Modifier = Modifier
@@ -360,7 +352,6 @@ private fun ItineraryPopupPreview() {
                 snackbarHostState = remember { SnackbarHostState() },
                 onDismiss = {},
                 onAddItinerary = {},
-                onOpenAssistant = {},
                 onOpenDayDetail = {},
                 onEditEvent = {},
                 modifier = Modifier.fillMaxSize()

@@ -40,7 +40,6 @@ fun ItineraryTopBar(
     isLeader: Boolean,
     showBackButton: Boolean,
     onAddItinerary: (() -> Unit)? = null,
-    onAssistantClick: (() -> Unit)? = null,
     onBack: () -> Unit
 ) {
     TopAppBar(

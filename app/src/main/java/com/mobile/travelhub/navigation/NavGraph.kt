@@ -449,11 +449,6 @@ fun NavGraph(
                 refreshTopTravelersKey = topTravelersRefreshKey,
                 onSearchActiveChange = onExploreSearchActiveChange,
                 onSearchUserClick = ::navigateToUserProfile,
-                onAssistantClick = {
-                    navController.navigate(Screen.Chat.createRoute()) {
-                        launchSingleTop = true
-                    }
-                },
                 onPlaceClick = ::navigateToPlaceDetail,
                 onTravelerClick = { userId, currentUser ->
                     val route = if (currentUser) {
@@ -743,11 +738,6 @@ fun NavGraph(
                 tripId = tripId,
                 groupName = groupName,
                 onBack = { navController.popBackStack() },
-                onOpenAssistant = {
-                    navController.navigate(Screen.Chat.createRoute(tripId, groupName)) {
-                        launchSingleTop = true
-                    }
-                },
                 onOpenDayDetail = { dayIndex ->
                     navController.navigate(Screen.ItineraryDayDetail.createRoute(tripId, groupName, dayIndex)) {
                         launchSingleTop = true
@@ -771,12 +761,7 @@ fun NavGraph(
                 tripId = tripId,
                 groupName = groupName,
                 dayIndex = dayIndex,
-                onBack = { navController.popBackStack() },
-                onOpenAssistant = {
-                    navController.navigate(Screen.Chat.createRoute(tripId, groupName)) {
-                        launchSingleTop = true
-                    }
-                }
+                onBack = { navController.popBackStack() }
             )
         }
 
