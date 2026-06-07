@@ -71,6 +71,7 @@ import com.mobile.travelhub.data.model.TravelPlaceListItemResponse
 import com.mobile.travelhub.data.model.TravelPlaceReviewResponse
 import com.mobile.travelhub.ui.components.ExpandableDescription
 import com.mobile.travelhub.ui.components.SimpleFormTextField
+import com.mobile.travelhub.ui.components.ReviewWriteSheet
 import com.mobile.travelhub.ui.components.TravelPlaceReviewCard
 import com.mobile.travelhub.ui.components.TravelPlaceReviewCardSkeleton
 import com.mobile.travelhub.ui.components.InlineLoadingSkeleton
@@ -301,8 +302,11 @@ fun PlaceDetailScreen(
         }
 
         if (showReviewSheet && uiState.detail != null) {
-            ReviewBottomSheet(
+            ReviewWriteSheet(
                 uiState = reviewUiState,
+                titleResId = R.string.ui_b19c813eda,
+                placeholderResId = R.string.ui_79d0b72c6c,
+                submitTextResId = R.string.ui_96ee09303d,
                 onDismiss = { showReviewSheet = false },
                 onRatingChange = reviewViewModel::updateRating,
                 onContentChange = reviewViewModel::updateContent,
@@ -871,121 +875,6 @@ private fun formatReviewTimestamp(raw: String?): String {
         formatted.replaceFirst(" ", " • ")
     } else {
         formatted
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun ReviewBottomSheet(
-    uiState: com.mobile.travelhub.viewmodels.ReviewUiState,
-    onDismiss: () -> Unit,
-    onRatingChange: (Int) -> Unit,
-    onContentChange: (String) -> Unit,
-    onSubmit: () -> Unit
-) {
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        containerColor = SurfaceContainerLowest,
-        dragHandle = {
-            BottomSheetDefaults.DragHandle(color = SurfaceContainerLow)
-        }
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            Text(
-                text = stringResource(R.string.ui_b19c813eda),
-                style = MaterialTheme.typography.headlineSmall,
-                color = OnSurface,
-                fontWeight = FontWeight.Bold
-            )
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally)
-            ) {
-                (1..5).forEach { star ->
-                    val selected = star <= uiState.rating
-                    val starColor = Color(0xFFFFB800)
-                    Surface(
-                        modifier = Modifier.clickable { onRatingChange(star) },
-                        shape = CircleShape,
-                        color = if (selected) starColor.copy(alpha = 0.16f) else SurfaceContainerLow,
-                        border = BorderStroke(
-                            width = 1.dp,
-                            color = if (selected) starColor.copy(alpha = 0.42f) else Color.Transparent
-                        )
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(44.dp)
-                                .padding(8.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Star,
-                                contentDescription = stringResource(R.string.star_count_description, star),
-                                tint = if (selected) starColor else OnSurfaceVariant.copy(alpha = 0.62f)
-                            )
-                        }
-                    }
-                }
-            }
-
-            SimpleFormTextField(
-                value = uiState.content,
-                onValueChange = onContentChange,
-                modifier = Modifier.fillMaxWidth(),
-                placeholder = stringResource(R.string.ui_79d0b72c6c),
-                enabled = !uiState.isSubmitting,
-                singleLine = false,
-                minLines = 4,
-                maxLines = 6,
-                shape = RoundedCornerShape(18.dp),
-                focusedContainerColor = PrimaryBlue.copy(alpha = 0.10f),
-                unfocusedContainerColor = SurfaceContainerLow,
-                disabledContainerColor = SurfaceContainerLow.copy(alpha = 0.62f),
-                focusedIndicatorColor = PrimaryBlue.copy(alpha = 0.72f)
-            )
-
-            uiState.errorMessage?.let { error ->
-                Text(
-                    text = error,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.error
-                )
-            }
-
-            Button(
-                onClick = onSubmit,
-                enabled = !uiState.isSubmitting,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(52.dp),
-                shape = RoundedCornerShape(16.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = PrimaryBlue,
-                    disabledContainerColor = PrimaryBlue.copy(alpha = 0.42f),
-                    contentColor = MaterialTheme.colorScheme.onPrimary,
-                    disabledContentColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.72f)
-                )
-            ) {
-                if (uiState.isSubmitting) {
-                    SkeletonBlock(
-                        modifier = Modifier
-                            .fillMaxWidth(0.34f)
-                            .height(10.dp)
-                    )
-                } else {
-                    Text(stringResource(R.string.ui_96ee09303d))
-                }
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-        }
     }
 }
 

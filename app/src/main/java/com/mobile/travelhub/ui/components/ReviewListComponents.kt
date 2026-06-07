@@ -113,7 +113,7 @@ fun ReviewListScreenContent(
         }
     ) { innerPadding ->
         when {
-            uiState.isLoading && uiState.items.isEmpty() -> {
+            uiState.summary == null && uiState.isLoading -> {
                 ReviewListSkeleton(
                     modifier = Modifier
                         .fillMaxSize()
