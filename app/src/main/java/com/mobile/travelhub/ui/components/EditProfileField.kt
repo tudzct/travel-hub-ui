@@ -24,12 +24,13 @@ fun EditProfileField(
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
     keyboardActions: KeyboardActions = KeyboardActions.Default
 ) {
+    val disabledColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.62f)
     Column(modifier = modifier.fillMaxWidth().padding(vertical = 12.dp)) {
         Text(
             text = label.uppercase(),
             style = MaterialTheme.typography.labelSmall,
             fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = if (enabled) MaterialTheme.colorScheme.onSurfaceVariant else disabledColor,
             modifier = Modifier.padding(bottom = 8.dp)
         )
         SimpleFormTextField(
@@ -37,6 +38,7 @@ fun EditProfileField(
             onValueChange = onValueChange,
             placeholder = label,
             enabled = enabled,
+            disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.72f),
             modifier = Modifier.fillMaxWidth(),
             keyboardOptions = keyboardOptions,
             keyboardActions = keyboardActions
@@ -54,12 +56,13 @@ fun EditProfileField(
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
     keyboardActions: KeyboardActions = KeyboardActions.Default
 ) {
+    val disabledColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.62f)
     Column(modifier = modifier.fillMaxWidth().padding(vertical = 12.dp)) {
         Text(
             text = label.uppercase(),
             style = MaterialTheme.typography.labelSmall,
             fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = if (enabled) MaterialTheme.colorScheme.onSurfaceVariant else disabledColor,
             modifier = Modifier.padding(bottom = 8.dp)
         )
         SimpleFormTextField(
@@ -67,6 +70,7 @@ fun EditProfileField(
             onValueChange = onValueChange,
             placeholder = label,
             enabled = enabled,
+            disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.72f),
             modifier = Modifier.fillMaxWidth(),
             keyboardOptions = keyboardOptions,
             keyboardActions = keyboardActions
