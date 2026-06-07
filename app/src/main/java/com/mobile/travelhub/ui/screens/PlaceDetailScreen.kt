@@ -243,14 +243,12 @@ fun PlaceDetailScreen(
                     }
 
                     item {
-                        FlatSection {
-                            ReviewPreviewSection(
-                                reviews = uiState.reviewPreview,
-                                isLoading = uiState.reviewPreviewLoading,
-                                errorMessage = uiState.reviewErrorMessage,
-                                onShowAll = { onShowAllReviews(detail.id) }
-                            )
-                        }
+                        ReviewPreviewSection(
+                            reviews = uiState.reviewPreview,
+                            isLoading = uiState.reviewPreviewLoading,
+                            errorMessage = uiState.reviewErrorMessage,
+                            onShowAll = { onShowAllReviews(detail.id) }
+                        )
                     }
 
                     item {
@@ -766,7 +764,9 @@ private fun ReviewPreviewSection(
     onShowAll: () -> Unit
 ) {
     Column(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = PlaceDetailHorizontalPadding),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Row(
@@ -809,57 +809,128 @@ private fun ReviewPreviewSection(
             }
 
             else -> {
-                reviews.forEachIndexed { index, review ->
-                    Column(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column(
-                                verticalArrangement = Arrangement.spacedBy(4.dp)
-                            ) {
-                                Text(
-                                    text = review.user.name.ifBlank { review.user.username },
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.SemiBold
-                                )
-                                Text(
-                                    text = formatBackendInstant(review.updatedAt ?: review.createdAt),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(
-                                    imageVector = Icons.Default.Star,
-                                    contentDescription = null,
-                                    tint = Color(0xFFFFB800),
-                                    modifier = Modifier.size(18.dp)
-                                )
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text(
-                                    text = review.rating.toString(),
-                                    style = MaterialTheme.typography.labelLarge,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-                        }
-                        Text(
-                            text = review.content,
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        if (index < reviews.lastIndex) {
-                            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f))
-                        }
-                    }
+                reviews.forEach { review ->
+                    ReviewPreviewCard(review = review)
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun ReviewPreviewCard(
+    review: TravelPlaceReviewResponse
+) {
+    val displayName = review.user.name.ifBlank { review.user.username }
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        color = Color.White,
+        shadowElevation = 0.dp,
+        tonalElevation = 0.dp
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp, vertical = 14.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            ReviewAuthorAvatar(name = displayName)
+
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.Top
+                ) {
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(1.dp)
+                    ) {
+                        Text(
+                            text = displayName,
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = OnSurface,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Text(
+                            text = formatReviewTimestamp(review.updatedAt ?: review.createdAt),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = OnSurfaceVariant,
+                            fontSize = 11.sp
+                        )
+                    }
+
+                    Row(
+                        modifier = Modifier.padding(start = 10.dp, top = 1.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Star,
+                            contentDescription = null,
+                            tint = Color(0xFFFFB800),
+                            modifier = Modifier.size(17.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = String.format("%.1f", review.rating.toDouble()),
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = OnSurface
+                        )
+                    }
+                }
+
+                Text(
+                    text = review.content,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = OnSurface,
+                    lineHeight = 19.sp
+                )
+            }
+        }
+    }
+}
+
+private fun formatReviewTimestamp(raw: String?): String {
+    val formatted = formatBackendInstant(raw)
+    return if (formatted.contains("/") && formatted.contains(" ")) {
+        formatted.replaceFirst(" ", " • ")
+    } else {
+        formatted
+    }
+}
+
+@Composable
+private fun ReviewAuthorAvatar(name: String) {
+    val initial = name.trim().firstOrNull()?.uppercaseChar()?.toString() ?: "?"
+    val avatarColors = listOf(
+        Color(0xFF9DBBFF),
+        Color(0xFF86DDB8),
+        Color(0xFFA7A0F6),
+        Color(0xFFF0B76D),
+        Color(0xFF7FC6E8)
+    )
+    val backgroundColor = avatarColors[initial.first().code % avatarColors.size]
+
+    Box(
+        modifier = Modifier
+            .size(36.dp)
+            .clip(CircleShape)
+            .background(backgroundColor),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = initial,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = Color.White
+        )
     }
 }
 

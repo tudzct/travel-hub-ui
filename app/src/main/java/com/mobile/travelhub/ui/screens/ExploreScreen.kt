@@ -134,7 +134,8 @@ fun ExploreScreen(
         if (searchExpanded) {
             SearchPage(
                 onBack = { isSearchExpanded = false },
-                onUserClick = onSearchUserClick
+                onUserClick = onSearchUserClick,
+                onPlaceClick = onPlaceClick
             )
         } else {
             Column(

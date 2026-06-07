@@ -14,6 +14,7 @@ import com.mobile.travelhub.usecase.UnlikePostUseCase
 import com.mobile.travelhub.utils.PostsUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import javax.inject.Singleton
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -65,6 +66,26 @@ data class HomeUiState(
     val commentsByPostId: Map<Long, List<HomeCommentUiModel>> = emptyMap()
 )
 
+@Singleton
+class HomeFeedMemoryCache @Inject constructor() {
+    private var state: HomeUiState? = null
+
+    fun get(): HomeUiState? = state
+
+    fun set(value: HomeUiState) {
+        state = value.copy(
+            isLoading = false,
+            isLoadingMore = false,
+            activeCommentPostId = null,
+            commentInput = "",
+            isCommentsLoading = false,
+            isCommentSubmitting = false,
+            commentsErrorMessage = null,
+            commentErrorMessage = null
+        )
+    }
+}
+
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val getAllPostsUseCase: GetAllPostsUseCase,
@@ -72,22 +93,26 @@ class HomeViewModel @Inject constructor(
     private val unlikePostUseCase: UnlikePostUseCase,
     private val savePostUseCase: SavePostUseCase,
     private val addCommentUseCase: AddCommentUseCase,
-    private val getPostCommentsUseCase: GetPostCommentsUseCase
+    private val getPostCommentsUseCase: GetPostCommentsUseCase,
+    private val homeFeedMemoryCache: HomeFeedMemoryCache
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(HomeUiState(isLoading = true))
+    private val cachedInitialState = homeFeedMemoryCache.get()
+    private val _uiState = MutableStateFlow(cachedInitialState ?: HomeUiState(isLoading = true))
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
     private var feedGeneration = 0
 
     init {
-        refreshPosts()
+        if (cachedInitialState == null) {
+            refreshPosts()
+        }
     }
 
     fun refreshPosts() {
         val generation = ++feedGeneration
         viewModelScope.launch {
             val loadingStartedAt = System.currentTimeMillis()
-            _uiState.update {
+            updateState {
                 it.copy(
                     isLoading = true,
                     isLoadingMore = false,
@@ -106,7 +131,7 @@ class HomeViewModel @Inject constructor(
                     }
                     delayRemainingLoadingTime(loadingStartedAt)
 
-                    _uiState.update {
+                    updateState {
                         it.copy(
                             isLoading = false,
                             posts = safePosts,
@@ -120,7 +145,7 @@ class HomeViewModel @Inject constructor(
                     if (generation != feedGeneration) return@onFailure
                     delayRemainingLoadingTime(loadingStartedAt)
 
-                    _uiState.update {
+                    updateState {
                         it.copy(
                             isLoading = false,
                             posts = emptyList(),
@@ -144,7 +169,7 @@ class HomeViewModel @Inject constructor(
         val nextPage = state.page + 1
         val generation = feedGeneration
         viewModelScope.launch {
-            _uiState.update {
+            updateState {
                 it.copy(
                     isLoadingMore = true,
                     loadMoreErrorMessage = null
@@ -163,7 +188,7 @@ class HomeViewModel @Inject constructor(
                         .mapNotNull { post -> runCatching { toUiModel(post) }.getOrNull() }
                         .toList()
 
-                    _uiState.update {
+                    updateState {
                         it.copy(
                             posts = it.posts + newPosts,
                             isLoadingMore = false,
@@ -179,7 +204,7 @@ class HomeViewModel @Inject constructor(
                 }
                 .onFailure { throwable ->
                     if (generation != feedGeneration) return@onFailure
-                    _uiState.update {
+                    updateState {
                         it.copy(
                             isLoadingMore = false,
                             loadMoreErrorMessage = throwable.userMessage("Không thể tải thêm bài viết")
@@ -235,7 +260,7 @@ class HomeViewModel @Inject constructor(
                             isLikeLoading = false
                         )
                     }
-                    _uiState.update {
+                    updateState {
                         it.copy(errorMessage = throwable.userMessage("Không thể cập nhật lượt thích"))
                     }
                 }
@@ -275,7 +300,7 @@ class HomeViewModel @Inject constructor(
                             isSaveLoading = false
                         )
                     }
-                    _uiState.update {
+                    updateState {
                         it.copy(errorMessage = throwable.userMessage("Không thể lưu bài viết"))
                     }
                 }
@@ -283,7 +308,7 @@ class HomeViewModel @Inject constructor(
     }
 
     fun onCommentClicked(postId: Long) {
-        _uiState.update {
+        updateState {
             it.copy(
                 activeCommentPostId = postId,
                 commentInput = "",
@@ -296,7 +321,7 @@ class HomeViewModel @Inject constructor(
     }
 
     fun onCommentDismissed() {
-        _uiState.update {
+        updateState {
             it.copy(
                 activeCommentPostId = null,
                 commentInput = "",
@@ -309,7 +334,7 @@ class HomeViewModel @Inject constructor(
     }
 
     fun onCommentInputChanged(value: String) {
-        _uiState.update {
+        updateState {
             it.copy(commentInput = value, commentErrorMessage = null)
         }
     }
@@ -320,13 +345,13 @@ class HomeViewModel @Inject constructor(
         val content = currentState.commentInput.trim()
 
         if (content.isBlank()) {
-            _uiState.update { it.copy(commentErrorMessage = "Vui lòng nhập bình luận") }
+            updateState { it.copy(commentErrorMessage = "Vui lòng nhập bình luận") }
             return
         }
 
         if (currentState.isCommentSubmitting) return
 
-        _uiState.update {
+        updateState {
             it.copy(isCommentSubmitting = true, commentErrorMessage = null)
         }
 
@@ -334,7 +359,7 @@ class HomeViewModel @Inject constructor(
             addCommentUseCase(postId = postId, content = content)
                 .onSuccess { response ->
                     val commentUiModel = toCommentUiModel(response)
-                    _uiState.update { state ->
+                    updateState { state ->
                         val currentComments = state.commentsByPostId[postId].orEmpty()
                         state.copy(
                             isCommentSubmitting = false,
@@ -353,7 +378,7 @@ class HomeViewModel @Inject constructor(
                     }
                 }
                 .onFailure { throwable ->
-                    _uiState.update {
+                    updateState {
                         it.copy(
                             isCommentSubmitting = false,
                             commentErrorMessage = throwable.userMessage("Không thể thêm bình luận")
@@ -367,7 +392,7 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch {
             getPostCommentsUseCase(postId = postId, page = 0, pageSize = 50)
                 .onSuccess { response ->
-                    _uiState.update { state ->
+                    updateState { state ->
                         state.copy(
                             isCommentsLoading = false,
                             commentsErrorMessage = null,
@@ -378,7 +403,7 @@ class HomeViewModel @Inject constructor(
                     }
                 }
                 .onFailure { throwable ->
-                    _uiState.update {
+                    updateState {
                         it.copy(
                             isCommentsLoading = false,
                             commentsErrorMessage = throwable.userMessage("Không thể tải bình luận")
@@ -428,8 +453,14 @@ class HomeViewModel @Inject constructor(
         )
     }
 
+    private fun updateState(transform: (HomeUiState) -> HomeUiState) {
+        _uiState.update { current ->
+            transform(current).also(homeFeedMemoryCache::set)
+        }
+    }
+
     private fun updatePost(postId: Long, transform: (HomePostUiModel) -> HomePostUiModel) {
-        _uiState.update { state ->
+        updateState { state ->
             state.copy(
                 posts = state.posts.map { post ->
                     if (post.id == postId) transform(post) else post

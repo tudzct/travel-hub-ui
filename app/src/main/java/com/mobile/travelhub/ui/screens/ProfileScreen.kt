@@ -15,7 +15,6 @@ import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material.icons.outlined.FavoriteBorder
-import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.filled.Refresh
@@ -45,7 +44,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -106,6 +104,7 @@ fun ProfileScreen(
     onPostNotificationClick: (Long) -> Unit = {},
     onFollowNotificationClick: (Long) -> Unit = {},
     onNavigateToUserProfile: (Long) -> Unit = {},
+    onNavigateToCreatePost: () -> Unit = {},
     onBack: (() -> Unit)? = null,
     drawerState: DrawerState? = null,
     viewModel: ProfileViewModel = hiltViewModel()
@@ -194,6 +193,7 @@ fun ProfileScreen(
         onPostNotificationClick = onPostNotificationClick,
         onFollowNotificationClick = onFollowNotificationClick,
         onNavigateToUserProfile = onNavigateToUserProfile,
+        onNavigateToCreatePost = onNavigateToCreatePost,
         onReloadProfile = {
             if (isViewingOwnProfile) {
                 viewModel.loadUserProfile()
@@ -248,6 +248,7 @@ private fun ProfileScreenContent(
     onPostNotificationClick: (Long) -> Unit,
     onFollowNotificationClick: (Long) -> Unit,
     onNavigateToUserProfile: (Long) -> Unit,
+    onNavigateToCreatePost: () -> Unit,
     onReloadProfile: () -> Unit,
     onReloadOtherUserProfile: (Long) -> Unit,
     onReloadPosts: (Long?) -> Unit,
@@ -300,28 +301,6 @@ private fun ProfileScreenContent(
                     Column(
                         modifier = Modifier.padding(top = 56.dp)
                     ) {
-                        val navigateToHistory = onNavigateToHistory
-                        if (navigateToHistory != null) {
-                            NavigationDrawerItem(
-                                label = { Text(stringResource(R.string.ui_e311ba4976)) },
-                                selected = false,
-                                onClick = {
-                                    hideDrawerContentForNavigation = true
-                                    coroutineScope.launch {
-                                        activeDrawerState.snapTo(DrawerValue.Closed)
-                                        withFrameNanos { }
-                                        navigateToHistory()
-                                    }
-                                },
-                                icon = {
-                                    Icon(
-                                        imageVector = Icons.Outlined.History,
-                                        contentDescription = null
-                                    )
-                                },
-                                modifier = Modifier.padding(horizontal = 12.dp)
-                            )
-                        }
                         NavigationDrawerItem(
                             label = { Text(stringResource(R.string.ui_d4e1de2330)) },
                             selected = false,
@@ -664,14 +643,14 @@ private fun ProfileScreenContent(
 
                                             profilePostsState.posts.isEmpty() -> {
                                                 val emptyTitle = when (profilePostsState.selectedTab) {
-                                                    ProfilePostsTab.POSTS -> "No Posts Yet"
-                                                    ProfilePostsTab.SAVED -> "No Saved Posts"
-                                                    ProfilePostsTab.LIKED -> "No Liked Posts"
+                                                    ProfilePostsTab.POSTS -> "Chưa có bài đăng"
+                                                    ProfilePostsTab.SAVED -> "Chưa có bài đăng đã lưu"
+                                                    ProfilePostsTab.LIKED -> "Chưa có bài đăng đã thích"
                                                 }
                                                 val emptyMessage = when (profilePostsState.selectedTab) {
-                                                    ProfilePostsTab.POSTS -> "When you share photos, they will appear on your profile."
-                                                    ProfilePostsTab.SAVED -> "Posts you save will appear here."
-                                                    ProfilePostsTab.LIKED -> "Posts you like will appear here."
+                                                    ProfilePostsTab.POSTS -> ""
+                                                    ProfilePostsTab.SAVED -> "Bài viết mà bạn đã lưu sẽ hiển thị ở đây."
+                                                    ProfilePostsTab.LIKED -> "Bài viết mà bạn đã thích sẽ hiển thị ở đây."
                                                 }
                                                 Column(
                                                     modifier = Modifier.fillMaxWidth().padding(horizontal = 32.dp, vertical = 32.dp),
@@ -706,7 +685,7 @@ private fun ProfileScreenContent(
                                                     Spacer(modifier = Modifier.height(24.dp))
                                                     if (isViewingOwnProfile && profilePostsState.selectedTab == ProfilePostsTab.POSTS) {
                                                         Button(
-                                                            onClick = { /* navigate to create post */ },
+                                                            onClick = onNavigateToCreatePost,
                                                             shape = RoundedCornerShape(24.dp),
                                                             colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
                                                         ) {
