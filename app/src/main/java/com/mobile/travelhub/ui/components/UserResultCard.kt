@@ -226,8 +226,8 @@ private fun UserResultFollowButton(
         Text(
             text = when {
                 isLoading -> "..."
-                isFollowing -> "Following"
-                else -> "Follow"
+                isFollowing -> "Đã theo dõi"
+                else -> "Theo dõi"
             },
             style = MaterialTheme.typography.labelLarge,
             fontWeight = FontWeight.Bold,

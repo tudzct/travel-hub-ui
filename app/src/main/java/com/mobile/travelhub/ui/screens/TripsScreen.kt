@@ -373,7 +373,7 @@ fun ActiveJourneyCardV2(
                     .padding(24.dp)
             ) {
                 Text(
-                    text = trip?.name ?: "Chưa có chuyến đi đang diễn ra",
+                    text = trip?.name ?: "Chưa có chuyến đi diễn ra",
                     fontWeight = FontWeight.ExtraBold,
                     fontSize = 24.sp,
                     color = Color.White,

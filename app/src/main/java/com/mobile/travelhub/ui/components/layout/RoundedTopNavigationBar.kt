@@ -134,8 +134,9 @@ fun RoundedTopNavigationBar(
                             onNavigationRequest {
                                 val currentBaseRoute = baseRoute(currentRoute)
                                 if (screen == Screen.Home) {
-                                    onHomeReselected()
-                                    if (currentBaseRoute != Screen.Home.route) {
+                                    if (currentBaseRoute == Screen.Home.route) {
+                                        onHomeReselected()
+                                    } else {
                                         navController.navigate(screen.route) {
                                             popUpTo(navController.graph.findStartDestination().id) {
                                                 saveState = true
@@ -144,8 +145,17 @@ fun RoundedTopNavigationBar(
                                             restoreState = true
                                         }
                                     }
-                                } else if (screen == Screen.Profile && isProfileRoute(currentRoute) && currentRoute != Screen.Profile.route) {
-                                    backPressedDispatcher?.onBackPressed()
+                                } else if (screen == Screen.Profile) {
+                                    if (isProfileRoute(currentRoute) && currentRoute != Screen.Profile.route) {
+                                        backPressedDispatcher?.onBackPressed()
+                                    } else if (currentBaseRoute != Screen.Profile.route) {
+                                        navController.navigate(Screen.Profile.route) {
+                                            popUpTo(navController.graph.findStartDestination().id) {
+                                                saveState = true
+                                            }
+                                            launchSingleTop = true
+                                        }
+                                    }
                                 } else if (currentBaseRoute != screen.route) {
                                     navController.navigate(screen.route) {
                                         popUpTo(navController.graph.findStartDestination().id) {
