@@ -3,6 +3,7 @@ package com.mobile.travelhub.viewmodels
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mobile.travelhub.data.TripRepository
+import com.mobile.travelhub.data.PlaceRepository
 import com.mobile.travelhub.data.httpStatusCode
 import com.mobile.travelhub.data.userMessage
 import com.mobile.travelhub.data.model.ActiveTripResponse
@@ -77,7 +78,8 @@ data class GroupDetailUiState(
 
 @HiltViewModel
 class GroupDetailViewModel @Inject constructor(
-    private val tripRepository: TripRepository
+    private val tripRepository: TripRepository,
+    private val placeRepository: PlaceRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(GroupDetailUiState())

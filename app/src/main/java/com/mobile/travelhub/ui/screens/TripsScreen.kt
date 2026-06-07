@@ -115,10 +115,11 @@ fun TripsScreen(
     ) { padding ->
         LazyColumn(
             state = listState,
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding),
-            contentPadding = PaddingValues(bottom = 100.dp) // Space for FAB
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(
+                top = 0.dp,
+                bottom = 100.dp 
+            )
         ) {
             if (state.errorMessage != null) {
                 item {

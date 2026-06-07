@@ -233,6 +233,7 @@
     <string name="star_count_description">%1$d sao</string>
     <string name="remove_member_confirmation">Bạn có chắc chắn muốn xóa thành viên \'%1$s\' khỏi chuyến đi không?</string>
     <string name="budget_remaining">Còn lại %1$s trước khi vượt ngân sách</string>
+    <string name="budget_exceeded">Nhóm bạn đã vượt quá %1$s</string>
     <string name="paid_by">Trả bởi %1$s</string>
     <string name="delete_expense_confirmation">Bạn có chắc chắn muốn xóa khoản chi \'%1$s\' không?</string>
     <string name="no_search_results">Không tìm thấy %1$s cho \"%2$s\"</string>
