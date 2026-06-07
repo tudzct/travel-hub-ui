@@ -58,6 +58,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.mobile.travelhub.R
 import com.mobile.travelhub.data.userMessage
+import com.mobile.travelhub.ui.components.DestinationPlacePicker
 import com.mobile.travelhub.ui.components.EditProfileField
 import com.mobile.travelhub.ui.components.InlineLoadingSkeleton
 import com.mobile.travelhub.ui.components.EditProfileLoadingSkeleton
@@ -72,6 +73,7 @@ fun EditProfileScreen(
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
     val profileState by viewModel.profileState.collectAsState()
+    val provincePickerState by viewModel.provincePickerState.collectAsState()
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     var isSaving by remember { mutableStateOf(false) }
@@ -175,10 +177,28 @@ fun EditProfileScreen(
             originalGender = data.gender ?: ""
         }
     }
-    
-        val hasChanges = name != originalName || handle != originalHandle || bio != originalBio ||
-            location != originalLocation || gender != originalGender ||
-            pendingAvatar != null
+
+    LaunchedEffect(profileState, provincePickerState.provinces) {
+        val data = (profileState as? UiState.Success)?.data ?: return@LaunchedEffect
+        val matchedProvince = provincePickerState.provinces.firstOrNull { province ->
+            province.name.equals(data.location?.trim(), ignoreCase = true)
+        }
+        if (matchedProvince != null) {
+            viewModel.selectProfileProvince(matchedProvince.id)
+            location = matchedProvince.name
+        } else if (data.location.isNullOrBlank()) {
+            viewModel.clearProfileProvinceSelection()
+            location = ""
+        }
+    }
+
+    val selectedProvince = provincePickerState.provinces.firstOrNull {
+        it.id == provincePickerState.selectedProvinceId
+    }
+
+    val hasChanges = name != originalName || handle != originalHandle || bio != originalBio ||
+        location != originalLocation || gender != originalGender ||
+        pendingAvatar != null
 
     val handleBack = {
         if (hasChanges) {
@@ -379,10 +399,26 @@ fun EditProfileScreen(
                 value = bio,
                 onValueChange = { bio = it }
             )
-            EditProfileField(
+            DestinationPlacePicker(
                 label = stringResource(R.string.ui_d219c68101),
-                value = location,
-                onValueChange = { location = it }
+                selectedProvince = selectedProvince,
+                selectedPlace = null,
+                provinces = provincePickerState.provinces,
+                places = emptyList(),
+                isLoading = provincePickerState.isLoading,
+                enabled = !isSaving &&
+                    (provincePickerState.provinces.isNotEmpty() || provincePickerState.errorMessage != null),
+                placeholder = stringResource(R.string.ui_d219c68101),
+                allowPlaceSelection = false,
+                onProvinceSelected = { provinceId ->
+                    viewModel.selectProfileProvince(provinceId)
+                    location = provincePickerState.provinces
+                        .firstOrNull { it.id == provinceId }
+                        ?.name
+                        .orEmpty()
+                },
+                provinceErrorMessage = provincePickerState.errorMessage,
+                onRetryProvinces = viewModel::retryLoadProfileProvinces
             )
 
             Spacer(modifier = Modifier.height(20.dp))

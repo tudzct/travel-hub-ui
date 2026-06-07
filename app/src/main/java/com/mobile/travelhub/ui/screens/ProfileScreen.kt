@@ -19,6 +19,8 @@ import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.outlined.PhotoCamera
+import androidx.compose.material.icons.outlined.Visibility
+import androidx.compose.material.icons.outlined.VisibilityOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DrawerState
@@ -50,6 +52,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -771,6 +774,9 @@ fun ChangePasswordDialog(
     var currentPassword by remember { mutableStateOf("") }
     var newPassword by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
+    var currentPasswordVisible by remember { mutableStateOf(false) }
+    var newPasswordVisible by remember { mutableStateOf(false) }
+    var confirmPasswordVisible by remember { mutableStateOf(false) }
     val isLoading = state is UiState.Loading
     val errorMessage = (state as? UiState.Error)?.message
     val canSubmit = currentPassword.isNotBlank() &&
@@ -804,17 +810,29 @@ fun ChangePasswordDialog(
                 PasswordDialogField(
                     value = currentPassword,
                     onValueChange = { currentPassword = it },
-                    label = stringResource(R.string.ui_9a3c6341b1)
+                    label = stringResource(R.string.ui_9a3c6341b1),
+                    passwordVisible = currentPasswordVisible,
+                    onPasswordVisibilityChange = {
+                        currentPasswordVisible = !currentPasswordVisible
+                    }
                 )
                 PasswordDialogField(
                     value = newPassword,
                     onValueChange = { newPassword = it },
-                    label = stringResource(R.string.ui_4267a600ce)
+                    label = stringResource(R.string.ui_4267a600ce),
+                    passwordVisible = newPasswordVisible,
+                    onPasswordVisibilityChange = {
+                        newPasswordVisible = !newPasswordVisible
+                    }
                 )
                 PasswordDialogField(
                     value = confirmPassword,
                     onValueChange = { confirmPassword = it },
-                    label = stringResource(R.string.ui_2766fdd4ce)
+                    label = stringResource(R.string.ui_2766fdd4ce),
+                    passwordVisible = confirmPasswordVisible,
+                    onPasswordVisibilityChange = {
+                        confirmPasswordVisible = !confirmPasswordVisible
+                    }
                 )
                 if (!errorMessage.isNullOrBlank()) {
                     Text(
@@ -863,7 +881,9 @@ fun ChangePasswordDialog(
 private fun PasswordDialogField(
     value: String,
     onValueChange: (String) -> Unit,
-    label: String
+    label: String,
+    passwordVisible: Boolean,
+    onPasswordVisibilityChange: () -> Unit
 ) {
     SimpleFormTextField(
         value = value,
@@ -871,8 +891,29 @@ private fun PasswordDialogField(
         placeholder = label,
         modifier = Modifier.fillMaxWidth(),
         singleLine = true,
-        visualTransformation = PasswordVisualTransformation(),
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password)
+        visualTransformation = if (passwordVisible) {
+            VisualTransformation.None
+        } else {
+            PasswordVisualTransformation()
+        },
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+        trailingIcon = {
+            IconButton(onClick = onPasswordVisibilityChange) {
+                Icon(
+                    imageVector = if (passwordVisible) {
+                        Icons.Outlined.Visibility
+                    } else {
+                        Icons.Outlined.VisibilityOff
+                    },
+                    contentDescription = if (passwordVisible) {
+                        "Ẩn mật khẩu"
+                    } else {
+                        "Hiện mật khẩu"
+                    },
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                )
+            }
+        }
     )
 }
 

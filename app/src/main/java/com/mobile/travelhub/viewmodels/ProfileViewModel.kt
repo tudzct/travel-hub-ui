@@ -3,12 +3,14 @@ package com.mobile.travelhub.viewmodels
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.mobile.travelhub.data.LocationRepository
 import com.mobile.travelhub.data.AvatarRepository
 import com.mobile.travelhub.data.AuthRepository
 import com.mobile.travelhub.data.PostRepository
 import com.mobile.travelhub.data.api.UserApiService
 import com.mobile.travelhub.data.httpStatusCode
 import com.mobile.travelhub.data.userMessage
+import com.mobile.travelhub.data.model.AdminProvinceResponse
 import com.mobile.travelhub.data.model.FeedPostResponse
 import com.mobile.travelhub.data.model.ChangePasswordRequest
 import com.mobile.travelhub.data.model.PostCommentResponse
@@ -35,7 +37,8 @@ class ProfileViewModel @Inject constructor(
     private val authRepository: AuthRepository,
     private val userApiService: UserApiService,
     private val postRepository: PostRepository,
-    private val avatarRepository: AvatarRepository
+    private val avatarRepository: AvatarRepository,
+    private val locationRepository: LocationRepository
 ) : ViewModel() {
     private val sessionUserId: Long
         get() = authRepository.getSavedSession()?.userId?.toLong() ?: -1L
@@ -58,6 +61,9 @@ class ProfileViewModel @Inject constructor(
     private val _changePasswordState = MutableStateFlow<UiState<Boolean>>(UiState.Idle)
     val changePasswordState: StateFlow<UiState<Boolean>> = _changePasswordState.asStateFlow()
 
+    private val _provincePickerState = MutableStateFlow(ProvincePickerUiState())
+    val provincePickerState: StateFlow<ProvincePickerUiState> = _provincePickerState.asStateFlow()
+
     private val _profilePostsState = MutableStateFlow(ProfilePostsUiState(isLoading = true))
     val profilePostsState: StateFlow<ProfilePostsUiState> = _profilePostsState.asStateFlow()
 
@@ -66,6 +72,7 @@ class ProfileViewModel @Inject constructor(
 
     init {
         loadUserProfile()
+        loadProvinces()
     }
 
     fun getCurrentUserId(): Long = sessionUserId
@@ -90,6 +97,22 @@ class ProfileViewModel @Inject constructor(
                 _profileState.value = UiState.Error(errorMsg)
             }
         }
+    }
+
+    fun selectProfileProvince(provinceId: Long) {
+        _provincePickerState.update { state ->
+            state.copy(selectedProvinceId = provinceId, errorMessage = null)
+        }
+    }
+
+    fun clearProfileProvinceSelection() {
+        _provincePickerState.update { state ->
+            state.copy(selectedProvinceId = null, errorMessage = null)
+        }
+    }
+
+    fun retryLoadProfileProvinces() {
+        loadProvinces()
     }
 
     fun loadUserPosts(userId: Long = sessionUserId) {
@@ -474,6 +497,30 @@ class ProfileViewModel @Inject constructor(
         }
     }
 
+    private fun loadProvinces() {
+        viewModelScope.launch {
+            _provincePickerState.update { it.copy(isLoading = true, errorMessage = null) }
+            runCatching { locationRepository.getProvinces() }
+                .onSuccess { provinces ->
+                    _provincePickerState.update {
+                        it.copy(
+                            provinces = provinces,
+                            isLoading = false,
+                            errorMessage = null
+                        )
+                    }
+                }
+                .onFailure { throwable ->
+                    _provincePickerState.update {
+                        it.copy(
+                            isLoading = false,
+                            errorMessage = throwable.userMessage("Không thể tải danh sách tỉnh/thành phố")
+                        )
+                    }
+                }
+        }
+    }
+
     fun changePassword(
         currentPassword: String,
         newPassword: String,
@@ -698,3 +745,10 @@ sealed class UiState<out T> {
     data class Success<T>(val data: T) : UiState<T>()
     data class Error(val message: String) : UiState<Nothing>()
 }
+
+data class ProvincePickerUiState(
+    val provinces: List<AdminProvinceResponse> = emptyList(),
+    val selectedProvinceId: Long? = null,
+    val isLoading: Boolean = false,
+    val errorMessage: String? = null
+)

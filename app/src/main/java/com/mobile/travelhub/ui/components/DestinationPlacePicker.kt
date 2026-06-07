@@ -69,15 +69,18 @@ fun DestinationPlacePicker(
     enabled: Boolean,
     modifier: Modifier = Modifier,
     placeholder: String = "Chọn địa điểm",
+    allowPlaceSelection: Boolean = true,
     onProvinceSelected: (Long) -> Unit,
-    onPlaceSelected: (Long) -> Unit,
+    onPlaceSelected: (Long) -> Unit = {},
     provinceErrorMessage: String? = null,
     placesErrorMessage: String? = null,
     onRetryProvinces: () -> Unit = {},
     onRetryPlaces: () -> Unit = {}
 ) {
     var isSheetOpen by remember { mutableStateOf(false) }
-    var isChoosingProvince by remember(selectedProvince?.id) { mutableStateOf(selectedProvince == null) }
+    var isChoosingProvince by remember(selectedProvince?.id, allowPlaceSelection) {
+        mutableStateOf(!allowPlaceSelection || selectedProvince == null)
+    }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     Column(modifier = modifier.fillMaxWidth()) {
@@ -94,10 +97,11 @@ fun DestinationPlacePicker(
             selectedProvince = selectedProvince,
             selectedPlace = selectedPlace,
             placeholder = placeholder,
+            allowPlaceSelection = allowPlaceSelection,
             enabled = enabled,
             isLoading = isLoading,
             onClick = {
-                isChoosingProvince = selectedProvince == null
+                isChoosingProvince = !allowPlaceSelection || selectedProvince == null
                 isSheetOpen = true
             }
         )
@@ -115,11 +119,16 @@ fun DestinationPlacePicker(
                 provinces = provinces,
                 places = places,
                 isLoading = isLoading,
-                isChoosingProvince = isChoosingProvince || selectedProvince == null,
+                isChoosingProvince = !allowPlaceSelection || isChoosingProvince || selectedProvince == null,
+                allowPlaceSelection = allowPlaceSelection,
                 onChooseProvince = { isChoosingProvince = true },
                 onProvinceSelected = { provinceId ->
                     onProvinceSelected(provinceId)
-                    isChoosingProvince = false
+                    if (allowPlaceSelection) {
+                        isChoosingProvince = false
+                    } else {
+                        isSheetOpen = false
+                    }
                 },
                 onPlaceSelected = { placeId ->
                     onPlaceSelected(placeId)
@@ -139,6 +148,7 @@ private fun DestinationPickerAnchor(
     selectedProvince: AdminProvinceResponse?,
     selectedPlace: TravelPlaceListItemResponse?,
     placeholder: String,
+    allowPlaceSelection: Boolean,
     enabled: Boolean,
     isLoading: Boolean,
     onClick: () -> Unit
@@ -162,9 +172,15 @@ private fun DestinationPickerAnchor(
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = selectedPlace?.name ?: placeholder,
+                    text = selectedPlace?.name
+                        ?: selectedProvince?.name
+                        ?: placeholder,
                     style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = if (selectedPlace != null) FontWeight.SemiBold else FontWeight.Normal,
+                    fontWeight = if (selectedPlace != null || selectedProvince != null) {
+                        FontWeight.SemiBold
+                    } else {
+                        FontWeight.Normal
+                    },
                     color = if (enabled) {
                         MaterialTheme.colorScheme.onSurface
                     } else {
@@ -175,7 +191,7 @@ private fun DestinationPickerAnchor(
                 )
                 Spacer(modifier = Modifier.height(2.dp))
                 val title = selectedPlace?.province?.name
-                    ?: selectedProvince?.let { "Đang xem ${it.name}" }
+                    ?: selectedProvince?.let { if (allowPlaceSelection) "Đang xem ${it.name}" else it.name }
 
                 title?.let {
                     Text(
@@ -237,6 +253,7 @@ private fun DestinationPickerSheet(
     places: List<TravelPlaceListItemResponse>,
     isLoading: Boolean,
     isChoosingProvince: Boolean,
+    allowPlaceSelection: Boolean = true,
     onChooseProvince: () -> Unit,
     onProvinceSelected: (Long) -> Unit,
     onPlaceSelected: (Long) -> Unit,
@@ -257,7 +274,7 @@ private fun DestinationPickerSheet(
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = if (isChoosingProvince) "Chọn tỉnh" else "Chọn địa điểm",
+                    text = if (isChoosingProvince || !allowPlaceSelection) "Chọn tỉnh" else "Chọn địa điểm",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
@@ -269,7 +286,7 @@ private fun DestinationPickerSheet(
                 )
             }
 
-            if (!isChoosingProvince && selectedProvince != null) {
+            if (allowPlaceSelection && !isChoosingProvince && selectedProvince != null) {
                 TextButton(onClick = onChooseProvince) {
                     Text(stringResource(R.string.ui_c969efe0e5))
                 }
@@ -280,7 +297,7 @@ private fun DestinationPickerSheet(
         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
         Spacer(modifier = Modifier.height(8.dp))
 
-        if (isChoosingProvince) {
+        if (isChoosingProvince || !allowPlaceSelection) {
             when {
                 isLoading && provinces.isEmpty() -> LoadingPlaceList()
                 provinceErrorMessage != null && provinces.isEmpty() -> DestinationLoadError(
