@@ -498,7 +498,8 @@ fun NavGraph(
         composable(Screen.Search.route) {
             SearchPage(
                 onBack = { navController.navigateUp() },
-                onUserClick = ::navigateToUserProfile
+                onUserClick = ::navigateToUserProfile,
+                onPlaceClick = ::navigateToPlaceDetail
             )
         }
         composable(Screen.Trips.route) { backStackEntry ->
