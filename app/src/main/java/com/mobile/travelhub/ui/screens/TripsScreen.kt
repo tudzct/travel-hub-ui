@@ -342,8 +342,13 @@ fun ActiveJourneyCardV2(
                     modifier = Modifier.fillMaxSize()
                 )
             } else {
+                val imageRes = if (trip == null) {
+                    R.drawable.img_no_trip
+                } else {
+                    R.drawable.ic_launcher_background
+                }
                 Image(
-                    painter = painterResource(id = R.drawable.ic_launcher_background),
+                    painter = painterResource(id = imageRes),
                     contentDescription = null,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize()
