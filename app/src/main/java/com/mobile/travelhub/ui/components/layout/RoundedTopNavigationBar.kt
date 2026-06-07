@@ -134,8 +134,9 @@ fun RoundedTopNavigationBar(
                             onNavigationRequest {
                                 val currentBaseRoute = baseRoute(currentRoute)
                                 if (screen == Screen.Home) {
-                                    onHomeReselected()
-                                    if (currentBaseRoute != Screen.Home.route) {
+                                    if (currentBaseRoute == Screen.Home.route) {
+                                        onHomeReselected()
+                                    } else {
                                         navController.navigate(screen.route) {
                                             popUpTo(navController.graph.findStartDestination().id) {
                                                 saveState = true
