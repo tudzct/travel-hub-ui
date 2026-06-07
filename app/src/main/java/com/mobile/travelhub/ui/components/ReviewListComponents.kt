@@ -268,14 +268,23 @@ private fun ReviewSummaryHeader(uiState: ReviewListUiState) {
             modifier = Modifier.width(116.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(
-                text = if (total > 0) String.format("%.1f", average) else "0.0",
-                color = OnSurface,
-                fontSize = 48.sp,
-                lineHeight = 52.sp,
-                fontWeight = FontWeight.ExtraBold
-            )
-            RatingStars(rating = average, starSize = 22)
+            if (total > 0) {
+                Text(
+                    text = String.format("%.1f", average),
+                    color = OnSurface,
+                    fontSize = 48.sp,
+                    lineHeight = 52.sp,
+                    fontWeight = FontWeight.ExtraBold
+                )
+                RatingStars(rating = average, starSize = 22)
+            } else {
+                Text(
+                    text = "Chưa có đánh giá",
+                    color = OnSurface,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
             Text(
                 text = ratingLabel(average, total),
                 modifier = Modifier.padding(top = 6.dp),

@@ -391,30 +391,33 @@ private fun PlaceHeroSection(
                     .padding(start = 24.dp, end = 24.dp, bottom = if (displayUrls.size > 1) 52.dp else 28.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                Surface(
-                    shape = RoundedCornerShape(999.dp),
-                    color = PrimaryBlue.copy(alpha = 0.92f)
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                val placeRating = placeRatingLabel(
+                    averageRating = detail.reviewSummary.averageRating,
+                    reviewCount = detail.reviewSummary.reviewCount
+                )
+                if (placeRating != null) {
+                    Surface(
+                        shape = RoundedCornerShape(999.dp),
+                        color = PrimaryBlue.copy(alpha = 0.92f)
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Star,
-                            contentDescription = null,
-                            tint = Color.White,
-                            modifier = Modifier.size(14.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = placeRatingLabel(
-                                averageRating = detail.reviewSummary.averageRating,
-                                reviewCount = detail.reviewSummary.reviewCount
-                            ),
-                            color = Color.White,
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.ExtraBold
-                        )
+                        Row(
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Star,
+                                contentDescription = null,
+                                tint = Color.White,
+                                modifier = Modifier.size(14.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = placeRating,
+                                color = Color.White,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.ExtraBold
+                            )
+                        }
                     }
                 }
                 Text(
@@ -683,9 +686,9 @@ private fun RelatedPlaceCard(
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis
             )
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = place.province.name,
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = place.province.name,
                     modifier = Modifier.weight(1f),
                     style = MaterialTheme.typography.labelSmall,
                     color = Color.White.copy(alpha = 0.84f),
@@ -693,22 +696,24 @@ private fun RelatedPlaceCard(
                     overflow = TextOverflow.Ellipsis
                 )
                 Spacer(modifier = Modifier.width(8.dp))
-                Icon(
-                    imageVector = Icons.Default.Star,
-                    contentDescription = null,
-                    tint = Color(0xFFFFB800),
-                    modifier = Modifier.size(14.dp)
-                )
-                Spacer(modifier = Modifier.width(3.dp))
-                Text(
-                    text = placeRatingLabel(
-                        averageRating = place.averageRating,
-                        reviewCount = place.reviewCount
-                    ),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = Color.White,
-                    fontWeight = FontWeight.SemiBold
-                )
+                placeRatingLabel(
+                    averageRating = place.averageRating,
+                    reviewCount = place.reviewCount
+                )?.let { rating ->
+                    Icon(
+                        imageVector = Icons.Default.Star,
+                        contentDescription = null,
+                        tint = Color(0xFFFFB800),
+                        modifier = Modifier.size(14.dp)
+                    )
+                    Spacer(modifier = Modifier.width(3.dp))
+                    Text(
+                        text = rating,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color.White,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
             }
         }
     }
@@ -742,14 +747,23 @@ private fun ReviewSummarySection(
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Column {
-                    Text(
-                        text = placeRatingLabel(
-                            averageRating = averageRating,
-                            reviewCount = reviewCount
-                        ),
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold
+                    val ratingLabel = placeRatingLabel(
+                        averageRating = averageRating,
+                        reviewCount = reviewCount
                     )
+                    if (ratingLabel != null) {
+                        Text(
+                            text = ratingLabel,
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Bold
+                        )
+                    } else {
+                        Text(
+                            text = "Chưa có đánh giá",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
                     Text(
                         text = if (reviewCount > 0) {
                             stringResource(R.string.review_count, reviewCount)
@@ -791,9 +805,9 @@ private fun ReviewSummarySection(
     }
 }
 
-private fun placeRatingLabel(averageRating: Double, reviewCount: Long): String {
+private fun placeRatingLabel(averageRating: Double, reviewCount: Long): String? {
     if (reviewCount <= 0L || averageRating <= 0.0) {
-        return "0"
+        return null
     }
     return String.format("%.1f", averageRating)
 }
