@@ -71,15 +71,6 @@ fun ItineraryTopBar(
             }
         },
         actions = {
-            if (onAssistantClick != null) {
-                IconButton(onClick = onAssistantClick) {
-                    Icon(
-                        imageVector = Icons.Default.AutoAwesome,
-                        contentDescription = stringResource(R.string.ui_66dfcf0455),
-                        tint = PrimaryBlue
-                    )
-                }
-            }
             if (isLeader && onAddItinerary != null) {
                 ItineraryAddButton(onAddItinerary = onAddItinerary)
             }

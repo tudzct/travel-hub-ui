@@ -2,7 +2,9 @@ package com.mobile.travelhub.ui.screens
 
 import androidx.compose.ui.res.stringResource
 import android.content.Intent
+import android.app.Activity
 import android.net.Uri
+import android.content.ActivityNotFoundException
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -69,6 +71,8 @@ import com.mobile.travelhub.data.model.TravelPlaceListItemResponse
 import com.mobile.travelhub.data.model.TravelPlaceReviewResponse
 import com.mobile.travelhub.ui.components.ExpandableDescription
 import com.mobile.travelhub.ui.components.SimpleFormTextField
+import com.mobile.travelhub.ui.components.TravelPlaceReviewCard
+import com.mobile.travelhub.ui.components.TravelPlaceReviewCardSkeleton
 import com.mobile.travelhub.ui.components.InlineLoadingSkeleton
 import com.mobile.travelhub.ui.components.LoadingContentSkeleton
 import com.mobile.travelhub.ui.components.LoadingListSkeleton
@@ -273,7 +277,7 @@ fun PlaceDetailScreen(
                             isLoading = uiState.reviewPreviewLoading,
                             errorMessage = uiState.reviewErrorMessage,
                             onShowAll = { onShowAllReviews(detail.id) },
-                            onUserClick = onUserClick
+                            onUserClick = onUserClick,
                             onAuthorClick = onReviewAuthorClick
                         )
                     }
@@ -793,7 +797,7 @@ private fun ReviewPreviewSection(
     isLoading: Boolean,
     errorMessage: String?,
     onShowAll: () -> Unit,
-    onUserClick: (Long) -> Unit
+    onUserClick: (Long) -> Unit,
     onAuthorClick: (Long) -> Unit
 ) {
     Column(
@@ -822,7 +826,11 @@ private fun ReviewPreviewSection(
 
         when {
             isLoading -> {
-                LoadingListSkeleton(itemCount = 2)
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    repeat(2) {
+                        TravelPlaceReviewCardSkeleton(horizontalPadding = 0.dp)
+                    }
+                }
             }
 
             errorMessage != null -> {
@@ -843,102 +851,12 @@ private fun ReviewPreviewSection(
 
             else -> {
                 reviews.forEach { review ->
-                    ReviewPreviewCard(
+                    TravelPlaceReviewCard(
                         review = review,
-                        onUserClick = onUserClick
-                        onAuthorClick = { onAuthorClick(review.user.id) }
+                        onAuthorClick = { onAuthorClick(review.user.id) },
+                        horizontalPadding = 0.dp
                     )
                 }
-            }
-        }
-    }
-}
-
-@Composable
-private fun ReviewPreviewCard(
-    review: TravelPlaceReviewResponse,
-    onUserClick: (Long) -> Unit
-    onAuthorClick: () -> Unit
-) {
-    val displayName = review.user.name.ifBlank { review.user.username }
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        color = Color.White,
-        shadowElevation = 0.dp,
-        tonalElevation = 0.dp
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 14.dp, vertical = 14.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            ReviewAuthorAvatar(
-                name = displayName,
-                avatarUrl = review.user.avatarUrl,
-                modifier = Modifier.clickable { onUserClick(review.user.id) }
-                onClick = onAuthorClick
-            )
-
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.Top
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .weight(1f)
-                            .clickable { onUserClick(review.user.id) },
-                        verticalArrangement = Arrangement.spacedBy(1.dp)
-                    ) {
-                        Text(
-                            text = displayName,
-                            modifier = Modifier.clickable(onClick = onAuthorClick),
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = OnSurface,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                        Text(
-                            text = formatReviewTimestamp(review.updatedAt ?: review.createdAt),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = OnSurfaceVariant,
-                            fontSize = 11.sp
-                        )
-                    }
-
-                    Row(
-                        modifier = Modifier.padding(start = 10.dp, top = 1.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Star,
-                            contentDescription = null,
-                            tint = Color(0xFFFFB800),
-                            modifier = Modifier.size(17.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = String.format("%.1f", review.rating.toDouble()),
-                            style = MaterialTheme.typography.labelLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = OnSurface
-                        )
-                    }
-                }
-
-                Text(
-                    text = review.content,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = OnSurface,
-                    lineHeight = 19.sp
-                )
             }
         }
     }
@@ -950,49 +868,6 @@ private fun formatReviewTimestamp(raw: String?): String {
         formatted.replaceFirst(" ", " • ")
     } else {
         formatted
-    }
-}
-
-@Composable
-private fun ReviewAuthorAvatar(
-    name: String, 
-    avatarUrl: String?, 
-    modifier: Modifier = Modifier
-) {
-    if (!avatarUrl.isNullOrBlank()) {
-        AsyncImage(
-            model = avatarUrl,
-            contentDescription = name,
-            modifier = modifier
-                .size(36.dp)
-                .clip(CircleShape),
-            contentScale = ContentScale.Crop
-        )
-    } else {
-        val initial = name.trim().firstOrNull()?.uppercaseChar()?.toString() ?: "?"
-        val avatarColors = listOf(
-            Color(0xFF9DBBFF),
-            Color(0xFF86DDB8),
-            Color(0xFFA7A0F6),
-            Color(0xFFF0B76D),
-            Color(0xFF7FC6E8)
-        )
-        val backgroundColor = avatarColors[initial.first().code % avatarColors.size]
-    
-        Box(
-            modifier = modifier
-                .size(36.dp)
-                .clip(CircleShape)
-                .background(backgroundColor),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = initial,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = Color.White
-            )
-        }
     }
 }
 
@@ -1157,18 +1032,28 @@ private fun openDirections(
     val label = listOf(detail.name, detail.province.name)
         .filter { it.isNotBlank() }
         .joinToString(", ")
-    val uri = Uri.parse("geo:0,0?q=${Uri.encode(label)}")
-    val intent = Intent(Intent.ACTION_VIEW, uri)
-
-    runCatching {
-        context.startActivity(intent)
-    }.recoverCatching {
-        context.startActivity(
-            Intent(
-                Intent.ACTION_VIEW,
-                Uri.parse("https://www.google.com/maps/search/?api=1&query=${Uri.encode(label)}")
-            )
+    val intents = listOf(
+        Intent(Intent.ACTION_VIEW, Uri.parse("geo:0,0?q=${Uri.encode(label)}")),
+        Intent(
+            Intent.ACTION_VIEW,
+            Uri.parse("https://www.google.com/maps/search/?api=1&query=${Uri.encode(label)}")
         )
+    )
+
+    for (intent in intents) {
+        if (context !is Activity) {
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        try {
+            if (intent.resolveActivity(context.packageManager) != null) {
+                context.startActivity(intent)
+                return
+            }
+        } catch (_: ActivityNotFoundException) {
+            continue
+        } catch (_: Exception) {
+            continue
+        }
     }
 }
 

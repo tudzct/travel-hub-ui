@@ -330,13 +330,6 @@ private fun ItineraryPopupContent(
                 if (state.isLeader && !state.isCompleted) {
                     ItineraryAddButton(onAddItinerary = onAddItinerary)
                 }
-                IconButton(onClick = onOpenAssistant) {
-                    Icon(
-                        imageVector = Icons.Default.AutoAwesome,
-                        contentDescription = stringResource(R.string.ui_66dfcf0455),
-                        tint = PrimaryBlue
-                    )
-                }
                 IconButton(onClick = onDismiss) {
                     Icon(
                         imageVector = Icons.Default.Close,

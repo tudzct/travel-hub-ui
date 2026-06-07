@@ -52,6 +52,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.Dp
 import coil3.compose.AsyncImage
 import com.mobile.travelhub.data.model.TravelPlaceReviewResponse
 import com.mobile.travelhub.ui.theme.OnSurface
@@ -112,27 +113,12 @@ fun ReviewListScreenContent(
         }
     ) { innerPadding ->
         when {
-            uiState.isLoading -> {
-                if (uiState.summary == null && uiState.items.isEmpty()) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(innerPadding)
-                            .padding(horizontal = 20.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        LoadingListSkeleton(itemCount = 5)
-                    }
-                } else {
-                    ReviewListBody(
-                        uiState = uiState,
-                        modifier = Modifier.padding(innerPadding),
-                        onRatingFilterSelected = onRatingFilterSelected,
-                        onSortSelected = onSortSelected,
-                        onLoadMore = onLoadMore,
-                        onAuthorClick = onAuthorClick
-                    )
-                }
+            uiState.isLoading && uiState.items.isEmpty() -> {
+                ReviewListSkeleton(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(innerPadding)
+                )
             }
 
             uiState.errorMessage != null -> {
@@ -196,22 +182,7 @@ private fun ReviewListBody(
             )
         }
 
-        if (uiState.isLoading) {
-            item {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 28.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(28.dp),
-                        strokeWidth = 2.dp,
-                        color = PrimaryBlue
-                    )
-                }
-            }
-        } else if (uiState.items.isEmpty()) {
+        if (uiState.items.isEmpty() && !uiState.isLoading) {
             item {
                 Text(
                     text = "Chưa có đánh giá phù hợp",
@@ -219,6 +190,10 @@ private fun ReviewListBody(
                     color = OnSurfaceVariant,
                     style = MaterialTheme.typography.bodyLarge
                 )
+            }
+        } else if (uiState.isLoading) {
+            items(if (uiState.items.isEmpty()) 5 else 2) {
+                TravelPlaceReviewCardSkeleton()
             }
         } else {
             items(uiState.items, key = { it.id }) { review ->
@@ -230,19 +205,8 @@ private fun ReviewListBody(
         }
 
         if (uiState.isLoadingMore) {
-            item {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 16.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(24.dp),
-                        strokeWidth = 2.dp,
-                        color = PrimaryBlue
-                    )
-                }
+            items(2) {
+                TravelPlaceReviewCardSkeleton()
             }
         } else if (uiState.hasMore && !uiState.isLoading) {
             item {
@@ -510,15 +474,17 @@ private data class ReviewSortOption(
 )
 
 @Composable
-private fun TravelPlaceReviewCard(
+fun TravelPlaceReviewCard(
     review: TravelPlaceReviewResponse,
-    onAuthorClick: () -> Unit
+    onAuthorClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    horizontalPadding: Dp = 20.dp
 ) {
     val displayName = review.user.name.ifBlank { review.user.username }
     Surface(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 20.dp),
+            .padding(horizontal = horizontalPadding),
         shape = RoundedCornerShape(18.dp),
         color = Color.White,
         shadowElevation = 0.dp,
@@ -574,6 +540,179 @@ private fun TravelPlaceReviewCard(
                 lineHeight = 21.sp
             )
         }
+    }
+}
+
+@Composable
+fun TravelPlaceReviewCardSkeleton(
+    modifier: Modifier = Modifier,
+    horizontalPadding: Dp = 20.dp
+) {
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = horizontalPadding),
+        shape = RoundedCornerShape(18.dp),
+        color = Color.White,
+        shadowElevation = 0.dp,
+        tonalElevation = 0.dp,
+        border = androidx.compose.foundation.BorderStroke(1.dp, SurfaceContainerLow.copy(alpha = 0.8f))
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top
+            ) {
+                Row(
+                    modifier = Modifier.weight(1f),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    SkeletonBlock(
+                        modifier = Modifier.size(46.dp),
+                        shape = CircleShape
+                    )
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        SkeletonBlock(
+                            modifier = Modifier.fillMaxWidth(0.62f).height(14.dp)
+                        )
+                        SkeletonBlock(
+                            modifier = Modifier.fillMaxWidth(0.42f).height(10.dp)
+                        )
+                    }
+                }
+                SkeletonBlock(
+                    modifier = Modifier.width(72.dp).height(18.dp)
+                )
+            }
+
+            SkeletonBlock(
+                modifier = Modifier.fillMaxWidth(0.92f).height(12.dp)
+            )
+            SkeletonBlock(
+                modifier = Modifier.fillMaxWidth(0.76f).height(12.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun ReviewListSkeleton(
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier.padding(horizontal = 20.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        ReviewSummarySkeleton()
+        ReviewFilterSkeleton()
+        ReviewSortSkeleton()
+        repeat(5) {
+            TravelPlaceReviewCardSkeleton(
+                modifier = Modifier.padding(horizontal = 0.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun ReviewSummarySkeleton() {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 4.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(24.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(
+            modifier = Modifier.width(116.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            SkeletonBlock(
+                modifier = Modifier.width(72.dp).height(42.dp)
+            )
+            Spacer(modifier = Modifier.height(10.dp))
+            SkeletonBlock(
+                modifier = Modifier.width(88.dp).height(20.dp)
+            )
+            Spacer(modifier = Modifier.height(6.dp))
+            SkeletonBlock(
+                modifier = Modifier.width(84.dp).height(14.dp)
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            SkeletonBlock(
+                modifier = Modifier.width(78.dp).height(14.dp)
+            )
+        }
+
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            repeat(5) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    SkeletonBlock(
+                        modifier = Modifier.width(46.dp).height(12.dp)
+                    )
+                    SkeletonBlock(
+                        modifier = Modifier.weight(1f).height(8.dp)
+                    )
+                    SkeletonBlock(
+                        modifier = Modifier.width(24.dp).height(12.dp)
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ReviewFilterSkeleton() {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        repeat(5) {
+            SkeletonBlock(
+                modifier = Modifier
+                    .width(
+                        when (it) {
+                            0 -> 72.dp
+                            1 -> 88.dp
+                            2 -> 78.dp
+                            3 -> 84.dp
+                            else -> 74.dp
+                        }
+                    )
+                    .height(34.dp),
+                shape = RoundedCornerShape(999.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun ReviewSortSkeleton() {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.End
+    ) {
+        SkeletonBlock(
+            modifier = Modifier.width(160.dp).height(20.dp)
+        )
     }
 }
 

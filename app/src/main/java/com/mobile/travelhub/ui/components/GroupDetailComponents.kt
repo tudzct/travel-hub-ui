@@ -445,7 +445,9 @@ fun GroupDetailMoreMenu(
         expanded = expanded,
         onDismissRequest = onDismiss,
         modifier = Modifier.widthIn(min = 260.dp, max = 340.dp),
-        offset = DpOffset((-8).dp, 4.dp)
+        offset = DpOffset((-8).dp, 4.dp),
+        containerColor = Color.White,
+        tonalElevation = 0.dp
     ) {
         val inviteCode = uiState.inviteCode?.takeIf { it.isNotBlank() }
         val inviteCodeText = if (uiState.isInviteCodeLoading) {

@@ -153,6 +153,7 @@ private fun ReviewListWriteSheet(
                 value = uiState.content,
                 onValueChange = onContentChange,
                 placeholder = "Chia sẻ trải nghiệm của bạn về địa điểm này",
+                modifier = Modifier.fillMaxWidth(),
                 singleLine = false,
                 minLines = 4,
                 enabled = !uiState.isSubmitting
