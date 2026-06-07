@@ -57,9 +57,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.mobile.travelhub.R
-import com.mobile.travelhub.ui.components.modifiers.shimmerEffect
-import com.mobile.travelhub.ui.components.InlineLoadingSkeleton
-import com.mobile.travelhub.ui.components.RetryButton
+import com.mobile.travelhub.ui.components.*
 import com.mobile.travelhub.ui.theme.*
 import com.mobile.travelhub.viewmodels.GroupDetailViewModel
 import androidx.compose.runtime.LaunchedEffect
@@ -153,18 +151,14 @@ fun GroupDetailScreen(
                 .verticalScroll(scrollState)
                 .padding(bottom = 80.dp)
         ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(380.dp)
-            ) {
-                if (isInitialLoading) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .shimmerEffect()
-                    )
-                } else {
+            if (isInitialLoading) {
+                GroupDetailHeaderSkeleton()
+            } else {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(380.dp)
+                ) {
                     val coverImageUrl = uiState.coverImageUrl?.takeIf { it.isNotBlank() }
                     val images = remember(coverImageUrl, uiState.placeImages) {
                         val list = mutableListOf<String>()
@@ -225,57 +219,22 @@ fun GroupDetailScreen(
                             modifier = Modifier.fillMaxSize()
                         )
                     }
-                }
 
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(
-                            brush = Brush.verticalGradient(
-                                colors = listOf(Color.Black.copy(alpha = 0.4f), Color.Transparent, Color.Black.copy(alpha = 0.9f))
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(
+                                brush = Brush.verticalGradient(
+                                    colors = listOf(Color.Black.copy(alpha = 0.4f), Color.Transparent, Color.Black.copy(alpha = 0.9f))
+                                )
                             )
-                        )
-                )
+                    )
 
-                Column(
-                    modifier = Modifier
-                        .align(Alignment.BottomStart)
-                        .padding(24.dp)
-                ) {
-                    if (isInitialLoading) {
-                        Box(
-                            modifier = Modifier
-                                .width(96.dp)
-                                .height(24.dp)
-                                .clip(RoundedCornerShape(24.dp))
-                                .shimmerEffect()
-                        )
-                        Spacer(modifier = Modifier.height(12.dp))
-                        Box(
-                            modifier = Modifier
-                                .width(260.dp)
-                                .height(42.dp)
-                                .clip(RoundedCornerShape(8.dp))
-                                .shimmerEffect()
-                        )
-                        Spacer(modifier = Modifier.height(12.dp))
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Box(
-                                modifier = Modifier
-                                    .size(16.dp)
-                                    .clip(CircleShape)
-                                    .shimmerEffect()
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Box(
-                                modifier = Modifier
-                                    .width(180.dp)
-                                    .height(14.dp)
-                                    .clip(RoundedCornerShape(4.dp))
-                                    .shimmerEffect()
-                            )
-                        }
-                    } else {
+                    Column(
+                        modifier = Modifier
+                            .align(Alignment.BottomStart)
+                            .padding(24.dp)
+                    ) {
                         Spacer(modifier = Modifier.height(12.dp))
                         Text(
                             text = uiState.groupName.ifBlank { groupName },
@@ -385,16 +344,7 @@ fun GroupDetailScreen(
                 }
                 Spacer(modifier = Modifier.height(16.dp))
                 if (isInitialLoading) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                        repeat(4) {
-                            Box(
-                                modifier = Modifier
-                                    .size(44.dp)
-                                    .clip(CircleShape)
-                                    .shimmerEffect()
-                            )
-                        }
-                    }
+                    GroupMembersSkeleton()
                 } else if (uiState.members.isEmpty()) {
                     Text(
                         text = stringResource(R.string.ui_14518e1450),
@@ -518,169 +468,35 @@ fun GroupDetailScreen(
                     )
                 }
 
-                DropdownMenu(
+                GroupDetailMoreMenu(
                     expanded = showInviteMenu,
-                    onDismissRequest = { showInviteMenu = false },
-                    modifier = Modifier.widthIn(min = 260.dp, max = 340.dp),
-                    offset = DpOffset((-8).dp, 4.dp)
-                ) {
-                    val inviteCode = uiState.inviteCode?.takeIf { it.isNotBlank() }
-                    val inviteCodeText = if (uiState.isInviteCodeLoading) {
-                        "Đang tải..."
-                    } else if (inviteCode != null) {
-                        inviteCode
-                    } else {
-                        "Chưa có mã"
-                    }
-
-                    Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
-                        Text(
-                            text = stringResource(R.string.ui_02ad5216fa),
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 12.sp,
-                            color = OnSurfaceVariant,
-                            letterSpacing = 0.6.sp
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .graphicsLayer { alpha = if (isCompleted) 0.38f else 1.0f },
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Text(
-                                text = inviteCodeText,
-                                fontWeight = FontWeight.ExtraBold,
-                                fontSize = 18.sp,
-                                color = OnSurface,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                                modifier = Modifier.weight(1f)
-                            )
-                            IconButton(
-                                onClick = {
-                                    val currentInviteCode = inviteCode.orEmpty()
-                                    if (currentInviteCode.isNotBlank()) {
-                                        clipboardManager.setText(AnnotatedString(currentInviteCode))
-                                        Toast.makeText(
-                                            context,
-                                            context.getString(R.string.join_code_copied),
-                                            Toast.LENGTH_SHORT
-                                        ).show()
-                                        showInviteMenu = false
-                                    }
-                                },
-                                enabled = inviteCode != null && !uiState.isInviteCodeLoading && !isCompleted
-                            ) {
-                                Icon(Icons.Default.ContentCopy, contentDescription = stringResource(R.string.ui_35accf0b7c))
-                            }
-                        }
-
-                        if (isLeader) {
-                            Spacer(modifier = Modifier.height(12.dp))
-                            HorizontalDivider(color = SurfaceContainerLow)
-                            Spacer(modifier = Modifier.height(12.dp))
-
-                            Text(
-                                text = stringResource(R.string.ui_7b208e75d2),
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 12.sp,
-                                color = OnSurfaceVariant,
-                                letterSpacing = 0.6.sp
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
-
-                            when {
-                                uiState.isJoinRequestsLoading -> {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                            InlineLoadingSkeleton(modifier = Modifier.size(16.dp))
-                                        Spacer(modifier = Modifier.width(8.dp))
-                                        Text(
-                                            text = stringResource(R.string.ui_438eeb013a),
-                                            fontSize = 14.sp,
-                                            color = OnSurfaceVariant
-                                        )
-                                    }
-                                }
-
-                                uiState.joinRequests.isEmpty() -> {
-                                    Text(
-                                        text = stringResource(R.string.ui_f193b502d6),
-                                        fontSize = 14.sp,
-                                        color = OnSurfaceVariant
-                                    )
-                                }
-
-                                else -> {
-                                    Column(modifier = Modifier.fillMaxWidth()) {
-                                        uiState.joinRequests.forEach { request ->
-                                            JoinRequestActionItem(
-                                                request = request,
-                                                onApprove = {
-                                                    viewModel.approveJoinRequest(request.userId)
-                                                    Toast.makeText(
-                                                        context,
-                                                        context.getString(
-                                                            R.string.join_request_accepted,
-                                                            request.name
-                                                        ),
-                                                        Toast.LENGTH_SHORT
-                                                    ).show()
-                                                },
-                                                onReject = {
-                                                    viewModel.rejectJoinRequest(request.userId)
-                                                    Toast.makeText(
-                                                        context,
-                                                        context.getString(
-                                                            R.string.join_request_rejected,
-                                                            request.name
-                                                        ),
-                                                        Toast.LENGTH_SHORT
-                                                    ).show()
-                                                },
-                                                onProfileClick = { userId ->
-                                                    onNavigateToProfile(userId)
-                                                }
-                                            )
-                                            Spacer(modifier = Modifier.height(8.dp))
-                                        }
-                                    }
-                                }
-                            }
-
-                            Spacer(modifier = Modifier.height(12.dp))
-                            HorizontalDivider(color = SurfaceContainerLow)
-                        }
-
-                        // Show "Rời nhóm" for members (not leader, not non-member/pending)
-                        val role = uiState.myRole.orEmpty().uppercase()
-                        val canLeave = !isLeader && role.isNotBlank() && role != "NON_MEMBER" && role != "PENDING"
-                        if (canLeave) {
-                            DropdownMenuItem(
-                                text = { Text(stringResource(R.string.ui_4bb91c8b42), color = SunsetOrange) },
-                                leadingIcon = { Icon(Icons.Default.ExitToApp, contentDescription = null, tint = SunsetOrange) },
-                                onClick = {
-                                    showInviteMenu = false
-                                    showLeaveConfirm = true
-                                }
-                            )
-                        }
-
-                        if (isLeader) {
-                            DropdownMenuItem(
-                                text = { Text(stringResource(R.string.ui_a4564eb2e2), color = if (isCompleted) Color.Gray.copy(alpha = 0.5f) else SunsetOrange) },
-                                leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null, tint = if (isCompleted) Color.Gray.copy(alpha = 0.5f) else SunsetOrange) },
-                                enabled = !isCompleted,
-                                onClick = {
-                                    showInviteMenu = false
-                                    showDeleteConfirm = true
-                                }
-                            )
-                        }
-                    }
-                }
+                    onDismiss = { showInviteMenu = false },
+                    uiState = uiState,
+                    isLeader = isLeader,
+                    isCompleted = isCompleted,
+                    pendingRequestCount = pendingRequestCount,
+                    onApproveJoinRequest = { userId, name ->
+                        viewModel.approveJoinRequest(userId)
+                        Toast.makeText(
+                            context,
+                            context.getString(R.string.join_request_accepted, name),
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    },
+                    onRejectJoinRequest = { userId, name ->
+                        viewModel.rejectJoinRequest(userId)
+                        Toast.makeText(
+                            context,
+                            context.getString(R.string.join_request_rejected, name),
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    },
+                    onNavigateToProfile = onNavigateToProfile,
+                    onLeaveGroupClick = { showLeaveConfirm = true },
+                    onDeleteGroupClick = { showDeleteConfirm = true }
+                )
             }
+        }
         }
 
         if (showInitialError) {
@@ -702,425 +518,20 @@ fun GroupDetailScreen(
             )
         }
 
-        if (showManageMembersDialog) {
-            Dialog(
-                onDismissRequest = { showManageMembersDialog = false }
-            ) {
-                Card(
-                    shape = RoundedCornerShape(24.dp),
-                    colors = CardDefaults.cardColors(containerColor = SurfaceContainerLowest),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 40.dp)
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .padding(24.dp)
-                            .fillMaxWidth()
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = stringResource(R.string.ui_e91fb7a715),
-                                fontWeight = FontWeight.ExtraBold,
-                                fontSize = 20.sp,
-                                color = OnSurface
-                            )
-                            IconButton(onClick = { showManageMembersDialog = false }) {
-                                Icon(Icons.Default.Close, contentDescription = stringResource(R.string.ui_d2b73ab2ad))
-                            }
-                        }
-                        Spacer(modifier = Modifier.height(16.dp))
-                        
-                        LazyColumn(
-                            verticalArrangement = Arrangement.spacedBy(12.dp),
-                            modifier = Modifier.weight(1f, fill = false)
-                        ) {
-                            items(uiState.members) { member ->
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                                ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(40.dp)
-                                            .clip(CircleShape)
-                                            .background(PrimaryBlue.copy(alpha = 0.12f)),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        if (!member.avatarUrl.isNullOrBlank()) {
-                                            AsyncImage(
-                                                model = member.avatarUrl,
-                                                contentDescription = member.name,
-                                                modifier = Modifier.fillMaxSize(),
-                                                contentScale = ContentScale.Crop
-                                            )
-                                        } else {
-                                            Text(
-                                                text = member.name.firstOrNull()?.uppercaseChar()?.toString() ?: "?",
-                                                fontWeight = FontWeight.Bold,
-                                                color = PrimaryBlue
-                                            )
-                                        }
-                                    }
-                                    
-                                    Column(modifier = Modifier.weight(1f)) {
-                                        Text(
-                                            text = member.name,
-                                            fontWeight = FontWeight.Bold,
-                                            fontSize = 15.sp,
-                                            color = OnSurface
-                                        )
-                                        val roleText = if (member.role.equals("LEADER", ignoreCase = true)) "Trưởng nhóm" else "Thành viên"
-                                        val roleColor = if (member.role.equals("LEADER", ignoreCase = true)) SunsetOrange else OnSurfaceVariant
-                                        Text(
-                                            text = roleText,
-                                            fontSize = 12.sp,
-                                            color = roleColor,
-                                            fontWeight = if (member.role.equals("LEADER", ignoreCase = true)) FontWeight.Bold else FontWeight.Normal
-                                        )
-                                    }
-                                    
-                                    val isMemberLeader = member.role.equals("LEADER", ignoreCase = true)
-                                    if (isLeader && !isMemberLeader && !isCompleted) {
-                                        IconButton(
-                                            onClick = { memberToDelete = member },
-                                            enabled = !uiState.isRemovingMember
-                                        ) {
-                                            Icon(
-                                                imageVector = Icons.Default.Delete,
-                                                contentDescription = stringResource(R.string.ui_035849d3f3),
-                                                tint = if (uiState.isRemovingMember) SunsetOrange.copy(alpha = 0.5f) else SunsetOrange
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
+        ManageMembersDialog(
+            visible = showManageMembersDialog,
+            members = uiState.members,
+            isLeader = isLeader,
+            isCompleted = isCompleted,
+            isRemovingMember = uiState.isRemovingMember,
+            onDismiss = { showManageMembersDialog = false },
+            onRemoveMember = { member ->
+                viewModel.removeMember(member.userId) { success, message ->
+                    Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
                 }
-            }
-        }
-
-        if (memberToDelete != null) {
-            AlertDialog(
-                onDismissRequest = { if (!uiState.isRemovingMember) memberToDelete = null },
-                title = { Text(stringResource(R.string.ui_035849d3f3)) },
-                text = {
-                    if (uiState.isRemovingMember) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
-                        ) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(20.dp),
-                                strokeWidth = 2.dp,
-                                color = SunsetOrange
-                            )
-                            Text("Đang xóa thành viên...", color = OnSurface)
-                        }
-                    } else {
-                        Text(
-                            stringResource(
-                                R.string.remove_member_confirmation,
-                                memberToDelete?.name.orEmpty()
-                            )
-                        )
-                    }
-                },
-                confirmButton = {
-                    if (!uiState.isRemovingMember) {
-                        TextButton(
-                            onClick = {
-                                val member = memberToDelete
-                                if (member != null) {
-                                    viewModel.removeMember(member.userId) { success, message ->
-                                        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
-                                        if (success) {
-                                            memberToDelete = null
-                                        }
-                                    }
-                                }
-                            }
-                        ) {
-                            Text(stringResource(R.string.ui_aa1d94fc16), color = SunsetOrange, fontWeight = FontWeight.Bold)
-                        }
-                    }
-                },
-                dismissButton = {
-                    if (!uiState.isRemovingMember) {
-                        TextButton(onClick = { memberToDelete = null }) {
-                            Text(stringResource(R.string.ui_34ca764caf))
-                        }
-                    }
-                },
-                containerColor = SurfaceContainerLowest
-            )
-        }
-    }
-}
-
-}
-
-@Composable
-fun FeatureCard(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, color: Color, onClick: () -> Unit) {
-    Column(
-        modifier = Modifier
-            .width(90.dp)
-            .clickable(onClick = onClick)
-            .padding(vertical = 12.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        Box(
-            modifier = Modifier
-                .size(48.dp)
-                .clip(CircleShape)
-                .background(color.copy(alpha = 0.1f)),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                icon,
-                contentDescription = null,
-                tint = color,
-                modifier = Modifier.size(24.dp)
-            )
-        }
-
-        Text(
-            text = label,
-            textAlign = TextAlign.Center,
-            fontWeight = FontWeight.Medium,
-            fontSize = 14.sp,
-            color = OnSurface,
-            maxLines = 2
+            },
+            onMemberClick = { userId -> onNavigateToProfile(userId) }
         )
     }
 }
 
-@Composable
-private fun FeatureCardSkeleton() {
-    Column(
-        modifier = Modifier
-            .width(90.dp)
-            .padding(vertical = 12.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        Box(
-            modifier = Modifier
-                .size(48.dp)
-                .clip(CircleShape)
-                .shimmerEffect()
-        )
-
-        Box(
-            modifier = Modifier
-                .width(60.dp)
-                .height(14.dp)
-                .clip(RoundedCornerShape(4.dp))
-                .shimmerEffect()
-        )
-    }
-}
-
-@Composable
-private fun TripDetailRowSkeleton() {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Box(
-            modifier = Modifier
-                .width(88.dp)
-                .height(12.dp)
-                .clip(RoundedCornerShape(4.dp))
-                .shimmerEffect()
-        )
-        Box(
-            modifier = Modifier
-                .width(140.dp)
-                .height(12.dp)
-                .clip(RoundedCornerShape(4.dp))
-                .shimmerEffect()
-        )
-    }
-}
-
-@Composable
-private fun GroupDetailInitialErrorState(
-    message: String,
-    onRetry: () -> Unit
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(SurfaceBg)
-            .padding(24.dp),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text(
-            text = stringResource(R.string.ui_28a4aafc8b),
-            fontWeight = FontWeight.ExtraBold,
-            fontSize = 20.sp,
-            color = OnSurface
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = message.ifBlank { "Vui lòng thử lại sau." },
-            fontSize = 14.sp,
-            color = OnSurfaceVariant,
-            textAlign = TextAlign.Center
-        )
-        Spacer(modifier = Modifier.height(20.dp))
-        RetryButton(onClick = onRetry, filled = true)
-    }
-}
-
-@Composable
-fun TripDetailRow(label: String, value: String) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(label, color = OnSurfaceVariant, fontSize = 14.sp)
-        Text(value, fontWeight = FontWeight.Bold, color = OnSurface, fontSize = 14.sp)
-    }
-}
-
-
-@Composable
-fun JoinRequestActionItem(
-    request: com.mobile.travelhub.viewmodels.GroupJoinRequestUiModel,
-    onApprove: () -> Unit,
-    onReject: () -> Unit,
-    onProfileClick: (Long) -> Unit = {}
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        Box(
-            modifier = Modifier
-                .size(44.dp)
-                .clip(CircleShape)
-                .background(PrimaryBlue.copy(alpha = 0.12f))
-                .clickable { onProfileClick(request.userId) },
-            contentAlignment = Alignment.Center
-        ) {
-            if (!request.avatarUrl.isNullOrBlank()) {
-                AsyncImage(
-                    model = request.avatarUrl,
-                    contentDescription = request.name,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop
-                )
-            } else {
-                Text(
-                    text = request.name.firstOrNull()?.uppercaseChar()?.toString().orEmpty(),
-                    fontWeight = FontWeight.Bold,
-                    color = PrimaryBlue
-                )
-            }
-        }
-
-        Column(modifier = Modifier.weight(1f).clickable { onProfileClick(request.userId) }) {
-            Text(
-                text = request.name,
-                fontWeight = FontWeight.Bold,
-                fontSize = 15.sp,
-                color = OnSurface,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-        }
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(CircleShape)
-                    .background(SurfaceContainerLowest)
-                    .clickable { onReject() },
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    Icons.Default.Close,
-                    contentDescription = stringResource(R.string.ui_63bbfd75f6),
-                    tint = SunsetOrange,
-                    modifier = Modifier.size(20.dp)
-                )
-            }
-
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(CircleShape)
-                    .background(PrimaryBlue.copy(alpha = 0.12f))
-                    .clickable { onApprove() },
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    Icons.Default.Check,
-                    contentDescription = stringResource(R.string.ui_ca41be9306),
-                    tint = PrimaryBlue,
-                    modifier = Modifier.size(20.dp)
-                )
-            }
-        }
-    }
-}
-
-@Composable
-fun MemberAvatarItem(
-    member: com.mobile.travelhub.viewmodels.GroupMemberUiModel,
-    onClick: () -> Unit = {}
-) {
-    Column(
-        modifier = Modifier
-            .width(72.dp)
-            .clickable { onClick() },
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Box(
-            modifier = Modifier
-                .size(56.dp)
-                .clip(CircleShape)
-                .background(PrimaryBlue.copy(alpha = 0.12f)),
-            contentAlignment = Alignment.Center
-        ) {
-            if (!member.avatarUrl.isNullOrBlank()) {
-                AsyncImage(
-                    model = member.avatarUrl,
-                    contentDescription = member.name,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop
-                )
-            } else {
-                Text(
-                    text = member.name.firstOrNull()?.uppercaseChar()?.toString() ?: "?",
-                    fontWeight = FontWeight.Bold,
-                    color = PrimaryBlue
-                )
-            }
-        }
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = member.name,
-            fontWeight = FontWeight.Medium,
-            fontSize = 12.sp,
-            color = OnSurface,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-            textAlign = TextAlign.Center
-        )
-    }
-}

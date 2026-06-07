@@ -41,6 +41,7 @@ import com.mobile.travelhub.R
 import com.mobile.travelhub.ui.theme.*
 import com.mobile.travelhub.viewmodels.CostEstimateViewModel
 import com.mobile.travelhub.utils.NumberUtils
+import com.mobile.travelhub.ui.components.costEstimateLoadingSkeleton
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.KeyboardType
@@ -120,123 +121,7 @@ fun CostEstimateScreen(
             }
 
             if (uiState.isLoading && uiState.transactions.isEmpty()) {
-                // Skeleton Budget Card
-                item {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(140.dp)
-                            .clip(RoundedCornerShape(28.dp))
-                            .shimmerEffect()
-                    )
-                }
-
-                // Skeleton Contributions Label
-                item {
-                    Box(
-                        modifier = Modifier
-                            .width(100.dp)
-                            .height(16.dp)
-                            .clip(RoundedCornerShape(4.dp))
-                            .shimmerEffect()
-                    )
-                }
-
-                // Skeleton Contributions list
-                item {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        repeat(3) {
-                            Column(
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                modifier = Modifier
-                                    .width(90.dp)
-                                    .clip(RoundedCornerShape(20.dp))
-                                    .background(SurfaceContainerLowest)
-                                    .padding(vertical = 12.dp)
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(40.dp)
-                                        .clip(CircleShape)
-                                        .shimmerEffect()
-                                )
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Box(
-                                    modifier = Modifier
-                                        .width(48.dp)
-                                        .height(10.dp)
-                                        .clip(RoundedCornerShape(4.dp))
-                                        .shimmerEffect()
-                                )
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Box(
-                                    modifier = Modifier
-                                        .width(56.dp)
-                                        .height(12.dp)
-                                        .clip(RoundedCornerShape(4.dp))
-                                        .shimmerEffect()
-                                )
-                            }
-                        }
-                    }
-                }
-
-                // Skeleton Recent Expenses Label
-                item {
-                    Box(
-                        modifier = Modifier
-                            .width(140.dp)
-                            .height(16.dp)
-                            .clip(RoundedCornerShape(4.dp))
-                            .shimmerEffect()
-                    )
-                }
-
-                // Skeleton Transactions list
-                items(3) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(20.dp))
-                            .background(SurfaceContainerLowest)
-                            .padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(44.dp)
-                                .clip(RoundedCornerShape(12.dp))
-                                .shimmerEffect()
-                        )
-                        Spacer(modifier = Modifier.width(16.dp))
-                        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            Box(
-                                modifier = Modifier
-                                    .width(120.dp)
-                                    .height(14.dp)
-                                    .clip(RoundedCornerShape(4.dp))
-                                    .shimmerEffect()
-                            )
-                            Box(
-                                modifier = Modifier
-                                    .width(80.dp)
-                                    .height(10.dp)
-                                    .clip(RoundedCornerShape(4.dp))
-                                    .shimmerEffect()
-                            )
-                        }
-                        Box(
-                            modifier = Modifier
-                                .width(60.dp)
-                                .height(16.dp)
-                                .clip(RoundedCornerShape(4.dp))
-                                .shimmerEffect()
-                        )
-                    }
-                }
+                costEstimateLoadingSkeleton()
             } else {
                 // Budget Summary Card
                 item {

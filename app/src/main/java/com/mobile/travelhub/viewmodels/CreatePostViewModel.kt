@@ -234,7 +234,7 @@ class CreatePostViewModel @Inject constructor(
         }
     }
 
-    private fun loadUserProfile() {
+    fun loadUserProfile() {
         viewModelScope.launch {
             runCatching { userApiService.getMyProfile() }
                 .onSuccess { profile ->

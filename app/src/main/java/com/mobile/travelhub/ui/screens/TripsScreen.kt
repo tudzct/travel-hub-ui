@@ -37,7 +37,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil.compose.AsyncImage
-import com.mobile.travelhub.ui.components.modifiers.shimmerEffect
+import com.mobile.travelhub.ui.components.ActiveTripSkeleton
+import com.mobile.travelhub.ui.components.UpcomingTripsSkeleton
+import com.mobile.travelhub.ui.components.PastMemoriesSkeleton
 import com.mobile.travelhub.ui.components.SimpleFormTextField
 import com.mobile.travelhub.R
 import com.mobile.travelhub.ui.theme.*
@@ -62,10 +64,21 @@ fun TripsScreen(
     val state by viewModel.uiState.collectAsState()
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
+    var hasReachedInitialResume by remember(lifecycleOwner) {
+        mutableStateOf(
+            lifecycleOwner.lifecycle.currentState.isAtLeast(
+                androidx.lifecycle.Lifecycle.State.RESUMED
+            )
+        )
+    }
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
-                viewModel.refreshDashboard()
+                if (hasReachedInitialResume) {
+                    viewModel.refreshDashboard()
+                } else {
+                    hasReachedInitialResume = true
+                }
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -74,8 +87,9 @@ fun TripsScreen(
         }
     }
     LaunchedEffect(Unit) {
+        viewModel.refreshDashboard(isSilent = false)
         while (true) {
-            kotlinx.coroutines.delay(15000L)
+            kotlinx.coroutines.delay(10000L)
             viewModel.refreshDashboard(isSilent = true)
         }
     }
@@ -166,13 +180,7 @@ fun TripsScreen(
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     if (state.isLoading && state.activeTrip == null) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(200.dp)
-                                .clip(RoundedCornerShape(32.dp))
-                                .shimmerEffect()
-                        )
+                        ActiveTripSkeleton()
                     } else {
                         ActiveJourneyCardV2(
                             trip = state.activeTrip,
@@ -211,42 +219,7 @@ fun TripsScreen(
             item {
                 Column(modifier = Modifier.padding(horizontal = 24.dp)) {
                     if (state.isLoading && state.upcomingTrips.isEmpty()) {
-                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                            repeat(2) {
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clip(RoundedCornerShape(24.dp))
-                                        .background(SurfaceContainerLowest)
-                                        .padding(12.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(70.dp)
-                                            .clip(RoundedCornerShape(16.dp))
-                                            .shimmerEffect()
-                                    )
-                                    Spacer(modifier = Modifier.width(16.dp))
-                                    Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                                        Box(
-                                            modifier = Modifier
-                                                .width(140.dp)
-                                                .height(14.dp)
-                                                .clip(RoundedCornerShape(4.dp))
-                                                .shimmerEffect()
-                                        )
-                                        Box(
-                                            modifier = Modifier
-                                                .width(80.dp)
-                                                .height(10.dp)
-                                                .clip(RoundedCornerShape(4.dp))
-                                                .shimmerEffect()
-                                        )
-                                    }
-                                }
-                            }
-                        }
+                        UpcomingTripsSkeleton()
                     } else if (state.upcomingTrips.isEmpty()) {
                         Text(
                             text = stringResource(R.string.ui_a5bb058cec),
@@ -280,37 +253,7 @@ fun TripsScreen(
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     if (state.isLoading && state.pastTrips.isEmpty()) {
-                        LazyRow(
-                            contentPadding = PaddingValues(horizontal = 24.dp),
-                            horizontalArrangement = Arrangement.spacedBy(16.dp)
-                        ) {
-                            items(3) {
-                                Column(modifier = Modifier.width(130.dp)) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(130.dp)
-                                            .clip(RoundedCornerShape(24.dp))
-                                            .shimmerEffect()
-                                    )
-                                    Spacer(modifier = Modifier.height(12.dp))
-                                    Box(
-                                        modifier = Modifier
-                                            .width(90.dp)
-                                            .height(12.dp)
-                                            .clip(RoundedCornerShape(4.dp))
-                                            .shimmerEffect()
-                                    )
-                                    Spacer(modifier = Modifier.height(6.dp))
-                                    Box(
-                                        modifier = Modifier
-                                            .width(60.dp)
-                                            .height(10.dp)
-                                            .clip(RoundedCornerShape(4.dp))
-                                            .shimmerEffect()
-                                    )
-                                }
-                            }
-                        }
+                        PastMemoriesSkeleton()
                     } else if (state.pastTrips.isEmpty()) {
                         Text(
                             text = stringResource(R.string.ui_8a9ea817b6),

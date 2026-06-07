@@ -162,13 +162,13 @@ class GroupDetailViewModel @Inject constructor(
             }
 
             val detailDeferred = async { tripRepository.getTripDetail(tripId) }
-            val daysDeferred = if (isSilent) null else async { tripRepository.listTripDays(tripId) }
+            val daysDeferred = async { tripRepository.listTripDays(tripId) }
 
             val detailResult = detailDeferred.await()
-            val daysResult = daysDeferred?.await()
+            val daysResult = daysDeferred.await()
 
-            if (detailResult.isFailure || (daysResult != null && daysResult.isFailure)) {
-                val throwable = detailResult.exceptionOrNull() ?: daysResult?.exceptionOrNull()
+            if (detailResult.isFailure || daysResult.isFailure) {
+                val throwable = detailResult.exceptionOrNull() ?: daysResult.exceptionOrNull()
                 val isKicked = throwable?.httpStatusCode() == 403 ||
                         throwable?.httpStatusCode() == 404 ||
                         throwable?.message?.contains("Forbidden", ignoreCase = true) == true ||
@@ -209,28 +209,21 @@ class GroupDetailViewModel @Inject constructor(
 
             _uiState.update { state ->
                 val merged = state.mergeTripDetail(detail).copy(placeImages = placeImages)
-                if (daysResult != null) {
-                    val tripDays = daysResult.getOrNull() ?: emptyList()
-                    merged.copy(
-                        days = tripDays.map { day ->
-                            GroupDayUiModel(
-                                dayIndex = day.dayNumber,
-                                label = "Day ${day.dayNumber}",
-                                dateLabel = day.date,
-                                stopCount = day.activities.size,
-                                firstStopTitles = day.activities.take(3).map { activity -> activity.title }
-                            )
-                        },
-                        totalStops = tripDays.sumOf { it.activities.size },
-                        isLoading = false,
-                        errorMessage = null
-                    )
-                } else {
-                    merged.copy(
-                        isLoading = false,
-                        errorMessage = null
-                    )
-                }
+                val tripDays = daysResult.getOrNull() ?: emptyList()
+                merged.copy(
+                    days = tripDays.map { day ->
+                        GroupDayUiModel(
+                            dayIndex = day.dayNumber,
+                            label = "Day ${day.dayNumber}",
+                            dateLabel = day.date,
+                            stopCount = day.activities.size,
+                            firstStopTitles = day.activities.take(3).map { activity -> activity.title }
+                        )
+                    },
+                    totalStops = tripDays.sumOf { it.activities.size },
+                    isLoading = false,
+                    errorMessage = null
+                )
             }
 
             val hasInviteCode = _uiState.value.inviteCode?.isNotBlank() == true
@@ -404,51 +397,6 @@ class GroupDetailViewModel @Inject constructor(
         }
     }
 
-    private fun TripDashboardResponse.findTripById(tripId: Long): DashboardTripSnapshot? {
-        activeTrip?.takeIf { it.tripId == tripId }?.let { return it.toSnapshot() }
-        upcomingTrips.firstOrNull { it.tripId == tripId }?.let { return it.toSnapshot() }
-        pastTrips.firstOrNull { it.tripId == tripId }?.let { return it.toSnapshot() }
-        return null
-    }
-
-    private fun ActiveTripResponse.toSnapshot(): DashboardTripSnapshot {
-        return DashboardTripSnapshot(
-            tripId = tripId,
-            name = name,
-            location = location,
-            coverImageUrl = coverImageUrl,
-            startDate = startDate,
-            endDate = endDate,
-            statusLabel = "Đang diễn ra",
-            placeId = null
-        )
-    }
-
-    private fun UpcomingTripResponse.toSnapshot(): DashboardTripSnapshot {
-        return DashboardTripSnapshot(
-            tripId = tripId,
-            name = name,
-            location = location,
-            coverImageUrl = coverImageUrl,
-            startDate = null,
-            endDate = null,
-            statusLabel = "Sắp khởi hành · Còn $daysLeft ngày",
-            placeId = null
-        )
-    }
-
-    private fun PastTripResponse.toSnapshot(): DashboardTripSnapshot {
-        return DashboardTripSnapshot(
-            tripId = tripId,
-            name = locationName,
-            location = locationName,
-            coverImageUrl = imageUrl,
-            startDate = dateString,
-            endDate = dateString,
-            statusLabel = "Đã hoàn thành",
-            placeId = null
-        )
-    }
 
     private fun parseLocalDate(dateText: String?): LocalDate? {
         if (dateText.isNullOrBlank()) return null
@@ -522,27 +470,7 @@ class GroupDetailViewModel @Inject constructor(
     }
 
     private fun isPastDate(dateText: String?): Boolean {
-        if (dateText.isNullOrBlank()) return false
-        val normalized = dateText.substringBefore("T")
-        val date = runCatching { LocalDate.parse(normalized) }
-            .recoverCatching {
-                LocalDate.parse(
-                    normalized,
-                    DateTimeFormatter.ofPattern("dd/MM/yyyy", Locale.getDefault())
-                )
-            }
-            .getOrNull() ?: return false
+        val date = parseLocalDate(dateText) ?: return false
         return date.isBefore(LocalDate.now())
     }
-
-    private data class DashboardTripSnapshot(
-        val tripId: Long,
-        val name: String,
-        val location: String,
-        val coverImageUrl: String?,
-        val startDate: String?,
-        val endDate: String?,
-        val statusLabel: String,
-        val placeId: Long? = null
-    )
 }

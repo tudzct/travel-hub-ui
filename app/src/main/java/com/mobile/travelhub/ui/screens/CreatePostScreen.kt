@@ -28,6 +28,10 @@ fun CreatePostScreen(
         }
     }
 
+    LaunchedEffect(Unit) {
+        viewModel.loadUserProfile()
+    }
+
     LaunchedEffect(uiState.errorMessage) {
         val errorMessage = uiState.errorMessage ?: return@LaunchedEffect
         Toast.makeText(context, errorMessage, Toast.LENGTH_LONG).show()

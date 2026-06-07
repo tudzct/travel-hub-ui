@@ -171,12 +171,18 @@ class ProfileViewModel @Inject constructor(
 
             result
                 .onSuccess { response ->
-                    updatePost(postId) {
-                        it.copy(
-                            isLiked = response.liked,
-                            likeCount = response.likeCount.coerceAtLeast(0),
-                            isLikeLoading = false
-                        )
+                    if (!response.liked && _profilePostsState.value.selectedTab == ProfilePostsTab.LIKED) {
+                        _profilePostsState.update { state ->
+                            state.copy(posts = state.posts.filterNot { it.id == postId })
+                        }
+                    } else {
+                        updatePost(postId) {
+                            it.copy(
+                                isLiked = response.liked,
+                                likeCount = response.likeCount.coerceAtLeast(0),
+                                isLikeLoading = false
+                            )
+                        }
                     }
                 }
                 .onFailure { throwable ->

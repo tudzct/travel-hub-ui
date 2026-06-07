@@ -60,7 +60,7 @@ import com.mobile.travelhub.R
 import com.mobile.travelhub.data.userMessage
 import com.mobile.travelhub.ui.components.EditProfileField
 import com.mobile.travelhub.ui.components.InlineLoadingSkeleton
-import com.mobile.travelhub.ui.components.LoadingContentSkeleton
+import com.mobile.travelhub.ui.components.EditProfileLoadingSkeleton
 import com.mobile.travelhub.viewmodels.ProfileViewModel
 import com.mobile.travelhub.viewmodels.UiState
 
@@ -238,7 +238,7 @@ fun EditProfileScreen(
                 .padding(horizontal = 24.dp)
         ) {
             if (profileState is UiState.Loading) {
-                LoadingContentSkeleton()
+                EditProfileLoadingSkeleton()
                 return@Scaffold
             }
             
