@@ -22,7 +22,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.outlined.DarkMode
-import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -84,12 +83,6 @@ fun TravelHubDrawerContent(
                     .padding(vertical = 12.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                DrawerActionRow(
-                    icon = Icons.Outlined.Lock,
-                    title = "Đổi mật khẩu",
-                    subtitle = "Bảo mật tài khoản",
-                    onClick = onChangePasswordClick
-                )
                 DrawerActionRow(
                     icon = Icons.AutoMirrored.Filled.ExitToApp,
                     title = "Đăng xuất",

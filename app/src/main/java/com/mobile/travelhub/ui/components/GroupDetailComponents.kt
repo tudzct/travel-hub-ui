@@ -3,6 +3,7 @@ package com.mobile.travelhub.ui.components
 import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -12,11 +13,17 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.CardTravel
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.ExitToApp
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.rounded.ChevronRight
+import androidx.compose.material.icons.rounded.WorkOutline
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -47,50 +54,185 @@ import com.mobile.travelhub.viewmodels.GroupJoinRequestUiModel
 import com.mobile.travelhub.viewmodels.GroupMemberUiModel
 
 @Composable
-fun FeatureCard(icon: ImageVector, label: String, color: Color, onClick: () -> Unit) {
-    Column(
-        modifier = Modifier
-            .width(90.dp)
+fun FeatureCard(
+    icon: ImageVector,
+    label: String,
+    color: Color,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = modifier
+            .height(84.dp)
+            .clip(RoundedCornerShape(18.dp))
+            .background(color.copy(alpha = 0.08f))
             .clickable(onClick = onClick)
-            .padding(vertical = 12.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+            .padding(horizontal = 16.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
         Box(
             modifier = Modifier
-                .size(48.dp)
+                .size(40.dp)
                 .clip(CircleShape)
-                .background(color.copy(alpha = 0.1f)),
+                .background(color.copy(alpha = 0.11f)),
             contentAlignment = Alignment.Center
         ) {
             Icon(
                 icon,
                 contentDescription = null,
                 tint = color,
-                modifier = Modifier.size(24.dp)
+                modifier = Modifier.size(20.dp)
             )
         }
 
+        Spacer(modifier = Modifier.width(16.dp))
+
+        Column {
+            Text(
+                text = label,
+                fontWeight = FontWeight.Bold,
+                fontSize = 15.sp,
+                color = OnSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Spacer(modifier = Modifier.height(3.dp))
+            Text(
+                text = if (label == "Chi phí") "Ước tính chi tiết" else "Xem chi tiết",
+                fontSize = 12.sp,
+                color = OnSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+    }
+}
+
+@Composable
+fun TripDetailRow(
+    label: String,
+    value: String,
+    icon: ImageVector,
+    tint: Color = PrimaryBlue,
+    trailingText: String? = null,
+    pillText: String? = null
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(58.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = tint.copy(alpha = 0.9f),
+            modifier = Modifier.size(26.dp)
+        )
+        Spacer(modifier = Modifier.width(20.dp))
         Text(
             text = label,
-            textAlign = TextAlign.Center,
-            fontWeight = FontWeight.Medium,
-            fontSize = 14.sp,
-            color = OnSurface,
-            maxLines = 2
+            modifier = Modifier.weight(1f),
+            color = OnSurfaceVariant,
+            fontSize = 13.sp
+        )
+        if (pillText != null) {
+            Text(
+                text = pillText,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(50))
+                    .background(Color(0xFF27AE60).copy(alpha = 0.16f))
+                    .padding(horizontal = 6.dp, vertical = 1.dp),
+                color = Color(0xFF15935A),
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 12.sp
+            )
+            trailingText?.let {
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = it,
+                    color = OnSurface,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+        } else {
+            Text(
+                text = value,
+                fontWeight = FontWeight.Bold,
+                color = OnSurface,
+                fontSize = 13.sp,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+        Spacer(modifier = Modifier.width(10.dp))
+        Icon(
+            imageVector = Icons.Rounded.ChevronRight,
+            contentDescription = null,
+            tint = OnSurfaceVariant.copy(alpha = 0.68f),
+            modifier = Modifier.size(24.dp)
         )
     }
 }
 
 @Composable
-fun TripDetailRow(label: String, value: String) {
+fun TripMemberCard(
+    member: GroupMemberUiModel,
+    onClick: () -> Unit = {}
+) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(18.dp))
+            .border(1.dp, SurfaceContainerLow, RoundedCornerShape(18.dp))
+            .background(SurfaceContainerLowest)
+            .clickable { onClick() }
+            .padding(horizontal = 18.dp, vertical = 18.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(label, color = OnSurfaceVariant, fontSize = 14.sp)
-        Text(value, fontWeight = FontWeight.Bold, color = OnSurface, fontSize = 14.sp)
+        TravelHubAvatar(
+            avatarUrl = member.avatarUrl,
+            contentDescription = member.name,
+            modifier = Modifier.size(66.dp)
+        )
+
+        Spacer(modifier = Modifier.width(18.dp))
+
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = member.name,
+                fontWeight = FontWeight.Bold,
+                fontSize = 15.sp,
+                color = OnSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            if (member.role.equals("LEADER", ignoreCase = true)) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(50))
+                        .background(PrimaryBlue.copy(alpha = 0.12f))
+                        .padding(horizontal = 10.dp, vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "♛",
+                        color = PrimaryBlue,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "Trưởng nhóm",
+                        color = PrimaryBlue,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            }
+        }
     }
 }
 
