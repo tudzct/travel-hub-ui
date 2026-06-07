@@ -648,13 +648,14 @@ private fun ProfileScreenContent(
                                                     ProfilePostsTab.LIKED -> "Chưa có bài đăng đã thích"
                                                 }
                                                 val emptyMessage = when (profilePostsState.selectedTab) {
-                                                    ProfilePostsTab.POSTS -> ""
+                                                    ProfilePostsTab.POSTS -> "Bạn chưa chia sẻ khoảnh khắc nào"
                                                     ProfilePostsTab.SAVED -> "Bài viết mà bạn đã lưu sẽ hiển thị ở đây."
                                                     ProfilePostsTab.LIKED -> "Bài viết mà bạn đã thích sẽ hiển thị ở đây."
                                                 }
                                                 Column(
-                                                    modifier = Modifier.fillMaxWidth().padding(horizontal = 32.dp, vertical = 32.dp),
-                                                    horizontalAlignment = Alignment.CenterHorizontally
+                                                    modifier = Modifier.fillMaxWidth().
+                                                        padding(horizontal = 32.dp, vertical = 32.dp),
+                                                        horizontalAlignment = Alignment.CenterHorizontally
                                                 ) {
                                                     Box(
                                                         modifier = Modifier
@@ -689,7 +690,7 @@ private fun ProfileScreenContent(
                                                             shape = RoundedCornerShape(24.dp),
                                                             colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
                                                         ) {
-                                                            Text(stringResource(R.string.ui_454f9a145d), fontWeight = FontWeight.Bold)
+                                                            Text(stringResource(R.string.ui_454f9a145d), fontWeight = FontWeight.Bold, color = Color.White)
                                                         }
                                                     }
                                                 }

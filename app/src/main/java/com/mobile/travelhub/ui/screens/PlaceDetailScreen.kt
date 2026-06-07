@@ -100,6 +100,7 @@ fun PlaceDetailScreen(
     onPlaceClick: (TravelPlaceListItemResponse) -> Unit,
     onShowAllReviews: (Long) -> Unit,
     onRequireLogin: () -> Unit,
+    onUserClick: (Long) -> Unit = {},
     placeDetailViewModel: PlaceDetailViewModel = hiltViewModel(),
     reviewViewModel: ReviewViewModel = hiltViewModel()
 ) {
@@ -216,10 +217,22 @@ fun PlaceDetailScreen(
                     }
 
                     item {
-                        FlatSection {
-                            ExpandableDescription(
-                                description = detail.description.orEmpty().ifBlank { "Chưa có mô tả." }
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Text(
+                                text = "Mô tả",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                modifier = Modifier.padding(horizontal = PlaceDetailHorizontalPadding)
                             )
+                            FlatSection {
+                                ExpandableDescription(
+                                    description = detail.description.orEmpty().ifBlank { "Chưa có mô tả." },
+                                    title = null
+                                )
+                            }
                         }
                     }
 
@@ -232,13 +245,24 @@ fun PlaceDetailScreen(
                     }
 
                     item {
-                        FlatSection {
-                            ReviewSummarySection(
-                                averageRating = detail.reviewSummary.averageRating,
-                                reviewCount = detail.reviewSummary.reviewCount,
-                                myReview = detail.myReview,
-                                onWriteReview = { showReviewSheet = true }
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Text(
+                                text = stringResource(R.string.ui_d0170783fe),
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                modifier = Modifier.padding(horizontal = PlaceDetailHorizontalPadding)
                             )
+                            FlatSection {
+                                ReviewSummarySection(
+                                    averageRating = detail.reviewSummary.averageRating,
+                                    reviewCount = detail.reviewSummary.reviewCount,
+                                    myReview = detail.myReview,
+                                    onWriteReview = { showReviewSheet = true }
+                                )
+                            }
                         }
                     }
 
@@ -247,7 +271,8 @@ fun PlaceDetailScreen(
                             reviews = uiState.reviewPreview,
                             isLoading = uiState.reviewPreviewLoading,
                             errorMessage = uiState.reviewErrorMessage,
-                            onShowAll = { onShowAllReviews(detail.id) }
+                            onShowAll = { onShowAllReviews(detail.id) },
+                            onUserClick = onUserClick
                         )
                     }
 
@@ -690,11 +715,6 @@ private fun ReviewSummarySection(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Text(
-            text = stringResource(R.string.ui_d0170783fe),
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold
-        )
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -728,8 +748,17 @@ private fun ReviewSummarySection(
                     )
                 }
             }
-            TextButton(onClick = onWriteReview) {
-                Text(if (myReview == null) "Viết đánh giá" else "Sửa đánh giá")
+            Button(
+                onClick = onWriteReview,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = PrimaryBlue,
+                    contentColor = Color.White
+                )
+            ) {
+                Text(
+                    text = if (myReview == null) "Viết đánh giá" else "Sửa đánh giá",
+                    color = Color.White
+                )
             }
         }
 
@@ -761,7 +790,8 @@ private fun ReviewPreviewSection(
     reviews: List<TravelPlaceReviewResponse>,
     isLoading: Boolean,
     errorMessage: String?,
-    onShowAll: () -> Unit
+    onShowAll: () -> Unit,
+    onUserClick: (Long) -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -810,7 +840,10 @@ private fun ReviewPreviewSection(
 
             else -> {
                 reviews.forEach { review ->
-                    ReviewPreviewCard(review = review)
+                    ReviewPreviewCard(
+                        review = review,
+                        onUserClick = onUserClick
+                    )
                 }
             }
         }
@@ -819,7 +852,8 @@ private fun ReviewPreviewSection(
 
 @Composable
 private fun ReviewPreviewCard(
-    review: TravelPlaceReviewResponse
+    review: TravelPlaceReviewResponse,
+    onUserClick: (Long) -> Unit
 ) {
     val displayName = review.user.name.ifBlank { review.user.username }
     Surface(
@@ -835,7 +869,11 @@ private fun ReviewPreviewCard(
                 .padding(horizontal = 14.dp, vertical = 14.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            ReviewAuthorAvatar(name = displayName)
+            ReviewAuthorAvatar(
+                name = displayName,
+                avatarUrl = review.user.avatarUrl,
+                modifier = Modifier.clickable { onUserClick(review.user.id) }
+            )
 
             Column(
                 modifier = Modifier.weight(1f),
@@ -847,7 +885,9 @@ private fun ReviewPreviewCard(
                     verticalAlignment = Alignment.Top
                 ) {
                     Column(
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier
+                            .weight(1f)
+                            .clickable { onUserClick(review.user.id) },
                         verticalArrangement = Arrangement.spacedBy(1.dp)
                     ) {
                         Text(
@@ -907,30 +947,45 @@ private fun formatReviewTimestamp(raw: String?): String {
 }
 
 @Composable
-private fun ReviewAuthorAvatar(name: String) {
-    val initial = name.trim().firstOrNull()?.uppercaseChar()?.toString() ?: "?"
-    val avatarColors = listOf(
-        Color(0xFF9DBBFF),
-        Color(0xFF86DDB8),
-        Color(0xFFA7A0F6),
-        Color(0xFFF0B76D),
-        Color(0xFF7FC6E8)
-    )
-    val backgroundColor = avatarColors[initial.first().code % avatarColors.size]
-
-    Box(
-        modifier = Modifier
-            .size(36.dp)
-            .clip(CircleShape)
-            .background(backgroundColor),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = initial,
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
-            color = Color.White
+private fun ReviewAuthorAvatar(
+    name: String, 
+    avatarUrl: String?, 
+    modifier: Modifier = Modifier
+) {
+    if (!avatarUrl.isNullOrBlank()) {
+        AsyncImage(
+            model = avatarUrl,
+            contentDescription = name,
+            modifier = modifier
+                .size(36.dp)
+                .clip(CircleShape),
+            contentScale = ContentScale.Crop
         )
+    } else {
+        val initial = name.trim().firstOrNull()?.uppercaseChar()?.toString() ?: "?"
+        val avatarColors = listOf(
+            Color(0xFF9DBBFF),
+            Color(0xFF86DDB8),
+            Color(0xFFA7A0F6),
+            Color(0xFFF0B76D),
+            Color(0xFF7FC6E8)
+        )
+        val backgroundColor = avatarColors[initial.first().code % avatarColors.size]
+    
+        Box(
+            modifier = modifier
+                .size(36.dp)
+                .clip(CircleShape)
+                .background(backgroundColor),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = initial,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = Color.White
+            )
+        }
     }
 }
 
@@ -1062,21 +1117,6 @@ private fun PlaceActionSection(
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Button(
-            onClick = onWriteReview,
-            modifier = Modifier
-                .weight(1f)
-                .height(52.dp),
-            shape = RoundedCornerShape(16.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = PrimaryBlue
-            )
-        ) {
-            Text(
-                text = if (myReview == null) "Viết đánh giá" else "Sửa đánh giá",
-                fontWeight = FontWeight.Bold
-            )
-        }
         OutlinedButton(
             onClick = onDirections,
             modifier = Modifier
@@ -1085,8 +1125,8 @@ private fun PlaceActionSection(
             shape = RoundedCornerShape(16.dp),
             border = BorderStroke(1.dp, PrimaryBlue.copy(alpha = 0.35f)),
             colors = ButtonDefaults.outlinedButtonColors(
-                contentColor = PrimaryBlue,
-                containerColor = SurfaceBg
+                contentColor = Color.White,
+                containerColor = PrimaryBlue
             )
         ) {
             Icon(

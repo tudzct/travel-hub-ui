@@ -127,8 +127,8 @@ data class NotificationsUiState(
 )
 
 enum class NotificationFilter(val label: String) {
-    All("All"),
-    Unread("Unread")
+    All("Tất cả"),
+    Unread("Chưa đọc")
 }
 
 data class NotificationModel(
