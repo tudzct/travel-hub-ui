@@ -1,5 +1,6 @@
 package com.mobile.travelhub.ui.screens
 
+import androidx.compose.ui.res.stringResource
 import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -36,7 +37,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil.compose.AsyncImage
-import com.mobile.travelhub.ui.components.modifiers.shimmerEffect
+import com.mobile.travelhub.ui.components.ActiveTripSkeleton
+import com.mobile.travelhub.ui.components.UpcomingTripsSkeleton
+import com.mobile.travelhub.ui.components.PastMemoriesSkeleton
+import com.mobile.travelhub.ui.components.SimpleFormTextField
 import com.mobile.travelhub.R
 import com.mobile.travelhub.ui.theme.*
 import com.mobile.travelhub.viewmodels.TripsViewModel
@@ -60,10 +64,21 @@ fun TripsScreen(
     val state by viewModel.uiState.collectAsState()
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
+    var hasReachedInitialResume by remember(lifecycleOwner) {
+        mutableStateOf(
+            lifecycleOwner.lifecycle.currentState.isAtLeast(
+                androidx.lifecycle.Lifecycle.State.RESUMED
+            )
+        )
+    }
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
-                viewModel.refreshDashboard()
+                if (hasReachedInitialResume) {
+                    viewModel.refreshDashboard()
+                } else {
+                    hasReachedInitialResume = true
+                }
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -72,8 +87,9 @@ fun TripsScreen(
         }
     }
     LaunchedEffect(Unit) {
+        viewModel.refreshDashboard(isSilent = false)
         while (true) {
-            kotlinx.coroutines.delay(15000L)
+            kotlinx.coroutines.delay(10000L)
             viewModel.refreshDashboard(isSilent = true)
         }
     }
@@ -105,18 +121,19 @@ fun TripsScreen(
                 shape = RoundedCornerShape(20.dp),
                 elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 4.dp)
             ) {
-                Icon(Icons.Default.FlightTakeoff, contentDescription = "New Trip")
+                Icon(Icons.Default.FlightTakeoff, contentDescription = stringResource(R.string.ui_77c36e7640))
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Chuyến đi mới", fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.ui_ab38c564dc), fontWeight = FontWeight.Bold)
             }
         }
     ) { padding ->
         LazyColumn(
             state = listState,
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding),
-            contentPadding = PaddingValues(bottom = 100.dp) // Space for FAB
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(
+                top = 0.dp,
+                bottom = 100.dp 
+            )
         ) {
             if (state.errorMessage != null) {
                 item {
@@ -136,14 +153,14 @@ fun TripsScreen(
             item {
                 Column(modifier = Modifier.padding(horizontal = 24.dp, vertical = 24.dp)) {
                     Text(
-                        text = "Sẵn sàng lên đường nào,",
+                        text = stringResource(R.string.ui_8f23352824),
                         fontSize = 16.sp,
                         color = OnSurfaceVariant,
                         letterSpacing = 0.5.sp
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = "Nhà thám hiểm!",
+                        text = stringResource(R.string.ui_5a3d42db37),
                         fontWeight = FontWeight.ExtraBold,
                         fontSize = 32.sp,
                         color = OnSurface,
@@ -156,20 +173,14 @@ fun TripsScreen(
             item {
                 Column(modifier = Modifier.padding(horizontal = 24.dp)) {
                     Text(
-                        "Đang diễn ra",
+                        stringResource(R.string.ui_0811963e56),
                         fontWeight = FontWeight.ExtraBold,
                         fontSize = 18.sp,
                         color = OnSurface
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     if (state.isLoading && state.activeTrip == null) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(200.dp)
-                                .clip(RoundedCornerShape(32.dp))
-                                .shimmerEffect()
-                        )
+                        ActiveTripSkeleton()
                     } else {
                         ActiveJourneyCardV2(
                             trip = state.activeTrip,
@@ -188,13 +199,13 @@ fun TripsScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "Sắp khởi hành",
+                            text = stringResource(R.string.ui_9183bdeb31),
                             fontWeight = FontWeight.ExtraBold,
                             fontSize = 18.sp,
                             color = OnSurface
                         )
                         Text(
-                            text = "Xem tất cả",
+                            text = stringResource(R.string.ui_7e04025452),
                             color = PrimaryBlue,
                             fontWeight = FontWeight.Bold,
                             fontSize = 13.sp,
@@ -208,45 +219,10 @@ fun TripsScreen(
             item {
                 Column(modifier = Modifier.padding(horizontal = 24.dp)) {
                     if (state.isLoading && state.upcomingTrips.isEmpty()) {
-                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                            repeat(2) {
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clip(RoundedCornerShape(24.dp))
-                                        .background(SurfaceContainerLowest)
-                                        .padding(12.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(70.dp)
-                                            .clip(RoundedCornerShape(16.dp))
-                                            .shimmerEffect()
-                                    )
-                                    Spacer(modifier = Modifier.width(16.dp))
-                                    Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                                        Box(
-                                            modifier = Modifier
-                                                .width(140.dp)
-                                                .height(14.dp)
-                                                .clip(RoundedCornerShape(4.dp))
-                                                .shimmerEffect()
-                                        )
-                                        Box(
-                                            modifier = Modifier
-                                                .width(80.dp)
-                                                .height(10.dp)
-                                                .clip(RoundedCornerShape(4.dp))
-                                                .shimmerEffect()
-                                        )
-                                    }
-                                }
-                            }
-                        }
+                        UpcomingTripsSkeleton()
                     } else if (state.upcomingTrips.isEmpty()) {
                         Text(
-                            text = "Bạn chưa có chuyến đi nào sắp tới.",
+                            text = stringResource(R.string.ui_a5bb058cec),
                             color = OnSurfaceVariant,
                             fontSize = 14.sp
                         )
@@ -269,7 +245,7 @@ fun TripsScreen(
             item {
                 Column {
                     Text(
-                        text = "Nhật ký hành trình",
+                        text = stringResource(R.string.ui_f593bb6075),
                         fontWeight = FontWeight.ExtraBold,
                         fontSize = 18.sp,
                         color = OnSurface,
@@ -277,40 +253,10 @@ fun TripsScreen(
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     if (state.isLoading && state.pastTrips.isEmpty()) {
-                        LazyRow(
-                            contentPadding = PaddingValues(horizontal = 24.dp),
-                            horizontalArrangement = Arrangement.spacedBy(16.dp)
-                        ) {
-                            items(3) {
-                                Column(modifier = Modifier.width(130.dp)) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(130.dp)
-                                            .clip(RoundedCornerShape(24.dp))
-                                            .shimmerEffect()
-                                    )
-                                    Spacer(modifier = Modifier.height(12.dp))
-                                    Box(
-                                        modifier = Modifier
-                                            .width(90.dp)
-                                            .height(12.dp)
-                                            .clip(RoundedCornerShape(4.dp))
-                                            .shimmerEffect()
-                                    )
-                                    Spacer(modifier = Modifier.height(6.dp))
-                                    Box(
-                                        modifier = Modifier
-                                            .width(60.dp)
-                                            .height(10.dp)
-                                            .clip(RoundedCornerShape(4.dp))
-                                            .shimmerEffect()
-                                    )
-                                }
-                            }
-                        }
+                        PastMemoriesSkeleton()
                     } else if (state.pastTrips.isEmpty()) {
                         Text(
-                            text = "Chưa có chuyến đi",
+                            text = stringResource(R.string.ui_8a9ea817b6),
                             color = OnSurfaceVariant,
                             fontSize = 14.sp,
                             modifier = Modifier.padding(horizontal = 24.dp)
@@ -509,7 +455,7 @@ fun AddTripOptionsContent(
     ) {
         if (!showJoinInput) {
             Text(
-                text = "Bắt đầu hành trình mới",
+                text = stringResource(R.string.ui_cac2fa7e3c),
                 fontWeight = FontWeight.ExtraBold,
                 fontSize = 20.sp,
                 color = OnSurface
@@ -518,16 +464,16 @@ fun AddTripOptionsContent(
             
             TripOptionItem(
                 icon = Icons.Default.Add,
-                title = "Tạo chuyến đi mới",
-                desc = "Lên kế hoạch từ đầu với bạn bè",
+                title = stringResource(R.string.ui_a7b24cbdc8),
+                desc = stringResource(R.string.ui_e935e26423),
                 color = PrimaryBlue,
                 onClick = onCreateNew
             )
             Spacer(modifier = Modifier.height(16.dp))
             TripOptionItem(
                 icon = Icons.Default.GroupAdd,
-                title = "Tham gia bằng mã",
-                desc = "Nhập mã để tham gia nhóm có sẵn",
+                title = stringResource(R.string.ui_d7e500da55),
+                desc = stringResource(R.string.ui_0d27dc79d6),
                 color = SunsetOrange,
                 onClick = {
                     showJoinInput = true
@@ -536,30 +482,25 @@ fun AddTripOptionsContent(
             Spacer(modifier = Modifier.height(16.dp))
         } else {
             Text(
-                text = "Tham gia chuyến đi",
+                text = stringResource(R.string.ui_4732924c6b),
                 fontWeight = FontWeight.ExtraBold,
                 fontSize = 20.sp,
                 color = OnSurface
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "Nhập mã gồm 8 ký tự được chia sẻ bởi Trưởng nhóm.",
+                text = stringResource(R.string.ui_ab465c45bd),
                 fontSize = 14.sp,
                 color = OnSurfaceVariant
             )
             Spacer(modifier = Modifier.height(24.dp))
 
-            OutlinedTextField(
+            SimpleFormTextField(
                 value = joinCode,
                 onValueChange = { joinCode = it.uppercase().take(8) },
-                label = { Text("Mã chuyến đi") },
+                placeholder = stringResource(R.string.ui_63d05307ca),
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
-                singleLine = true,
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = PrimaryBlue,
-                    unfocusedBorderColor = SurfaceContainerLow
-                )
+                singleLine = true
             )
             Spacer(modifier = Modifier.height(24.dp))
             Button(

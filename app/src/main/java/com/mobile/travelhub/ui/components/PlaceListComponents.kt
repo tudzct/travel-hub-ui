@@ -37,13 +37,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Send
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material.icons.outlined.ChatBubbleOutline
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.Place
 import androidx.compose.material.icons.outlined.Search
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -78,6 +76,7 @@ import coil.compose.AsyncImage
 import com.mobile.travelhub.R
 import com.mobile.travelhub.data.model.TravelPlaceListItemResponse
 import com.mobile.travelhub.ui.components.modifiers.shimmerEffect
+import com.mobile.travelhub.ui.components.layout.MainMenuButton
 import com.mobile.travelhub.viewmodels.HomeCommentUiModel
 import com.mobile.travelhub.viewmodels.HomePostUiModel
 import com.mobile.travelhub.viewmodels.HomeUiState
@@ -97,6 +96,7 @@ fun PlaceListScreenContent(
     onSearchClick: () -> Unit,
     onRetryPlaces: () -> Unit,
     onRetryPosts: () -> Unit,
+    onLoadMorePosts: () -> Unit,
     onLikeClick: (Long) -> Unit,
     onSaveClick: (Long) -> Unit,
     onCommentClick: (Long) -> Unit,
@@ -164,14 +164,16 @@ fun PlaceListScreenContent(
             when {
                 placeUiState.isLoading -> {
                     item {
-                        LocationsRailSkeleton()
+                        LocationsRailSection {
+                            LocationsRailSkeleton()
+                        }
                     }
                 }
 
                 placeUiState.errorMessage != null && placeUiState.items.isEmpty() -> {
                     item {
                         FeedEmptyState(
-                            title = "Không thể tải địa điểm",
+                            title = stringResource(R.string.ui_3682846f79),
                             message = placeUiState.errorMessage.orEmpty(),
                             fullScreen = false,
                             onRetry = onRetryPlaces
@@ -182,7 +184,7 @@ fun PlaceListScreenContent(
                 placeUiState.items.isEmpty() -> {
                     item {
                         FeedEmptyState(
-                            title = "Chưa có địa điểm nào",
+                            title = stringResource(R.string.ui_cfc854b8a2),
                             message = "Dữ liệu địa điểm vẫn chưa được thêm vào hệ thống.",
                             fullScreen = false,
                             onRetry = null
@@ -192,13 +194,25 @@ fun PlaceListScreenContent(
 
                 else -> {
                     item {
-                        LocationsRail(
-                            places = placeUiState.items.take(10),
-                            onPlaceClick = onPlaceClick
-                        )
+                        LocationsRailSection {
+                            LocationsRail(
+                                places = placeUiState.items.take(10),
+                                onPlaceClick = onPlaceClick
+                            )
+                        }
                     }
                 }
             }
+
+            item(key = "locations-posts-spacer") {
+                Spacer(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(4.dp)
+                        .background(Color(0xFFE0E0E0))
+                )
+            }
+
             when {
                 homeUiState.isLoading -> {
                     items(3) {
@@ -209,7 +223,7 @@ fun PlaceListScreenContent(
                 homeUiState.errorMessage != null && homeUiState.posts.isEmpty() -> {
                     item {
                         FeedEmptyState(
-                            title = "Không thể tải bài viết",
+                            title = stringResource(R.string.ui_d03cf884c0),
                             message = homeUiState.errorMessage ?: "Không thể tải bài viết",
                             fullScreen = false,
                             onRetry = onRetryPosts
@@ -220,7 +234,7 @@ fun PlaceListScreenContent(
                 else -> {
                     itemsIndexed(
                         items = homeUiState.posts,
-                        key = { index, post -> "${post.id}-$index" }
+                        key = { _, post -> post.id }
                     ) { _, post ->
                         FeedPostCard(
                             post = post,
@@ -229,6 +243,28 @@ fun PlaceListScreenContent(
                             onCommentClick = { onCommentClick(post.id) },
                             onAuthorClick = { onAuthorClick(post.ownerId) }
                         )
+                    }
+
+                    if (homeUiState.isLoadingMore) {
+                        item(key = "posts-loading-more") {
+                            FeedPostCardSkeleton()
+                        }
+                    } else if (!homeUiState.loadMoreErrorMessage.isNullOrBlank()) {
+                        item(key = "posts-load-more-error") {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Text(
+                                    text = homeUiState.loadMoreErrorMessage,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.error
+                                )
+                                RetryButton(onClick = onLoadMorePosts)
+                            }
+                        }
                     }
                 }
             }
@@ -269,21 +305,14 @@ fun HomeCommentsBottomSheet(
         containerColor = Color.White
     ) {
         Text(
-            text = "Comments",
+            text = stringResource(R.string.ui_fce06e20e5),
             style = MaterialTheme.typography.titleMedium,
             modifier = Modifier.padding(horizontal = 24.dp)
         )
         Spacer(modifier = Modifier.height(12.dp))
 
         if (isCommentsLoading) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 24.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator()
-            }
+            LoadingListSkeleton(itemCount = 3)
         } else if (!commentsErrorMessage.isNullOrBlank()) {
             Text(
                 text = commentsErrorMessage,
@@ -293,7 +322,7 @@ fun HomeCommentsBottomSheet(
             )
         } else if (comments.isEmpty()) {
             Text(
-                text = "No comments yet",
+                text = stringResource(R.string.ui_d14da37946),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(horizontal = 24.dp)
@@ -328,16 +357,11 @@ fun HomeCommentsBottomSheet(
             SimpleFormTextField(
                 value = commentInput,
                 onValueChange = onCommentInputChanged,
-                placeholder = "Add a comment",
+                placeholder = stringResource(R.string.ui_3e18361540),
                 modifier = Modifier.weight(1f),
                 enabled = !isCommentSubmitting,
                 singleLine = false,
-                maxLines = 3,
-                shape = RoundedCornerShape(24.dp),
-                focusedContainerColor = Color.White,
-                unfocusedContainerColor = Color.White,
-                disabledContainerColor = Color(0xFFF4F4F4),
-                focusedIndicatorColor = VerdantPrimary
+                maxLines = 3
             )
             Spacer(modifier = Modifier.width(8.dp))
             IconButton(
@@ -349,16 +373,12 @@ fun HomeCommentsBottomSheet(
                     .background(VerdantPrimary)
             ) {
                 if (isCommentSubmitting) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(16.dp),
-                        strokeWidth = 2.dp,
-                        color = Color.White
-                    )
+                    InlineLoadingSkeleton(modifier = Modifier.size(16.dp))
                 } else {
                     Icon(
                         imageVector = Icons.AutoMirrored.Outlined.Send,
                         modifier = Modifier.size(16.dp),
-                        contentDescription = "Send comment",
+                        contentDescription = stringResource(R.string.ui_591e0e89f0),
                         tint = Color.White
                     )
                 }
@@ -400,18 +420,12 @@ private fun FeedTopBar(
                 .align(Alignment.BottomCenter)
                 .padding(horizontal = 6.dp)
         ) {
-            IconButton(
+            MainMenuButton(
                 onClick = onMenuClick,
                 modifier = Modifier.align(Alignment.CenterStart)
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.Menu,
-                    contentDescription = "Open menu",
-                    tint = VerdantOnSurface
-                )
-            }
+            )
             Text(
-                text = "Travel Hub",
+                text = stringResource(R.string.ui_a59ca6e82e),
                 modifier = Modifier.align(Alignment.Center),
                 style = MaterialTheme.typography.titleMedium,
                 color = VerdantOnSurface,
@@ -424,7 +438,7 @@ private fun FeedTopBar(
             ) {
                 Icon(
                     imageVector = Icons.Outlined.Search,
-                    contentDescription = "Search",
+                    contentDescription = stringResource(R.string.ui_bce0641417),
                     tint = VerdantOnSurface
                 )
             }
@@ -436,6 +450,22 @@ private fun FeedTopBar(
 @Composable
 fun FeedTopBarPreview(){
     FeedTopBar(onMenuClick = {}, onSearchClick = {})
+}
+
+@Composable
+private fun LocationsRailSection(
+    content: @Composable () -> Unit
+) {
+    Column {
+        Text(
+            text = stringResource(R.string.you_might_like),
+            modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 10.dp),
+            color = VerdantOnSurface,
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.ExtraBold
+        )
+        content()
+    }
 }
 
 @Composable
@@ -452,6 +482,8 @@ private fun LocationsRail(
                 country = place.province.name,
                 city = place.name,
                 imageUrl = place.mainImage,
+                averageRating = place.averageRating,
+                reviewCount = place.reviewCount,
                 modifier = Modifier
                     .width(220.dp)
                     .height(270.dp),
@@ -560,9 +592,7 @@ private fun FeedEmptyState(
                     color = VerdantOnSurfaceVariant
                 )
                 if (onRetry != null) {
-                    TextButton(onClick = onRetry) {
-                        Text("Thử lại")
-                    }
+                    RetryButton(onClick = onRetry)
                 }
             }
         }
@@ -740,36 +770,15 @@ fun FeedPostCard(
             }
         }
 
-
         Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
             Row(
-                modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text(
-                    text = "${post.likeCount} likes",
-                    style = MaterialTheme.typography.labelLarge,
-                    color = VerdantOnSurface
-                )
-                Text(
-                    text = "${post.commentCount} comments",
-                    style = MaterialTheme.typography.labelLarge,
-                    color = VerdantOnSurface
-                )
-            }
-//            Spacer(
-//                modifier = Modifier
-//                    .fillMaxWidth()
-//                    .height(1.dp)
-//                    .background(Color(0xFFE0E0E0))
-//            )
-            Row(
                 modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.Top
             ) {
-                Box(
+                Column(
                     modifier = Modifier.weight(1f),
-                    contentAlignment = Alignment.Center
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     IconButton(
                         onClick = onLikeClick,
@@ -778,15 +787,21 @@ fun FeedPostCard(
                     ) {
                         Icon(
                             imageVector = if (post.isLiked) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
-                            contentDescription = "Like",
+                            contentDescription = stringResource(R.string.ui_c7e02c95fe),
                             tint = if (post.isLiked) MaterialTheme.colorScheme.error else VerdantOnSurface,
                             modifier = Modifier.size(26.dp)
                         )
                     }
+                    Text(
+                        text = stringResource(R.string.like_count, post.likeCount),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = VerdantOnSurface
+                    )
                 }
-                Box(
+                Column(
                     modifier = Modifier.weight(1f),
-                    contentAlignment = Alignment.Center
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     IconButton(
                         onClick = onCommentClick,
@@ -795,15 +810,21 @@ fun FeedPostCard(
                     ) {
                         Icon(
                             painter = painterResource(R.drawable.message_circle),
-                            contentDescription = "Comment",
+                            contentDescription = stringResource(R.string.ui_153d7a58b3),
                             modifier = Modifier.size(24.dp),
                             tint = VerdantOnSurface
                         )
                     }
+                    Text(
+                        text = stringResource(R.string.comment_count, post.commentCount),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = VerdantOnSurface
+                    )
                 }
-                Box(
+                Column(
                     modifier = Modifier.weight(1f),
-                    contentAlignment = Alignment.Center
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     IconButton(
                         onClick = onSaveClick,
@@ -817,6 +838,11 @@ fun FeedPostCard(
                             tint = if (post.isSaved) PrimaryBlue else VerdantOnSurface
                         )
                     }
+                    Text(
+                        text = stringResource(R.string.save_count, post.saveCount),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = VerdantOnSurface
+                    )
                 }
             }
         }
@@ -892,37 +918,41 @@ fun FeedPostCardSkeleton(
         Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.Top
             ) {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    repeat(3) {
+                repeat(2) {
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
                         Box(
                             modifier = Modifier
                                 .size(26.dp)
                                 .clip(CircleShape)
                                 .shimmerEffect()
                         )
+                        Box(
+                            modifier = Modifier
+                                .width(72.dp)
+                                .height(10.dp)
+                                .clip(RoundedCornerShape(50))
+                                .shimmerEffect()
+                        )
                     }
                 }
                 Box(
-                    modifier = Modifier
-                        .size(26.dp)
-                        .clip(CircleShape)
-                        .shimmerEffect()
-                )
+                    modifier = Modifier.weight(1f),
+                    contentAlignment = Alignment.TopCenter
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(26.dp)
+                            .clip(CircleShape)
+                            .shimmerEffect()
+                    )
+                }
             }
-            Spacer(modifier = Modifier.height(12.dp))
-            Box(
-                modifier = Modifier
-                    .width(84.dp)
-                    .height(12.dp)
-                    .clip(RoundedCornerShape(50))
-                    .shimmerEffect()
-            )
             Spacer(modifier = Modifier.height(8.dp))
             Box(
                 modifier = Modifier
@@ -959,11 +989,12 @@ fun FeedPostCardPreview() {
             ownerId = 2L,
             username = "Duc Duong Hoang",
             ownerAvatarUrl = null,
-            subtitle = "Da Nang, Viet Nam",
+            subtitle = stringResource(R.string.ui_8d95e76955),
             description = "A calm afternoon by the river.",
             imageUrls = listOf("sample.jpg"),
             likeCount = 142,
             commentCount = 4,
+            saveCount = 28,
             isLiked = true,
             isLikeLoading = false,
             isSaved = false,

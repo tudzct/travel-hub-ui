@@ -1,5 +1,6 @@
 package com.mobile.travelhub.ui.components.itinerary
 
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -29,7 +30,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -40,6 +40,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -50,6 +51,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.mobile.travelhub.data.model.ItineraryEvent
+import com.mobile.travelhub.ui.components.SimpleFormTextField
 import com.mobile.travelhub.ui.theme.OnSurface
 import com.mobile.travelhub.ui.theme.OnSurfaceVariant
 import com.mobile.travelhub.ui.theme.OutlineVariant
@@ -61,6 +63,7 @@ import com.mobile.travelhub.viewmodels.ItineraryDayOption
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import com.mobile.travelhub.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -73,6 +76,7 @@ fun ItineraryEventEditorDialog(
     onSave: (ItineraryEvent) -> Unit,
     onDelete: () -> Unit
 ) {
+    val context = LocalContext.current
     var selectedDay by remember(event.eventId) { mutableStateOf(event.dayIndex) }
     var isDayMenuExpanded by remember { mutableStateOf(false) }
     var expandedTimeTarget by remember { mutableStateOf<TimePickerTarget?>(null) }
@@ -82,7 +86,7 @@ fun ItineraryEventEditorDialog(
             (1..effectiveDayCount).map { day ->
                 ItineraryDayOption(
                     dayIndex = day,
-                    label = "Day $day",
+                    label = context.getString(R.string.day_number, day),
                     dateLabel = "",
                     epochDay = null
                 )
@@ -128,7 +132,7 @@ fun ItineraryEventEditorDialog(
 
                 Box {
                     PickerAnchorField(
-                        label = "Select a day",
+                        label = stringResource(R.string.ui_0ab997e2e2),
                         value = selectedDayOption?.dateLabel?.toPickerDateLabel()
                             ?: selectedDayOption?.label
                             ?: "Chọn ngày",
@@ -175,7 +179,7 @@ fun ItineraryEventEditorDialog(
                     Box(modifier = Modifier.weight(1f)) {
                         PickerAnchorField(
                             value = startTime.toPickerTimeLabel(),
-                            label = "Start with",
+                            label = stringResource(R.string.ui_8dc3261b77),
                             icon = Icons.Default.Schedule,
                             expanded = expandedTimeTarget == TimePickerTarget.START,
                             onClick = { expandedTimeTarget = TimePickerTarget.START }
@@ -197,7 +201,7 @@ fun ItineraryEventEditorDialog(
                     Box(modifier = Modifier.weight(1f)) {
                         PickerAnchorField(
                             value = endTime.toPickerTimeLabel(),
-                            label = "End with",
+                            label = stringResource(R.string.ui_4923a13d6c),
                             icon = Icons.Default.Schedule,
                             expanded = expandedTimeTarget == TimePickerTarget.END,
                             onClick = { expandedTimeTarget = TimePickerTarget.END }
@@ -218,20 +222,20 @@ fun ItineraryEventEditorDialog(
                 ItineraryEditorField(
                     value = title,
                     onValueChange = { title = it },
-                    label = "Tên activity"
+                    label = stringResource(R.string.ui_f91b97aefb)
                 )
 
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     ItineraryEditorField(
                         value = placeName,
                         onValueChange = { placeName = it },
-                        label = "Địa điểm",
+                        label = stringResource(R.string.ui_c9805922f7),
                         modifier = Modifier.weight(1f)
                     )
                     ItineraryEditorField(
                         value = cost,
                         onValueChange = { cost = it },
-                        label = "Chi phí",
+                        label = stringResource(R.string.ui_3c4531105c),
                         modifier = Modifier.weight(1f),
                         keyboardType = KeyboardType.Decimal
                     )
@@ -240,13 +244,13 @@ fun ItineraryEventEditorDialog(
                 ItineraryEditorField(
                     value = transport,
                     onValueChange = { transport = it },
-                    label = "Địa chỉ / hướng dẫn di chuyển"
+                    label = stringResource(R.string.ui_e6c5c414f2)
                 )
 
                 ItineraryEditorField(
                     value = note,
                     onValueChange = { note = it },
-                    label = "Ghi chú",
+                    label = stringResource(R.string.ui_02f03f68e7),
                     minLines = 3
                 )
 
@@ -263,14 +267,14 @@ fun ItineraryEventEditorDialog(
                                 contentColor = SunsetOrange
                             )
                         ) {
-                            Text("Xóa")
+                            Text(stringResource(R.string.ui_aa1d94fc16))
                         }
                     } else {
                         TextButton(
                             onClick = onDismiss,
                             modifier = Modifier.weight(1f)
                         ) {
-                            Text("Hủy")
+                            Text(stringResource(R.string.ui_34ca764caf))
                         }
                     }
                     Button(
@@ -319,13 +323,14 @@ private fun ItineraryEditorField(
     minLines: Int = 1,
     keyboardType: KeyboardType = KeyboardType.Text
 ) {
-    OutlinedTextField(
+    SimpleFormTextField(
         value = value,
         onValueChange = onValueChange,
-        label = { Text(label) },
+        placeholder = label,
         modifier = modifier.fillMaxWidth(),
+        singleLine = minLines == 1,
         minLines = minLines,
-        shape = RoundedCornerShape(18.dp),
+        maxLines = if (minLines == 1) 1 else 6,
         keyboardOptions = KeyboardOptions(keyboardType = keyboardType)
     )
 }

@@ -18,6 +18,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 
 @Composable
 fun PrimaryProfileButton(
@@ -45,7 +46,9 @@ fun PrimaryProfileButton(
             text = text,
             color = MaterialTheme.colorScheme.onPrimary,
             style = MaterialTheme.typography.labelMedium,
-            fontWeight = FontWeight.Bold
+            fontWeight = FontWeight.Bold,
+            fontSize = 18.sp
+
         )
     }
 }

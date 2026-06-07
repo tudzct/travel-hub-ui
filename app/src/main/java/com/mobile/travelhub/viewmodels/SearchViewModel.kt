@@ -331,17 +331,31 @@ class SearchViewModel @Inject constructor(
         if (postId in _uiState.value.savingPostIds) return
         val currentlySaved = currentPost.savedByCurrentUser == true
         val targetSaved = !currentlySaved
+        val currentSaveCount = currentPost.saveCount?.coerceAtLeast(0) ?: 0
+        val targetSaveCount = (currentSaveCount + if (targetSaved) 1 else -1).coerceAtLeast(0)
 
         viewModelScope.launch {
             _uiState.update { it.copy(savingPostIds = it.savingPostIds + postId) }
-            updatePost(postId) { post -> post.copy(savedByCurrentUser = targetSaved) }
+            updatePost(postId) {
+                post -> post.copy(savedByCurrentUser = targetSaved, saveCount = targetSaveCount)
+            }
 
             savePostUseCase(postId, currentlySaved = currentlySaved)
                 .onSuccess { response ->
-                    updatePost(postId) { post -> post.copy(savedByCurrentUser = response.saved) }
+                    updatePost(postId) {
+                        post -> post.copy(
+                            savedByCurrentUser = response.saved,
+                            saveCount = response.saveCount.coerceAtLeast(0)
+                        )
+                    }
                 }
                 .onFailure { throwable ->
-                    updatePost(postId) { post -> post.copy(savedByCurrentUser = currentPost.savedByCurrentUser) }
+                    updatePost(postId) {
+                        post -> post.copy(
+                            savedByCurrentUser = currentPost.savedByCurrentUser,
+                            saveCount = currentPost.saveCount
+                        )
+                    }
                     _uiState.update {
                         it.copy(postsErrorMessage = throwable.userMessage("Không thể lưu bài viết"))
                     }

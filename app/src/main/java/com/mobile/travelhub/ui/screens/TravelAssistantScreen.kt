@@ -1,5 +1,6 @@
 package com.mobile.travelhub.ui.screens
 
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -28,12 +29,10 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -55,6 +54,8 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.mobile.travelhub.data.model.TravelAssistantPlaceReference
 import com.mobile.travelhub.ui.components.ChatMarkdownMessage
+import com.mobile.travelhub.ui.components.SkeletonBlock
+import com.mobile.travelhub.ui.components.SimpleFormTextField
 import com.mobile.travelhub.ui.theme.OnSurface
 import com.mobile.travelhub.ui.theme.OnSurfaceVariant
 import com.mobile.travelhub.ui.theme.PrimaryBlue
@@ -64,6 +65,7 @@ import com.mobile.travelhub.ui.theme.SurfaceContainerLowest
 import com.mobile.travelhub.viewmodels.TravelAssistantMessageUi
 import com.mobile.travelhub.viewmodels.TravelAssistantRole
 import com.mobile.travelhub.viewmodels.TravelAssistantViewModel
+import com.mobile.travelhub.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -97,7 +99,7 @@ fun TravelAssistantScreen(
                 title = {
                     Column {
                         Text(
-                            text = "Trợ lý du lịch",
+                            text = stringResource(R.string.ui_910fed801d),
                             color = OnSurface,
                             fontWeight = FontWeight.ExtraBold,
                             fontSize = 18.sp
@@ -115,7 +117,7 @@ fun TravelAssistantScreen(
                     IconButton(onClick = onBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Quay lại",
+                            contentDescription = stringResource(R.string.ui_8a09e03d20),
                             tint = OnSurface
                         )
                     }
@@ -321,7 +323,7 @@ private fun PlaceReferenceCard(
                 }
             }
             Text(
-                text = "Xem",
+                text = stringResource(R.string.ui_c088a919fc),
                 color = PrimaryBlue,
                 fontWeight = FontWeight.Bold,
                 fontSize = 12.sp
@@ -388,13 +390,13 @@ private fun AssistantTypingBubble() {
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(16.dp),
-                    color = PrimaryBlue,
-                    strokeWidth = 2.dp
+                SkeletonBlock(
+                    modifier = Modifier
+                        .width(42.dp)
+                        .height(10.dp)
                 )
                 Text(
-                    text = "Đang tìm gợi ý...",
+                    text = stringResource(R.string.ui_f160dc891e),
                     modifier = Modifier.padding(start = 9.dp),
                     color = OnSurfaceVariant,
                     fontSize = 12.sp
@@ -421,12 +423,12 @@ private fun ChatInputBar(
                 .padding(horizontal = 12.dp, vertical = 10.dp),
             verticalAlignment = Alignment.Bottom
         ) {
-            OutlinedTextField(
+            SimpleFormTextField(
                 value = value,
                 onValueChange = onValueChange,
                 modifier = Modifier.weight(1f),
-                placeholder = { Text("Hỏi về địa điểm hoặc lịch trình...") },
-                shape = RoundedCornerShape(20.dp),
+                placeholder = stringResource(R.string.ui_56f46885da),
+                singleLine = false,
                 minLines = 1,
                 maxLines = 4,
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
@@ -450,7 +452,7 @@ private fun ChatInputBar(
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.Send,
-                        contentDescription = "Gửi",
+                        contentDescription = stringResource(R.string.ui_bbc4e7f57f),
                         tint = if (value.isBlank() || isSending) OnSurfaceVariant else Color.White,
                         modifier = Modifier.size(21.dp)
                     )

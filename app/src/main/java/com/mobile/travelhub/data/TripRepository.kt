@@ -32,6 +32,7 @@ class TripRepository @Inject constructor(
     private val detailCache = java.util.concurrent.ConcurrentHashMap<Long, TripDetailResponse>()
     private val daysCache = java.util.concurrent.ConcurrentHashMap<Long, List<TripDayResponse>>()
     private val expenseCache = java.util.concurrent.ConcurrentHashMap<Long, TripExpenseResponse>()
+    private val freshlyCreatedTripIds = java.util.concurrent.ConcurrentHashMap.newKeySet<Long>()
 
     fun getCachedTripDetail(tripId: Long): TripDetailResponse? = detailCache[tripId]
     fun getCachedTripDays(tripId: Long): List<TripDayResponse>? = daysCache[tripId]
@@ -40,14 +41,29 @@ class TripRepository @Inject constructor(
         detailCache.remove(tripId)
         daysCache.remove(tripId)
         expenseCache.remove(tripId)
+        freshlyCreatedTripIds.remove(tripId)
     }
 
     suspend fun getDashboard(): Result<TripDashboardResponse> {
         return runCatching { tripApiService.getDashboard() }
     }
 
-    suspend fun createTrip(request: CreateTripRequest): Result<Long> {
-        return runCatching { tripApiService.createTrip(request) }
+    suspend fun createTrip(request: CreateTripRequest): Result<TripDetailResponse> {
+        return runCatching {
+            val response = tripApiService.createTrip(request)
+            val tripId = response.tripInfo.id
+            detailCache[tripId] = response
+            daysCache[tripId] = emptyList()
+            freshlyCreatedTripIds.add(tripId)
+            response
+        }
+    }
+
+    fun consumeFreshlyCreatedTripDetail(tripId: Long): TripDetailResponse? {
+        if (!freshlyCreatedTripIds.remove(tripId)) {
+            return null
+        }
+        return detailCache[tripId]
     }
 
     suspend fun getTripDetail(tripId: Long): Result<TripDetailResponse> {

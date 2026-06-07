@@ -1,5 +1,6 @@
 package com.mobile.travelhub.ui.screens
 
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -25,9 +26,6 @@ import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.PersonAdd
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -56,12 +54,15 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.compose.ui.tooling.preview.Preview
 import com.mobile.travelhub.ui.theme.SurfaceBg
 import com.mobile.travelhub.ui.theme.TravelHubTheme
+import com.mobile.travelhub.ui.components.SkeletonBlock
+import com.mobile.travelhub.ui.components.PillFilterChip
 import java.time.Instant
 import java.time.Duration
 import com.mobile.travelhub.viewmodels.NotificationFilter
 import com.mobile.travelhub.viewmodels.NotificationModel
 import com.mobile.travelhub.viewmodels.NotificationType
 import com.mobile.travelhub.viewmodels.NotificationsViewModel
+import com.mobile.travelhub.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -145,7 +146,7 @@ private fun NotificationsPopupContent(
                 contentAlignment = Alignment.Center
             ) {
                 if (isLoading) {
-                    CircularProgressIndicator()
+                    NotificationsListSkeleton()
                 } else if (filteredNotifications.isEmpty()) {
                     if (isPopupVisible) {
                         EmptyNotificationsPopup(onDismiss = { isPopupVisible = false })
@@ -176,7 +177,7 @@ private fun NotificationsPopupContent(
                                         color = Color.LightGray
                                     )
                                     Text(
-                                        text = "New notifications",
+                                        text = stringResource(R.string.ui_19469f4569),
                                         fontSize = 13.sp,
                                         color = Color.Gray,
                                         modifier = Modifier.padding(horizontal = 12.dp)
@@ -212,7 +213,7 @@ private fun NotificationsScreenPreview() {
             activeFilter = NotificationFilter.All,
             notifications = listOf(
                 NotificationModel(
-                    title = "Trip reminder",
+                    title = stringResource(R.string.ui_0d7f061615),
                     body = "Your Hanoi weekend trip starts in 2 days.",
                     isRead = false,
                     createdAt = Instant.parse("2026-05-12T09:15:00Z"),
@@ -220,7 +221,7 @@ private fun NotificationsScreenPreview() {
                     targetId = 10
                 ),
                 NotificationModel(
-                    title = "New follower",
+                    title = stringResource(R.string.ui_8021d65119),
                     body = "Linh Nguyen started following you.",
                     isRead = false,
                     createdAt = Instant.parse("2026-05-12T08:40:00Z"),
@@ -228,7 +229,7 @@ private fun NotificationsScreenPreview() {
                     targetId = null
                 ),
                 NotificationModel(
-                    title = "System",
+                    title = stringResource(R.string.ui_bc0792d8dc),
                     body = "Your profile is 90% complete. Add a bio to finish it.",
                     isRead = true,
                     createdAt = Instant.parse("2026-05-11T15:30:00Z"),
@@ -236,7 +237,7 @@ private fun NotificationsScreenPreview() {
                     targetId = 11
                 ),
                 NotificationModel(
-                    title = "New follower 2",
+                    title = stringResource(R.string.ui_abb47e9d75),
                     body = "Your profile is 90% complete. Add a bio to finish it.",
                     isRead = true,
                     createdAt = Instant.parse("2026-05-11T15:30:00Z"),
@@ -244,7 +245,7 @@ private fun NotificationsScreenPreview() {
                     targetId = null
                 ),
                 NotificationModel(
-                    title = "New follower 3",
+                    title = stringResource(R.string.ui_1d6aac0974),
                     body = "Your profile is 90% complete. Add a bio to finish it.",
                     isRead = true,
                     createdAt = Instant.parse("2026-05-11T15:30:00Z"),
@@ -252,7 +253,7 @@ private fun NotificationsScreenPreview() {
                     targetId = null
                 ),
                 NotificationModel(
-                    title = "New follower 4",
+                    title = stringResource(R.string.ui_2d1c64fe48),
                     body = "Your profile is 90% complete. Add a bio to finish it.",
                     isRead = true,
                     createdAt = Instant.parse("2026-05-11T15:30:00Z"),
@@ -260,7 +261,7 @@ private fun NotificationsScreenPreview() {
                     targetId = null
                 ),
                 NotificationModel(
-                    title = "New follower 5",
+                    title = stringResource(R.string.ui_c22cd9d2ce),
                     body = "Your profile is 90% complete. Add a bio to finish it.",
                     isRead = true,
                     createdAt = Instant.parse("2026-05-11T15:30:00Z"),
@@ -268,7 +269,7 @@ private fun NotificationsScreenPreview() {
                     targetId = null
                 ),
                 NotificationModel(
-                    title = "New follower 6",
+                    title = stringResource(R.string.ui_0a409dce1f),
                     body = "Your profile is 90% complete. Add a bio to finish it.",
                     isRead = true,
                     createdAt = Instant.parse("2026-05-11T15:30:00Z"),
@@ -288,6 +289,89 @@ private fun NotificationsScreenPreview() {
 }
 
 @Composable
+private fun NotificationsListSkeleton() {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        items(6, contentType = { "notification-skeleton" }) { index ->
+            NotificationCardSkeleton(isHighlighted = index < 3)
+        }
+    }
+}
+
+@Composable
+private fun NotificationCardSkeleton(
+    isHighlighted: Boolean
+) {
+    Surface(
+        shape = RoundedCornerShape(18.dp),
+        color = if (isHighlighted) {
+            MaterialTheme.colorScheme.primary.copy(alpha = 0.08f)
+        } else {
+            MaterialTheme.colorScheme.surface
+        },
+        tonalElevation = if (isHighlighted) 2.dp else 0.dp,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            SkeletonBlock(
+                modifier = Modifier.size(44.dp),
+                shape = CircleShape
+            )
+
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(7.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    SkeletonBlock(
+                        modifier = Modifier
+                            .fillMaxWidth(0.5f)
+                            .height(15.dp),
+                        shape = RoundedCornerShape(5.dp)
+                    )
+                    if (isHighlighted) {
+                        SkeletonBlock(
+                            modifier = Modifier.size(7.dp),
+                            shape = CircleShape
+                        )
+                    }
+                }
+                SkeletonBlock(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(12.dp),
+                    shape = RoundedCornerShape(4.dp)
+                )
+                SkeletonBlock(
+                    modifier = Modifier
+                        .fillMaxWidth(0.72f)
+                        .height(12.dp),
+                    shape = RoundedCornerShape(4.dp)
+                )
+            }
+
+            SkeletonBlock(
+                modifier = Modifier
+                    .size(width = 36.dp, height = 11.dp),
+                shape = RoundedCornerShape(4.dp)
+            )
+        }
+    }
+}
+
+@Composable
 private fun PopupTopBar(
     onClose: () -> Unit,
     hasUnreadNotifications: Boolean,
@@ -302,7 +386,7 @@ private fun PopupTopBar(
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Text(
-            text = "Notifications",
+            text = stringResource(R.string.ui_753a22b2eb),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold,
             color = MaterialTheme.colorScheme.onSurface
@@ -315,7 +399,7 @@ private fun PopupTopBar(
                 onClick = onMarkAllRead,
                 enabled = hasUnreadNotifications && !isMarkingAllRead
             ) {
-                Text(text = "Mark all read")
+                Text(text = stringResource(R.string.ui_8958e22c23))
             }
         }
     }
@@ -338,21 +422,10 @@ private fun NotificationFilters(
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         items(filters, key = { it.name }) { filter ->
-            FilterChip(
+            PillFilterChip(
                 selected = filter == activeFilter,
                 onClick = { onFilterSelected(filter) },
-                shape = RoundedCornerShape(50),
-                label = {
-                    Text(
-                        text = filter.label,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                },
-                colors = FilterChipDefaults.filterChipColors(
-                    selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                    selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
-                )
+                label = filter.label
             )
         }
     }
@@ -507,13 +580,13 @@ private fun EmptyNotificationsPopup(onDismiss: () -> Unit) {
         }
         Spacer(modifier = Modifier.height(16.dp))
         Text(
-            text = "No notifications",
+            text = stringResource(R.string.ui_b08626f186),
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = "You'll be notified when there's activity in the group",
+            text = stringResource(R.string.ui_c1a4aa2a15),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )

@@ -1,5 +1,6 @@
 package com.mobile.travelhub.ui.components
 
+import androidx.compose.ui.res.stringResource
 import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -9,35 +10,32 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material.icons.rounded.Public
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -45,6 +43,7 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.mobile.travelhub.viewmodels.CreatePostUiState
 import com.mobile.travelhub.viewmodels.CreatePostViewModel
+import com.mobile.travelhub.R
 
 @Composable
 fun CreatePostScreenContent(
@@ -52,6 +51,8 @@ fun CreatePostScreenContent(
     onDescriptionChange: (String) -> Unit,
     onSelectProvince: (Long) -> Unit,
     onSelectPlace: (Long?) -> Unit,
+    onRetryProvinces: () -> Unit,
+    onRetryPlaces: () -> Unit,
     onOpenImagePicker: () -> Unit,
     onRemoveImage: (Uri) -> Unit,
     onSubmitPost: () -> Unit
@@ -62,11 +63,16 @@ fun CreatePostScreenContent(
             .background(MaterialTheme.colorScheme.background)
             .verticalScroll(rememberScrollState())
     ) {
+        CreatePostTopBar(
+            isSubmitting = uiState.isSubmitting,
+            canSubmit = uiState.canSubmit,
+            onSubmitPost = onSubmitPost
+        )
+
         // ── User Header Section ──
         UserHeaderSection(
             userName = uiState.userName,
-            userAvatarUrl = uiState.userAvatarUrl,
-            isSubmitting = uiState.isSubmitting
+            userAvatarUrl = uiState.userAvatarUrl
         )
 
         // ── Description Input ──
@@ -89,7 +95,9 @@ fun CreatePostScreenContent(
         TravelPlaceSection(
             uiState = uiState,
             onSelectProvince = onSelectProvince,
-            onSelectPlace = onSelectPlace
+            onSelectPlace = onSelectPlace,
+            onRetryProvinces = onRetryProvinces,
+            onRetryPlaces = onRetryPlaces
         )
 
         Spacer(modifier = Modifier.height(24.dp))
@@ -104,27 +112,53 @@ fun CreatePostScreenContent(
 
         Spacer(modifier = Modifier.height(28.dp))
 
-        // ── Submit Button ──
-        Box(modifier = Modifier.padding(horizontal = 20.dp)) {
-            PrimaryProfileButton(
-                text = if (uiState.isSubmitting) "Đăng bài..." else "Đăng bài",
-                onClick = onSubmitPost,
-                modifier = Modifier.fillMaxWidth()
-            )
-        }
-
         if (uiState.isSubmitting) {
-            Spacer(modifier = Modifier.height(16.dp))
             Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(28.dp),
-                    strokeWidth = 3.dp,
-                    color = MaterialTheme.colorScheme.primary
+                SkeletonBlock(
+                    modifier = Modifier
+                        .width(96.dp)
+                        .height(10.dp),
+                    shape = RoundedCornerShape(5.dp)
                 )
             }
         }
 
         Spacer(modifier = Modifier.height(24.dp))
+    }
+}
+
+@Composable
+private fun CreatePostTopBar(
+    isSubmitting: Boolean,
+    canSubmit: Boolean,
+    onSubmitPost: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 20.dp, end = 8.dp, top = 8.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = stringResource(R.string.ui_03f9ddf337),
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.Bold,
+            letterSpacing = 1.sp,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        TextButton(
+            onClick = onSubmitPost,
+            enabled = canSubmit,
+            colors = ButtonDefaults.textButtonColors(
+                disabledContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+            )
+        ) {
+            Text(
+                text = if (isSubmitting) "Đang đăng..." else "Đăng",
+                fontWeight = FontWeight.Bold
+            )
+        }
     }
 }
 
@@ -135,8 +169,7 @@ fun CreatePostScreenContent(
 @Composable
 private fun UserHeaderSection(
     userName: String,
-    userAvatarUrl: String?,
-    isSubmitting: Boolean
+    userAvatarUrl: String?
 ) {
     Row(
         modifier = Modifier
@@ -154,7 +187,7 @@ private fun UserHeaderSection(
             if (userAvatarUrl != null) {
                 AsyncImage(
                     model = userAvatarUrl,
-                    contentDescription = "User avatar",
+                    contentDescription = stringResource(R.string.ui_900527c977),
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize()
                 )
@@ -198,13 +231,13 @@ private fun UserHeaderSection(
             ) {
                 Icon(
                     imageVector = Icons.Rounded.Public,
-                    contentDescription = "Công khai",
+                    contentDescription = stringResource(R.string.ui_cde252312d),
                     modifier = Modifier.size(12.dp),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Spacer(modifier = Modifier.width(3.dp))
                 Text(
-                    text = "Công khai",
+                    text = stringResource(R.string.ui_cde252312d),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 10.sp
@@ -224,37 +257,20 @@ private fun DescriptionInputSection(
     onDescriptionChange: (String) -> Unit,
     isSubmitting: Boolean
 ) {
-    Box(
+    SimpleFormTextField(
+        value = description,
+        onValueChange = onDescriptionChange,
+        placeholder = stringResource(R.string.ui_eeed751665),
+        enabled = !isSubmitting,
+        singleLine = false,
+        minLines = 4,
+        maxLines = 8,
+        textStyle = MaterialTheme.typography.bodyLarge.copy(lineHeight = 24.sp),
         modifier = Modifier
             .fillMaxWidth()
-            .heightIn(min = 120.dp)
             .padding(horizontal = 20.dp)
             .padding(bottom = 16.dp)
-    ) {
-        BasicTextField(
-            value = description,
-            onValueChange = onDescriptionChange,
-            enabled = !isSubmitting,
-            textStyle = MaterialTheme.typography.bodyLarge.copy(
-                color = MaterialTheme.colorScheme.onSurface,
-                lineHeight = 24.sp
-            ),
-            cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
-            modifier = Modifier.fillMaxWidth(),
-            decorationBox = { innerTextField ->
-                Box {
-                    if (description.isEmpty()) {
-                        Text(
-                            text = "Bạn đang nghĩ gì?",
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-                        )
-                    }
-                    innerTextField()
-                }
-            }
-        )
-    }
+    )
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -265,20 +281,27 @@ private fun DescriptionInputSection(
 private fun TravelPlaceSection(
     uiState: CreatePostUiState,
     onSelectProvince: (Long) -> Unit,
-    onSelectPlace: (Long?) -> Unit
+    onSelectPlace: (Long?) -> Unit,
+    onRetryProvinces: () -> Unit,
+    onRetryPlaces: () -> Unit
 ) {
     Column(modifier = Modifier.padding(horizontal = 20.dp)) {
         DestinationPlacePicker(
-            label = "Địa điểm du lịch",
+            label = stringResource(R.string.ui_1e0698362b),
             selectedProvince = uiState.selectedProvince,
             selectedPlace = uiState.selectedPlace,
             provinces = uiState.provinces,
             places = uiState.places,
             isLoading = uiState.isLoadingLocations,
-            enabled = !uiState.isSubmitting && uiState.provinces.isNotEmpty(),
-            placeholder = "Chọn địa điểm",
+            enabled = !uiState.isSubmitting &&
+                (uiState.provinces.isNotEmpty() || uiState.provinceErrorMessage != null),
+            placeholder = stringResource(R.string.ui_9433146e77),
             onProvinceSelected = onSelectProvince,
-            onPlaceSelected = onSelectPlace
+            onPlaceSelected = onSelectPlace,
+            provinceErrorMessage = uiState.provinceErrorMessage,
+            placesErrorMessage = uiState.placesErrorMessage,
+            onRetryProvinces = onRetryProvinces,
+            onRetryPlaces = onRetryPlaces
         )
     }
 }
@@ -295,117 +318,134 @@ private fun SelectedImagesSection(
     onRemoveImage: (Uri) -> Unit
 ) {
     Column(modifier = Modifier.padding(horizontal = 20.dp)) {
-        // Header row: title + count + button
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "ẢNH: ${selectedImages.size}/${CreatePostViewModel.MAX_IMAGE_COUNT}",
+                text = stringResource(
+                    R.string.selected_image_count,
+                    selectedImages.size,
+                    CreatePostViewModel.MAX_IMAGE_COUNT
+                ),
                 style = MaterialTheme.typography.labelMedium,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 letterSpacing = 1.sp
             )
 
-            // Select Images button
-            Row(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(8.dp))
-                    .clickable(enabled = !isSubmitting, onClick = onOpenImagePicker)
-                    .border(
-                        width = 1.dp,
-                        color = MaterialTheme.colorScheme.primary,
-                        shape = RoundedCornerShape(8.dp)
-                    )
-                    .padding(horizontal = 12.dp, vertical = 6.dp),
-                verticalAlignment = Alignment.CenterVertically
+            if (selectedImages.isNotEmpty() &&
+                selectedImages.size < CreatePostViewModel.MAX_IMAGE_COUNT
             ) {
-                Icon(
-                    imageVector = Icons.Outlined.Image,
-                    contentDescription = null,
-                    modifier = Modifier.size(16.dp),
-                    tint = MaterialTheme.colorScheme.primary
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-                Text(
-                    text = "Select Images",
-                    style = MaterialTheme.typography.labelSmall,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.primary
-                )
+                TextButton(
+                    onClick = onOpenImagePicker,
+                    enabled = !isSubmitting
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.Image,
+                        contentDescription = null,
+                        modifier = Modifier.size(17.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = stringResource(R.string.ui_0f74781e9d),
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
             }
         }
 
         Spacer(modifier = Modifier.height(14.dp))
 
         if (selectedImages.isNotEmpty()) {
-            // Image thumbnails
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                items(selectedImages) { uri ->
-                    Box(
-                        modifier = Modifier
-                            .size(100.dp)
-                            .clip(RoundedCornerShape(12.dp))
-                    ) {
-                        AsyncImage(
-                            model = uri,
-                            contentDescription = "Chọn ảnh",
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .clip(RoundedCornerShape(12.dp))
-                        )
-
-                        // Remove button
-                        Box(
-                            modifier = Modifier
-                                .align(Alignment.TopEnd)
-                                .padding(4.dp)
-                                .size(22.dp)
-                                .clip(CircleShape)
-                                .background(Color.Black.copy(alpha = 0.55f))
-                                .clickable(enabled = !isSubmitting) { onRemoveImage(uri) },
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Outlined.Close,
-                                contentDescription = "Xóa ảnh",
-                                modifier = Modifier.size(14.dp),
-                                tint = Color.White
-                            )
-                        }
-                    }
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                selectedImages.forEach { uri ->
+                    PostImageItem(
+                        uri = uri,
+                        isSubmitting = isSubmitting,
+                        onRemove = { onRemoveImage(uri) }
+                    )
                 }
             }
         } else {
-            // Empty state
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(120.dp)
-                    .clip(RoundedCornerShape(14.dp))
-                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+                    .aspectRatio(4f / 3f)
+                    .clip(RoundedCornerShape(16.dp))
+                    .border(
+                        width = 1.dp,
+                        color = MaterialTheme.colorScheme.outlineVariant,
+                        shape = RoundedCornerShape(16.dp)
+                    )
+                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f))
+                    .clickable(enabled = !isSubmitting, onClick = onOpenImagePicker),
                 contentAlignment = Alignment.Center
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(
-                        imageVector = Icons.Outlined.Image,
-                        contentDescription = null,
-                        modifier = Modifier.size(32.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Box(
+                        modifier = Modifier
+                            .size(48.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.Image,
+                            contentDescription = null,
+                            modifier = Modifier.size(24.dp),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(12.dp))
                     Text(
-                        text = "Chưa có ảnh nào",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                        text = stringResource(R.string.ui_0f74781e9d),
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
                     )
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun PostImageItem(
+    uri: Uri,
+    isSubmitting: Boolean,
+    onRemove: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .aspectRatio(4f / 3f)
+            .clip(RoundedCornerShape(16.dp))
+    ) {
+        AsyncImage(
+            model = uri,
+            contentDescription = stringResource(R.string.ui_f6b00f2f1b),
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.fillMaxSize()
+        )
+
+        Box(
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(10.dp)
+                .size(32.dp)
+                .clip(CircleShape)
+                .background(Color.Black.copy(alpha = 0.58f))
+                .clickable(enabled = !isSubmitting, onClick = onRemove),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.Outlined.Close,
+                contentDescription = stringResource(R.string.ui_a501ea7f86),
+                modifier = Modifier.size(18.dp),
+                tint = Color.White
+            )
         }
     }
 }

@@ -1,5 +1,6 @@
 package com.mobile.travelhub.ui.screens
 
+import androidx.compose.ui.res.stringResource
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -59,7 +60,6 @@ import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -116,6 +116,7 @@ import com.mobile.travelhub.viewmodels.ItineraryViewModel
 import kotlin.math.max
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
+import com.mobile.travelhub.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -146,8 +147,8 @@ fun ItineraryScreen(
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         topBar = {
             ItineraryTopBar(
-                title = if (state.groupName.isBlank()) "Itinerary" else state.groupName,
-                subtitle = "Version ${state.version}",
+                title = state.groupName.ifBlank { stringResource(R.string.itinerary_title) },
+                subtitle = stringResource(R.string.version_format, state.version),
                 isLeader = state.isLeader && !state.isCompleted,
                 showBackButton = showBackButton,
                 onAddItinerary = viewModel::startAddingStop,
@@ -332,14 +333,14 @@ private fun ItineraryPopupContent(
                 IconButton(onClick = onOpenAssistant) {
                     Icon(
                         imageVector = Icons.Default.AutoAwesome,
-                        contentDescription = "Open travel assistant",
+                        contentDescription = stringResource(R.string.ui_66dfcf0455),
                         tint = PrimaryBlue
                     )
                 }
                 IconButton(onClick = onDismiss) {
                     Icon(
                         imageVector = Icons.Default.Close,
-                        contentDescription = "Close itinerary",
+                        contentDescription = stringResource(R.string.ui_baf6432815),
                         tint = OnSurface
                     )
                 }
@@ -362,7 +363,7 @@ private fun ItineraryPopupPreview() {
         Surface(color = SurfaceBg) {
             ItineraryPopupContent(
                 state = previewItineraryState(),
-                groupName = "New test trip",
+                groupName = stringResource(R.string.preview_trip_name),
                 snackbarHostState = remember { SnackbarHostState() },
                 onDismiss = {},
                 onAddItinerary = {},
@@ -375,24 +376,25 @@ private fun ItineraryPopupPreview() {
     }
 }
 
+@Composable
 private fun previewItineraryState(): ItineraryUiState {
     return ItineraryUiState(
-        groupName = "New test trip",
+        groupName = stringResource(R.string.preview_trip_name),
         version = 2,
         role = ItineraryUserRole.LEADER,
         days = listOf(
             ItineraryDay(
                 dayIndex = 1,
-                label = "Day 1",
-                dateLabel = "Tuesday, 05/05",
+                label = stringResource(R.string.ui_1d3921b314),
+                dateLabel = stringResource(R.string.preview_date_tuesday),
                 events = listOf(
                     ItineraryEvent(
                         eventId = "preview-1",
                         dayIndex = 1,
                         startTime = "09:00",
                         endTime = "10:00",
-                        title = "Gh",
-                        placeName = "Ha Noi",
+                        title = stringResource(R.string.ui_328c53d2ac),
+                        placeName = stringResource(R.string.preview_ha_noi),
                         note = "",
                         transportToNext = "",
                         estimatedCost = "",
@@ -402,16 +404,16 @@ private fun previewItineraryState(): ItineraryUiState {
             ),
             ItineraryDay(
                 dayIndex = 2,
-                label = "Day 2",
-                dateLabel = "Wednesday, 06/05",
+                label = stringResource(R.string.ui_49e7de6bfa),
+                dateLabel = stringResource(R.string.preview_date_wednesday),
                 events = listOf(
                     ItineraryEvent(
                         eventId = "preview-2",
                         dayIndex = 2,
                         startTime = "09:00",
                         endTime = "10:00",
-                        title = "Cà phê",
-                        placeName = "Old Quarter",
+                        title = stringResource(R.string.ui_8287cfde9f),
+                        placeName = stringResource(R.string.preview_old_quarter),
                         note = "",
                         transportToNext = "",
                         estimatedCost = "",

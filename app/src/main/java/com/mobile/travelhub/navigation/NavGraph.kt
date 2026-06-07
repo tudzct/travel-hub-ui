@@ -11,12 +11,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Lock
+import androidx.compose.material3.DrawerState
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.NavigationDrawerItem
-import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
@@ -27,6 +27,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
@@ -36,6 +38,7 @@ import androidx.navigation.compose.composable
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.mobile.travelhub.data.model.TravelPlaceListItemResponse
 import com.mobile.travelhub.data.model.TopTravelerPeriod
+import com.mobile.travelhub.R
 import com.mobile.travelhub.ui.screens.ProfileScreen
 import com.mobile.travelhub.ui.screens.LoginScreen
 import com.mobile.travelhub.ui.screens.PlaceDetailScreen
@@ -72,10 +75,10 @@ sealed class Screen(
         }
     }
     data object Search : Screen("search", 2)
-    data object Trips : Screen("trips", 1, true)
+    data object Trips : Screen("trips", 3, true)
     data object UpcomingTrips : Screen("trips_upcoming", 15, true)
-    data object CreatePost : Screen("create_post", showBottomBar = true)
-    data object Profile : Screen("profile", 2, true)
+    data object CreatePost : Screen("create_post", 2, true)
+    data object Profile : Screen("profile", 4, true)
     data object Chat : Screen("chat", 3) {
         const val TRIP_ID_ARG = "tripId"
         const val GROUP_NAME_ARG = "groupName"
@@ -172,6 +175,7 @@ sealed class Screen(
 
 @Composable
 private fun HomeDrawerScaffold(
+    drawerState: DrawerState,
     onNavigateToHistory: () -> Unit,
     onLogout: () -> Unit,
     changePasswordState: UiState<Boolean>,
@@ -179,7 +183,6 @@ private fun HomeDrawerScaffold(
     onClearChangePasswordState: () -> Unit,
     content: @Composable (openMenu: () -> Unit) -> Unit
 ) {
-    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val coroutineScope = rememberCoroutineScope()
     var hideDrawerContentForNavigation by remember { mutableStateOf(false) }
     var showChangePasswordDialog by remember { mutableStateOf(false) }
@@ -195,13 +198,18 @@ private fun HomeDrawerScaffold(
         drawerContent = {
             if (!hideDrawerContentForNavigation) {
                 ModalDrawerSheet(
-                    modifier = Modifier.width(280.dp)
+                    modifier = Modifier.width(280.dp),
+                    drawerContainerColor = Color.White
                 ) {
                     Column(
                         modifier = Modifier.padding(top = 56.dp)
                     ) {
                         NavigationDrawerItem(
-                            label = { androidx.compose.material3.Text("Recently viewed places") },
+                            label = {
+                                androidx.compose.material3.Text(
+                                    stringResource(R.string.recently_viewed_places)
+                                )
+                            },
                             selected = false,
                             onClick = {
                                 hideDrawerContentForNavigation = true
@@ -220,7 +228,11 @@ private fun HomeDrawerScaffold(
                             modifier = Modifier.padding(horizontal = 12.dp)
                         )
                         NavigationDrawerItem(
-                            label = { androidx.compose.material3.Text("Đổi mật khẩu") },
+                            label = {
+                                androidx.compose.material3.Text(
+                                    stringResource(R.string.change_password)
+                                )
+                            },
                             selected = false,
                             onClick = {
                                 onClearChangePasswordState()
@@ -236,7 +248,9 @@ private fun HomeDrawerScaffold(
                             modifier = Modifier.padding(horizontal = 12.dp)
                         )
                         NavigationDrawerItem(
-                            label = { androidx.compose.material3.Text("Đăng xuất") },
+                            label = {
+                                androidx.compose.material3.Text(stringResource(R.string.logout))
+                            },
                             selected = false,
                             onClick = {
                                 coroutineScope.launch { drawerState.close() }
@@ -275,10 +289,12 @@ private fun HomeDrawerScaffold(
 @Composable
 fun NavGraph(
     navController: NavHostController,
+    mainDrawerState: DrawerState,
     innerPadding: PaddingValues,
     startDestination: String,
     authUiState: AuthUiState,
     homeReloadSignal: Int = 0,
+    onExploreSearchActiveChange: (Boolean) -> Unit = {},
     onLogin: (String, String) -> Unit,
     onRegister: (String, String, String) -> Unit,
     onClearAuthError: () -> Unit,
@@ -321,18 +337,55 @@ fun NavGraph(
         }
     }
 
+    fun bottomNavIndex(route: String?): Int? {
+        val baseRoute = route
+            ?.substringBefore("?")
+            ?.substringBefore("/")
+
+        return when (baseRoute) {
+            Screen.Home.route -> Screen.Home.index
+            Screen.Explore.route -> Screen.Explore.index
+            Screen.CreatePost.route -> Screen.CreatePost.index
+            Screen.Trips.route -> Screen.Trips.index
+            Screen.Profile.route -> Screen.Profile.index
+            else -> null
+        }
+    }
+
     NavHost(
         navController = navController,
         startDestination = startDestination,
         enterTransition = {
+            val initialIndex = bottomNavIndex(initialState.destination.route)
+            val targetIndex = bottomNavIndex(targetState.destination.route)
+            val direction = if (
+                initialIndex != null &&
+                targetIndex != null &&
+                targetIndex < initialIndex
+            ) {
+                SlideDirection.Right
+            } else {
+                SlideDirection.Left
+            }
             slideIntoContainer(
-                towards = SlideDirection.Left,
+                towards = direction,
                 animationSpec = tween(300)
             )
         },
         exitTransition = {
+            val initialIndex = bottomNavIndex(initialState.destination.route)
+            val targetIndex = bottomNavIndex(targetState.destination.route)
+            val direction = if (
+                initialIndex != null &&
+                targetIndex != null &&
+                targetIndex < initialIndex
+            ) {
+                SlideDirection.Right
+            } else {
+                SlideDirection.Left
+            }
             slideOutOfContainer(
-                towards = SlideDirection.Left,
+                towards = direction,
                 animationSpec = tween(300)
             )
         },
@@ -376,6 +429,7 @@ fun NavGraph(
             val profileViewModel: ProfileViewModel = hiltViewModel()
             val changePasswordState by profileViewModel.changePasswordState.collectAsState()
             HomeDrawerScaffold(
+                drawerState = mainDrawerState,
                 onNavigateToHistory = { navController.navigate(Screen.ViewHistory.route) { launchSingleTop = true } },
                 onLogout = {
                     onLogout()
@@ -418,11 +472,8 @@ fun NavGraph(
                     ?.getBoolean(Screen.Explore.ACTIVATE_SEARCH_ARG)
                     ?: false,
                 refreshTopTravelersKey = topTravelersRefreshKey,
-                onSearchClick = {
-                    navController.navigate(Screen.Search.route) {
-                        launchSingleTop = true
-                    }
-                },
+                onSearchActiveChange = onExploreSearchActiveChange,
+                onSearchUserClick = ::navigateToUserProfile,
                 onAssistantClick = {
                     navController.navigate(Screen.Chat.createRoute()) {
                         launchSingleTop = true
@@ -571,6 +622,7 @@ fun NavGraph(
                 } else {
                     null
                 },
+                drawerState = mainDrawerState,
                 viewModel = profileViewModel
             )
         }

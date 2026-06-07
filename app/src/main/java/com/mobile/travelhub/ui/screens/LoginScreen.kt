@@ -1,5 +1,6 @@
 package com.mobile.travelhub.ui.screens
 
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -22,7 +23,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Email
 import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material.icons.outlined.VisibilityOff
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -48,7 +48,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import com.mobile.travelhub.ui.components.SimpleFormTextField
+import com.mobile.travelhub.ui.components.SkeletonBlock
 import com.mobile.travelhub.viewmodels.AuthUiState
+import com.mobile.travelhub.R
 
 @Composable
 fun LoginScreen(
@@ -73,7 +75,7 @@ fun LoginScreen(
 
         // ── Welcome heading ──
         Text(
-            text = "Welcome back to\nTravelHub",
+            text = stringResource(R.string.ui_a450dbcb7b),
             style = MaterialTheme.typography.displayMedium,
             fontWeight = FontWeight.Bold,
             textAlign = TextAlign.Center,
@@ -94,7 +96,7 @@ fun LoginScreen(
                     email = it
                     if (uiState.errorMessage != null) onDismissError()
                 },
-                placeholder = "Email address",
+                placeholder = stringResource(R.string.ui_c94d3175a6),
                 keyboardOptions = KeyboardOptions(
                     keyboardType = KeyboardType.Email,
                     imeAction = ImeAction.Next
@@ -105,7 +107,7 @@ fun LoginScreen(
                 trailingIcon = {
                     Icon(
                         imageVector = Icons.Outlined.Email,
-                        contentDescription = "Email",
+                        contentDescription = stringResource(R.string.ui_84add5b295),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
                     )
                 },
@@ -121,7 +123,7 @@ fun LoginScreen(
                     password = it
                     if (uiState.errorMessage != null) onDismissError()
                 },
-                placeholder = "Password",
+                placeholder = stringResource(R.string.ui_8be3c943b1),
                 visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                 keyboardOptions = KeyboardOptions(
                     keyboardType = KeyboardType.Password,
@@ -147,7 +149,7 @@ fun LoginScreen(
 
             // Forgot password
             Text(
-                text = "Forgot password?",
+                text = stringResource(R.string.ui_4c29f7f033),
                 style = MaterialTheme.typography.bodySmall,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.primary,
@@ -186,14 +188,14 @@ fun LoginScreen(
                 contentAlignment = Alignment.Center
             ) {
                 if (uiState.isLoading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(22.dp),
-                        strokeWidth = 2.5.dp,
-                        color = MaterialTheme.colorScheme.onPrimary
+                    SkeletonBlock(
+                        modifier = Modifier
+                            .fillMaxWidth(0.28f)
+                            .height(12.dp)
                     )
                 } else {
                     Text(
-                        text = "Login",
+                        text = stringResource(R.string.ui_4e5a2893bd),
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.onPrimary

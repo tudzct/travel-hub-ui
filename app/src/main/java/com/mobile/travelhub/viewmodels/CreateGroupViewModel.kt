@@ -28,6 +28,8 @@ data class CreateGroupUiState(
     val selectedProvinceId: Long? = null,
     val selectedPlaceId: Long? = null,
     val isLoadingLocations: Boolean = false,
+    val provinceErrorMessage: String? = null,
+    val placesErrorMessage: String? = null,
     val startDate: String = "",
     val endDate: String = "",
     val budgetMin: String = "0",
@@ -88,6 +90,7 @@ class CreateGroupViewModel @Inject constructor(
                     destination = "",
                     destinationCoverImageUrl = null,
                     places = emptyList(),
+                    placesErrorMessage = null,
                     errorMessage = null
                 )
             }
@@ -101,6 +104,7 @@ class CreateGroupViewModel @Inject constructor(
                 destination = "",
                 destinationCoverImageUrl = null,
                 places = emptyList(),
+                placesErrorMessage = null,
                 errorMessage = null
             )
         }
@@ -144,6 +148,14 @@ class CreateGroupViewModel @Inject constructor(
         }
     }
 
+    fun retryLoadProvinces() {
+        loadProvinces()
+    }
+
+    fun retryLoadPlaces() {
+        _uiState.value.selectedProvinceId?.let(::loadPlaces)
+    }
+
     fun updateStartDate(value: String) {
         _uiState.update { it.copy(startDate = value, errorMessage = null) }
     }
@@ -158,13 +170,19 @@ class CreateGroupViewModel @Inject constructor(
 
     private fun loadProvinces() {
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoadingLocations = true, errorMessage = null) }
+            _uiState.update {
+                it.copy(
+                    isLoadingLocations = true,
+                    provinceErrorMessage = null
+                )
+            }
             runCatching { locationRepository.getProvinces() }
                 .onSuccess { provinces ->
                     _uiState.update {
                         it.copy(
                             provinces = provinces,
-                            isLoadingLocations = false
+                            isLoadingLocations = false,
+                            provinceErrorMessage = null
                         )
                     }
                 }
@@ -172,7 +190,7 @@ class CreateGroupViewModel @Inject constructor(
                     _uiState.update {
                         it.copy(
                             isLoadingLocations = false,
-                            errorMessage = throwable.userMessage("Không thể tải danh sách tỉnh/thành phố")
+                            provinceErrorMessage = throwable.userMessage("Không thể tải danh sách tỉnh/thành phố")
                         )
                     }
                 }
@@ -181,21 +199,28 @@ class CreateGroupViewModel @Inject constructor(
 
     private fun loadPlaces(provinceId: Long) {
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoadingLocations = true, errorMessage = null) }
+            _uiState.update {
+                it.copy(
+                    isLoadingLocations = true,
+                    placesErrorMessage = null
+                )
+            }
             runCatching {
                 placeRepository.getPlaces(page = 0, pageSize = 100, provinceId = provinceId).data
             }.onSuccess { places ->
                 _uiState.update {
                     it.copy(
                         places = places,
-                        isLoadingLocations = false
+                        isLoadingLocations = false,
+                        placesErrorMessage = null
                     )
                 }
             }.onFailure { throwable ->
                 _uiState.update {
                     it.copy(
                         isLoadingLocations = false,
-                        errorMessage = throwable.userMessage("Không thể tải danh sách địa điểm")
+                        places = emptyList(),
+                        placesErrorMessage = throwable.userMessage("Không thể tải danh sách địa điểm")
                     )
                 }
             }
@@ -288,9 +313,9 @@ class CreateGroupViewModel @Inject constructor(
             )
 
             tripRepository.createTrip(request)
-                .onSuccess { tripId ->
+                .onSuccess { tripDetail ->
                     _uiState.update { it.copy(isSaving = false, errorMessage = null) }
-                    onCreated(tripId)
+                    onCreated(tripDetail.tripInfo.id)
                 }
                 .onFailure { throwable ->
                     _uiState.update {

@@ -1,5 +1,6 @@
 package com.mobile.travelhub.ui.components.itinerary
 
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -12,7 +13,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -29,11 +29,13 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.mobile.travelhub.data.model.ItineraryDay
+import com.mobile.travelhub.ui.components.SimpleFormTextField
 import com.mobile.travelhub.ui.theme.OnSurface
 import com.mobile.travelhub.ui.theme.OnSurfaceVariant
 import com.mobile.travelhub.ui.theme.PrimaryBlue
 import com.mobile.travelhub.ui.theme.SurfaceContainerLowest
 import com.mobile.travelhub.ui.theme.SunsetOrange
+import com.mobile.travelhub.R
 
 @Composable
 fun ItineraryDayEditorDialog(
@@ -78,13 +80,13 @@ fun ItineraryDayEditorDialog(
                 ) {
                     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         Text(
-                            text = "Update day",
+                            text = stringResource(R.string.ui_f02c7f33ec),
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.ExtraBold,
                             color = OnSurface
                         )
                         Text(
-                            text = "Adjust the day label and date shown on the itinerary overview.",
+                            text = stringResource(R.string.ui_4dea4a7b33),
                             style = MaterialTheme.typography.bodyMedium,
                             color = OnSurfaceVariant,
                             lineHeight = 20.sp
@@ -92,16 +94,16 @@ fun ItineraryDayEditorDialog(
                     }
                 }
 
-                OutlinedTextField(
+                SimpleFormTextField(
                     value = label,
                     onValueChange = { label = it },
-                    label = { Text("Day label") },
+                    placeholder = stringResource(R.string.ui_474b496f72),
                     modifier = Modifier.fillMaxWidth()
                 )
-                OutlinedTextField(
+                SimpleFormTextField(
                     value = dateLabel,
                     onValueChange = { dateLabel = it },
-                    label = { Text("Date label") },
+                    placeholder = stringResource(R.string.ui_913d65e5d6),
                     modifier = Modifier.fillMaxWidth()
                 )
 
@@ -110,11 +112,11 @@ fun ItineraryDayEditorDialog(
                     horizontalArrangement = Arrangement.End
                 ) {
                     TextButton(onClick = onDelete) {
-                        Text("Delete day", color = SunsetOrange)
+                        Text(stringResource(R.string.ui_87ba27fac0), color = SunsetOrange)
                     }
                     Spacer(modifier = Modifier.weight(1f))
                     TextButton(onClick = onDismiss) {
-                        Text("Cancel")
+                        Text(stringResource(R.string.ui_77dfd2135f))
                     }
                     TextButton(
                         onClick = {
@@ -126,7 +128,7 @@ fun ItineraryDayEditorDialog(
                             )
                         }
                     ) {
-                        Text("Save changes")
+                        Text(stringResource(R.string.ui_179359b39e))
                     }
                 }
             }

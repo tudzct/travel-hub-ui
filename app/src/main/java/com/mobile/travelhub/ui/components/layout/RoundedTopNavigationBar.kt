@@ -23,6 +23,7 @@ import androidx.compose.material.icons.automirrored.outlined.DirectionsWalk
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.PostAdd
 import androidx.compose.material.icons.filled.TravelExplore
 import androidx.compose.material.icons.outlined.AccountCircle
 import androidx.compose.material.icons.outlined.Add
@@ -40,6 +41,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -48,6 +50,7 @@ import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.mobile.travelhub.R
 import com.mobile.travelhub.navigation.Screen
 
 data class BottomNavItem(
@@ -63,7 +66,8 @@ data class BottomNavItem(
 fun RoundedTopNavigationBar(
     items: List<BottomNavItem>,
     navController: NavHostController,
-    onHomeReselected: () -> Unit = {}
+    onHomeReselected: () -> Unit = {},
+    onNavigationRequest: (() -> Unit) -> Unit = { navigate -> navigate() }
 ) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
@@ -127,10 +131,22 @@ fun RoundedTopNavigationBar(
                             indication = null
                         ) {
                             if (screen == null) return@clickable
-                            val currentBaseRoute = baseRoute(currentRoute)
-                            if (screen == Screen.Home) {
-                                onHomeReselected()
-                                if (currentBaseRoute != Screen.Home.route) {
+                            onNavigationRequest {
+                                val currentBaseRoute = baseRoute(currentRoute)
+                                if (screen == Screen.Home) {
+                                    onHomeReselected()
+                                    if (currentBaseRoute != Screen.Home.route) {
+                                        navController.navigate(screen.route) {
+                                            popUpTo(navController.graph.findStartDestination().id) {
+                                                saveState = true
+                                            }
+                                            launchSingleTop = true
+                                            restoreState = true
+                                        }
+                                    }
+                                } else if (screen == Screen.Profile && isProfileRoute(currentRoute) && currentRoute != Screen.Profile.route) {
+                                    backPressedDispatcher?.onBackPressed()
+                                } else if (currentBaseRoute != screen.route) {
                                     navController.navigate(screen.route) {
                                         popUpTo(navController.graph.findStartDestination().id) {
                                             saveState = true
@@ -138,16 +154,6 @@ fun RoundedTopNavigationBar(
                                         launchSingleTop = true
                                         restoreState = true
                                     }
-                                }
-                            } else if (screen == Screen.Profile && isProfileRoute(currentRoute) && currentRoute != Screen.Profile.route) {
-                                backPressedDispatcher?.onBackPressed()
-                            } else if (currentBaseRoute != screen.route) {
-                                navController.navigate(screen.route) {
-                                    popUpTo(navController.graph.findStartDestination().id) {
-                                        saveState = true
-                                    }
-                                    launchSingleTop = true
-                                    restoreState = true
                                 }
                             }
                         },
@@ -186,11 +192,36 @@ fun RoundedTopNavigationBarPreview() {
     val navController = rememberNavController()
     RoundedTopNavigationBar(
         items = listOf(
-            BottomNavItem(Screen.Home, Icons.Outlined.Home, Icons.Filled.Home, "Home"),
-            BottomNavItem(Screen.Trips, Icons.Outlined.TravelExplore, Icons.Filled.TravelExplore, "Explore"),
-            BottomNavItem(Screen.Trips, Icons.AutoMirrored.Outlined.DirectionsWalk, Icons.AutoMirrored.Filled.DirectionsWalk, "Itinerary"),
-            BottomNavItem(Screen.CreatePost, Icons.Outlined.Add, Icons.Filled.Add, "Create"),
-            BottomNavItem(Screen.Profile, Icons.Outlined.AccountCircle, Icons.Filled.AccountCircle, "Profile")
+            BottomNavItem(
+                Screen.Home,
+                Icons.Outlined.Home,
+                Icons.Filled.Home,
+                stringResource(R.string.nav_home)
+            ),
+            BottomNavItem(
+                Screen.Trips,
+                Icons.Outlined.TravelExplore,
+                Icons.Filled.TravelExplore,
+                stringResource(R.string.nav_explore)
+            ),
+            BottomNavItem(
+                Screen.CreatePost,
+                Icons.Outlined.Add,
+                Icons.Filled.PostAdd,
+                stringResource(R.string.nav_create)
+            ),
+            BottomNavItem(
+                Screen.Trips,
+                Icons.AutoMirrored.Outlined.DirectionsWalk,
+                Icons.AutoMirrored.Filled.DirectionsWalk,
+                stringResource(R.string.nav_itinerary)
+            ),
+            BottomNavItem(
+                Screen.Profile,
+                Icons.Outlined.AccountCircle,
+                Icons.Filled.AccountCircle,
+                stringResource(R.string.nav_profile)
+            )
         ),
         navController = navController
     )

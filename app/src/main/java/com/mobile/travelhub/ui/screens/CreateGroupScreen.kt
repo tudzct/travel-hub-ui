@@ -1,5 +1,6 @@
 package com.mobile.travelhub.ui.screens
 
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,8 +22,6 @@ import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.SelectableDates
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -61,12 +60,14 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.mobile.travelhub.ui.components.DestinationPlacePicker
 import com.mobile.travelhub.ui.components.EditProfileField
 import com.mobile.travelhub.ui.components.PrimaryProfileButton
+import com.mobile.travelhub.ui.components.SimpleFormTextField
 import com.mobile.travelhub.viewmodels.CreateGroupViewModel
 import com.mobile.travelhub.utils.NumberUtils
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
+import com.mobile.travelhub.R
 
 private enum class TripDateSelectionStep {
     START,
@@ -111,7 +112,7 @@ fun CreateGroupScreen(
             TopAppBar(
                 title = {
                     Text(
-                        "TẠO CHUYẾN ĐI MỚI",
+                        stringResource(R.string.ui_a9fed78742),
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.Bold,
                         letterSpacing = 1.sp
@@ -119,12 +120,12 @@ fun CreateGroupScreen(
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Quay lại")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.ui_8a09e03d20))
                     }
                 },
                 actions = {
                     TextButton(onClick = onBack) {
-                        Text("Hủy")
+                        Text(stringResource(R.string.ui_34ca764caf))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -143,7 +144,7 @@ fun CreateGroupScreen(
             Spacer(modifier = Modifier.height(12.dp))
 
             EditProfileField(
-                label = "Tên chuyến đi",
+                label = stringResource(R.string.ui_ea611ea5b8),
                 value = uiState.name,
                 onValueChange = viewModel::updateName,
                 keyboardOptions = KeyboardOptions(
@@ -155,21 +156,26 @@ fun CreateGroupScreen(
             )
 
             DestinationPlacePicker(
-                label = "Điểm đến",
+                label = stringResource(R.string.ui_8dc001232f),
                 selectedProvince = uiState.selectedProvince,
                 selectedPlace = uiState.selectedPlace,
                 provinces = uiState.provinces,
                 places = uiState.places,
                 isLoading = uiState.isLoadingLocations,
-                enabled = !uiState.isSaving && uiState.provinces.isNotEmpty(),
-                placeholder = "Chọn địa điểm",
+                enabled = !uiState.isSaving &&
+                    (uiState.provinces.isNotEmpty() || uiState.provinceErrorMessage != null),
+                placeholder = stringResource(R.string.ui_9433146e77),
                 modifier = Modifier.padding(top = 4.dp, bottom = 12.dp),
                 onProvinceSelected = { viewModel.selectProvince(it) },
-                onPlaceSelected = { viewModel.selectPlace(it) }
+                onPlaceSelected = { viewModel.selectPlace(it) },
+                provinceErrorMessage = uiState.provinceErrorMessage,
+                placesErrorMessage = uiState.placesErrorMessage,
+                onRetryProvinces = viewModel::retryLoadProvinces,
+                onRetryPlaces = viewModel::retryLoadPlaces
             )
 
             TripDateRangeFieldInput(
-                label = "Ngày đi và ngày về",
+                label = stringResource(R.string.ui_be882ba540),
                 value = when {
                     uiState.startDate.isNotBlank() && uiState.endDate.isNotBlank() -> {
                         "${uiState.startDate} - ${uiState.endDate}"
@@ -187,7 +193,7 @@ fun CreateGroupScreen(
             )
 
             EditProfileField(
-                label = "Ngân sách dự kiến",
+                label = stringResource(R.string.ui_ed963f4527),
                 value = budgetMaxFieldVal,
                 onValueChange = { newValue ->
                     val formatted = NumberUtils.formatTextFieldValue(newValue)
@@ -320,7 +326,7 @@ fun CreateGroupScreen(
             },
             dismissButton = {
                 TextButton(onClick = { dateSelectionStep = null }) {
-                    Text("Hủy")
+                    Text(stringResource(R.string.ui_34ca764caf))
                 }
             }
         ) {
@@ -412,42 +418,22 @@ private fun TripDateRangeFieldInput(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(bottom = 8.dp)
         )
-        OutlinedTextField(
+        SimpleFormTextField(
             value = value,
             onValueChange = {},
+            placeholder = placeholder,
             readOnly = true,
             enabled = false,
             modifier = Modifier
                 .fillMaxWidth()
                 .clickable(onClick = onClick),
-            shape = RoundedCornerShape(12.dp),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
-                unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-                disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
-                disabledBorderColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f),
-                disabledTextColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-            ),
-            textStyle = MaterialTheme.typography.bodyLarge.copy(
-                color = MaterialTheme.colorScheme.onSurface
-            ),
-            placeholder = {
-                Text(
-                    text = placeholder,
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-                )
-            },
             trailingIcon = {
                 Icon(
                     Icons.Default.CalendarMonth,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-            },
-            singleLine = true
+            }
         )
     }
 }

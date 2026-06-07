@@ -1,5 +1,6 @@
 package com.mobile.travelhub.ui.components.itinerary
 
+import androidx.compose.ui.res.stringResource
 import androidx.compose.animation.*
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.*
@@ -28,6 +29,7 @@ import kotlin.math.max
 import sh.calvin.reorderable.ReorderableItem
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
+import com.mobile.travelhub.R
 
 
 @Composable
@@ -40,14 +42,14 @@ fun DayContinuousTimelineCard(day: ItineraryDay) {
     ) {
         Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
             Text(
-                text = "Continuous timeline",
+                text = stringResource(R.string.ui_dcc8e9cc22),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.ExtraBold,
                 color = OnSurface
             )
             if (segments.isEmpty()) {
                 Text(
-                    text = "Add stops to render the time distribution for this day.",
+                    text = stringResource(R.string.ui_fa6b5c7a6f),
                     style = MaterialTheme.typography.bodyMedium,
                     color = OnSurfaceVariant
                 )
@@ -184,7 +186,11 @@ fun ItineraryDayCard(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "${day.label} - ${day.dateLabel}",
+                        text = stringResource(
+                            R.string.day_date_format,
+                            day.label,
+                            day.dateLabel
+                        ),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = OnSurface,
@@ -209,7 +215,10 @@ fun ItineraryDayCard(
                                 horizontalArrangement = Arrangement.spacedBy(4.dp)
                             ) {
                                 Text(
-                                    text = "${day.events.size} events",
+                                    text = stringResource(
+                                        R.string.event_count,
+                                        day.events.size
+                                    ),
                                     fontSize = 12.sp,
                                     fontWeight = FontWeight.Medium,
                                     color = OnSurfaceVariant
@@ -348,7 +357,7 @@ fun ItineraryDayCard(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Delete,
-                        contentDescription = "Delete",
+                        contentDescription = stringResource(R.string.ui_f6fdbe48dc),
                         tint = Color.White,
                         modifier = Modifier.padding(end = 24.dp)
                     )
@@ -439,7 +448,7 @@ fun DayEventCard(
                             IconButton(onClick = onEdit) {
                                 Icon(
                                     imageVector = Icons.Default.Edit,
-                                    contentDescription = "Edit stop",
+                                    contentDescription = stringResource(R.string.ui_8dcd4df0ae),
                                     tint = OnSurfaceVariant,
                                     modifier = Modifier.size(20.dp)
                                 )
@@ -510,7 +519,7 @@ fun DayEventCard(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Delete,
-                        contentDescription = "Delete",
+                        contentDescription = stringResource(R.string.ui_f6fdbe48dc),
                         tint = Color.White,
                         modifier = Modifier.padding(end = 20.dp)
                     )
@@ -608,7 +617,7 @@ fun EmptyOverviewCard() {
         colors = CardDefaults.cardColors(containerColor = SurfaceContainerLowest)
     ) {
         Text(
-            text = "No day has been created yet. Add a day to start planning the itinerary.",
+            text = stringResource(R.string.ui_9e505d31d1),
             modifier = Modifier.padding(20.dp),
             color = OnSurfaceVariant,
             lineHeight = 20.sp
@@ -659,7 +668,7 @@ fun EmptyDayCard() {
         colors = CardDefaults.cardColors(containerColor = SurfaceContainerLowest)
     ) {
         Text(
-            text = "No events on this day yet. Add a stop to start planning.",
+            text = stringResource(R.string.ui_c687c93a2b),
             modifier = Modifier.padding(20.dp),
             color = OnSurfaceVariant,
             lineHeight = 20.sp

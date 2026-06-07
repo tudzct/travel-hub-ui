@@ -41,6 +41,7 @@ data class TopTravelerResponse(
     val username: String,
     val name: String?,
     val avatarUrl: String?,
+    val followersCount: Int = 0,
     val score: Long,
     val following: Boolean = false,
     val currentUser: Boolean = false

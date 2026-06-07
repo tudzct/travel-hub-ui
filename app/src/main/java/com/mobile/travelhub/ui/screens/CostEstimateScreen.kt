@@ -1,5 +1,6 @@
 package com.mobile.travelhub.ui.screens
 
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -14,6 +15,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import com.mobile.travelhub.viewmodels.ExpenseTransactionUiModel
 import com.mobile.travelhub.ui.components.modifiers.shimmerEffect
+import com.mobile.travelhub.ui.components.SimpleFormTextField
 
 
 import androidx.compose.material.icons.filled.ConfirmationNumber
@@ -39,6 +41,7 @@ import com.mobile.travelhub.R
 import com.mobile.travelhub.ui.theme.*
 import com.mobile.travelhub.viewmodels.CostEstimateViewModel
 import com.mobile.travelhub.utils.NumberUtils
+import com.mobile.travelhub.ui.components.costEstimateLoadingSkeleton
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.KeyboardType
@@ -72,7 +75,7 @@ fun CostEstimateScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = "Quản lý Chi phí",
+                        text = stringResource(R.string.ui_4ce4734973),
                         fontWeight = FontWeight.Bold,
                         color = OnSurface,
                         fontSize = 18.sp
@@ -80,7 +83,7 @@ fun CostEstimateScreen(
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = OnSurface)
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.ui_b52b36b726), tint = OnSurface)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = SurfaceBg)
@@ -94,7 +97,7 @@ fun CostEstimateScreen(
                     contentColor = Color.White,
                     shape = CircleShape
                 ) {
-                    Icon(Icons.Default.Add, contentDescription = "Add Expense")
+                    Icon(Icons.Default.Add, contentDescription = stringResource(R.string.ui_f53d122b20))
                 }
             }
         }
@@ -118,123 +121,7 @@ fun CostEstimateScreen(
             }
 
             if (uiState.isLoading && uiState.transactions.isEmpty()) {
-                // Skeleton Budget Card
-                item {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(140.dp)
-                            .clip(RoundedCornerShape(28.dp))
-                            .shimmerEffect()
-                    )
-                }
-
-                // Skeleton Contributions Label
-                item {
-                    Box(
-                        modifier = Modifier
-                            .width(100.dp)
-                            .height(16.dp)
-                            .clip(RoundedCornerShape(4.dp))
-                            .shimmerEffect()
-                    )
-                }
-
-                // Skeleton Contributions list
-                item {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        repeat(3) {
-                            Column(
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                modifier = Modifier
-                                    .width(90.dp)
-                                    .clip(RoundedCornerShape(20.dp))
-                                    .background(SurfaceContainerLowest)
-                                    .padding(vertical = 12.dp)
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(40.dp)
-                                        .clip(CircleShape)
-                                        .shimmerEffect()
-                                )
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Box(
-                                    modifier = Modifier
-                                        .width(48.dp)
-                                        .height(10.dp)
-                                        .clip(RoundedCornerShape(4.dp))
-                                        .shimmerEffect()
-                                )
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Box(
-                                    modifier = Modifier
-                                        .width(56.dp)
-                                        .height(12.dp)
-                                        .clip(RoundedCornerShape(4.dp))
-                                        .shimmerEffect()
-                                )
-                            }
-                        }
-                    }
-                }
-
-                // Skeleton Recent Expenses Label
-                item {
-                    Box(
-                        modifier = Modifier
-                            .width(140.dp)
-                            .height(16.dp)
-                            .clip(RoundedCornerShape(4.dp))
-                            .shimmerEffect()
-                    )
-                }
-
-                // Skeleton Transactions list
-                items(3) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(20.dp))
-                            .background(SurfaceContainerLowest)
-                            .padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(44.dp)
-                                .clip(RoundedCornerShape(12.dp))
-                                .shimmerEffect()
-                        )
-                        Spacer(modifier = Modifier.width(16.dp))
-                        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            Box(
-                                modifier = Modifier
-                                    .width(120.dp)
-                                    .height(14.dp)
-                                    .clip(RoundedCornerShape(4.dp))
-                                    .shimmerEffect()
-                            )
-                            Box(
-                                modifier = Modifier
-                                    .width(80.dp)
-                                    .height(10.dp)
-                                    .clip(RoundedCornerShape(4.dp))
-                                    .shimmerEffect()
-                            )
-                        }
-                        Box(
-                            modifier = Modifier
-                                .width(60.dp)
-                                .height(16.dp)
-                                .clip(RoundedCornerShape(4.dp))
-                                .shimmerEffect()
-                        )
-                    }
-                }
+                costEstimateLoadingSkeleton()
             } else {
                 // Budget Summary Card
                 item {
@@ -247,7 +134,7 @@ fun CostEstimateScreen(
                 // Individual Contributions
                 item {
                     Text(
-                        text = "Đã chi trả bởi",
+                        text = stringResource(R.string.ui_573c15f137),
                         fontWeight = FontWeight.Bold,
                         fontSize = 15.sp,
                         color = OnSurface,
@@ -263,7 +150,7 @@ fun CostEstimateScreen(
                         val contributions = uiState.contributions
                         if (contributions.isEmpty()) {
                             Text(
-                                text = "Chưa có khoản chi nào cho chuyến đi này.",
+                                text = stringResource(R.string.ui_b034ef2e0c),
                                 color = OnSurfaceVariant,
                                 fontSize = 13.sp
                             )
@@ -284,7 +171,7 @@ fun CostEstimateScreen(
                 // Recent Expenses List
                 item {
                     Text(
-                        text = "Giao dịch gần đây",
+                        text = stringResource(R.string.ui_d5c5cb14cc),
                         fontWeight = FontWeight.Bold,
                         fontSize = 15.sp,
                         color = OnSurface,
@@ -297,7 +184,7 @@ fun CostEstimateScreen(
                 if (recentExpenses.isEmpty()) {
                     item {
                         Text(
-                            text = "Chuyến đi này chưa có giao dịch nào.",
+                            text = stringResource(R.string.ui_1a5dca7037),
                             color = OnSurfaceVariant,
                             fontSize = 13.sp
                         )
@@ -379,40 +266,30 @@ fun AddExpenseContent(
             .padding(bottom = 40.dp)
     ) {
         Text(
-            text = "Thêm khoản chi",
+            text = stringResource(R.string.ui_74c24b11c3),
             fontWeight = FontWeight.ExtraBold,
             fontSize = 20.sp,
             color = OnSurface
         )
         Spacer(modifier = Modifier.height(24.dp))
         
-        OutlinedTextField(
+        SimpleFormTextField(
             value = expenseTitle,
             onValueChange = { expenseTitle = it },
-            label = { Text("Tên khoản chi (VD: Ăn trưa, Vé tàu...)") },
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = PrimaryBlue,
-                unfocusedBorderColor = SurfaceContainerLow
-            )
+            placeholder = stringResource(R.string.ui_5365fbceb0),
+            modifier = Modifier.fillMaxWidth()
         )
         
         Spacer(modifier = Modifier.height(16.dp))
 
-        OutlinedTextField(
+        SimpleFormTextField(
             value = expenseAmountValue,
             onValueChange = { newValue ->
                 val formatted = NumberUtils.formatTextFieldValue(newValue)
                 expenseAmountValue = formatted
             },
-            label = { Text("Số tiền (VND)") },
+            placeholder = stringResource(R.string.ui_33eb57284b),
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = PrimaryBlue,
-                unfocusedBorderColor = SurfaceContainerLow
-            ),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
         )
 
@@ -422,22 +299,17 @@ fun AddExpenseContent(
             expanded = expanded,
             onExpandedChange = { expanded = !expanded }
         ) {
-            OutlinedTextField(
+            SimpleFormTextField(
                 value = selectedCategory,
                 onValueChange = {},
                 readOnly = true,
-                label = { Text("Danh mục") },
+                placeholder = stringResource(R.string.ui_fc7b5ce028),
                 trailingIcon = {
                     Icon(Icons.Default.ArrowDropDown, contentDescription = null)
                 },
                 modifier = Modifier
                     .menuAnchor()
-                    .fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = PrimaryBlue,
-                    unfocusedBorderColor = SurfaceContainerLow
-                )
+                    .fillMaxWidth()
             )
             ExposedDropdownMenu(
                 expanded = expanded,
@@ -490,7 +362,7 @@ fun BudgetSummaryCard(totalSpent: Double, budgetMax: Double) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column {
-                    Text("Tổng chi tiêu", fontSize = 13.sp, color = OnSurfaceVariant)
+                    Text(stringResource(R.string.ui_7817b94196), fontSize = 13.sp, color = OnSurfaceVariant)
                     Text(NumberUtils.formatVnd(totalSpent), fontWeight = FontWeight.ExtraBold, fontSize = 32.sp, color = OnSurface)
                 } 
             }
@@ -506,10 +378,21 @@ fun BudgetSummaryCard(totalSpent: Double, budgetMax: Double) {
             
             Spacer(modifier = Modifier.height(12.dp))
             
+            val exceeded = totalSpent > budgetMax
             Text(
-                text = "Còn lại ${NumberUtils.formatVnd(budgetMax - totalSpent)} trước khi vượt ngân sách",
+                text = if (exceeded) {
+                    stringResource(
+                        R.string.budget_exceeded,
+                        NumberUtils.formatVnd(totalSpent - budgetMax)
+                    )
+                } else {
+                    stringResource(
+                        R.string.budget_remaining,
+                        NumberUtils.formatVnd(budgetMax - totalSpent)
+                    )
+                },
                 fontSize = 12.sp,
-                color = OnSurfaceVariant
+                color = if (exceeded) SunsetOrange else OnSurfaceVariant
             )
         }
     }
@@ -589,7 +472,11 @@ fun ExpenseRow(
         
         Column(modifier = Modifier.weight(1f)) {
             Text(expense.title, fontWeight = FontWeight.Bold, fontSize = 15.sp, color = OnSurface)
-            Text("Trả bởi ${expense.paidByName}", fontSize = 12.sp, color = OnSurfaceVariant)
+            Text(
+                stringResource(R.string.paid_by, expense.paidByName),
+                fontSize = 12.sp,
+                color = OnSurfaceVariant
+            )
         }
         
         Text(NumberUtils.formatVnd(expense.amount), fontWeight = FontWeight.ExtraBold, fontSize = 16.sp, color = PrimaryBlue)
@@ -626,8 +513,10 @@ fun EditExpenseContent(
     if (showDeleteConfirm) {
         AlertDialog(
             onDismissRequest = { showDeleteConfirm = false },
-            title = { Text("Xóa khoản chi", fontWeight = FontWeight.Bold) },
-            text = { Text("Bạn có chắc chắn muốn xóa khoản chi '${expense.title}' không?") },
+            title = { Text(stringResource(R.string.ui_9d47b1985c), fontWeight = FontWeight.Bold) },
+            text = {
+                Text(stringResource(R.string.delete_expense_confirmation, expense.title))
+            },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -637,12 +526,12 @@ fun EditExpenseContent(
                     },
                     colors = ButtonDefaults.textButtonColors(contentColor = SunsetOrange)
                 ) {
-                    Text("Xóa", fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.ui_aa1d94fc16), fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteConfirm = false }) {
-                    Text("Hủy")
+                    Text(stringResource(R.string.ui_34ca764caf))
                 }
             },
             containerColor = SurfaceContainerLowest
@@ -661,7 +550,7 @@ fun EditExpenseContent(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "Chỉnh sửa khoản chi",
+                text = stringResource(R.string.ui_c8eff87563),
                 fontWeight = FontWeight.ExtraBold,
                 fontSize = 20.sp,
                 color = OnSurface
@@ -671,40 +560,30 @@ fun EditExpenseContent(
             ) {
                 Icon(
                     imageVector = Icons.Default.Delete,
-                    contentDescription = "Delete Expense",
+                    contentDescription = stringResource(R.string.ui_1816483d8a),
                     tint = SunsetOrange
                 )
             }
         }
         Spacer(modifier = Modifier.height(24.dp))
         
-        OutlinedTextField(
+        SimpleFormTextField(
             value = expenseTitle,
             onValueChange = { expenseTitle = it },
-            label = { Text("Tên khoản chi (VD: Ăn trưa, Vé tàu...)") },
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = PrimaryBlue,
-                unfocusedBorderColor = SurfaceContainerLow
-            )
+            placeholder = stringResource(R.string.ui_5365fbceb0),
+            modifier = Modifier.fillMaxWidth()
         )
         
         Spacer(modifier = Modifier.height(16.dp))
 
-        OutlinedTextField(
+        SimpleFormTextField(
             value = expenseAmountValue,
             onValueChange = { newValue ->
                 val formatted = NumberUtils.formatTextFieldValue(newValue)
                 expenseAmountValue = formatted
             },
-            label = { Text("Số tiền (VND)") },
+            placeholder = stringResource(R.string.ui_33eb57284b),
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = PrimaryBlue,
-                unfocusedBorderColor = SurfaceContainerLow
-            ),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
         )
 
@@ -714,22 +593,17 @@ fun EditExpenseContent(
             expanded = expanded,
             onExpandedChange = { expanded = !expanded }
         ) {
-            OutlinedTextField(
+            SimpleFormTextField(
                 value = selectedCategory,
                 onValueChange = {},
                 readOnly = true,
-                label = { Text("Danh mục") },
+                placeholder = stringResource(R.string.ui_fc7b5ce028),
                 trailingIcon = {
                     Icon(Icons.Default.ArrowDropDown, contentDescription = null)
                 },
                 modifier = Modifier
                     .menuAnchor()
-                    .fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = PrimaryBlue,
-                    unfocusedBorderColor = SurfaceContainerLow
-                )
+                    .fillMaxWidth()
             )
             ExposedDropdownMenu(
                 expanded = expanded,

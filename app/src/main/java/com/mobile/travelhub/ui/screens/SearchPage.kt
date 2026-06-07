@@ -1,5 +1,6 @@
 package com.mobile.travelhub.ui.screens
 
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -17,13 +18,11 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.Send
@@ -32,9 +31,6 @@ import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Tag
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -53,15 +49,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import coil.compose.AsyncImage
 import com.mobile.travelhub.R
 import com.mobile.travelhub.data.model.FeedPostResponse
 import com.mobile.travelhub.data.model.UserProfileResponse
@@ -69,13 +62,18 @@ import com.mobile.travelhub.ui.components.CommentItem
 import com.mobile.travelhub.ui.components.FeedPostCard
 import com.mobile.travelhub.ui.components.FeedPostCardSkeleton
 import com.mobile.travelhub.ui.components.SimpleFormTextField
-import com.mobile.travelhub.ui.components.modifiers.shimmerEffect
+import com.mobile.travelhub.ui.components.InlineLoadingSkeleton
+import com.mobile.travelhub.ui.components.LoadingContentSkeleton
+import com.mobile.travelhub.ui.components.LoadingListSkeleton
+import com.mobile.travelhub.ui.components.RetryButton
+import com.mobile.travelhub.ui.components.SearchBar
+import com.mobile.travelhub.ui.components.UserResultCard
+import com.mobile.travelhub.ui.components.UserResultCardSkeleton
 import com.mobile.travelhub.ui.theme.OnSurface
 import com.mobile.travelhub.ui.theme.OnSurfaceVariant
 import com.mobile.travelhub.ui.theme.OutlineVariant
 import com.mobile.travelhub.ui.theme.PrimaryBlue
 import com.mobile.travelhub.ui.theme.SurfaceBg
-import com.mobile.travelhub.ui.theme.SurfaceContainer
 import com.mobile.travelhub.utils.PostsUtils
 import com.mobile.travelhub.viewmodels.HomeCommentUiModel
 import com.mobile.travelhub.viewmodels.HomePostUiModel
@@ -91,7 +89,6 @@ fun SearchPage(
     val uiState by viewModel.uiState.collectAsState()
     val focusRequester = remember { FocusRequester() }
     val keyboardController = LocalSoftwareKeyboardController.current
-    val trendingSearches = listOf("#BeachVibes", "#MountainClimbing", "#CityBreaks", "#FoodTour")
 
     LaunchedEffect(Unit) {
         focusRequester.requestFocus()
@@ -118,7 +115,7 @@ fun SearchPage(
             IconButton(onClick = onBack) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
-                    contentDescription = "Back",
+                    contentDescription = stringResource(R.string.ui_b52b36b726),
                     tint = OnSurface
                 )
             }
@@ -135,7 +132,6 @@ fun SearchPage(
         if (uiState.query.isBlank()) {
             SearchSuggestionsContent(
                 recentSearches = uiState.recentSearches,
-                trendingSearches = trendingSearches,
                 onRecentSearchClick = viewModel::applyRecentSearch,
                 onRecentSearchRemove = viewModel::removeRecentSearch,
                 onClearRecentSearches = viewModel::clearRecentSearches,
@@ -181,7 +177,6 @@ fun SearchPage(
 @Composable
 private fun SearchSuggestionsContent(
     recentSearches: List<String>,
-    trendingSearches: List<String>,
     onRecentSearchClick: (String) -> Unit,
     onRecentSearchRemove: (String) -> Unit,
     onClearRecentSearches: () -> Unit,
@@ -195,7 +190,7 @@ private fun SearchSuggestionsContent(
         if (recentSearches.isNotEmpty()) {
             item(contentType = "recent-title") {
                 SearchSectionHeader(
-                    text = "Recent Searches",
+                    text = stringResource(R.string.ui_5820a93677),
                     actionText = "Clear",
                     onActionClick = onClearRecentSearches
                 )
@@ -215,24 +210,24 @@ private fun SearchSuggestionsContent(
             }
         }
 
-        item(contentType = "trending-title") {
-            SearchSectionTitle(
-                text = "Trending Searches",
-                modifier = Modifier.padding(top = if (recentSearches.isEmpty()) 0.dp else 8.dp)
-            )
-        }
-        items(
-            items = trendingSearches,
-            key = { "trending-$it" },
-            contentType = { "trending-search" }
-        ) { search ->
-            SearchSuggestionRow(
-                text = search,
-                subtitle = "",
-                leadingIcon = SearchLeadingIcon.Tag,
-                onClick = { onTrendingSearchClick(search) }
-            )
-        }
+//        item(contentType = "trending-title") {
+//            SearchSectionTitle(
+//                text = stringResource(R.string.ui_3a69c31c04),
+//                modifier = Modifier.padding(top = if (recentSearches.isEmpty()) 0.dp else 8.dp)
+//            )
+//        }
+//        items(
+//            items = trendingSearches,
+//            key = { "trending-$it" },
+//            contentType = { "trending-search" }
+//        ) { search ->
+//            SearchSuggestionRow(
+//                text = search,
+//                subtitle = "",
+//                leadingIcon = SearchLeadingIcon.Tag,
+//                onClick = { onTrendingSearchClick(search) }
+//            )
+//        }
     }
 }
 
@@ -243,63 +238,27 @@ private fun SearchInput(
     onClear: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    BasicTextField(
+    SearchBar(
         value = query,
         onValueChange = onQueryChange,
-        singleLine = true,
-        textStyle = MaterialTheme.typography.bodyMedium.copy(
-            color = OnSurface,
-            fontSize = 14.sp
-        ),
-        cursorBrush = SolidColor(PrimaryBlue),
-        modifier = modifier
-            .height(44.dp)
-            .clip(RoundedCornerShape(8.dp))
-            .background(Color(0xFFEFF2FA)),
-        decorationBox = { innerTextField ->
-            Row(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 12.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    imageVector = Icons.Outlined.Search,
-                    contentDescription = null,
-                    tint = OnSurfaceVariant,
-                    modifier = Modifier.size(19.dp)
-                )
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(start = 10.dp),
-                    contentAlignment = Alignment.CenterStart
+        placeholder = stringResource(R.string.ui_e87eee7e22),
+        modifier = modifier,
+        trailingContent = if (query.isNotEmpty()) {
+            {
+                IconButton(
+                    onClick = onClear,
+                    modifier = Modifier.size(32.dp)
                 ) {
-                    if (query.isEmpty()) {
-                        Text(
-                            text = "Search posts or users",
-                            color = OnSurfaceVariant,
-                            fontSize = 14.sp,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-                    innerTextField()
-                }
-                if (query.isNotEmpty()) {
-                    IconButton(
-                        onClick = onClear,
-                        modifier = Modifier.size(32.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Outlined.Close,
-                            contentDescription = "Clear search",
-                            tint = OnSurfaceVariant,
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
+                    Icon(
+                        imageVector = Icons.Outlined.Close,
+                        contentDescription = stringResource(R.string.ui_67300d0fed),
+                        tint = OnSurfaceVariant,
+                        modifier = Modifier.size(18.dp)
+                    )
                 }
             }
+        } else {
+            null
         }
     )
 }
@@ -342,7 +301,7 @@ private fun CombinedSearchResults(
 
         item(contentType = "posts-title") {
             SearchSectionTitle(
-                text = "Posts",
+                text = stringResource(R.string.ui_a0ca0c3198),
                 modifier = Modifier.padding(start = 16.dp, top = 6.dp, end = 16.dp)
             )
         }
@@ -353,7 +312,10 @@ private fun CombinedSearchResults(
                 SearchErrorState(message = postsErrorMessage, onRetry = onRetry)
             }
             posts.isEmpty() -> item(contentType = "posts-empty") {
-                EmptySearchState(query = query, resultType = "posts")
+                EmptySearchState(
+                    query = query,
+                    resultType = stringResource(R.string.result_type_posts)
+                )
             }
             else -> items(
                 items = posts,
@@ -393,7 +355,7 @@ private fun SearchCommentsSheet(
         containerColor = Color.White
     ) {
         Text(
-            text = "Comments",
+            text = stringResource(R.string.ui_fce06e20e5),
             style = MaterialTheme.typography.titleMedium,
             modifier = Modifier.padding(horizontal = 24.dp)
         )
@@ -406,7 +368,7 @@ private fun SearchCommentsSheet(
                     .padding(vertical = 24.dp),
                 contentAlignment = Alignment.Center
             ) {
-                CircularProgressIndicator(color = PrimaryBlue)
+                LoadingListSkeleton(itemCount = 3)
             }
             !commentsErrorMessage.isNullOrBlank() -> Text(
                 text = commentsErrorMessage,
@@ -415,7 +377,7 @@ private fun SearchCommentsSheet(
                 modifier = Modifier.padding(horizontal = 24.dp)
             )
             comments.isEmpty() -> Text(
-                text = "No comments yet",
+                text = stringResource(R.string.ui_d14da37946),
                 style = MaterialTheme.typography.bodyMedium,
                 color = OnSurfaceVariant,
                 modifier = Modifier.padding(horizontal = 24.dp)
@@ -449,16 +411,11 @@ private fun SearchCommentsSheet(
             SimpleFormTextField(
                 value = commentInput,
                 onValueChange = onCommentInputChanged,
-                placeholder = "Add a comment",
+                placeholder = stringResource(R.string.ui_3e18361540),
                 modifier = Modifier.weight(1f),
                 enabled = !isCommentSubmitting,
                 singleLine = false,
-                maxLines = 3,
-                shape = RoundedCornerShape(24.dp),
-                focusedContainerColor = Color.White,
-                unfocusedContainerColor = Color.White,
-                disabledContainerColor = Color(0xFFF4F4F4),
-                focusedIndicatorColor = PrimaryBlue
+                maxLines = 3
             )
             Spacer(modifier = Modifier.width(8.dp))
             IconButton(
@@ -470,16 +427,12 @@ private fun SearchCommentsSheet(
                     .background(PrimaryBlue)
             ) {
                 if (isCommentSubmitting) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(16.dp),
-                        strokeWidth = 2.dp,
-                        color = Color.White
-                    )
+                    InlineLoadingSkeleton(modifier = Modifier.size(16.dp))
                 } else {
                     Icon(
                         imageVector = Icons.AutoMirrored.Outlined.Send,
                         modifier = Modifier.size(16.dp),
-                        contentDescription = "Send comment",
+                        contentDescription = stringResource(R.string.ui_591e0e89f0),
                         tint = Color.White
                     )
                 }
@@ -513,7 +466,7 @@ private fun UserCarouselSection(
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
         SearchSectionTitle(
-            text = "Users",
+            text = stringResource(R.string.ui_57f2b181d0),
             modifier = Modifier.padding(horizontal = 16.dp)
         )
 
@@ -524,16 +477,18 @@ private fun UserCarouselSection(
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     items(4, contentType = { "user-skeleton" }) {
-                        UserCarouselCardSkeleton()
+                        UserResultCardSkeleton()
                     }
                 }
             }
             errorMessage != null -> UserCarouselStatusCard(
                 message = errorMessage,
-                actionLabel = "Thử lại",
                 onActionClick = onRetry
             )
-            users.isEmpty() -> EmptySearchState(query = query, resultType = "users")
+            users.isEmpty() -> EmptySearchState(
+                query = query,
+                resultType = stringResource(R.string.result_type_users)
+            )
             else -> {
                 LazyRow(
                     contentPadding = PaddingValues(horizontal = 16.dp),
@@ -544,8 +499,12 @@ private fun UserCarouselSection(
                         key = { it.id },
                         contentType = { "user" }
                     ) { user ->
-                        UserCarouselCard(
-                            user = user,
+                        UserResultCard(
+                            name = user.name,
+                            username = user.username,
+                            avatarUrl = user.avatarUrl,
+                            followersCount = user.followersCount,
+                            isFollowing = user.isFollowing,
                             isFollowLoading = user.id in followingRequestUserIds,
                             onFollowClick = { onToggleFollow(user) },
                             onClick = { onUserClick(user.id) }
@@ -560,7 +519,6 @@ private fun UserCarouselSection(
 @Composable
 private fun UserCarouselStatusCard(
     message: String,
-    actionLabel: String? = null,
     onActionClick: (() -> Unit)? = null
 ) {
     Row(
@@ -584,55 +542,9 @@ private fun UserCarouselStatusCard(
             maxLines = 2,
             overflow = TextOverflow.Ellipsis
         )
-        if (actionLabel != null && onActionClick != null) {
-            TextButton(onClick = onActionClick) {
-                Text(text = actionLabel, color = PrimaryBlue)
-            }
+        if (onActionClick != null) {
+            RetryButton(onClick = onActionClick)
         }
-    }
-}
-
-@Composable
-private fun UserCarouselCardSkeleton() {
-    Column(
-        modifier = Modifier
-            .width(156.dp)
-            .height(188.dp)
-            .clip(RoundedCornerShape(8.dp))
-            .background(Color.White)
-            .padding(horizontal = 12.dp, vertical = 14.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Box(
-            modifier = Modifier
-                .size(66.dp)
-                .clip(CircleShape)
-                .shimmerEffect()
-        )
-        Spacer(modifier = Modifier.height(12.dp))
-        Box(
-            modifier = Modifier
-                .fillMaxWidth(0.78f)
-                .height(16.dp)
-                .clip(RoundedCornerShape(6.dp))
-                .shimmerEffect()
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        Box(
-            modifier = Modifier
-                .fillMaxWidth(0.58f)
-                .height(13.dp)
-                .clip(RoundedCornerShape(6.dp))
-                .shimmerEffect()
-        )
-        Spacer(modifier = Modifier.height(14.dp))
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(34.dp)
-                .clip(RoundedCornerShape(18.dp))
-                .shimmerEffect()
-        )
     }
 }
 
@@ -716,133 +628,12 @@ private fun SearchSuggestionRow(
             ) {
                 Icon(
                     imageVector = Icons.Outlined.Close,
-                    contentDescription = "Remove recent search",
+                    contentDescription = stringResource(R.string.ui_dc6650d176),
                     tint = OnSurfaceVariant,
                     modifier = Modifier.size(17.dp)
                 )
             }
         }
-    }
-}
-
-@Composable
-private fun UserCarouselCard(
-    user: UserProfileResponse,
-    isFollowLoading: Boolean,
-    onFollowClick: () -> Unit,
-    onClick: () -> Unit
-) {
-    val title = user.name.takeIf { it.isNotBlank() } ?: user.username
-    val metadata = buildString {
-        append(formatFollowerCount(user.followersCount))
-        append(" follower")
-        if (user.followersCount != 1) append("s")
-    }
-
-    Column(
-        modifier = Modifier
-            .width(156.dp)
-            .height(188.dp)
-            .clip(RoundedCornerShape(8.dp))
-            .background(Color.White)
-            .clickable(onClick = onClick)
-            .padding(horizontal = 12.dp, vertical = 14.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        UserResultAvatar(
-            avatarUrl = user.avatarUrl,
-            name = title
-        )
-        Spacer(modifier = Modifier.height(10.dp))
-        Text(
-            text = title,
-            color = OnSurface,
-            style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.Bold,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
-        Spacer(modifier = Modifier.height(3.dp))
-        Text(
-            text = metadata,
-            color = OnSurfaceVariant,
-            style = MaterialTheme.typography.bodySmall,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
-        Spacer(modifier = Modifier.weight(1f))
-        FollowButton(
-            isFollowing = user.isFollowing,
-            isLoading = isFollowLoading,
-            onClick = onFollowClick
-        )
-    }
-}
-
-@Composable
-private fun UserResultAvatar(
-    avatarUrl: String?,
-    name: String
-) {
-    Box(
-        modifier = Modifier
-            .size(66.dp)
-            .clip(CircleShape)
-            .border(2.dp, PrimaryBlue, CircleShape)
-            .padding(3.dp)
-            .clip(CircleShape)
-            .background(Color(0xFFEFF2FA)),
-        contentAlignment = Alignment.Center
-    ) {
-        if (avatarUrl.isNullOrBlank()) {
-            Icon(
-                imageVector = Icons.Outlined.Person,
-                contentDescription = null,
-                tint = OnSurfaceVariant,
-                modifier = Modifier.size(34.dp)
-            )
-        } else {
-            AsyncImage(
-                model = avatarUrl,
-                contentDescription = "$name avatar",
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize()
-            )
-        }
-    }
-}
-
-@Composable
-private fun FollowButton(
-    isFollowing: Boolean,
-    isLoading: Boolean,
-    onClick: () -> Unit
-) {
-    Button(
-        onClick = onClick,
-        enabled = !isLoading,
-        colors = ButtonDefaults.buttonColors(
-            containerColor = if (isFollowing) SurfaceContainer else PrimaryBlue,
-            contentColor = if (isFollowing) OnSurface else Color.White,
-            disabledContainerColor = if (isFollowing) SurfaceContainer else PrimaryBlue.copy(alpha = 0.62f),
-            disabledContentColor = if (isFollowing) OnSurfaceVariant else Color.White.copy(alpha = 0.82f)
-        ),
-        shape = RoundedCornerShape(18.dp),
-        contentPadding = PaddingValues(horizontal = 20.dp, vertical = 0.dp),
-        modifier = Modifier
-            .height(38.dp)
-            .widthIn(min = 104.dp)
-    ) {
-        Text(
-            text = when {
-                isLoading -> "..."
-                isFollowing -> "Following"
-                else -> "Follow"
-            },
-            style = MaterialTheme.typography.labelLarge,
-            fontWeight = FontWeight.Bold,
-            maxLines = 1
-        )
     }
 }
 
@@ -892,10 +683,7 @@ private fun LoadingSearchState() {
             .padding(top = 48.dp),
         contentAlignment = Alignment.Center
     ) {
-        CircularProgressIndicator(
-            color = PrimaryBlue,
-            modifier = Modifier.size(32.dp)
-        )
+        LoadingContentSkeleton(modifier = Modifier.fillMaxWidth())
     }
 }
 
@@ -915,9 +703,7 @@ private fun SearchErrorState(
             color = OnSurface,
             style = MaterialTheme.typography.bodyMedium
         )
-        TextButton(onClick = onRetry) {
-            Text(text = "Thử lại", color = PrimaryBlue)
-        }
+        RetryButton(onClick = onRetry)
     }
 }
 
@@ -948,14 +734,14 @@ private fun EmptySearchState(
             )
         }
         Text(
-            text = "No $resultType for \"$query\"",
+            text = stringResource(R.string.no_search_results, resultType, query),
             modifier = Modifier.padding(top = 14.dp),
             color = OnSurface,
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold
         )
         Text(
-            text = "Try another keyword.",
+            text = stringResource(R.string.ui_60c49e0641),
             modifier = Modifier.padding(top = 4.dp),
             color = OnSurfaceVariant,
             fontSize = 13.sp
@@ -967,21 +753,6 @@ private enum class SearchLeadingIcon {
     History,
     Tag,
     User
-}
-
-private fun formatFollowerCount(count: Int): String {
-    val safeCount = count.coerceAtLeast(0)
-    return when {
-        safeCount >= 1_000_000 -> {
-            val millions = safeCount / 1_000_000f
-            "${"%.1f".format(millions).trimEnd('0').trimEnd('.')}M"
-        }
-        safeCount >= 1_000 -> {
-            val thousands = safeCount / 1_000f
-            "${"%.1f".format(thousands).trimEnd('0').trimEnd('.')}K"
-        }
-        else -> safeCount.toString()
-    }
 }
 
 private fun FeedPostResponse.toHomePostUiModel(
@@ -1000,6 +771,7 @@ private fun FeedPostResponse.toHomePostUiModel(
         imageUrls = imageUrls.filter { it.isNotBlank() },
         likeCount = likeCount?.coerceAtLeast(0) ?: 0,
         commentCount = commentCount?.coerceAtLeast(0) ?: 0,
+        saveCount = saveCount?.coerceAtLeast(0) ?: 0,
         isLiked = likedByCurrentUser == true,
         isLikeLoading = isLikeLoading,
         isSaved = savedByCurrentUser == true,

@@ -128,10 +128,12 @@ class PostDetailViewModel @Inject constructor(
         val currentPost = _uiState.value.post ?: return
         if (currentPost.isSaveLoading) return
         val targetSaved = !currentPost.isSaved
+        val targetSaveCount = (currentPost.saveCount + if (targetSaved) 1 else -1).coerceAtLeast(0)
 
         updatePost {
             it.copy(
                 isSaved = targetSaved,
+                saveCount = targetSaveCount,
                 isSaveLoading = true
             )
         }
@@ -142,6 +144,7 @@ class PostDetailViewModel @Inject constructor(
                     updatePost {
                         it.copy(
                             isSaved = response.saved,
+                            saveCount = response.saveCount.coerceAtLeast(0),
                             isSaveLoading = false
                         )
                     }
@@ -150,6 +153,7 @@ class PostDetailViewModel @Inject constructor(
                     updatePost {
                         it.copy(
                             isSaved = currentPost.isSaved,
+                            saveCount = currentPost.saveCount,
                             isSaveLoading = false
                         )
                     }
@@ -275,6 +279,7 @@ class PostDetailViewModel @Inject constructor(
             imageUrls = post.imageUrls.filter { it.isNotBlank() },
             likeCount = post.likeCount?.coerceAtLeast(0) ?: 0,
             commentCount = post.commentCount?.coerceAtLeast(0) ?: 0,
+            saveCount = post.saveCount?.coerceAtLeast(0) ?: 0,
             isLiked = post.likedByCurrentUser == true,
             isLikeLoading = false,
             isSaved = post.savedByCurrentUser == true,

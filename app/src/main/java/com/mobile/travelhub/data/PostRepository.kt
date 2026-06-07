@@ -10,6 +10,7 @@ import com.mobile.travelhub.data.api.PostApiService
 import com.mobile.travelhub.data.api.UserApiService
 import com.mobile.travelhub.data.model.CreateCommentRequest
 import com.mobile.travelhub.data.model.FeedPostResponse
+import com.mobile.travelhub.data.model.GetPostsResponse
 import com.mobile.travelhub.data.model.LikePostResponse
 import com.mobile.travelhub.data.model.PostCommentResponse
 import com.mobile.travelhub.data.model.PostCommentsPageResponse
@@ -61,23 +62,18 @@ class PostRepository @Inject constructor(
     }
 
     suspend fun getAllPosts(page: Int = 0, pageSize: Int = 10): Result<List<FeedPostResponse>> {
+        return getPostsPage(page = page, pageSize = pageSize).map { it.data }
+    }
+
+    suspend fun getPostsPage(page: Int = 0, pageSize: Int = 10): Result<GetPostsResponse> {
         return withContext(Dispatchers.IO) {
             runCatching {
                 postApiService.getAllPosts(
                     page = page,
                     pageSize = pageSize
-                ).data.map(::mergeLocalPostState)
-            }
-        }
-    }
-
-    suspend fun getRandomPosts(page: Int = 0, pageSize: Int = 10): Result<List<FeedPostResponse>> {
-        return withContext(Dispatchers.IO) {
-            runCatching {
-                postApiService.getRandomPosts(
-                    page = page,
-                    pageSize = pageSize
-                ).data.map(::mergeLocalPostState)
+                ).let { response ->
+                    response.copy(data = response.data.map(::mergeLocalPostState))
+                }
             }
         }
     }

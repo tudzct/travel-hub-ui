@@ -3,6 +3,7 @@ package com.mobile.travelhub.viewmodels
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.mobile.travelhub.data.AvatarRepository
 import com.mobile.travelhub.data.AuthRepository
 import com.mobile.travelhub.data.PostRepository
 import com.mobile.travelhub.data.api.UserApiService
@@ -28,15 +29,13 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import okhttp3.MediaType.Companion.toMediaTypeOrNull
-import okhttp3.MultipartBody
-import okhttp3.RequestBody.Companion.toRequestBody
 
 @HiltViewModel
 class ProfileViewModel @Inject constructor(
     private val authRepository: AuthRepository,
     private val userApiService: UserApiService,
-    private val postRepository: PostRepository
+    private val postRepository: PostRepository,
+    private val avatarRepository: AvatarRepository
 ) : ViewModel() {
     private val sessionUserId: Long
         get() = authRepository.getSavedSession()?.userId?.toLong() ?: -1L
@@ -172,12 +171,18 @@ class ProfileViewModel @Inject constructor(
 
             result
                 .onSuccess { response ->
-                    updatePost(postId) {
-                        it.copy(
-                            isLiked = response.liked,
-                            likeCount = response.likeCount.coerceAtLeast(0),
-                            isLikeLoading = false
-                        )
+                    if (!response.liked && _profilePostsState.value.selectedTab == ProfilePostsTab.LIKED) {
+                        _profilePostsState.update { state ->
+                            state.copy(posts = state.posts.filterNot { it.id == postId })
+                        }
+                    } else {
+                        updatePost(postId) {
+                            it.copy(
+                                isLiked = response.liked,
+                                likeCount = response.likeCount.coerceAtLeast(0),
+                                isLikeLoading = false
+                            )
+                        }
                     }
                 }
                 .onFailure { throwable ->
@@ -199,10 +204,12 @@ class ProfileViewModel @Inject constructor(
         val currentPost = _profilePostsState.value.posts.firstOrNull { it.id == postId } ?: return
         if (currentPost.isSaveLoading) return
         val targetSaved = !currentPost.isSaved
+        val targetSaveCount = (currentPost.saveCount + if (targetSaved) 1 else -1).coerceAtLeast(0)
 
         updatePost(postId) {
             it.copy(
                 isSaved = targetSaved,
+                saveCount = targetSaveCount,
                 isSaveLoading = true
             )
         }
@@ -218,6 +225,7 @@ class ProfileViewModel @Inject constructor(
                         updatePost(postId) {
                             it.copy(
                                 isSaved = response.saved,
+                                saveCount = response.saveCount.coerceAtLeast(0),
                                 isSaveLoading = false
                             )
                         }
@@ -227,6 +235,7 @@ class ProfileViewModel @Inject constructor(
                     updatePost(postId) {
                         it.copy(
                             isSaved = currentPost.isSaved,
+                            saveCount = currentPost.saveCount,
                             isSaveLoading = false
                         )
                     }
@@ -372,20 +381,12 @@ class ProfileViewModel @Inject constructor(
         imageBytes: ByteArray,
         mimeType: String,
         fileName: String
-    ): String = withContext(Dispatchers.IO) {
-        userApiService.uploadAvatar(buildAvatarPart(imageBytes, mimeType, fileName)).string().trim().trim('"')
-    }
-
-    private fun buildAvatarPart(
-        bytes: ByteArray,
-        mimeType: String,
-        fileName: String
-    ): MultipartBody.Part {
-        val safeMimeType = mimeType.ifBlank { "image/jpeg" }
-        val safeFileName = fileName.ifBlank { "avatar.jpg" }
-        val requestBody = bytes.toRequestBody(safeMimeType.toMediaTypeOrNull())
-        return MultipartBody.Part.createFormData("file", safeFileName, requestBody)
-    }
+    ): String = avatarRepository.uploadAvatar(
+        userId = sessionUserId,
+        imageBytes = imageBytes,
+        mimeType = mimeType,
+        fileName = fileName
+    )
 
     fun loadFollowers(userId: Long = sessionUserId) {
         viewModelScope.launch {
@@ -636,6 +637,7 @@ class ProfileViewModel @Inject constructor(
             imageUrls = safeImageUrls,
             likeCount = post.likeCount?.coerceAtLeast(0) ?: 0,
             commentCount = post.commentCount?.coerceAtLeast(0) ?: 0,
+            saveCount = post.saveCount?.coerceAtLeast(0) ?: 0,
             isLiked = post.likedByCurrentUser == true,
             isLikeLoading = false,
             isSaved = post.savedByCurrentUser == true,

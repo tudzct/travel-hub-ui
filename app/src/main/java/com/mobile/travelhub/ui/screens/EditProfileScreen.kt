@@ -1,5 +1,6 @@
 package com.mobile.travelhub.ui.screens
 
+import androidx.compose.ui.res.stringResource
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
@@ -19,7 +20,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -59,6 +59,8 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.mobile.travelhub.R
 import com.mobile.travelhub.data.userMessage
 import com.mobile.travelhub.ui.components.EditProfileField
+import com.mobile.travelhub.ui.components.InlineLoadingSkeleton
+import com.mobile.travelhub.ui.components.EditProfileLoadingSkeleton
 import com.mobile.travelhub.viewmodels.ProfileViewModel
 import com.mobile.travelhub.viewmodels.UiState
 
@@ -121,14 +123,29 @@ fun EditProfileScreen(
                         onSaveSuccess()
                     }
                     is UiState.Error -> {
-                        Toast.makeText(context, "Lỗi lưu hồ sơ: ${result.message}", Toast.LENGTH_LONG).show()
+                        Toast.makeText(
+                            context,
+                            context.getString(
+                                R.string.profile_save_failed_with_reason,
+                                result.message
+                            ),
+                            Toast.LENGTH_LONG
+                        ).show()
                     }
                     else -> {
-                        Toast.makeText(context, "Lỗi lưu hồ sơ", Toast.LENGTH_LONG).show()
+                        Toast.makeText(
+                            context,
+                            context.getString(R.string.profile_save_failed),
+                            Toast.LENGTH_LONG
+                        ).show()
                     }
                 }
             } catch (e: Exception) {
-                Toast.makeText(context, e.userMessage("Không thể tải ảnh lên"), Toast.LENGTH_LONG).show()
+                Toast.makeText(
+                    context,
+                    e.userMessage(context.getString(R.string.image_upload_failed)),
+                    Toast.LENGTH_LONG
+                ).show()
             } finally {
                 isSaving = false
             }
@@ -178,7 +195,7 @@ fun EditProfileScreen(
             TopAppBar(
                 title = { 
                     Text(
-                        "EDIT PROFILE", 
+                            stringResource(R.string.ui_a6ba1ffb26),
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.Bold,
                         letterSpacing = 1.sp
@@ -186,16 +203,20 @@ fun EditProfileScreen(
                 },
                 navigationIcon = {
                     IconButton(onClick = handleBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.ui_b52b36b726))
                     }
                 },
                 actions = {
                     if (isSaving) {
-                        CircularProgressIndicator(modifier = Modifier.size(24.dp).padding(end = 16.dp))
+                        InlineLoadingSkeleton(
+                            modifier = Modifier
+                                .size(24.dp)
+                                .padding(end = 16.dp)
+                        )
                     } else {
                         TextButton(onClick = { saveProfile() }) {
                             Text(
-                                "SAVE",
+                                stringResource(R.string.ui_508156a39b),
                                 style = MaterialTheme.typography.labelMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.primary
@@ -217,9 +238,7 @@ fun EditProfileScreen(
                 .padding(horizontal = 24.dp)
         ) {
             if (profileState is UiState.Loading) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
-                }
+                EditProfileLoadingSkeleton()
                 return@Scaffold
             }
             
@@ -280,7 +299,13 @@ fun EditProfileScreen(
                             previewBitmap = previewBitmap
                         )
                     } catch (e: Exception) {
-                        Toast.makeText(context, e.userMessage("Không thể đọc ảnh đã chọn"), Toast.LENGTH_LONG).show()
+                        Toast.makeText(
+                            context,
+                            e.userMessage(
+                                context.getString(R.string.selected_image_read_failed)
+                            ),
+                            Toast.LENGTH_LONG
+                        ).show()
                     }
                 }
             }
@@ -308,7 +333,7 @@ fun EditProfileScreen(
                     if (selectedAvatar != null) {
                         Image(
                             bitmap = selectedAvatar.previewBitmap.asImageBitmap(),
-                            contentDescription = "Profile Photo",
+                            contentDescription = stringResource(R.string.ui_4dbfd0986a),
                             modifier = Modifier
                                 .fillMaxSize()
                                 .clip(CircleShape)
@@ -318,7 +343,7 @@ fun EditProfileScreen(
                     } else if (existingAvatarUrl != null) {
                         AsyncImage(
                             model = existingAvatarUrl,
-                            contentDescription = "Profile Photo",
+                            contentDescription = stringResource(R.string.ui_4dbfd0986a),
                             modifier = Modifier
                                 .fillMaxSize()
                                 .clip(CircleShape)
@@ -328,7 +353,7 @@ fun EditProfileScreen(
                     } else {
                         Image(
                             painter = painterResource(id = R.drawable.ic_launcher_foreground),
-                            contentDescription = "Profile Photo",
+                            contentDescription = stringResource(R.string.ui_4dbfd0986a),
                             modifier = Modifier
                                 .fillMaxSize()
                                 .clip(CircleShape)
@@ -340,22 +365,22 @@ fun EditProfileScreen(
             }
 
             EditProfileField(
-                label = "Full Name",
+                label = stringResource(R.string.ui_64346b483c),
                 value = name,
                 onValueChange = { name = it }
             )
             EditProfileField(
-                label = "Username",
+                label = stringResource(R.string.ui_84c29015de),
                 value = handle,
                 onValueChange = { handle = it }
             )
             EditProfileField(
-                label = "Bio",
+                label = stringResource(R.string.ui_b31fc969b4),
                 value = bio,
                 onValueChange = { bio = it }
             )
             EditProfileField(
-                label = "Location",
+                label = stringResource(R.string.ui_d219c68101),
                 value = location,
                 onValueChange = { location = it }
             )
@@ -363,7 +388,7 @@ fun EditProfileScreen(
             Spacer(modifier = Modifier.height(20.dp))
             
             Text(
-                text = "PRIVATE INFORMATION",
+                text = stringResource(R.string.ui_6013ce3378),
                 style = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -371,7 +396,7 @@ fun EditProfileScreen(
             )
             
             EditProfileField(
-                label = "Email Address",
+                label = stringResource(R.string.ui_09ba557fd1),
                 value = email,
                 onValueChange = { email = it },
                 enabled = false
@@ -384,14 +409,14 @@ fun EditProfileScreen(
                 onDismissRequest = { showConfirmDialog = false },
                 title = { 
                     Text(
-                        text = "Unsaved Changes",
+                        text = stringResource(R.string.ui_9563b6bfa0),
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold
                     ) 
                 },
                 text = { 
                     Text(
-                        text = "You have unsaved changes. Do you want to save them before leaving?",
+                        text = stringResource(R.string.ui_3fc627b036),
                         style = MaterialTheme.typography.bodyLarge
                     ) 
                 },
@@ -400,7 +425,7 @@ fun EditProfileScreen(
                         showConfirmDialog = false
                         saveProfile()
                     }) {
-                        Text("Save", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+                        Text(stringResource(R.string.ui_efc007a393), color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
                     }
                 },
                 dismissButton = {
@@ -408,7 +433,7 @@ fun EditProfileScreen(
                         showConfirmDialog = false
                         onBack()
                     }) {
-                        Text("Discard", color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
+                        Text(stringResource(R.string.ui_36fff63ccb), color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
                     }
                 },
                 containerColor = MaterialTheme.colorScheme.surfaceContainerHighest
