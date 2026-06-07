@@ -52,8 +52,6 @@ import com.mobile.travelhub.viewmodels.ProfileViewModel
 import com.mobile.travelhub.viewmodels.UiState
 import kotlinx.coroutines.launch
 
-private const val PLACE_DETAIL_PLACE_KEY = "place_detail_place"
-
 sealed class Screen(
     val route: String,
     val index: Int = -1,
@@ -280,7 +278,6 @@ fun NavGraph(
         ?.substringBefore("/")
 
     fun navigateToPlaceDetail(place: TravelPlaceListItemResponse) {
-        navController.currentBackStackEntry?.savedStateHandle?.set(PLACE_DETAIL_PLACE_KEY, place)
         navController.navigate(Screen.PlaceDetail.createRoute(place.id))
     }
 
@@ -821,13 +818,9 @@ fun NavGraph(
             arguments = listOf(navArgument("placeId") { type = NavType.LongType })
         ) { backStackEntry ->
             val placeId = backStackEntry.arguments?.getLong("placeId") ?: return@composable
-            val place = (backStackEntry.savedStateHandle.get<TravelPlaceListItemResponse>(PLACE_DETAIL_PLACE_KEY)
-                ?: navController.previousBackStackEntry?.savedStateHandle?.get<TravelPlaceListItemResponse>(PLACE_DETAIL_PLACE_KEY)
-                    ?.also { backStackEntry.savedStateHandle[PLACE_DETAIL_PLACE_KEY] = it })
-                ?.takeIf { it.id == placeId }
             PlaceDetailScreen(
                 placeId = placeId,
-                initialPlace = place,
+                initialPlace = null,
                 onBack = { navController.navigateUp() },
                 onPlaceClick = ::navigateToPlaceDetail,
                 onUserClick = ::navigateToUserProfile,
