@@ -845,6 +845,7 @@ fun NavGraph(
                 initialPlace = place,
                 onBack = { navController.navigateUp() },
                 onPlaceClick = ::navigateToPlaceDetail,
+                onUserClick = ::navigateToUserProfile,
                 onShowAllReviews = { id -> navController.navigate(Screen.PlaceReviews.createRoute(id)) },
                 onReviewAuthorClick = ::navigateToUserProfile,
                 onRequireLogin = {
