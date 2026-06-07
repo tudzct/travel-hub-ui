@@ -341,6 +341,7 @@ fun HomeCommentsBottomSheet(
                         name = comment.username,
                         comment = comment.content,
                         time = comment.timeAgoLabel,
+                        avatarUrl = comment.avatarUrl,
                         avatarRes = R.drawable.female_avatar_maker
                     )
                 }

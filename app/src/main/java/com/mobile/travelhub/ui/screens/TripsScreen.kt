@@ -342,8 +342,13 @@ fun ActiveJourneyCardV2(
                     modifier = Modifier.fillMaxSize()
                 )
             } else {
+                val imageRes = if (trip == null) {
+                    R.drawable.img_no_trip
+                } else {
+                    R.drawable.ic_launcher_background
+                }
                 Image(
-                    painter = painterResource(id = R.drawable.ic_launcher_background),
+                    painter = painterResource(id = imageRes),
                     contentDescription = null,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize()
@@ -514,7 +519,10 @@ fun AddTripOptionsContent(
                     .height(56.dp),
                 shape = RoundedCornerShape(20.dp),
                 enabled = !isJoining && joinCode.length == 8,
-                colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = PrimaryBlue,
+                    contentColor = Color.White
+                )
             ) {
                 Text(if (isJoining) "Đang gửi..." else "Gửi yêu cầu tham gia", fontWeight = FontWeight.Bold)
             }

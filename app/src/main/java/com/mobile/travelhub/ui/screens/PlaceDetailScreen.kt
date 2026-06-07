@@ -99,6 +99,7 @@ fun PlaceDetailScreen(
     onBack: () -> Unit,
     onPlaceClick: (TravelPlaceListItemResponse) -> Unit,
     onShowAllReviews: (Long) -> Unit,
+    onReviewAuthorClick: (Long) -> Unit,
     onRequireLogin: () -> Unit,
     onUserClick: (Long) -> Unit = {},
     placeDetailViewModel: PlaceDetailViewModel = hiltViewModel(),
@@ -273,6 +274,7 @@ fun PlaceDetailScreen(
                             errorMessage = uiState.reviewErrorMessage,
                             onShowAll = { onShowAllReviews(detail.id) },
                             onUserClick = onUserClick
+                            onAuthorClick = onReviewAuthorClick
                         )
                     }
 
@@ -792,6 +794,7 @@ private fun ReviewPreviewSection(
     errorMessage: String?,
     onShowAll: () -> Unit,
     onUserClick: (Long) -> Unit
+    onAuthorClick: (Long) -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -843,6 +846,7 @@ private fun ReviewPreviewSection(
                     ReviewPreviewCard(
                         review = review,
                         onUserClick = onUserClick
+                        onAuthorClick = { onAuthorClick(review.user.id) }
                     )
                 }
             }
@@ -854,6 +858,7 @@ private fun ReviewPreviewSection(
 private fun ReviewPreviewCard(
     review: TravelPlaceReviewResponse,
     onUserClick: (Long) -> Unit
+    onAuthorClick: () -> Unit
 ) {
     val displayName = review.user.name.ifBlank { review.user.username }
     Surface(
@@ -873,6 +878,7 @@ private fun ReviewPreviewCard(
                 name = displayName,
                 avatarUrl = review.user.avatarUrl,
                 modifier = Modifier.clickable { onUserClick(review.user.id) }
+                onClick = onAuthorClick
             )
 
             Column(
@@ -892,6 +898,7 @@ private fun ReviewPreviewCard(
                     ) {
                         Text(
                             text = displayName,
+                            modifier = Modifier.clickable(onClick = onAuthorClick),
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.Bold,
                             color = OnSurface,

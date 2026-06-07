@@ -94,22 +94,7 @@ fun UserResultCard(
         )
         Spacer(modifier = Modifier.weight(1f))
         if (isCurrentUser) {
-            Surface(
-                modifier = Modifier
-                    .height(38.dp)
-                    .widthIn(min = 104.dp),
-                color = SurfaceContainer,
-                shape = RoundedCornerShape(18.dp)
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Text(
-                        text = stringResource(R.string.ui_905cb326c7),
-                        color = OnSurface,
-                        style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            }
+
         } else {
             UserResultFollowButton(
                 isFollowing = isFollowing,
