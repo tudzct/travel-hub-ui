@@ -21,11 +21,13 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.CardTravel
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Payments
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material3.*
@@ -66,6 +68,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.zIndex
 import coil.compose.AsyncImage
+import java.time.LocalDate
+import java.time.temporal.ChronoUnit
 
 enum class GroupRole { LEADER, NON_MEMBER, PENDING }
 
@@ -196,7 +200,7 @@ fun GroupDetailScreen(
                                 Modifier
                                     .wrapContentSize()
                                     .align(Alignment.BottomCenter)
-                                    .padding(bottom = 16.dp)
+                                    .padding(bottom = 24.dp)
                                     .zIndex(1f),
                                 horizontalArrangement = Arrangement.spacedBy(6.dp)
                             ) {
@@ -233,16 +237,17 @@ fun GroupDetailScreen(
                     Column(
                         modifier = Modifier
                             .align(Alignment.BottomStart)
-                            .padding(24.dp)
+                            .padding(horizontal = 24.dp)
+                            .padding(bottom = 54.dp)
                     ) {
                         Spacer(modifier = Modifier.height(12.dp))
                         Text(
                             text = uiState.groupName.ifBlank { groupName },
                             fontWeight = FontWeight.ExtraBold,
-                            fontSize = 36.sp,
+                            fontSize = 23.sp,
                             color = Color.White,
-                            lineHeight = 40.sp,
-                            letterSpacing = (-1).sp
+                            lineHeight = 28.sp,
+                            letterSpacing = 0.sp
                         )
                         Spacer(modifier = Modifier.height(12.dp))
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -250,7 +255,7 @@ fun GroupDetailScreen(
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
                                 text = uiState.location.ifBlank { "Đang tải điểm đến" },
-                                fontSize = 14.sp,
+                                fontSize = 12.sp,
                                 color = Color.White.copy(alpha = 0.8f)
                             )
                         }
@@ -258,58 +263,90 @@ fun GroupDetailScreen(
                 }
             }
 
-            LazyRow(
-                contentPadding = PaddingValues(horizontal = 24.dp, vertical = 24.dp),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            Column(
+                modifier = Modifier
+                    .offset(y = (-18).dp)
+                    .clip(RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
+                    .background(Color.White)
+                    .padding(horizontal = 20.dp)
+                    .padding(top = 28.dp, bottom = 28.dp)
             ) {
-                if (isInitialLoading) {
-                    item { FeatureCardSkeleton() }
-                    item { FeatureCardSkeleton() }
-                } else {
-                    item { FeatureCard(Icons.Default.CalendarMonth, "Lịch trình", PrimaryBlue) { showItinerarySheet = true } }
-                    item { FeatureCard(Icons.Default.Payments, "Chi phí", Color(0xFFE91E63), { onNavigateToCost(tripId) }) }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    if (isInitialLoading) {
+                        FeatureCardSkeleton()
+                        FeatureCardSkeleton()
+                    } else {
+                        FeatureCard(
+                            icon = Icons.Default.CalendarMonth,
+                            label = "Lịch trình",
+                            color = PrimaryBlue,
+                            modifier = Modifier.weight(1f),
+                            onClick = { showItinerarySheet = true }
+                        )
+                        FeatureCard(
+                            icon = Icons.Default.Payments,
+                            label = "Chi phí",
+                            color = Color(0xFFE91E63),
+                            modifier = Modifier.weight(1f),
+                            onClick = { onNavigateToCost(tripId) }
+                        )
+                    }
                 }
-            }
 
-            Column(modifier = Modifier.padding(horizontal = 24.dp)) {
+                Spacer(modifier = Modifier.height(28.dp))
+
                 Text(
                     text = stringResource(R.string.ui_c39635df84),
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = FontWeight.ExtraBold,
                     fontSize = 13.sp,
                     color = OnSurfaceVariant,
-                    letterSpacing = 1.sp
+                    letterSpacing = 0.8.sp
                 )
-            }
 
-            Spacer(modifier = Modifier.height(24.dp))
-                
+                Spacer(modifier = Modifier.height(18.dp))
+
                 Card(
-                    shape = RoundedCornerShape(20.dp),
+                    shape = RoundedCornerShape(18.dp),
                     colors = CardDefaults.cardColors(containerColor = SurfaceContainerLowest),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, SurfaceContainerLow),
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Column(modifier = Modifier.padding(20.dp)) {
+                    Column(modifier = Modifier.padding(horizontal = 18.dp, vertical = 14.dp)) {
                         if (isInitialLoading) {
                             TripDetailRowSkeleton()
-                            HorizontalDivider(color = SurfaceContainerLow, modifier = Modifier.padding(vertical = 12.dp))
+                            HorizontalDivider(color = SurfaceContainerLow, modifier = Modifier.padding(vertical = 10.dp))
                             TripDetailRowSkeleton()
-                            HorizontalDivider(color = SurfaceContainerLow, modifier = Modifier.padding(vertical = 12.dp))
+                            HorizontalDivider(color = SurfaceContainerLow, modifier = Modifier.padding(vertical = 10.dp))
                             TripDetailRowSkeleton()
                         } else {
-                            TripDetailRow("Lịch trình", listOf(uiState.startDate, uiState.endDate).filter { it.isNotBlank() }.joinToString(" - ").ifBlank { "Chưa có từ API" })
-                            HorizontalDivider(color = SurfaceContainerLow, modifier = Modifier.padding(vertical = 12.dp))
-                            TripDetailRow("Số điểm dừng", uiState.totalStops.toString())
-                            HorizontalDivider(color = SurfaceContainerLow, modifier = Modifier.padding(vertical = 12.dp))
-                            TripDetailRow("Trạng thái", uiState.statusLabel.ifBlank { "Chưa xác định" })
+                            TripDetailRow(
+                                label = "Lịch trình",
+                                value = displayTripDateRange(uiState.startDate, uiState.endDate),
+                                icon = Icons.Default.CalendarMonth
+                            )
+                            HorizontalDivider(color = SurfaceContainerLow, modifier = Modifier.padding(vertical = 8.dp))
+                            TripDetailRow(
+                                label = "Số điểm dừng",
+                                value = uiState.totalStops.toString(),
+                                icon = Icons.Default.Star
+                            )
+                            HorizontalDivider(color = SurfaceContainerLow, modifier = Modifier.padding(vertical = 8.dp))
+                            TripDetailRow(
+                                label = "Trạng thái",
+                                value = uiState.statusLabel.ifBlank { "Chưa xác định" },
+                                icon = Icons.Default.CardTravel,
+                                pillText = displayTripStatus(uiState.statusLabel),
+                                trailingText = daysUntilStartLabel(uiState.startDate)
+                            )
                         }
                     }
                 }
 
+                Spacer(modifier = Modifier.height(30.dp))
 
-
-            Spacer(modifier = Modifier.height(32.dp))
-
-            Column(modifier = Modifier.padding(horizontal = 24.dp)) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -322,14 +359,15 @@ fun GroupDetailScreen(
                         Text(
                             text = stringResource(R.string.ui_448ae61e1f),
                             fontWeight = FontWeight.ExtraBold,
-                            fontSize = 20.sp,
-                            color = OnSurface
+                            fontSize = 14.sp,
+                            color = OnSurface,
+                            letterSpacing = 0.4.sp
                         )
                         if (!isInitialLoading) {
                             Text(
                                 text = "(${uiState.members.size})",
                                 color = OnSurfaceVariant,
-                                fontSize = 16.sp,
+                                fontSize = 13.sp,
                                 fontWeight = FontWeight.Medium
                             )
                         }
@@ -338,10 +376,11 @@ fun GroupDetailScreen(
                         text = stringResource(R.string.ui_b773dc5ed8),
                         color = PrimaryBlue,
                         fontWeight = FontWeight.Bold,
-                        fontSize = 14.sp,
+                        fontSize = 13.sp,
                         modifier = Modifier.clickable { showManageMembersDialog = true }
                     )
                 }
+
                 Spacer(modifier = Modifier.height(16.dp))
                 if (isInitialLoading) {
                     GroupMembersSkeleton()
@@ -352,16 +391,10 @@ fun GroupDetailScreen(
                         fontSize = 13.sp
                     )
                 } else {
-                    LazyRow(
-                        horizontalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        items(uiState.members) { member ->
-                            MemberAvatarItem(
-                                member = member,
-                                onClick = { onNavigateToProfile(member.userId) }
-                            )
-                        }
-                    }
+                    TripMemberCard(
+                        member = uiState.members.first(),
+                        onClick = { onNavigateToProfile(uiState.members.first().userId) }
+                    )
                 }
             }
         }
@@ -369,37 +402,80 @@ fun GroupDetailScreen(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 48.dp),
-            horizontalArrangement = Arrangement.SpaceBetween
+                .padding(horizontal = 24.dp, vertical = 40.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
             IconButton(
                 onClick = onBack,
                 modifier = Modifier
+                    .size(42.dp)
                     .clip(CircleShape)
-                    .background(Color.Black.copy(alpha = 0.3f))
+                    .background(Color.White.copy(alpha = 0.88f))
             ) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = Color.White)
+                Icon(
+                    Icons.AutoMirrored.Filled.ArrowBack,
+                    "Back",
+                    tint = Color(0xFF1F2937),
+                    modifier = Modifier.size(21.dp)
+                )
             }
 
             Box(contentAlignment = Alignment.TopEnd) {
-                IconButton(
-                    onClick = { showInviteMenu = true },
-                    modifier = Modifier
-                        .clip(CircleShape)
-                        .background(Color.Black.copy(alpha = 0.3f))
-                ) {
-                    Icon(Icons.Default.MoreVert, "More", tint = Color.White)
-                }
-
-                if (isLeader && pendingRequestCount > 0) {
-                    Box(
+                    IconButton(
+                        onClick = { showInviteMenu = true },
                         modifier = Modifier
-                            .size(10.dp)
+                            .size(42.dp)
                             .clip(CircleShape)
-                            .background(Color.Red)
-                            .align(Alignment.TopEnd)
+                            .background(Color.White.copy(alpha = 0.88f))
+                    ) {
+                        Icon(
+                            Icons.Default.MoreVert,
+                            "More",
+                            tint = Color(0xFF1F2937),
+                            modifier = Modifier.size(21.dp)
+                        )
+                    }
+
+                    if (isLeader && pendingRequestCount > 0) {
+                        Box(
+                            modifier = Modifier
+                                .size(10.dp)
+                                .clip(CircleShape)
+                                .background(Color.Red)
+                                .align(Alignment.TopEnd)
+                        )
+                    }
+
+                    GroupDetailMoreMenu(
+                        expanded = showInviteMenu,
+                        onDismiss = { showInviteMenu = false },
+                        uiState = uiState,
+                        isLeader = isLeader,
+                        isCompleted = isCompleted,
+                        pendingRequestCount = pendingRequestCount,
+                        onApproveJoinRequest = { userId, name ->
+                            viewModel.approveJoinRequest(userId)
+                            Toast.makeText(
+                                context,
+                                context.getString(R.string.join_request_accepted, name),
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        },
+                        onRejectJoinRequest = { userId, name ->
+                            viewModel.rejectJoinRequest(userId)
+                            Toast.makeText(
+                                context,
+                                context.getString(R.string.join_request_rejected, name),
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        },
+                        onNavigateToProfile = onNavigateToProfile,
+                        onLeaveGroupClick = { showLeaveConfirm = true },
+                        onDeleteGroupClick = { showDeleteConfirm = true }
                     )
                 }
+        }
 
                 if (showDeleteConfirm) {
                     AlertDialog(
@@ -468,35 +544,6 @@ fun GroupDetailScreen(
                     )
                 }
 
-                GroupDetailMoreMenu(
-                    expanded = showInviteMenu,
-                    onDismiss = { showInviteMenu = false },
-                    uiState = uiState,
-                    isLeader = isLeader,
-                    isCompleted = isCompleted,
-                    pendingRequestCount = pendingRequestCount,
-                    onApproveJoinRequest = { userId, name ->
-                        viewModel.approveJoinRequest(userId)
-                        Toast.makeText(
-                            context,
-                            context.getString(R.string.join_request_accepted, name),
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    },
-                    onRejectJoinRequest = { userId, name ->
-                        viewModel.rejectJoinRequest(userId)
-                        Toast.makeText(
-                            context,
-                            context.getString(R.string.join_request_rejected, name),
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    },
-                    onNavigateToProfile = onNavigateToProfile,
-                    onLeaveGroupClick = { showLeaveConfirm = true },
-                    onDeleteGroupClick = { showDeleteConfirm = true }
-                )
-            }
-        }
         }
 
         if (showInitialError) {
@@ -531,3 +578,31 @@ fun GroupDetailScreen(
     }
 }
 
+private fun displayTripDateRange(startDate: String, endDate: String): String {
+    val start = startDate.toVietnameseDate()
+    val end = endDate.toVietnameseDate()
+    return listOf(start, end).filter { it.isNotBlank() }.joinToString(" - ")
+        .ifBlank { "Chưa có từ API" }
+}
+
+private fun daysUntilStartLabel(startDate: String): String? {
+    val start = runCatching { LocalDate.parse(startDate) }.getOrNull() ?: return null
+    val days = ChronoUnit.DAYS.between(LocalDate.now(), start)
+    return when {
+        days > 0 -> "Còn $days ngày"
+        days == 0L -> "Hôm nay"
+        else -> null
+    }
+}
+
+private fun displayTripStatus(statusLabel: String): String {
+    return statusLabel
+        .substringBefore("·")
+        .trim()
+        .ifBlank { "Chưa xác định" }
+}
+
+private fun String.toVietnameseDate(): String {
+    val date = runCatching { LocalDate.parse(this) }.getOrNull() ?: return this
+    return "%02d/%02d/%04d".format(date.dayOfMonth, date.monthValue, date.year)
+}

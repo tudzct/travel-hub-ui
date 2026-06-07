@@ -18,10 +18,7 @@ class AuthHeaderInterceptor @Inject constructor(
             return chain.proceed(originalRequest)
         }
 
-        val accessToken = authRepository.getSavedSession()
-            ?.accessToken
-            ?.trim()
-            .orEmpty()
+        val accessToken = authRepository.getAccessToken()?.trim().orEmpty()
 
         if (accessToken.isEmpty()) {
             return chain.proceed(originalRequest)

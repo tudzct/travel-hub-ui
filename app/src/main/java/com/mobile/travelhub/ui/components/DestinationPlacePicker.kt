@@ -2,6 +2,7 @@ package com.mobile.travelhub.ui.components
 
 import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -44,6 +45,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -84,14 +86,29 @@ fun DestinationPlacePicker(
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     Column(modifier = modifier.fillMaxWidth()) {
-        Text(
-            text = label.uppercase(),
-            style = MaterialTheme.typography.labelMedium,
-            fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            letterSpacing = 1.sp,
-            modifier = Modifier.padding(bottom = 8.dp)
-        )
+        if (label.isNotBlank()) {
+            Row(
+                modifier = Modifier.padding(bottom = 10.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                labelLeadingIcon?.let {
+                    Icon(
+                        imageVector = it,
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.width(10.dp))
+                }
+                Text(
+                    text = if (uppercaseLabel) label.uppercase() else label,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    letterSpacing = if (uppercaseLabel) 1.sp else 0.sp
+                )
+            }
+        }
 
         DestinationPickerAnchor(
             selectedProvince = selectedProvince,
@@ -100,6 +117,9 @@ fun DestinationPlacePicker(
             allowPlaceSelection = allowPlaceSelection,
             enabled = enabled,
             isLoading = isLoading,
+            compact = compactAnchor,
+            containerColor = anchorContainerColor,
+            borderColor = anchorBorderColor,
             onClick = {
                 isChoosingProvince = !allowPlaceSelection || selectedProvince == null
                 isSheetOpen = true
@@ -151,22 +171,53 @@ private fun DestinationPickerAnchor(
     allowPlaceSelection: Boolean,
     enabled: Boolean,
     isLoading: Boolean,
+    compact: Boolean,
+    containerColor: Color?,
+    borderColor: Color?,
     onClick: () -> Unit
 ) {
+    val anchorShape = RoundedCornerShape(18.dp)
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(14.dp))
+            .clip(anchorShape)
+            .then(
+                if (borderColor != null) {
+                    Modifier.border(1.dp, borderColor, anchorShape)
+                } else {
+                    Modifier
+                }
+            )
             .clickable(enabled = enabled, onClick = onClick),
-        shape = RoundedCornerShape(14.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f),
+        shape = anchorShape,
+        color = containerColor ?: MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f),
         tonalElevation = 0.dp
     ) {
         Row(
-            modifier = Modifier.padding(14.dp),
+            modifier = Modifier.padding(
+                horizontal = if (compact) 16.dp else 14.dp,
+                vertical = if (compact) 16.dp else 14.dp
+            ),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            SelectedPlaceThumb(selectedPlace = selectedPlace)
+            if (compact) {
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.LocationOn,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+            } else {
+                SelectedPlaceThumb(selectedPlace = selectedPlace)
+            }
 
             Spacer(modifier = Modifier.width(12.dp))
 
@@ -193,14 +244,15 @@ private fun DestinationPickerAnchor(
                 val title = selectedPlace?.province?.name
                     ?: selectedProvince?.let { if (allowPlaceSelection) "Đang xem ${it.name}" else it.name }
 
-                title?.let {
-                    Text(
-                        text = it,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
+                    title?.let {
+                        Text(
+                            text = it,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
                 }
             }
 

@@ -7,6 +7,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.activity.compose.LocalOnBackPressedDispatcherOwner
 import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.mobile.travelhub.R
@@ -19,6 +20,7 @@ fun CreatePostScreen(
 ) {
     val uiState = viewModel.uiState.collectAsState().value
     val context = LocalContext.current
+    val backPressedDispatcher = LocalOnBackPressedDispatcherOwner.current?.onBackPressedDispatcher
 
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickMultipleVisualMedia(maxItems = CreatePostViewModel.MAX_IMAGE_COUNT)
@@ -51,6 +53,7 @@ fun CreatePostScreen(
     CreatePostScreenContent(
         uiState = uiState,
         onDescriptionChange = viewModel::updateDescription,
+        onClose = { backPressedDispatcher?.onBackPressed() },
         onSelectProvince = viewModel::selectProvince,
         onSelectPlace = viewModel::selectPlace,
         onRetryProvinces = viewModel::retryLoadProvinces,

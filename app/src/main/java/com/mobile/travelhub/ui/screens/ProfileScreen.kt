@@ -84,6 +84,8 @@ import com.mobile.travelhub.ui.components.HomeCommentsBottomSheet
 import com.mobile.travelhub.ui.components.InlineLoadingSkeleton
 import com.mobile.travelhub.ui.components.LoadingContentSkeleton
 import com.mobile.travelhub.ui.components.SimpleFormTextField
+import com.mobile.travelhub.ui.components.TravelHubAvatar
+import com.mobile.travelhub.ui.components.TravelHubDrawerContent
 import com.mobile.travelhub.ui.components.layout.MainMenuButton
 import com.mobile.travelhub.ui.theme.*
 import com.mobile.travelhub.viewmodels.HomePostUiModel
@@ -295,48 +297,24 @@ private fun ProfileScreenContent(
     ModalNavigationDrawer(
         drawerState = activeDrawerState,
         gesturesEnabled = isViewingOwnProfile,
+        scrimColor = Color.Black.copy(alpha = 0.38f),
         drawerContent = {
             if (isViewingOwnProfile && !hideDrawerContentForNavigation) {
-                ModalDrawerSheet(
-                    modifier = Modifier.width(280.dp),
-                    drawerContainerColor = Color.White
-                ) {
-                    Column(
-                        modifier = Modifier.padding(top = 56.dp)
-                    ) {
-                        NavigationDrawerItem(
-                            label = { Text(stringResource(R.string.ui_d4e1de2330)) },
-                            selected = false,
-                            onClick = {
-                                onClearChangePasswordState()
-                                showChangePasswordDialog = true
-                                coroutineScope.launch { activeDrawerState.close() }
-                            },
-                            icon = {
-                                Icon(
-                                    imageVector = Icons.Outlined.Lock,
-                                    contentDescription = null
-                                )
-                            },
-                            modifier = Modifier.padding(horizontal = 12.dp)
-                        )
-                        NavigationDrawerItem(
-                            label = { Text(stringResource(R.string.ui_e43d612e11)) },
-                            selected = false,
-                            onClick = {
-                                coroutineScope.launch { activeDrawerState.close() }
-                                onLogout?.invoke()
-                            },
-                            icon = {
-                                Icon(
-                                    imageVector = Icons.AutoMirrored.Filled.ExitToApp,
-                                    contentDescription = null
-                                )
-                            },
-                            modifier = Modifier.padding(horizontal = 12.dp)
-                        )
+                TravelHubDrawerContent(
+                    profile = (profileState as? UiState.Success)?.data,
+                    onProfileClick = {
+                        coroutineScope.launch { activeDrawerState.close() }
+                    },
+                    onChangePasswordClick = {
+                        onClearChangePasswordState()
+                        showChangePasswordDialog = true
+                        coroutineScope.launch { activeDrawerState.close() }
+                    },
+                    onLogoutClick = {
+                        coroutineScope.launch { activeDrawerState.close() }
+                        onLogout?.invoke()
                     }
-                }
+                )
             }
         }
     ) {
@@ -436,27 +414,13 @@ private fun ProfileScreenContent(
                                             modifier = Modifier
                                                 .size(80.dp)
                                         ) {
-                                            if (avatarUrl != null) {
-                                                AsyncImage(
-                                                    model = avatarUrl,
-                                                    contentDescription = stringResource(R.string.ui_7631b26ea8),
-                                                    modifier = Modifier
-                                                        .fillMaxSize()
-                                                        .clip(CircleShape)
-                                                        .border(2.dp, Color(0xFFE0E0E0), CircleShape),
-                                                    contentScale = ContentScale.Crop
-                                                )
-                                            } else {
-                                                Image(
-                                                    painter = painterResource(id = R.drawable.female_avatar_maker),
-                                                    contentDescription = stringResource(R.string.ui_7631b26ea8),
-                                                    modifier = Modifier
-                                                        .fillMaxSize()
-                                                        .clip(CircleShape)
-                                                        .border(2.dp, Color(0xFFE0E0E0), CircleShape),
-                                                    contentScale = ContentScale.Crop
-                                                )
-                                            }
+                                            TravelHubAvatar(
+                                                avatarUrl = avatarUrl,
+                                                contentDescription = stringResource(R.string.ui_7631b26ea8),
+                                                modifier = Modifier.fillMaxSize(),
+                                                borderWidth = 2.dp,
+                                                borderColor = Color(0xFFE0E0E0)
+                                            )
                                             if (isViewingOwnProfile) {
                                                 Box(
                                                     modifier = Modifier

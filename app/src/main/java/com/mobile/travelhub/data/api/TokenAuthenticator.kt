@@ -25,10 +25,7 @@ class TokenAuthenticator @Inject constructor(
         }
 
         synchronized(refreshLock) {
-            val latestAccessToken = authRepository.getSavedSession()
-                ?.accessToken
-                ?.trim()
-                .orEmpty()
+            val latestAccessToken = authRepository.getAccessToken()?.trim().orEmpty()
             val latestAuthorization = latestAccessToken
                 .takeIf { it.isNotEmpty() }
                 ?.let { token ->
@@ -66,17 +63,13 @@ class TokenAuthenticator @Inject constructor(
         return result
     }
 
-    private fun isAuthEndpoint(path: String): Boolean {
-        return path == LOGIN_PATH || path == REGISTER_PATH || path == REFRESH_PATH
-    }
+    private fun isAuthEndpoint(path: String): Boolean = path == SESSION_PATH
 
     private companion object {
         private const val HEADER_AUTHORIZATION = "Authorization"
         private const val BEARER_PREFIX = "Bearer "
         private const val MAX_AUTH_RETRIES = 2
 
-        private const val LOGIN_PATH = "/api/auth/login"
-        private const val REGISTER_PATH = "/api/auth/register"
-        private const val REFRESH_PATH = "/api/auth/refresh"
+        private const val SESSION_PATH = "/api/auth/session"
     }
 }
