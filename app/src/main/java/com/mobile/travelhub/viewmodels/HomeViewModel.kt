@@ -44,6 +44,7 @@ data class HomePostUiModel(
 data class HomeCommentUiModel(
     val id: String,
     val username: String,
+    val avatarUrl: String?,
     val content: String,
     val timeAgoLabel: String
 )
@@ -373,7 +374,14 @@ class HomeViewModel @Inject constructor(
                             commentsErrorMessage = null,
                             commentsByPostId = state.commentsByPostId + (
                                 postId to response.data.map(::toCommentUiModel)
-                            )
+                            ),
+                            posts = state.posts.map { post ->
+                                if (post.id == postId) {
+                                    post.copy(commentCount = response.totalElements.toSafeCount())
+                                } else {
+                                    post
+                                }
+                            }
                         )
                     }
                 }
@@ -448,10 +456,13 @@ class HomeViewModel @Inject constructor(
         return HomeCommentUiModel(
             id = response.id?.toString() ?: "${createdAt.orEmpty()}-${username}-${content.hashCode()}",
             username = username,
+            avatarUrl = response.owner?.avatarUrl?.takeIf { it.isNotBlank() },
             content = content,
             timeAgoLabel = PostsUtils.formatTimeAgo(createdAt)
         )
     }
+
+    private fun Long.toSafeCount(): Int = coerceIn(0L, Int.MAX_VALUE.toLong()).toInt()
 
     private companion object {
         const val POSTS_PAGE_SIZE = 10

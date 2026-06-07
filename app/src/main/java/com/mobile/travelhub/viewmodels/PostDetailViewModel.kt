@@ -243,7 +243,10 @@ class PostDetailViewModel @Inject constructor(
                         it.copy(
                             isCommentsLoading = false,
                             commentsErrorMessage = null,
-                            comments = response.data.map(::toCommentUiModel)
+                            comments = response.data.map(::toCommentUiModel),
+                            post = it.post?.copy(
+                                commentCount = response.totalElements.toSafeCount()
+                            )
                         )
                     }
                 }
@@ -298,8 +301,11 @@ class PostDetailViewModel @Inject constructor(
         return HomeCommentUiModel(
             id = response.id?.toString() ?: "${createdAt.orEmpty()}-${username}-${content.hashCode()}",
             username = username,
+            avatarUrl = response.owner?.avatarUrl?.takeIf { it.isNotBlank() },
             content = content,
             timeAgoLabel = PostsUtils.formatTimeAgo(createdAt)
         )
     }
+
+    private fun Long.toSafeCount(): Int = coerceIn(0L, Int.MAX_VALUE.toLong()).toInt()
 }

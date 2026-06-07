@@ -21,6 +21,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
 import com.mobile.travelhub.R
 
 @Composable
@@ -28,6 +29,7 @@ fun CommentItem(
     name: String,
     comment: String,
     time: String,
+    avatarUrl: String?,
     avatarRes: Int
 ) {
     Row(
@@ -41,12 +43,24 @@ fun CommentItem(
                 .clip(CircleShape)
                 .background(MaterialTheme.colorScheme.surfaceVariant)
         ) {
-            Image(
-                painter = painterResource(id = avatarRes),
-                contentDescription = stringResource(R.string.ui_7631b26ea8),
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop
-            )
+            if (avatarUrl.isNullOrBlank()) {
+                Image(
+                    painter = painterResource(id = avatarRes),
+                    contentDescription = stringResource(R.string.ui_7631b26ea8),
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+            } else {
+                AsyncImage(
+                    model = avatarUrl,
+                    contentDescription = stringResource(R.string.ui_7631b26ea8),
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop,
+                    placeholder = painterResource(id = avatarRes),
+                    error = painterResource(id = avatarRes),
+                    fallback = painterResource(id = avatarRes)
+                )
+            }
         }
 
         Column(
