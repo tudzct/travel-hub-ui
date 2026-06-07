@@ -23,6 +23,7 @@ import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material.icons.outlined.VisibilityOff
 import androidx.compose.material.icons.rounded.Navigation
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -227,13 +228,7 @@ fun PrimaryAuthButton(
             ),
         contentAlignment = Alignment.Center
     ) {
-        if (isLoading) {
-            SkeletonBlock(
-                modifier = Modifier
-                    .fillMaxWidth(0.3f)
-                    .height(12.dp)
-            )
-        } else {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
             Text(
                 text = text,
                 color = Color.White,
@@ -243,6 +238,14 @@ fun PrimaryAuthButton(
                     letterSpacing = 0.sp
                 )
             )
+            if (isLoading) {
+                Spacer(modifier = Modifier.size(10.dp))
+                CircularProgressIndicator(
+                    modifier = Modifier.size(16.dp),
+                    strokeWidth = 2.dp,
+                    color = Color.White
+                )
+            }
         }
     }
 }

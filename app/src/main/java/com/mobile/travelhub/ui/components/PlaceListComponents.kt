@@ -77,6 +77,7 @@ import com.mobile.travelhub.R
 import com.mobile.travelhub.data.model.TravelPlaceListItemResponse
 import com.mobile.travelhub.ui.components.modifiers.shimmerEffect
 import com.mobile.travelhub.ui.components.layout.MainMenuButton
+import com.mobile.travelhub.ui.components.CommentSubmitAction
 import com.mobile.travelhub.viewmodels.HomeCommentUiModel
 import com.mobile.travelhub.viewmodels.HomePostUiModel
 import com.mobile.travelhub.viewmodels.HomeUiState
@@ -130,7 +131,7 @@ fun PlaceListScreenContent(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.White)
+            .background(MaterialTheme.colorScheme.surface)
     ) {
         AnimatedVisibility(
             visible = isTopBarVisible,
@@ -302,7 +303,7 @@ fun HomeCommentsBottomSheet(
 ) {
     ModalBottomSheet(
         onDismissRequest = onDismiss,
-        containerColor = Color.White
+        containerColor = MaterialTheme.colorScheme.surface
     ) {
         Text(
             text = stringResource(R.string.ui_fce06e20e5),
@@ -365,25 +366,11 @@ fun HomeCommentsBottomSheet(
                 maxLines = 3
             )
             Spacer(modifier = Modifier.width(8.dp))
-            IconButton(
-                onClick = onCommentSubmit,
-                enabled = !isCommentSubmitting && commentInput.isNotBlank(),
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(CircleShape)
-                    .background(VerdantPrimary)
-            ) {
-                if (isCommentSubmitting) {
-                    InlineLoadingSkeleton(modifier = Modifier.size(16.dp))
-                } else {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Outlined.Send,
-                        modifier = Modifier.size(16.dp),
-                        contentDescription = stringResource(R.string.ui_591e0e89f0),
-                        tint = Color.White
-                    )
-                }
-            }
+            CommentSubmitAction(
+                isSubmitting = isCommentSubmitting,
+                canSubmit = commentInput.isNotBlank(),
+                onSubmit = onCommentSubmit
+            )
         }
 
         if (!commentErrorMessage.isNullOrBlank()) {
@@ -412,7 +399,7 @@ private fun FeedTopBar(
         modifier = modifier
             .fillMaxWidth()
             .height(topBarContentHeight)
-            .background(Color.White)
+            .background(MaterialTheme.colorScheme.surface)
     ) {
         Box(
             modifier = Modifier
@@ -421,15 +408,15 @@ private fun FeedTopBar(
                 .align(Alignment.BottomCenter)
                 .padding(horizontal = 6.dp)
         ) {
-            MainMenuButton(
-                onClick = onMenuClick,
-                modifier = Modifier.align(Alignment.CenterStart)
-            )
+//            MainMenuButton(
+//                onClick = onMenuClick,
+//                modifier = Modifier.align(Alignment.CenterStart)
+//            )
             Text(
                 text = stringResource(R.string.ui_a59ca6e82e),
                 modifier = Modifier.align(Alignment.Center),
                 style = MaterialTheme.typography.titleMedium,
-                color = VerdantOnSurface,
+                color = MaterialTheme.colorScheme.onSurface,
                 fontWeight = FontWeight.ExtraBold
             )
 
@@ -440,7 +427,7 @@ private fun FeedTopBar(
                 Icon(
                     imageVector = Icons.Outlined.Search,
                     contentDescription = stringResource(R.string.ui_bce0641417),
-                    tint = VerdantOnSurface
+                    tint = MaterialTheme.colorScheme.onSurface
                 )
             }
         }
@@ -461,7 +448,7 @@ private fun LocationsRailSection(
         Text(
             text = stringResource(R.string.you_might_like),
             modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 10.dp),
-            color = VerdantOnSurface,
+            color = MaterialTheme.colorScheme.onSurface,
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.ExtraBold
         )
@@ -574,7 +561,7 @@ private fun FeedEmptyState(
     ) {
         Surface(
             shape = RoundedCornerShape(24.dp),
-            color = VerdantSurfaceContainer,
+            color = MaterialTheme.colorScheme.surface,
             modifier = Modifier.fillMaxWidth()
         ) {
             Column(
@@ -584,13 +571,13 @@ private fun FeedEmptyState(
                 Text(
                     text = title,
                     style = MaterialTheme.typography.headlineSmall,
-                    color = VerdantOnSurface,
+                    color = MaterialTheme.colorScheme.onSurface,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
                     text = message,
                     style = MaterialTheme.typography.bodyLarge,
-                    color = VerdantOnSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 if (onRetry != null) {
                     RetryButton(onClick = onRetry)
@@ -636,7 +623,7 @@ fun FeedPostCard(
     val pagerState = rememberPagerState(pageCount = { imageCount })
     val authorClick = onAuthorClick
 
-    Column (modifier = Modifier.background(Color.White)) {
+    Column(modifier = Modifier.background(MaterialTheme.colorScheme.surface)) {
 
         Row(
             modifier = Modifier
@@ -676,7 +663,7 @@ fun FeedPostCard(
                     Text(
                         text = post.username,
                         style = MaterialTheme.typography.titleSmall,
-                        color = VerdantOnSurface,
+                        color = MaterialTheme.colorScheme.onSurface,
                         fontWeight = FontWeight.Bold,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
@@ -689,7 +676,7 @@ fun FeedPostCard(
                             imageVector = Icons.Outlined.Place,
                             contentDescription = null,
                             modifier = Modifier.size(12.dp),
-                            tint = VerdantOnSurfaceVariant
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Spacer(modifier = Modifier.width(2.dp))
                         Text(
@@ -698,7 +685,7 @@ fun FeedPostCard(
                                 .weight(1f)
                                 .basicMarquee(),
                             style = MaterialTheme.typography.bodySmall,
-                            color = VerdantOnSurfaceVariant,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 1
                         )
                     }
@@ -709,7 +696,7 @@ fun FeedPostCard(
             Text(
                 text = post.timeAgoLabel,
                 style = MaterialTheme.typography.labelSmall,
-                color = VerdantOnSurfaceVariant.copy(alpha = 0.7f)
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
             )
         }
 
@@ -719,7 +706,7 @@ fun FeedPostCard(
             title = null,
             collapsedMaxLines = 3,
             textStyle = MaterialTheme.typography.bodyMedium,
-            textColor = VerdantOnSurface
+            textColor = MaterialTheme.colorScheme.onSurface
         )
 
         Spacer(modifier = Modifier.height(12.dp))
@@ -728,7 +715,7 @@ fun FeedPostCard(
             modifier = Modifier
                 .fillMaxWidth()
                 .aspectRatio(5f / 3f)
-                .background(Color(0xFFF5F5F5))
+                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f))
         ) {
             if (post.imageUrls.isNotEmpty()) {
                 HorizontalPager(
@@ -789,14 +776,14 @@ fun FeedPostCard(
                         Icon(
                             imageVector = if (post.isLiked) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
                             contentDescription = stringResource(R.string.ui_c7e02c95fe),
-                            tint = if (post.isLiked) MaterialTheme.colorScheme.error else VerdantOnSurface,
+                            tint = if (post.isLiked) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier.size(26.dp)
                         )
                     }
                     Text(
                         text = stringResource(R.string.like_count, post.likeCount),
                         style = MaterialTheme.typography.labelMedium,
-                        color = VerdantOnSurface
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                 }
                 Column(
@@ -813,13 +800,13 @@ fun FeedPostCard(
                             painter = painterResource(R.drawable.message_circle),
                             contentDescription = stringResource(R.string.ui_153d7a58b3),
                             modifier = Modifier.size(24.dp),
-                            tint = VerdantOnSurface
+                            tint = MaterialTheme.colorScheme.onSurface
                         )
                     }
                     Text(
                         text = stringResource(R.string.comment_count, post.commentCount),
                         style = MaterialTheme.typography.labelMedium,
-                        color = VerdantOnSurface
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                 }
                 Column(
@@ -836,13 +823,13 @@ fun FeedPostCard(
                             imageVector = if (post.isSaved) Icons.Filled.Bookmark else Icons.Outlined.BookmarkBorder,
                             contentDescription = if (post.isSaved) "Unsave" else "Save",
                             modifier = Modifier.size(26.dp),
-                            tint = if (post.isSaved) PrimaryBlue else VerdantOnSurface
+                            tint = if (post.isSaved) PrimaryBlue else MaterialTheme.colorScheme.onSurface
                         )
                     }
                     Text(
                         text = stringResource(R.string.save_count, post.saveCount),
                         style = MaterialTheme.typography.labelMedium,
-                        color = VerdantOnSurface
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                 }
             }
@@ -852,7 +839,7 @@ fun FeedPostCard(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(4.dp)
-                .background(Color(0xFFE0E0E0))
+                .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f))
         )
     }
 }
@@ -976,7 +963,7 @@ fun FeedPostCardSkeleton(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(3.dp)
-                .background(Color(0xFFE0E0E0))
+                .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f))
         )
     }
 }
@@ -1010,6 +997,3 @@ fun FeedPostCardPreview() {
 
 
 private val VerdantPrimary = Color(0xFF1677F2)
-private val VerdantSurfaceContainer = Color(0xFFEFF6EA)
-private val VerdantOnSurface = Color(0xFF171D16)
-private val VerdantOnSurfaceVariant = Color(0xFF3E4A3D)

@@ -33,7 +33,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
-import com.mobile.travelhub.ui.theme.SurfaceContainer
 import java.util.Locale
 import com.mobile.travelhub.R
 
@@ -62,13 +61,13 @@ fun FeaturedLocationCard(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(SurfaceContainer),
+                    .background(MaterialTheme.colorScheme.surfaceVariant),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = Icons.Outlined.Place,
                     contentDescription = null,
-                    tint = Color.White.copy(alpha = 0.88f),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.size(54.dp)
                 )
             }
@@ -126,14 +125,14 @@ private fun LocationRatingBadge(
     reviewCount: Long,
     modifier: Modifier = Modifier
 ) {
-    Row(
-        modifier = modifier
-            .padding(14.dp)
-            .clip(RoundedCornerShape(14.dp))
-            .background(Color.White.copy(alpha = 0.86f))
-            .padding(horizontal = 8.dp, vertical = 5.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
+        Row(
+            modifier = modifier
+                .padding(14.dp)
+                .clip(RoundedCornerShape(14.dp))
+                .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.92f))
+                .padding(horizontal = 8.dp, vertical = 5.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
         if (reviewCount > 0 && averageRating != null) {
             Icon(
                 imageVector = Icons.Filled.Star,
@@ -144,14 +143,14 @@ private fun LocationRatingBadge(
             Text(
                 text = String.format(Locale.US, "%.1f", averageRating),
                 modifier = Modifier.padding(start = 3.dp),
-                color = Color.Black,
+                color = MaterialTheme.colorScheme.onSurface,
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Bold
             )
         } else {
             Text(
                 text = stringResource(R.string.ui_6403f2b7eb),
-                color = Color.Black,
+                color = MaterialTheme.colorScheme.onSurface,
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Bold
             )
@@ -163,19 +162,19 @@ private fun LocationRatingBadge(
 private fun BoxScope.CircularActionButton(
     modifier: Modifier = Modifier
 ) {
-    Box(
-        modifier = modifier
-            .align(Alignment.TopEnd)
-            .padding(14.dp)
-            .size(42.dp)
-            .clip(CircleShape)
-            .background(Color.White.copy(alpha = 0.84f)),
-        contentAlignment = Alignment.Center
+        Box(
+            modifier = modifier
+                .align(Alignment.TopEnd)
+                .padding(14.dp)
+                .size(42.dp)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.92f)),
+            contentAlignment = Alignment.Center
     ) {
         Icon(
             imageVector = Icons.AutoMirrored.Filled.ArrowForward,
             contentDescription = null,
-            tint = Color.Black,
+            tint = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier
                 .size(22.dp)
                 .graphicsLayer(rotationZ = -45f)

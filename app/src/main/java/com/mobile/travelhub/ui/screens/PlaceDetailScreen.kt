@@ -79,12 +79,7 @@ import com.mobile.travelhub.ui.components.LoadingContentSkeleton
 import com.mobile.travelhub.ui.components.LoadingListSkeleton
 import com.mobile.travelhub.ui.components.RetryButton
 import com.mobile.travelhub.ui.components.SkeletonBlock
-import com.mobile.travelhub.ui.theme.OnSurface
-import com.mobile.travelhub.ui.theme.OnSurfaceVariant
 import com.mobile.travelhub.ui.theme.PrimaryBlue
-import com.mobile.travelhub.ui.theme.SurfaceBg
-import com.mobile.travelhub.ui.theme.SurfaceContainerLow
-import com.mobile.travelhub.ui.theme.SurfaceContainerLowest
 import com.mobile.travelhub.viewmodels.PlaceDetailUiModel
 import com.mobile.travelhub.viewmodels.PlaceDetailViewModel
 import com.mobile.travelhub.viewmodels.ReviewViewModel
@@ -147,7 +142,7 @@ fun PlaceDetailScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(SurfaceBg)
+            .background(MaterialTheme.colorScheme.background)
     ) {
         when {
             uiState.isLoading && uiState.detail == null -> {
@@ -170,19 +165,19 @@ fun PlaceDetailScreen(
                             onClick = onBack,
                             modifier = Modifier
                                 .size(44.dp)
-                                .background(Color(0xFFF2F4F7), CircleShape)
+                                .background(MaterialTheme.colorScheme.surfaceVariant, CircleShape)
                         ) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                                 contentDescription = stringResource(R.string.ui_b52b36b726),
-                                tint = OnSurface
+                                tint = MaterialTheme.colorScheme.onSurface
                             )
                         }
                         Text(
                             text = stringResource(R.string.ui_3682846f79),
                             style = MaterialTheme.typography.headlineSmall,
                             fontWeight = FontWeight.Bold,
-                            color = OnSurface
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                     }
                     Text(
@@ -329,7 +324,7 @@ private fun PlaceHeroSection(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .background(SurfaceContainerLow)
+            .background(MaterialTheme.colorScheme.surfaceVariant)
     ) {
         Box(
             modifier = Modifier
@@ -340,13 +335,13 @@ private fun PlaceHeroSection(
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .background(SurfaceContainerLow),
+                        .background(MaterialTheme.colorScheme.surfaceVariant),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = stringResource(R.string.ui_fc5e5bdcd5),
                         style = MaterialTheme.typography.bodyLarge,
-                        color = OnSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             } else if (displayUrls.size == 1) {
@@ -374,7 +369,7 @@ private fun PlaceHeroSection(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(
-                        Brush.verticalGradient(
+                                Brush.verticalGradient(
                             colors = listOf(
                                 Color.Black.copy(alpha = 0.24f),
                                 Color.Transparent,
@@ -382,7 +377,7 @@ private fun PlaceHeroSection(
                             )
                         )
                     )
-            )
+                )
 
             Column(
                 modifier = Modifier
@@ -465,13 +460,13 @@ private fun PinnedBackButton(onBack: () -> Unit) {
         modifier = Modifier
             .padding(start = 16.dp, top = 48.dp),
         shape = CircleShape,
-        color = Color.Black.copy(alpha = 0.3f)
+        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.72f)
     ) {
         IconButton(onClick = onBack) {
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                 contentDescription = stringResource(R.string.ui_b52b36b726),
-                tint = Color.White
+                tint = MaterialTheme.colorScheme.onSurface
             )
         }
     }
@@ -484,7 +479,7 @@ private fun FlatSection(content: @Composable () -> Unit) {
             .fillMaxWidth()
             .padding(horizontal = PlaceDetailHorizontalPadding)
             .clip(RoundedCornerShape(20.dp))
-            .background(SurfaceContainerLowest)
+            .background(MaterialTheme.colorScheme.surface)
             .padding(PlaceDetailSectionPadding)
     ) {
         content()
@@ -548,12 +543,12 @@ private fun InfoRow(
             Text(
                 text = label,
                 style = MaterialTheme.typography.labelMedium,
-                color = OnSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Text(
                 text = value,
                 style = MaterialTheme.typography.bodyLarge,
-                color = OnSurface,
+                color = MaterialTheme.colorScheme.onSurface,
                 fontWeight = FontWeight.SemiBold,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis
@@ -629,19 +624,19 @@ private fun RelatedPlaceCard(
     place: TravelPlaceListItemResponse,
     onClick: () -> Unit
 ) {
-    Box(
-        modifier = Modifier
-            .width(196.dp)
-            .height(146.dp)
-            .clip(RoundedCornerShape(20.dp))
-            .background(SurfaceContainerLow)
-            .clickable(onClick = onClick)
+        Box(
+            modifier = Modifier
+                .width(196.dp)
+                .height(146.dp)
+                .clip(RoundedCornerShape(20.dp))
+                .background(MaterialTheme.colorScheme.surfaceVariant)
+                .clickable(onClick = onClick)
     ) {
         if (place.mainImage.isNullOrBlank()) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(SurfaceContainerLow),
+                    .background(MaterialTheme.colorScheme.surfaceVariant),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
@@ -779,12 +774,12 @@ private fun ReviewSummarySection(
                 onClick = onWriteReview,
                 colors = ButtonDefaults.buttonColors(
                     containerColor = PrimaryBlue,
-                    contentColor = Color.White
+                    contentColor = MaterialTheme.colorScheme.onPrimary
                 )
             ) {
                 Text(
                     text = if (myReview == null) "Viết đánh giá" else "Sửa đánh giá",
-                    color = Color.White
+                    color = MaterialTheme.colorScheme.onPrimary
                 )
             }
         }
@@ -913,7 +908,7 @@ private fun PlaceActionSection(
             shape = RoundedCornerShape(16.dp),
             border = BorderStroke(1.dp, PrimaryBlue.copy(alpha = 0.35f)),
             colors = ButtonDefaults.outlinedButtonColors(
-                contentColor = Color.White,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
                 containerColor = PrimaryBlue
             )
         ) {

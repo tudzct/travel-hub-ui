@@ -55,6 +55,8 @@ fun TravelHubDrawerContent(
     onEditProfileClick: () -> Unit,
     onChangePasswordClick: () -> Unit,
     onLogoutClick: () -> Unit,
+    isDarkThemeEnabled: Boolean,
+    onDarkThemeChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
     width: Dp = 290.dp
 ) {
@@ -63,7 +65,7 @@ fun TravelHubDrawerContent(
             .width(width)
             .fillMaxHeight()
             .clip(RoundedCornerShape(topEnd = 16.dp, bottomEnd = 16.dp)),
-        drawerContainerColor = Color.White
+        drawerContainerColor = MaterialTheme.colorScheme.surface
     ) {
         Column(
             modifier = Modifier
@@ -105,7 +107,10 @@ fun TravelHubDrawerContent(
 
             Spacer(modifier = Modifier.weight(1f))
 
-            DrawerDarkModeRow()
+            DrawerDarkModeRow(
+                checked = isDarkThemeEnabled,
+                onCheckedChange = onDarkThemeChange
+            )
         }
     }
 }
@@ -178,7 +183,7 @@ private fun DrawerProfileHeader(
                 text = profile?.username?.takeIf { it.isNotBlank() } ?: "Travel Hub",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF111827),
+                color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
@@ -232,7 +237,7 @@ private fun DrawerActionRow(
                 text = title,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF111827)
+                color = MaterialTheme.colorScheme.onSurface
             )
             if (!subtitle.isNullOrBlank()) {
                 Spacer(modifier = Modifier.height(6.dp))
@@ -254,7 +259,10 @@ private fun DrawerActionRow(
 }
 
 @Composable
-private fun DrawerDarkModeRow() {
+private fun DrawerDarkModeRow(
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -272,18 +280,18 @@ private fun DrawerDarkModeRow() {
             text = "Chế độ tối",
             modifier = Modifier.weight(1f),
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = MaterialTheme.colorScheme.onSurface
         )
         Switch(
-            checked = false,
-            onCheckedChange = null,
+            checked = checked,
+            onCheckedChange = onCheckedChange,
             colors = SwitchDefaults.colors(
+                checkedThumbColor = Color.White,
+                checkedTrackColor = MaterialTheme.colorScheme.primary,
+                checkedBorderColor = Color.Transparent,
                 uncheckedThumbColor = Color.White,
                 uncheckedTrackColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.75f),
-                uncheckedBorderColor = Color.Transparent,
-                disabledUncheckedThumbColor = Color.White,
-                disabledUncheckedTrackColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.75f),
-                disabledUncheckedBorderColor = Color.Transparent
+                uncheckedBorderColor = Color.Transparent
             )
         )
     }

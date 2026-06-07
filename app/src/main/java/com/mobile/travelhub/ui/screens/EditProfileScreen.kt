@@ -416,7 +416,7 @@ fun EditProfileScreen(
                 placeholder = "Địa điểm",
                 allowPlaceSelection = false,
                 compactAnchor = true,
-                anchorContainerColor = Color.White,
+                anchorContainerColor = MaterialTheme.colorScheme.surface,
                 anchorBorderColor = EditProfileBorder,
                 anchorTitleOverride = "Địa điểm",
                 compactSupportingText = selectedProvince?.name
@@ -483,7 +483,7 @@ fun EditProfileScreen(
                         Text(stringResource(R.string.ui_36fff63ccb), color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
                     }
                 },
-                containerColor = MaterialTheme.colorScheme.surfaceContainerHighest
+                containerColor = MaterialTheme.colorScheme.surface
             )
         }
     }
@@ -555,7 +555,7 @@ private fun EditProfileAvatarPicker(
                     .shadow(8.dp, CircleShape)
                     .size(45.dp),
                 shape = CircleShape,
-                color = Color.White
+                color = MaterialTheme.colorScheme.surface
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
@@ -593,14 +593,14 @@ private fun EditProfileInputCard(
     minHeight: Dp = 70.dp,
     iconInCircle: Boolean = false
 ) {
-    Surface(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(minHeight)
-            .border(1.dp, EditProfileBorder, RoundedCornerShape(18.dp)),
-        shape = RoundedCornerShape(18.dp),
-        color = Color.White
-    ) {
+        Surface(
+            modifier = modifier
+                .fillMaxWidth()
+                .height(minHeight)
+                .border(1.dp, EditProfileBorder, RoundedCornerShape(18.dp)),
+            shape = RoundedCornerShape(18.dp),
+            color = MaterialTheme.colorScheme.surface
+        ) {
         Row(
             modifier = Modifier.padding(horizontal = 18.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically

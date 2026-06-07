@@ -1,6 +1,7 @@
 package com.mobile.travelhub
 
 import android.Manifest
+import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
@@ -10,6 +11,11 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.lifecycleScope
 import com.mobile.travelhub.data.DeviceTokenRepository
 import com.mobile.travelhub.ui.screens.TravelHubScreen
@@ -21,6 +27,8 @@ import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+    private val themePrefs by lazy { getSharedPreferences("travel_hub_prefs", Context.MODE_PRIVATE) }
+
     @Inject
     lateinit var deviceTokenRepository: DeviceTokenRepository
 
@@ -31,8 +39,26 @@ class MainActivity : ComponentActivity() {
         askNotificationPermission()
         registerDeviceToken()
         setContent {
-            TravelHubTheme {
-                TravelHubScreen()
+            val hasDarkThemePreference = remember { themePrefs.contains("dark_theme_enabled") }
+            val systemDarkTheme = isSystemInDarkTheme()
+            var darkThemeEnabled by remember {
+                mutableStateOf(
+                    if (hasDarkThemePreference) {
+                        themePrefs.getBoolean("dark_theme_enabled", false)
+                    } else {
+                        systemDarkTheme
+                    }
+                )
+            }
+
+            TravelHubTheme(darkTheme = darkThemeEnabled) {
+                TravelHubScreen(
+                    isDarkThemeEnabled = darkThemeEnabled,
+                    onDarkThemeChange = { enabled ->
+                        darkThemeEnabled = enabled
+                        themePrefs.edit().putBoolean("dark_theme_enabled", enabled).apply()
+                    }
+                )
             }
         }
     }

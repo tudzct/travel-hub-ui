@@ -1,6 +1,5 @@
 package com.mobile.travelhub.ui.components.layout
 
-import androidx.activity.compose.LocalOnBackPressedDispatcherOwner
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.border
@@ -71,7 +70,6 @@ fun RoundedTopNavigationBar(
 ) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
-    val backPressedDispatcher = LocalOnBackPressedDispatcherOwner.current?.onBackPressedDispatcher
 
     fun isProfileRoute(route: String?): Boolean {
         return route?.startsWith(Screen.Profile.route) == true ||
@@ -146,14 +144,13 @@ fun RoundedTopNavigationBar(
                                         }
                                     }
                                 } else if (screen == Screen.Profile) {
-                                    if (isProfileRoute(currentRoute) && currentRoute != Screen.Profile.route) {
-                                        backPressedDispatcher?.onBackPressed()
-                                    } else if (currentBaseRoute != Screen.Profile.route) {
+                                    if (currentBaseRoute != Screen.Profile.route) {
                                         navController.navigate(Screen.Profile.route) {
                                             popUpTo(navController.graph.findStartDestination().id) {
                                                 saveState = true
                                             }
                                             launchSingleTop = true
+                                            restoreState = true
                                         }
                                     }
                                 } else if (currentBaseRoute != screen.route) {

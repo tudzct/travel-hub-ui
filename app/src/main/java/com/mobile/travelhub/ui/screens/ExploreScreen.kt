@@ -63,10 +63,7 @@ import com.mobile.travelhub.ui.components.SearchBar
 import com.mobile.travelhub.ui.components.UserResultCard
 import com.mobile.travelhub.ui.components.UserResultCardSkeleton
 import com.mobile.travelhub.ui.components.modifiers.shimmerEffect
-import com.mobile.travelhub.ui.theme.OnSurface
-import com.mobile.travelhub.ui.theme.OnSurfaceVariant
 import com.mobile.travelhub.ui.theme.PrimaryBlue
-import com.mobile.travelhub.ui.theme.SurfaceBg
 import com.mobile.travelhub.viewmodels.ExploreViewModel
 import com.mobile.travelhub.viewmodels.TopTravelersUiState
 import com.mobile.travelhub.viewmodels.TopTravelersViewModel
@@ -134,13 +131,13 @@ fun ExploreScreen(
                 onPlaceClick = onPlaceClick
             )
         } else {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(SurfaceBg)
-                    .verticalScroll(rememberScrollState())
-                    .padding(top = 10.dp, bottom = 24.dp)
-            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(MaterialTheme.colorScheme.background)
+                        .verticalScroll(rememberScrollState())
+                        .padding(top = 10.dp, bottom = 24.dp)
+                ) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -150,7 +147,7 @@ fun ExploreScreen(
                 ) {
                     Text(
                         text = stringResource(R.string.ui_b965ae66fc),
-                        color = OnSurface,
+                        color = MaterialTheme.colorScheme.onSurface,
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.ExtraBold
                     )
@@ -209,7 +206,7 @@ private fun FeaturedLocationsSection(
             ) {
                 Text(
                     text = stringResource(R.string.ui_625c9f2021),
-                    color = OnSurfaceVariant,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     style = MaterialTheme.typography.bodySmall
                 )
                 RetryButton(onClick = onRetry)
@@ -220,7 +217,7 @@ private fun FeaturedLocationsSection(
             Text(
                 text = stringResource(R.string.ui_6e8c44726f),
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
-                color = OnSurfaceVariant,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 style = MaterialTheme.typography.bodySmall
             )
         }
@@ -287,24 +284,24 @@ private fun SearchField(
 
 @Composable
 private fun SectionLabel(text: String, topPadding: androidx.compose.ui.unit.Dp = 0.dp) {
-    Text(
-        text = text,
-        modifier = Modifier.padding(start = 16.dp, top = topPadding, bottom = 10.dp),
-        color = OnSurfaceVariant,
-        style = MaterialTheme.typography.labelLarge,
-        fontWeight = FontWeight.Bold
-    )
+        Text(
+            text = text,
+            modifier = Modifier.padding(start = 16.dp, top = topPadding, bottom = 10.dp),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            style = MaterialTheme.typography.labelLarge,
+            fontWeight = FontWeight.Bold
+        )
 }
 
 @Composable
 private fun SectionTitle(text: String, topPadding: androidx.compose.ui.unit.Dp = 20.dp) {
-    Text(
-        text = text,
-        modifier = Modifier.padding(start = 16.dp, top = topPadding, bottom = 10.dp),
-        color = OnSurface,
-        style = MaterialTheme.typography.titleLarge,
-        fontWeight = FontWeight.ExtraBold
-    )
+        Text(
+            text = text,
+            modifier = Modifier.padding(start = 16.dp, top = topPadding, bottom = 10.dp),
+            color = MaterialTheme.colorScheme.onSurface,
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.ExtraBold
+        )
 }
 
 @Composable
@@ -323,7 +320,7 @@ private fun SectionTitleRow(
     ) {
         Text(
             text = title,
-            color = OnSurface,
+            color = MaterialTheme.colorScheme.onSurface,
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.ExtraBold
         )
@@ -363,8 +360,8 @@ private fun HorizontalChipRow(
 
 @Composable
 private fun ExploreChip(text: String, leadingIcon: Boolean, filled: Boolean) {
-    val background = if (filled) Color(0xFFE1E3EA) else Color(0xFFF3F6FC)
-    val borderColor = if (filled) Color.Transparent else Color(0xFFD6DAE6)
+    val background = if (filled) MaterialTheme.colorScheme.surfaceVariant else MaterialTheme.colorScheme.surface
+    val borderColor = if (filled) Color.Transparent else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.7f)
 
     Row(
         modifier = Modifier
@@ -379,20 +376,20 @@ private fun ExploreChip(text: String, leadingIcon: Boolean, filled: Boolean) {
             Icon(
                 imageVector = Icons.Outlined.CalendarMonth,
                 contentDescription = null,
-                tint = OnSurfaceVariant,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(14.dp)
             )
             Text(
                 text = text,
                 modifier = Modifier.padding(start = 6.dp),
-                color = OnSurfaceVariant,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 style = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.SemiBold
             )
         } else {
             Text(
                 text = text,
-                color = OnSurfaceVariant,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 style = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.Bold
             )
@@ -407,7 +404,7 @@ private fun SectionDivider() {
             .fillMaxWidth()
             .padding(top = 18.dp)
             .height(1.dp)
-            .background(Color(0xFFE4E7EF))
+            .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f))
     )
 }
 
@@ -448,11 +445,11 @@ private fun TopTravelersPreview(
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text(
-                    text = stringResource(R.string.ui_6725a49830),
-                    color = OnSurfaceVariant,
-                    style = MaterialTheme.typography.bodySmall
-                )
+            Text(
+                text = stringResource(R.string.ui_6725a49830),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.bodySmall
+            )
                 RetryButton(onClick = onRetry)
             }
         }
@@ -461,7 +458,7 @@ private fun TopTravelersPreview(
             Text(
                 text = stringResource(R.string.ui_2ab957043f),
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp),
-                color = OnSurfaceVariant,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 style = MaterialTheme.typography.bodySmall
             )
         }

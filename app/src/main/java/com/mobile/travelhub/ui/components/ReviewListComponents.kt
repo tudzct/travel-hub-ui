@@ -495,7 +495,7 @@ fun TravelPlaceReviewCard(
             .fillMaxWidth()
             .padding(horizontal = horizontalPadding),
         shape = RoundedCornerShape(18.dp),
-        color = Color.White,
+        color = MaterialTheme.colorScheme.surface,
         shadowElevation = 0.dp,
         tonalElevation = 0.dp,
         border = androidx.compose.foundation.BorderStroke(1.dp, SurfaceContainerLow.copy(alpha = 0.8f))
@@ -562,7 +562,7 @@ fun TravelPlaceReviewCardSkeleton(
             .fillMaxWidth()
             .padding(horizontal = horizontalPadding),
         shape = RoundedCornerShape(18.dp),
-        color = Color.White,
+        color = MaterialTheme.colorScheme.surface,
         shadowElevation = 0.dp,
         tonalElevation = 0.dp,
         border = androidx.compose.foundation.BorderStroke(1.dp, SurfaceContainerLow.copy(alpha = 0.8f))

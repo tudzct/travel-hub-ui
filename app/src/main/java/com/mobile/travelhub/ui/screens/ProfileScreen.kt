@@ -28,7 +28,6 @@ import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material.icons.outlined.VisibilityOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.DrawerState
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -117,7 +116,8 @@ fun ProfileScreen(
     onNavigateToUserProfile: (Long) -> Unit = {},
     onNavigateToCreatePost: () -> Unit = {},
     onBack: (() -> Unit)? = null,
-    drawerState: DrawerState? = null,
+    isDarkThemeEnabled: Boolean,
+    onDarkThemeChange: (Boolean) -> Unit,
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
     val isViewingOwnProfile = viewingUserId == null
@@ -238,7 +238,8 @@ fun ProfileScreen(
         changePasswordState = changePasswordState,
         onChangePassword = viewModel::changePassword,
         onClearChangePasswordState = viewModel::clearChangePasswordState,
-        drawerState = drawerState
+        isDarkThemeEnabled = isDarkThemeEnabled,
+        onDarkThemeChange = onDarkThemeChange
     )
 }
 
@@ -275,7 +276,8 @@ private fun ProfileScreenContent(
     changePasswordState: UiState<Boolean>,
     onChangePassword: (String, String, String) -> Unit,
     onClearChangePasswordState: () -> Unit,
-    drawerState: DrawerState?
+    isDarkThemeEnabled: Boolean,
+    onDarkThemeChange: (Boolean) -> Unit
 ) {
     val profileTitle = (profileState as? UiState.Success)
         ?.data
@@ -283,7 +285,7 @@ private fun ProfileScreenContent(
         ?.takeIf { it.isNotBlank() }
         ?: "Profile"
     val scrollState = rememberScrollState()
-    val activeDrawerState = drawerState ?: rememberDrawerState(initialValue = DrawerValue.Closed)
+    val activeDrawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val coroutineScope = rememberCoroutineScope()
     val avatarPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia()
@@ -323,17 +325,19 @@ private fun ProfileScreenContent(
                     onLogoutClick = {
                         coroutineScope.launch { activeDrawerState.close() }
                         onLogout?.invoke()
-                    }
+                    },
+                    isDarkThemeEnabled = isDarkThemeEnabled,
+                    onDarkThemeChange = onDarkThemeChange
                 )
             }
         }
     ) {
         Scaffold(
             modifier = Modifier.fillMaxSize(),
-            containerColor = Color.White,
+            containerColor = MaterialTheme.colorScheme.surface,
             topBar = {
                 Surface(
-                    color = Color.White
+                    color = MaterialTheme.colorScheme.surface
                 ) {
                     Box(
                         modifier = Modifier
@@ -353,20 +357,20 @@ private fun ProfileScreenContent(
                                         Icon(
                                             imageVector = Icons.Outlined.Notifications,
                                             contentDescription = stringResource(R.string.ui_753a22b2eb),
-                                            tint = Color.Black,
+                                            tint = MaterialTheme.colorScheme.onSurface,
                                             modifier = Modifier.size(24.dp)
                                         )
                                     }
                                 }
-                                Text(
-                                    text = profileTitle,
-                                    modifier = Modifier.padding(horizontal = 56.dp),
-                                    fontWeight = FontWeight.ExtraBold,
-                                    style = MaterialTheme.typography.titleLarge,
-                                    color = Color.Black,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
+                                    Text(
+                                        text = profileTitle,
+                                        modifier = Modifier.padding(horizontal = 56.dp),
+                                        fontWeight = FontWeight.ExtraBold,
+                                        style = MaterialTheme.typography.titleLarge,
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
                                 if (onBack != null) {
                                     IconButton(
                                         onClick = { onBack.invoke() },
@@ -375,7 +379,7 @@ private fun ProfileScreenContent(
                                         Icon(
                                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                                             contentDescription = stringResource(R.string.ui_b52b36b726),
-                                            tint = Color.Black,
+                                            tint = MaterialTheme.colorScheme.onSurface,
                                             modifier = Modifier.size(24.dp)
                                         )
                                     }
@@ -486,7 +490,7 @@ private fun ProfileScreenContent(
                                                         },
                                                         colors = ButtonDefaults.buttonColors(
                                                             containerColor = PrimaryBlue,
-                                                            contentColor = Color.White
+                                                            contentColor = MaterialTheme.colorScheme.onPrimary
                                                         )
                                                     ) {
                                                         Icon(Icons.Default.Refresh, contentDescription = null)
@@ -593,14 +597,14 @@ private fun ProfileHeaderSection(
                         .size(22.dp)
                         .shadow(4.dp, CircleShape)
                         .background(ProfileBlue, CircleShape)
-                        .border(3.dp, Color.White, CircleShape)
+                        .border(3.dp, MaterialTheme.colorScheme.surface, CircleShape)
                         .clickable(onClick = onAvatarClick),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = Icons.Default.AddCircle,
                         contentDescription = stringResource(R.string.ui_60f2e98ebe),
-                        tint = Color.White,
+                        tint = MaterialTheme.colorScheme.onPrimary,
                         modifier = Modifier.size(17.dp)
                     )
                 }
@@ -617,7 +621,7 @@ private fun ProfileHeaderSection(
                 text = displayName,
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.ExtraBold,
-                color = Color.Black,
+                color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
@@ -626,7 +630,7 @@ private fun ProfileHeaderSection(
                 text = "@${profile.username}",
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.Medium,
-                color = ProfileMuted,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
@@ -645,9 +649,9 @@ private fun ProfileStatsCard(
             .fillMaxWidth()
             .padding(horizontal = 22.dp)
             .shadow(5.dp, RoundedCornerShape(12.dp), ambientColor = Color(0x10000000), spotColor = Color(0x0D000000)),
-        color = Color.White,
+        color = MaterialTheme.colorScheme.surface,
         shape = RoundedCornerShape(12.dp),
-        border = BorderStroke(1.dp, Color(0xFFF0F2F7))
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f))
     ) {
         Row(
             modifier = Modifier
@@ -695,14 +699,14 @@ private fun ProfileStatItem(
             text = value.toString(),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.ExtraBold,
-            color = Color.Black
+            color = MaterialTheme.colorScheme.onSurface
         )
         Spacer(modifier = Modifier.height(4.dp))
         Text(
             text = label,
             style = MaterialTheme.typography.labelSmall,
             fontWeight = FontWeight.Medium,
-            color = ProfileMuted,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
         )
@@ -715,7 +719,7 @@ private fun ProfileStatDivider() {
         modifier = Modifier
             .height(50.dp)
             .width(1.dp)
-            .background(Color(0xFFE4E7EF))
+            .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.8f))
     )
 }
 
@@ -728,7 +732,7 @@ private fun ProfileEditRow(onClick: () -> Unit) {
             .height(50.dp)
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(14.dp),
-        color = Color(0xFFF1F7FF)
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
     ) {
         Row(
             modifier = Modifier
@@ -739,7 +743,7 @@ private fun ProfileEditRow(onClick: () -> Unit) {
             Icon(
                 imageVector = Icons.Outlined.Settings,
                 contentDescription = null,
-                tint = ProfileBlue,
+                tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(23.dp)
             )
             Spacer(modifier = Modifier.width(14.dp))
@@ -747,13 +751,13 @@ private fun ProfileEditRow(onClick: () -> Unit) {
                 text = "Chỉnh sửa hồ sơ",
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.Medium,
-                color = ProfileInk,
+                color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.weight(1f)
             )
             Icon(
                 imageVector = Icons.Outlined.ChevronRight,
                 contentDescription = null,
-                tint = ProfileInk,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(23.dp)
             )
         }
@@ -773,8 +777,8 @@ private fun ProfileFollowButton(
             .height(42.dp),
         shape = RoundedCornerShape(14.dp),
         colors = ButtonDefaults.buttonColors(
-            containerColor = if (isFollowing) Color(0xFFEFF3FA) else ProfileBlue,
-            contentColor = if (isFollowing) ProfileInk else Color.White
+            containerColor = if (isFollowing) MaterialTheme.colorScheme.surfaceVariant else ProfileBlue,
+            contentColor = if (isFollowing) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onPrimary
         )
     ) {
         Text(
@@ -811,14 +815,14 @@ private fun ProfileEmptyPostsState(
         Box(
             modifier = Modifier
                 .size(86.dp)
-                .background(Color(0xFFEFF6FF), CircleShape),
+                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.10f), CircleShape),
             contentAlignment = Alignment.Center
         ) {
             Icon(
                 imageVector = Icons.Outlined.Image,
                 contentDescription = null,
                 modifier = Modifier.size(44.dp),
-                tint = Color(0xFF7DA3DD)
+                tint = MaterialTheme.colorScheme.primary
             )
         }
         Spacer(modifier = Modifier.height(20.dp))
@@ -826,7 +830,7 @@ private fun ProfileEmptyPostsState(
             text = emptyTitle,
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.ExtraBold,
-            color = ProfileInk,
+            color = MaterialTheme.colorScheme.onSurface,
             textAlign = TextAlign.Center
         )
         Spacer(modifier = Modifier.height(7.dp))
@@ -834,7 +838,7 @@ private fun ProfileEmptyPostsState(
             text = emptyMessage,
             style = MaterialTheme.typography.bodyMedium,
             fontWeight = FontWeight.Medium,
-            color = ProfileMuted,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
         )
         if (isViewingOwnProfile && selectedTab == ProfilePostsTab.POSTS) {
@@ -844,7 +848,7 @@ private fun ProfileEmptyPostsState(
                 shape = RoundedCornerShape(16.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = ProfileBlue,
-                    contentColor = Color.White
+                    contentColor = MaterialTheme.colorScheme.onPrimary
                 ),
                 modifier = Modifier
                     .height(44.dp)
@@ -868,8 +872,6 @@ private fun ProfileEmptyPostsState(
 }
 
 private val ProfileBlue = Color(0xFF1677F2)
-private val ProfileInk = Color(0xFF1F2937)
-private val ProfileMuted = Color(0xFF6B7280)
 
 @Composable
 fun ChangePasswordDialog(
@@ -901,7 +903,7 @@ fun ChangePasswordDialog(
                 .fillMaxWidth()
                 .padding(horizontal = 20.dp),
             shape = RoundedCornerShape(28.dp),
-            color = SurfaceContainerLowest
+            color = MaterialTheme.colorScheme.surface
         ) {
             Column(
                 modifier = Modifier.padding(20.dp),
@@ -911,7 +913,7 @@ fun ChangePasswordDialog(
                     text = stringResource(R.string.ui_d4e1de2330),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.ExtraBold,
-                    color = OnSurface
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 PasswordDialogField(
                     value = currentPassword,
@@ -956,8 +958,8 @@ fun ChangePasswordDialog(
                         enabled = !isLoading,
                         modifier = Modifier.weight(1f),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = SurfaceContainerLow,
-                            contentColor = OnSurfaceVariant
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                            contentColor = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     ) {
                         Text(stringResource(R.string.ui_34ca764caf))
@@ -968,7 +970,7 @@ fun ChangePasswordDialog(
                         modifier = Modifier.weight(1f),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = PrimaryBlue,
-                            contentColor = Color.White
+                            contentColor = MaterialTheme.colorScheme.onPrimary
                         )
                     ) {
                         if (isLoading) {
@@ -1037,19 +1039,19 @@ private fun ProfilePostsTabRow(
 
     TabRow(
         selectedTabIndex = selectedIndex,
-        containerColor = Color.White,
-        contentColor = ProfileBlue,
+        containerColor = MaterialTheme.colorScheme.surface,
+        contentColor = MaterialTheme.colorScheme.primary,
         indicator = { tabPositions ->
             Box(
                 modifier = Modifier
                     .tabIndicatorOffset(tabPositions[selectedIndex])
                     .height(3.dp)
                     .padding(horizontal = 0.dp)
-                    .background(ProfileBlue)
+                    .background(MaterialTheme.colorScheme.primary)
             )
         },
         divider = {
-            HorizontalDivider(color = Color(0xFFE8EBF2), thickness = 1.dp)
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f), thickness = 1.dp)
         }
     ) {
         tabs.forEach { (tab, iconInfo) ->
@@ -1062,7 +1064,7 @@ private fun ProfilePostsTabRow(
                     Icon(
                         imageVector = icon,
                         contentDescription = contentDescription,
-                        tint = if (tab == selectedTab) ProfileBlue else ProfileInk,
+                        tint = if (tab == selectedTab) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(24.dp)
                     )
                 }
@@ -1078,13 +1080,13 @@ fun ErrorLayout(message: String, onRetry: () -> Unit) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Text(text = stringResource(R.string.ui_aca851b5d6), fontWeight = FontWeight.Bold, color = SunsetOrange)
-        Text(text = message, textAlign = TextAlign.Center, color = OnSurfaceVariant, modifier = Modifier.padding(top = 8.dp, bottom = 24.dp))
+        Text(text = stringResource(R.string.ui_aca851b5d6), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+        Text(text = message, textAlign = TextAlign.Center, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 8.dp, bottom = 24.dp))
         Button(
             onClick = onRetry,
             colors = ButtonDefaults.buttonColors(
                 containerColor = PrimaryBlue,
-                contentColor = Color.White
+                contentColor = MaterialTheme.colorScheme.onPrimary
             )
         ) {
             Icon(Icons.Default.Refresh, contentDescription = null)

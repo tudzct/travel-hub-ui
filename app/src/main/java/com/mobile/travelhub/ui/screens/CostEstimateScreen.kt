@@ -314,7 +314,7 @@ fun AddExpenseContent(
             ExposedDropdownMenu(
                 expanded = expanded,
                 onDismissRequest = { expanded = false },
-                containerColor = Color.White,
+                containerColor = MaterialTheme.colorScheme.surface,
                 tonalElevation = 0.dp
             ) {
                 listOf("FOOD", "STAY", "TRANSPORT", "ENTRY").forEach { category ->
@@ -613,7 +613,7 @@ fun EditExpenseContent(
             ExposedDropdownMenu(
                 expanded = expanded,
                 onDismissRequest = { expanded = false },
-                containerColor = Color.White,
+                containerColor = MaterialTheme.colorScheme.surface,
                 tonalElevation = 0.dp
             ) {
                 listOf("FOOD", "STAY", "TRANSPORT", "ENTRY").forEach { category ->

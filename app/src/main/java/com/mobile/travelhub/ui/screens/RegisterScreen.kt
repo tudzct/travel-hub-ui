@@ -52,22 +52,13 @@ fun RegisterScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.White)
+            .background(MaterialTheme.colorScheme.surface)
             .verticalScroll(rememberScrollState())
             .navigationBarsPadding()
             .padding(horizontal = 28.dp)
     ) {
         Spacer(modifier = Modifier.height(48.dp))
-        IconButton(
-            onClick = onNavigateToLogin,
-            enabled = !uiState.isLoading
-        ) {
-            Icon(
-                imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
-                contentDescription = "Quay lại",
-                tint = Color(0xFF111827)
-            )
-        }
+
         Spacer(modifier = Modifier.height(22.dp))
         AuthTitle(firstLine = "Tạo tài khoản")
         Spacer(modifier = Modifier.height(18.dp))
@@ -145,7 +136,9 @@ fun RegisterScreen(
             keyboardActions = KeyboardActions(
                 onDone = {
                     focusManager.clearFocus()
-                    onRegister(email, username, name, password)
+                    if (!uiState.isLoading) {
+                        onRegister(email, username, name, password)
+                    }
                 }
             ),
             trailingIcon = {

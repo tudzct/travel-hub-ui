@@ -54,7 +54,7 @@ fun ReviewWriteSheet(
                 onDismiss()
             }
         },
-        containerColor = SurfaceContainerLowest,
+        containerColor = MaterialTheme.colorScheme.surface,
         dragHandle = {
             BottomSheetDefaults.DragHandle(color = SurfaceContainerLow)
         }

@@ -184,7 +184,7 @@ fun TripMemberCard(
             .fillMaxWidth()
             .clip(RoundedCornerShape(18.dp))
             .border(1.dp, SurfaceContainerLow, RoundedCornerShape(18.dp))
-            .background(SurfaceContainerLowest)
+            .background(MaterialTheme.colorScheme.surface)
             .clickable { onClick() }
             .padding(horizontal = 18.dp, vertical = 18.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -242,7 +242,7 @@ fun GroupDetailInitialErrorState(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(SurfaceBg)
+            .background(MaterialTheme.colorScheme.background)
             .padding(24.dp),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
@@ -312,14 +312,14 @@ fun JoinRequestActionItem(
             )
         }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(CircleShape)
-                    .background(SurfaceContainerLowest)
-                    .clickable { onReject() },
-                contentAlignment = Alignment.Center
-            ) {
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.surface)
+                        .clickable { onReject() },
+                    contentAlignment = Alignment.Center
+                ) {
                 Icon(
                     Icons.Default.Close,
                     contentDescription = stringResource(R.string.ui_63bbfd75f6),
@@ -586,7 +586,7 @@ fun GroupDetailMoreMenu(
         onDismissRequest = onDismiss,
         modifier = Modifier.widthIn(min = 260.dp, max = 340.dp),
         offset = DpOffset((-8).dp, 4.dp),
-        containerColor = Color.White,
+        containerColor = MaterialTheme.colorScheme.surface,
         tonalElevation = 0.dp
     ) {
         val inviteCode = uiState.inviteCode?.takeIf { it.isNotBlank() }

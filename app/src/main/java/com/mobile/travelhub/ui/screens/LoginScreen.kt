@@ -45,7 +45,7 @@ fun LoginScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.White)
+            .background(MaterialTheme.colorScheme.surface)
             .verticalScroll(rememberScrollState())
             .navigationBarsPadding()
             .padding(horizontal = 28.dp)
@@ -92,7 +92,9 @@ fun LoginScreen(
             keyboardActions = KeyboardActions(
                 onDone = {
                     focusManager.clearFocus()
-                    onLogin(email, password)
+                    if (!uiState.isLoading) {
+                        onLogin(email, password)
+                    }
                 }
             ),
             trailingIcon = {

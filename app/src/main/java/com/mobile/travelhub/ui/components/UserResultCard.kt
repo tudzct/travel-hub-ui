@@ -35,10 +35,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
-import com.mobile.travelhub.ui.theme.OnSurface
-import com.mobile.travelhub.ui.theme.OnSurfaceVariant
 import com.mobile.travelhub.ui.theme.PrimaryBlue
-import com.mobile.travelhub.ui.theme.SurfaceContainer
 import com.mobile.travelhub.R
 
 @Composable
@@ -66,7 +63,7 @@ fun UserResultCard(
             .width(156.dp)
             .height(188.dp)
             .clip(RoundedCornerShape(8.dp))
-            .background(Color.White)
+            .background(MaterialTheme.colorScheme.surface)
             .clickable(onClick = onClick)
             .padding(horizontal = 12.dp, vertical = 14.dp),
         horizontalAlignment = Alignment.CenterHorizontally
@@ -78,7 +75,7 @@ fun UserResultCard(
         Spacer(modifier = Modifier.height(10.dp))
         Text(
             text = title,
-            color = OnSurface,
+            color = MaterialTheme.colorScheme.onSurface,
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.Bold,
             maxLines = 1,
@@ -87,7 +84,7 @@ fun UserResultCard(
         Spacer(modifier = Modifier.height(3.dp))
         Text(
             text = metadata,
-            color = OnSurfaceVariant,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             style = MaterialTheme.typography.bodySmall,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
@@ -114,7 +111,7 @@ fun UserResultCardSkeleton(
             .width(156.dp)
             .height(188.dp)
             .clip(RoundedCornerShape(8.dp))
-            .background(Color.White)
+            .background(MaterialTheme.colorScheme.surface)
             .padding(horizontal = 12.dp, vertical = 14.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -158,14 +155,14 @@ private fun UserResultAvatar(
             .border(2.dp, PrimaryBlue, CircleShape)
             .padding(3.dp)
             .clip(CircleShape)
-            .background(Color(0xFFEFF2FA)),
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f)),
         contentAlignment = Alignment.Center
     ) {
         if (avatarUrl.isNullOrBlank()) {
             Icon(
                 imageVector = Icons.Outlined.Person,
                 contentDescription = null,
-                tint = OnSurfaceVariant,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(34.dp)
             )
         } else {
@@ -189,17 +186,17 @@ private fun UserResultFollowButton(
         onClick = onClick,
         enabled = !isLoading,
         colors = ButtonDefaults.buttonColors(
-            containerColor = if (isFollowing) SurfaceContainer else PrimaryBlue,
-            contentColor = if (isFollowing) OnSurface else Color.White,
+            containerColor = if (isFollowing) MaterialTheme.colorScheme.surfaceVariant else PrimaryBlue,
+            contentColor = if (isFollowing) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onPrimary,
             disabledContainerColor = if (isFollowing) {
-                SurfaceContainer
+                MaterialTheme.colorScheme.surfaceVariant
             } else {
                 PrimaryBlue.copy(alpha = 0.62f)
             },
             disabledContentColor = if (isFollowing) {
-                OnSurfaceVariant
+                MaterialTheme.colorScheme.onSurfaceVariant
             } else {
-                Color.White.copy(alpha = 0.82f)
+                MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.82f)
             }
         ),
         shape = RoundedCornerShape(18.dp),

@@ -15,16 +15,13 @@ import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.PostAdd
 import androidx.compose.material.icons.outlined.TravelExplore
-import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -36,11 +33,12 @@ import com.mobile.travelhub.ui.components.layout.RoundedTopNavigationBar
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.mobile.travelhub.viewmodels.AuthViewModel
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import com.mobile.travelhub.R
 
 @Composable
 fun TravelHubScreen(
+    isDarkThemeEnabled: Boolean,
+    onDarkThemeChange: (Boolean) -> Unit,
     authViewModel: AuthViewModel = hiltViewModel()
 ) {
     val navController = rememberNavController()
@@ -50,8 +48,6 @@ fun TravelHubScreen(
     var showSplash by remember { mutableStateOf(true) }
     var homeReloadSignal by remember { mutableStateOf(0) }
     var isExploreSearchExpanded by remember { mutableStateOf(false) }
-    val mainDrawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
-    val coroutineScope = rememberCoroutineScope()
 
     LaunchedEffect(Unit) {
         delay(1200)
@@ -114,21 +110,13 @@ fun TravelHubScreen(
                     items = navItems,
                     navController = navController,
                     onHomeReselected = { homeReloadSignal++ },
-                    onNavigationRequest = { navigate ->
-                        coroutineScope.launch {
-                            if (mainDrawerState.isOpen) {
-                                mainDrawerState.close()
-                            }
-                            navigate()
-                        }
-                    }
+                    onNavigationRequest = { navigate -> navigate() }
                 )
             }
         }
     ) { innerPadding ->
         NavGraph(
             navController = navController,
-            mainDrawerState = mainDrawerState,
             innerPadding = innerPadding,
             startDestination = startDestination,
             authUiState = authUiState,
@@ -137,7 +125,9 @@ fun TravelHubScreen(
             onLogin = authViewModel::login,
             onRegister = authViewModel::register,
             onClearAuthError = authViewModel::clearError,
-            onLogout = authViewModel::logout
+            onLogout = authViewModel::logout,
+            isDarkThemeEnabled = isDarkThemeEnabled,
+            onDarkThemeChange = onDarkThemeChange
         )
     }
 }

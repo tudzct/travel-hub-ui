@@ -60,11 +60,11 @@ import com.mobile.travelhub.data.model.FeedPostResponse
 import com.mobile.travelhub.data.model.TravelPlaceListItemResponse
 import com.mobile.travelhub.data.model.UserProfileResponse
 import com.mobile.travelhub.ui.components.CommentItem
+import com.mobile.travelhub.ui.components.CommentSubmitAction
 import com.mobile.travelhub.ui.components.FeaturedLocationCard
 import com.mobile.travelhub.ui.components.FeedPostCard
 import com.mobile.travelhub.ui.components.FeedPostCardSkeleton
 import com.mobile.travelhub.ui.components.SimpleFormTextField
-import com.mobile.travelhub.ui.components.InlineLoadingSkeleton
 import com.mobile.travelhub.ui.components.LoadingContentSkeleton
 import com.mobile.travelhub.ui.components.LoadingListSkeleton
 import com.mobile.travelhub.ui.components.RetryButton
@@ -203,7 +203,7 @@ private fun SearchSuggestionsContent(
             item(contentType = "recent-title") {
                 SearchSectionHeader(
                     text = stringResource(R.string.ui_5820a93677),
-                    actionText = "Clear",
+                    actionText = "Xóa tất cả",
                     onActionClick = onClearRecentSearches
                 )
             }
@@ -476,7 +476,7 @@ private fun PlaceCarouselStatusCard(
             .width(260.dp)
             .height(96.dp)
             .clip(RoundedCornerShape(8.dp))
-            .background(Color.White)
+            .background(MaterialTheme.colorScheme.surface)
             .padding(horizontal = 16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -512,7 +512,7 @@ private fun SearchCommentsSheet(
 ) {
     ModalBottomSheet(
         onDismissRequest = onDismiss,
-        containerColor = Color.White
+        containerColor = MaterialTheme.colorScheme.surface
     ) {
         Text(
             text = stringResource(R.string.ui_fce06e20e5),
@@ -579,25 +579,11 @@ private fun SearchCommentsSheet(
                 maxLines = 3
             )
             Spacer(modifier = Modifier.width(8.dp))
-            IconButton(
-                onClick = onCommentSubmit,
-                enabled = !isCommentSubmitting && commentInput.isNotBlank(),
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(CircleShape)
-                    .background(PrimaryBlue)
-            ) {
-                if (isCommentSubmitting) {
-                    InlineLoadingSkeleton(modifier = Modifier.size(16.dp))
-                } else {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Outlined.Send,
-                        modifier = Modifier.size(16.dp),
-                        contentDescription = stringResource(R.string.ui_591e0e89f0),
-                        tint = Color.White
-                    )
-                }
-            }
+            CommentSubmitAction(
+                isSubmitting = isCommentSubmitting,
+                canSubmit = commentInput.isNotBlank(),
+                onSubmit = onCommentSubmit
+            )
         }
 
         if (!commentErrorMessage.isNullOrBlank()) {
@@ -688,7 +674,7 @@ private fun UserCarouselStatusCard(
             .height(96.dp)
             .padding(horizontal = 16.dp)
             .clip(RoundedCornerShape(8.dp))
-            .background(Color.White)
+            .background(MaterialTheme.colorScheme.surface)
             .padding(horizontal = 16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {

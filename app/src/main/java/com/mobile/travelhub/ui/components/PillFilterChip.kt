@@ -31,7 +31,7 @@ fun PillFilterChip(
         },
         colors = FilterChipDefaults.filterChipColors(
             selectedContainerColor = MaterialTheme.colorScheme.primary,
-            selectedLabelColor = Color.White
+            selectedLabelColor = MaterialTheme.colorScheme.onPrimary
         )
     )
 }

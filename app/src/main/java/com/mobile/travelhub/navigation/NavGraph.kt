@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
-import androidx.compose.material3.DrawerState
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ModalDrawerSheet
@@ -172,18 +171,20 @@ sealed class Screen(
 
 @Composable
 private fun HomeDrawerScaffold(
-    drawerState: DrawerState,
     profile: UserProfileResponse?,
     onNavigateToProfile: () -> Unit,
     onNavigateToEditProfile: () -> Unit,
     onNavigateToHistory: () -> Unit,
     onLogout: () -> Unit,
+    isDarkThemeEnabled: Boolean,
+    onDarkThemeChange: (Boolean) -> Unit,
     changePasswordState: UiState<Boolean>,
     onChangePassword: (String, String, String) -> Unit,
     onClearChangePasswordState: () -> Unit,
     content: @Composable (openMenu: () -> Unit) -> Unit
 ) {
     val coroutineScope = rememberCoroutineScope()
+    val drawerState = androidx.compose.material3.rememberDrawerState(initialValue = DrawerValue.Closed)
     var hideDrawerContentForNavigation by remember { mutableStateOf(false) }
     var showChangePasswordDialog by remember { mutableStateOf(false) }
 
@@ -201,22 +202,32 @@ private fun HomeDrawerScaffold(
                 TravelHubDrawerContent(
                     profile = profile,
                     onProfileClick = {
-                        coroutineScope.launch { drawerState.close() }
-                        onNavigateToProfile()
+                        coroutineScope.launch {
+                            drawerState.close()
+                            onNavigateToProfile()
+                        }
                     },
                     onEditProfileClick = {
-                        coroutineScope.launch { drawerState.close() }
-                        onNavigateToEditProfile()
+                        coroutineScope.launch {
+                            drawerState.close()
+                            onNavigateToEditProfile()
+                        }
                     },
                     onChangePasswordClick = {
-                        onClearChangePasswordState()
-                        showChangePasswordDialog = true
-                        coroutineScope.launch { drawerState.close() }
+                        coroutineScope.launch {
+                            drawerState.close()
+                            onClearChangePasswordState()
+                            showChangePasswordDialog = true
+                        }
                     },
                     onLogoutClick = {
-                        coroutineScope.launch { drawerState.close() }
-                        onLogout()
-                    }
+                        coroutineScope.launch {
+                            drawerState.close()
+                            onLogout()
+                        }
+                    },
+                    isDarkThemeEnabled = isDarkThemeEnabled,
+                    onDarkThemeChange = onDarkThemeChange
                 )
             }
         }
@@ -241,7 +252,6 @@ private fun HomeDrawerScaffold(
 @Composable
 fun NavGraph(
     navController: NavHostController,
-    mainDrawerState: DrawerState,
     innerPadding: PaddingValues,
     startDestination: String,
     authUiState: AuthUiState,
@@ -250,7 +260,9 @@ fun NavGraph(
     onLogin: (String, String) -> Unit,
     onRegister: (String, String, String, String) -> Unit,
     onClearAuthError: () -> Unit,
-    onLogout: () -> Unit
+    onLogout: () -> Unit,
+    isDarkThemeEnabled: Boolean,
+    onDarkThemeChange: (Boolean) -> Unit
 ) {
     val currentRoute = navController.currentBackStackEntry?.destination?.route
         ?.substringBefore("?")
@@ -387,7 +399,6 @@ fun NavGraph(
             }
 
             HomeDrawerScaffold(
-                drawerState = mainDrawerState,
                 profile = drawerProfile,
                 onNavigateToProfile = {
                     navController.navigate(Screen.Profile.route) {
@@ -413,7 +424,9 @@ fun NavGraph(
                 },
                 changePasswordState = changePasswordState,
                 onChangePassword = profileViewModel::changePassword,
-                onClearChangePasswordState = profileViewModel::clearChangePasswordState
+                onClearChangePasswordState = profileViewModel::clearChangePasswordState,
+                isDarkThemeEnabled = isDarkThemeEnabled,
+                onDarkThemeChange = onDarkThemeChange
             ) { openMenu ->
                 PlaceListScreen(
                     reloadSignal = homeReloadSignal,
@@ -600,8 +613,9 @@ fun NavGraph(
                 } else {
                     null
                 },
-                drawerState = mainDrawerState,
-                viewModel = profileViewModel
+                viewModel = profileViewModel,
+                isDarkThemeEnabled = isDarkThemeEnabled,
+                onDarkThemeChange = onDarkThemeChange
             )
         }
 //        composable(Screen.Notifications.route) {
@@ -637,14 +651,13 @@ fun NavGraph(
                             launchSingleTop = true
                         }
                     }
-                }
+                },
+                isDarkThemeEnabled = isDarkThemeEnabled,
+                onDarkThemeChange = onDarkThemeChange
             )
         }
         composable(Screen.EditProfile.route) {
-            val profileBackStackEntry = remember(navController) {
-                navController.getBackStackEntry(Screen.Profile.route)
-            }
-            val profileViewModel: ProfileViewModel = hiltViewModel(profileBackStackEntry)
+            val profileViewModel: ProfileViewModel = hiltViewModel()
             EditProfileScreen(
                 onBack = { navController.popBackStack() },
                 onSaveSuccess = { navController.popBackStack() },
