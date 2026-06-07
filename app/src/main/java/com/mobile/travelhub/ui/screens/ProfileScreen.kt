@@ -106,6 +106,7 @@ fun ProfileScreen(
     onPostNotificationClick: (Long) -> Unit = {},
     onFollowNotificationClick: (Long) -> Unit = {},
     onNavigateToUserProfile: (Long) -> Unit = {},
+    onNavigateToCreatePost: () -> Unit = {},
     onBack: (() -> Unit)? = null,
     drawerState: DrawerState? = null,
     viewModel: ProfileViewModel = hiltViewModel()
@@ -194,6 +195,7 @@ fun ProfileScreen(
         onPostNotificationClick = onPostNotificationClick,
         onFollowNotificationClick = onFollowNotificationClick,
         onNavigateToUserProfile = onNavigateToUserProfile,
+        onNavigateToCreatePost = onNavigateToCreatePost,
         onReloadProfile = {
             if (isViewingOwnProfile) {
                 viewModel.loadUserProfile()
@@ -248,6 +250,7 @@ private fun ProfileScreenContent(
     onPostNotificationClick: (Long) -> Unit,
     onFollowNotificationClick: (Long) -> Unit,
     onNavigateToUserProfile: (Long) -> Unit,
+    onNavigateToCreatePost: () -> Unit,
     onReloadProfile: () -> Unit,
     onReloadOtherUserProfile: (Long) -> Unit,
     onReloadPosts: (Long?) -> Unit,
@@ -664,14 +667,14 @@ private fun ProfileScreenContent(
 
                                             profilePostsState.posts.isEmpty() -> {
                                                 val emptyTitle = when (profilePostsState.selectedTab) {
-                                                    ProfilePostsTab.POSTS -> "No Posts Yet"
-                                                    ProfilePostsTab.SAVED -> "No Saved Posts"
-                                                    ProfilePostsTab.LIKED -> "No Liked Posts"
+                                                    ProfilePostsTab.POSTS -> "Chưa có bài đăng"
+                                                    ProfilePostsTab.SAVED -> "Chưa có bài đăng đã lưu"
+                                                    ProfilePostsTab.LIKED -> "Chưa có bài đăng đã thích"
                                                 }
                                                 val emptyMessage = when (profilePostsState.selectedTab) {
-                                                    ProfilePostsTab.POSTS -> "When you share photos, they will appear on your profile."
-                                                    ProfilePostsTab.SAVED -> "Posts you save will appear here."
-                                                    ProfilePostsTab.LIKED -> "Posts you like will appear here."
+                                                    ProfilePostsTab.POSTS -> ""
+                                                    ProfilePostsTab.SAVED -> "Bài viết mà bạn đã lưu sẽ hiển thị ở đây."
+                                                    ProfilePostsTab.LIKED -> "Bài viết mà bạn đã thích sẽ hiển thị ở đây."
                                                 }
                                                 Column(
                                                     modifier = Modifier.fillMaxWidth().padding(horizontal = 32.dp, vertical = 32.dp),
@@ -706,7 +709,7 @@ private fun ProfileScreenContent(
                                                     Spacer(modifier = Modifier.height(24.dp))
                                                     if (isViewingOwnProfile && profilePostsState.selectedTab == ProfilePostsTab.POSTS) {
                                                         Button(
-                                                            onClick = { /* navigate to create post */ },
+                                                            onClick = onNavigateToCreatePost,
                                                             shape = RoundedCornerShape(24.dp),
                                                             colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
                                                         ) {

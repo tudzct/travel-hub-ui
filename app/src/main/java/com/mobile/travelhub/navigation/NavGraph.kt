@@ -603,6 +603,15 @@ fun NavGraph(
                     navigateToUserProfile(userId)
                 },
                 onNavigateToUserProfile = ::navigateToUserProfile,
+                onNavigateToCreatePost = {
+                    navController.navigate(Screen.CreatePost.route) {
+                        popUpTo(navController.graph.findStartDestination().id) {
+                            saveState = true
+                        }
+                        launchSingleTop = true
+                        restoreState = true
+                    }
+                },
                 onLogout = {
                     onLogout()
                     navController.navigate(Screen.Login.route) {
