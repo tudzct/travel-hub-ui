@@ -82,10 +82,11 @@ class AuthViewModel @Inject constructor(
         }
     }
 
-    fun register(email: String, username: String, password: String) {
+    fun register(email: String, username: String, name: String, password: String) {
         val normalizedEmail = email.trim()
         val normalizedUsername = username.trim()
-        val validationError = validateRegister(normalizedEmail, normalizedUsername, password)
+        val normalizedName = name.trim()
+        val validationError = validateRegister(normalizedEmail, normalizedUsername, normalizedName, password)
         if (validationError != null) {
             _uiState.update { it.copy(errorMessage = validationError) }
             return
@@ -98,6 +99,7 @@ class AuthViewModel @Inject constructor(
                 RegisterRequest(
                     email = normalizedEmail,
                     username = normalizedUsername,
+                    name = normalizedName,
                     password = password
                 )
             )
@@ -149,13 +151,17 @@ class AuthViewModel @Inject constructor(
         return null
     }
 
-    private fun validateRegister(email: String, username: String, password: String): String? {
+    private fun validateRegister(email: String, username: String, name: String, password: String): String? {
         if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
             return "Vui lòng nhập email hợp lệ"
         }
 
         if (username.length < 3) {
             return "Tên người dùng phải có ít nhất 3 ký tự"
+        }
+
+        if (name.length < 2) {
+            return "Tên hiển thị phải có ít nhất 2 ký tự"
         }
 
         if (password.length < 8) {

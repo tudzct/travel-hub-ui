@@ -6,6 +6,7 @@ import org.json.JSONObject
 data class RegisterRequest(
     val email: String,
     val username: String,
+    val name: String,
     val password: String
 )
 

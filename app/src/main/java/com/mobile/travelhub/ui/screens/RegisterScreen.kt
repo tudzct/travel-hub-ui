@@ -54,12 +54,13 @@ import com.mobile.travelhub.R
 @Composable
 fun RegisterScreen(
     uiState: AuthUiState,
-    onRegister: (String, String, String) -> Unit,
+    onRegister: (String, String, String, String) -> Unit,
     onNavigateToLogin: () -> Unit,
     onDismissError: () -> Unit
 ) {
     var email by remember { mutableStateOf("") }
     var username by remember { mutableStateOf("") }
+    var name by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
     val focusManager = LocalFocusManager.current
@@ -143,6 +144,32 @@ fun RegisterScreen(
 
             Spacer(modifier = Modifier.height(14.dp))
 
+            SimpleFormTextField(
+                value = name,
+                onValueChange = {
+                    name = it
+                    if (uiState.errorMessage != null) onDismissError()
+                },
+                placeholder = "Tên hiển thị",
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Text,
+                    imeAction = ImeAction.Next
+                ),
+                keyboardActions = KeyboardActions(
+                    onNext = { focusManager.moveFocus(FocusDirection.Down) }
+                ),
+                trailingIcon = {
+                    Icon(
+                        imageVector = Icons.Outlined.Person,
+                        contentDescription = "Tên hiển thị",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                    )
+                },
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(14.dp))
+
             // Password field
             SimpleFormTextField(
                 value = password,
@@ -159,7 +186,7 @@ fun RegisterScreen(
                 keyboardActions = KeyboardActions(
                     onDone = {
                         focusManager.clearFocus()
-                        onRegister(email, username, password)
+                        onRegister(email, username, name, password)
                     }
                 ),
                 trailingIcon = {
@@ -198,7 +225,7 @@ fun RegisterScreen(
                         enabled = !uiState.isLoading,
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null,
-                        onClick = { onRegister(email, username, password) }
+                        onClick = { onRegister(email, username, name, password) }
                     ),
                 contentAlignment = Alignment.Center
             ) {

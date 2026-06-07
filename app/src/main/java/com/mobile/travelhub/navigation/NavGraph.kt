@@ -36,7 +36,9 @@ import androidx.navigation.compose.composable
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.mobile.travelhub.data.model.TravelPlaceListItemResponse
 import com.mobile.travelhub.data.model.TopTravelerPeriod
+import com.mobile.travelhub.data.model.UserProfileResponse
 import com.mobile.travelhub.R
+import com.mobile.travelhub.ui.components.TravelHubDrawerContent
 import com.mobile.travelhub.ui.screens.ProfileScreen
 import com.mobile.travelhub.ui.screens.LoginScreen
 import com.mobile.travelhub.ui.screens.PlaceDetailScreen
@@ -174,6 +176,8 @@ sealed class Screen(
 @Composable
 private fun HomeDrawerScaffold(
     drawerState: DrawerState,
+    profile: UserProfileResponse?,
+    onNavigateToProfile: () -> Unit,
     onNavigateToHistory: () -> Unit,
     onLogout: () -> Unit,
     changePasswordState: UiState<Boolean>,
@@ -193,54 +197,25 @@ private fun HomeDrawerScaffold(
 
     ModalNavigationDrawer(
         drawerState = drawerState,
+        scrimColor = Color.Black.copy(alpha = 0.38f),
         drawerContent = {
             if (!hideDrawerContentForNavigation) {
-                ModalDrawerSheet(
-                    modifier = Modifier.width(280.dp),
-                    drawerContainerColor = Color.White
-                ) {
-                    Column(
-                        modifier = Modifier.padding(top = 56.dp)
-                    ) {
-                        NavigationDrawerItem(
-                            label = {
-                                androidx.compose.material3.Text(
-                                    stringResource(R.string.change_password)
-                                )
-                            },
-                            selected = false,
-                            onClick = {
-                                onClearChangePasswordState()
-                                showChangePasswordDialog = true
-                                coroutineScope.launch { drawerState.close() }
-                            },
-                            icon = {
-                                Icon(
-                                    imageVector = Icons.Outlined.Lock,
-                                    contentDescription = null
-                                )
-                            },
-                            modifier = Modifier.padding(horizontal = 12.dp)
-                        )
-                        NavigationDrawerItem(
-                            label = {
-                                androidx.compose.material3.Text(stringResource(R.string.logout))
-                            },
-                            selected = false,
-                            onClick = {
-                                coroutineScope.launch { drawerState.close() }
-                                onLogout()
-                            },
-                            icon = {
-                                Icon(
-                                    imageVector = Icons.AutoMirrored.Filled.ExitToApp,
-                                    contentDescription = null
-                                )
-                            },
-                            modifier = Modifier.padding(horizontal = 12.dp)
-                        )
+                TravelHubDrawerContent(
+                    profile = profile,
+                    onProfileClick = {
+                        coroutineScope.launch { drawerState.close() }
+                        onNavigateToProfile()
+                    },
+                    onChangePasswordClick = {
+                        onClearChangePasswordState()
+                        showChangePasswordDialog = true
+                        coroutineScope.launch { drawerState.close() }
+                    },
+                    onLogoutClick = {
+                        coroutineScope.launch { drawerState.close() }
+                        onLogout()
                     }
-                }
+                )
             }
         }
     ) {
@@ -271,7 +246,7 @@ fun NavGraph(
     homeReloadSignal: Int = 0,
     onExploreSearchActiveChange: (Boolean) -> Unit = {},
     onLogin: (String, String) -> Unit,
-    onRegister: (String, String, String) -> Unit,
+    onRegister: (String, String, String, String) -> Unit,
     onClearAuthError: () -> Unit,
     onLogout: () -> Unit
 ) {
@@ -403,8 +378,25 @@ fun NavGraph(
         composable(Screen.Home.route) {
             val profileViewModel: ProfileViewModel = hiltViewModel()
             val changePasswordState by profileViewModel.changePasswordState.collectAsState()
+            val drawerProfileState by profileViewModel.profileState.collectAsState()
+            val drawerProfile = (drawerProfileState as? UiState.Success)?.data
+
+            LaunchedEffect(Unit) {
+                profileViewModel.loadUserProfile()
+            }
+
             HomeDrawerScaffold(
                 drawerState = mainDrawerState,
+                profile = drawerProfile,
+                onNavigateToProfile = {
+                    navController.navigate(Screen.Profile.route) {
+                        popUpTo(navController.graph.findStartDestination().id) {
+                            saveState = true
+                        }
+                        launchSingleTop = true
+                        restoreState = true
+                    }
+                },
                 onNavigateToHistory = { navController.navigate(Screen.ViewHistory.route) { launchSingleTop = true } },
                 onLogout = {
                     onLogout()
