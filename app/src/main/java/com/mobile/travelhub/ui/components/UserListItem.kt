@@ -98,7 +98,7 @@ fun UserListItem(
                 modifier = Modifier.height(32.dp)
             ) {
                 Text(
-                    text = if (isFollowing) "Following" else "Follow",
+                    text = if (isFollowing) "Đã theo dõi" else "Theo dõi",
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.Bold
                 )

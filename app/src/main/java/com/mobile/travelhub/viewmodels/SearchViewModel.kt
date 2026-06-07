@@ -6,9 +6,11 @@ import com.mobile.travelhub.data.AuthRepository
 import com.mobile.travelhub.data.PostRepository
 import com.mobile.travelhub.data.SearchHistoryRepository
 import com.mobile.travelhub.data.userMessage
+import com.mobile.travelhub.data.api.PlaceApiService
 import com.mobile.travelhub.data.api.UserApiService
 import com.mobile.travelhub.data.model.FeedPostResponse
 import com.mobile.travelhub.data.model.PostCommentResponse
+import com.mobile.travelhub.data.model.TravelPlaceListItemResponse
 import com.mobile.travelhub.data.model.UserProfileResponse
 import com.mobile.travelhub.usecase.AddCommentUseCase
 import com.mobile.travelhub.usecase.GetPostCommentsUseCase
@@ -31,13 +33,20 @@ data class SearchUiState(
     val recentSearches: List<String> = emptyList(),
     val posts: List<FeedPostResponse> = emptyList(),
     val users: List<UserProfileResponse> = emptyList(),
+    val places: List<TravelPlaceListItemResponse> = emptyList(),
     val followingRequestUserIds: Set<Long> = emptySet(),
     val likingPostIds: Set<Long> = emptySet(),
     val savingPostIds: Set<Long> = emptySet(),
     val isLoadingPosts: Boolean = false,
     val isLoadingUsers: Boolean = false,
+    val isLoadingPlaces: Boolean = false,
+    val isLoadingMorePlaces: Boolean = false,
     val postsErrorMessage: String? = null,
     val usersErrorMessage: String? = null,
+    val placesErrorMessage: String? = null,
+    val placesLoadMoreErrorMessage: String? = null,
+    val placesPage: Int = 0,
+    val placesTotalPages: Int = 0,
     val activeCommentPostId: Long? = null,
     val commentInput: String = "",
     val isCommentsLoading: Boolean = false,
@@ -53,6 +62,7 @@ class SearchViewModel @Inject constructor(
     private val searchHistoryRepository: SearchHistoryRepository,
     private val postRepository: PostRepository,
     private val userApiService: UserApiService,
+    private val placeApiService: PlaceApiService,
     private val likePostUseCase: LikePostUseCase,
     private val unlikePostUseCase: UnlikePostUseCase,
     private val savePostUseCase: SavePostUseCase,
@@ -89,13 +99,20 @@ class SearchViewModel @Inject constructor(
                 it.copy(
                     posts = emptyList(),
                     users = emptyList(),
+                    places = emptyList(),
                     followingRequestUserIds = emptySet(),
                     likingPostIds = emptySet(),
                     savingPostIds = emptySet(),
                     isLoadingPosts = false,
                     isLoadingUsers = false,
+                    isLoadingPlaces = false,
+                    isLoadingMorePlaces = false,
                     postsErrorMessage = null,
                     usersErrorMessage = null,
+                    placesErrorMessage = null,
+                    placesLoadMoreErrorMessage = null,
+                    placesPage = 0,
+                    placesTotalPages = 0,
                     activeCommentPostId = null,
                     commentInput = "",
                     isCommentsLoading = false,
@@ -111,8 +128,10 @@ class SearchViewModel @Inject constructor(
                     query = query,
                     isLoadingPosts = true,
                     isLoadingUsers = true,
+                    isLoadingPlaces = true,
                     postsErrorMessage = null,
-                    usersErrorMessage = null
+                    usersErrorMessage = null,
+                    placesErrorMessage = null
                 )
             }
         }
@@ -134,8 +153,13 @@ class SearchViewModel @Inject constructor(
                     query = query,
                     isLoadingPosts = true,
                     isLoadingUsers = true,
+                    isLoadingPlaces = true,
                     postsErrorMessage = null,
-                    usersErrorMessage = null
+                    usersErrorMessage = null,
+                    placesErrorMessage = null,
+                    placesLoadMoreErrorMessage = null,
+                    placesPage = 0,
+                    placesTotalPages = 0
                 )
             }
 
@@ -157,9 +181,19 @@ class SearchViewModel @Inject constructor(
                     ).data
                 }
             }
+            val placesResult = async {
+                runCatching {
+                    placeApiService.searchPlaces(
+                        query = trimmedQuery,
+                        page = 0,
+                        pageSize = PLACES_PAGE_SIZE
+                    )
+                }
+            }
 
             val postsSearchResult = postsResult.await()
             val usersSearchResult = usersResult.await()
+            val placesSearchResult = placesResult.await()
 
             if (requestId != searchRequestId) return@launch
 
@@ -204,9 +238,36 @@ class SearchViewModel @Inject constructor(
                     }
                 }
 
+            placesSearchResult
+                .onSuccess { places ->
+                    _uiState.update {
+                        it.copy(
+                            places = places.data,
+                            isLoadingPlaces = false,
+                            placesErrorMessage = null,
+                            placesLoadMoreErrorMessage = null,
+                            placesPage = places.pageNumber,
+                            placesTotalPages = places.totalPages
+                        )
+                    }
+                }
+                .onFailure { throwable ->
+                    _uiState.update {
+                        it.copy(
+                            places = emptyList(),
+                            isLoadingPlaces = false,
+                            placesErrorMessage = throwable.userMessage("Không thể tìm kiếm địa điểm"),
+                            placesLoadMoreErrorMessage = null,
+                            placesPage = 0,
+                            placesTotalPages = 0
+                        )
+                    }
+                }
+
             if (
                 postsSearchResult.isSuccess &&
                 usersSearchResult.isSuccess &&
+                placesSearchResult.isSuccess &&
                 requestId == searchRequestId
             ) {
                 lastLoadedQuery = trimmedQuery
@@ -223,11 +284,65 @@ class SearchViewModel @Inject constructor(
                 query = trimmedQuery,
                 isLoadingPosts = true,
                 isLoadingUsers = true,
+                isLoadingPlaces = true,
                 postsErrorMessage = null,
-                usersErrorMessage = null
+                usersErrorMessage = null,
+                placesErrorMessage = null
             )
         }
         search(trimmedQuery)
+    }
+
+    fun loadMorePlaces() {
+        val state = _uiState.value
+        val trimmedQuery = state.query.trim()
+        if (
+            trimmedQuery.isBlank() ||
+            state.isLoadingPlaces ||
+            state.isLoadingMorePlaces ||
+            state.placesPage + 1 >= state.placesTotalPages
+        ) {
+            return
+        }
+
+        val nextPage = state.placesPage + 1
+        val requestId = searchRequestId
+        viewModelScope.launch {
+            _uiState.update {
+                it.copy(
+                    isLoadingMorePlaces = true,
+                    placesLoadMoreErrorMessage = null
+                )
+            }
+
+            runCatching {
+                placeApiService.searchPlaces(
+                    query = trimmedQuery,
+                    page = nextPage,
+                    pageSize = PLACES_PAGE_SIZE
+                )
+            }.onSuccess { response ->
+                if (requestId != searchRequestId || _uiState.value.query.trim() != trimmedQuery) return@onSuccess
+                val existingIds = _uiState.value.places.map { it.id }.toHashSet()
+                _uiState.update {
+                    it.copy(
+                        places = it.places + response.data.filter { place -> place.id !in existingIds },
+                        isLoadingMorePlaces = false,
+                        placesLoadMoreErrorMessage = null,
+                        placesPage = response.pageNumber,
+                        placesTotalPages = response.totalPages
+                    )
+                }
+            }.onFailure { throwable ->
+                if (requestId != searchRequestId || _uiState.value.query.trim() != trimmedQuery) return@onFailure
+                _uiState.update {
+                    it.copy(
+                        isLoadingMorePlaces = false,
+                        placesLoadMoreErrorMessage = throwable.userMessage("Không thể tải thêm địa điểm")
+                    )
+                }
+            }
+        }
     }
 
     fun removeRecentSearch(query: String) {
@@ -244,8 +359,10 @@ class SearchViewModel @Inject constructor(
             state.query.trim() == query &&
             !state.isLoadingPosts &&
             !state.isLoadingUsers &&
+            !state.isLoadingPlaces &&
             state.postsErrorMessage == null &&
-            state.usersErrorMessage == null
+            state.usersErrorMessage == null &&
+            state.placesErrorMessage == null
     }
 
     fun toggleFollow(user: UserProfileResponse) {
@@ -521,5 +638,9 @@ class SearchViewModel @Inject constructor(
         )
     }
 
+    private companion object {
+        const val PLACES_PAGE_SIZE = 10
+    }
     private fun Long.toSafeCount(): Int = coerceIn(0L, Int.MAX_VALUE.toLong()).toInt()
+
 }

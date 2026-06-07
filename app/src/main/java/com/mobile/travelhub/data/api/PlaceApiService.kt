@@ -22,6 +22,13 @@ interface PlaceApiService {
         @Query("keyword") keyword: String? = null
     ): PaginationResponse<TravelPlaceListItemResponse>
 
+    @GET("api/places/search")
+    suspend fun searchPlaces(
+        @Query("query") query: String,
+        @Query("page") page: Int = 0,
+        @Query("pageSize") pageSize: Int = 10
+    ): PaginationResponse<TravelPlaceListItemResponse>
+
     @GET("api/places/recommendations")
     suspend fun getRecommendedPlaces(
         @Query("page") page: Int = 0,

@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -25,18 +26,23 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import coil3.compose.AsyncImage
+import androidx.compose.ui.unit.sp
+import com.mobile.travelhub.data.model.TravelPlaceReviewResponse
 import com.mobile.travelhub.ui.theme.OnSurface
 import com.mobile.travelhub.ui.theme.OnSurfaceVariant
-import com.mobile.travelhub.ui.theme.PrimaryBlue
 import com.mobile.travelhub.ui.theme.SurfaceBg
 import com.mobile.travelhub.viewmodels.ReviewListUiState
 import com.mobile.travelhub.R
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 
 @Composable
 fun ReviewListScreenContent(
@@ -112,97 +118,135 @@ fun ReviewListScreenContent(
                 else -> {
                     LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         items(uiState.items, key = { it.id }) { review ->
-                            Surface(
-                                modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(24.dp),
-                                color = Color(0xFFF3EEF9)
-                            ) {
-                                Row(
-                                    modifier = Modifier.padding(14.dp),
-                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                                ) {
-                                    if (review.user.avatarUrl.isNullOrBlank()) {
-                                        Box(
-                                            modifier = Modifier
-                                                .size(48.dp)
-                                                .background(Color(0xFFE6F1FB), CircleShape),
-                                            contentAlignment = androidx.compose.ui.Alignment.Center
-                                        ) {
-                                            Text(
-                                                text = review.user.name.ifBlank { review.user.username }.take(1).uppercase(),
-                                                color = PrimaryBlue,
-                                                fontWeight = FontWeight.Bold
-                                            )
-                                        }
-                                    } else {
-                                        AsyncImage(
-                                            model = review.user.avatarUrl,
-                                            contentDescription = review.user.name,
-                                            modifier = Modifier
-                                                .size(48.dp)
-                                                .background(Color(0xFFE6F1FB), CircleShape)
-                                        )
-                                    }
-                                    Column(
-                                        modifier = Modifier.weight(1f),
-                                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                                    ) {
-                                        Row(
-                                            modifier = Modifier.fillMaxWidth(),
-                                            horizontalArrangement = Arrangement.SpaceBetween
-                                        ) {
-                                            Column(
-                                                modifier = Modifier.weight(1f),
-                                                verticalArrangement = Arrangement.spacedBy(2.dp)
-                                            ) {
-                                                Text(
-                                                    text = review.user.name.ifBlank { review.user.username },
-                                                    style = MaterialTheme.typography.titleMedium,
-                                                    fontWeight = FontWeight.SemiBold,
-                                                    color = OnSurface,
-                                                    maxLines = 1,
-                                                    overflow = TextOverflow.Ellipsis
-                                                )
-                                                Text(
-                                                    text = "@${review.user.username}",
-                                                    style = MaterialTheme.typography.bodySmall,
-                                                    color = OnSurfaceVariant
-                                                )
-                                            }
-                                            Surface(
-                                                shape = RoundedCornerShape(999.dp),
-                                                color = Color(0xFFE6F1FB)
-                                            ) {
-                                                Row(
-                                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                                                ) {
-                                                    Icon(
-                                                        imageVector = Icons.Filled.Star,
-                                                        contentDescription = null,
-                                                        tint = Color(0xFFFFB800),
-                                                        modifier = Modifier.size(14.dp)
-                                                    )
-                                                    Text(
-                                                        text = stringResource(R.string.rating_out_of_five, review.rating),
-                                                        style = MaterialTheme.typography.labelLarge,
-                                                        color = PrimaryBlue
-                                                    )
-                                                }
-                                            }
-                                        }
-                                        Text(
-                                            text = review.content,
-                                            style = MaterialTheme.typography.bodyLarge,
-                                            color = OnSurfaceVariant
-                                        )
-                                    }
-                                }
-                            }
+                            TravelPlaceReviewCard(review = review)
                         }
                     }
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun TravelPlaceReviewCard(
+    review: TravelPlaceReviewResponse
+) {
+    val displayName = review.user.name.ifBlank { review.user.username }
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        color = Color.White,
+        shadowElevation = 0.dp,
+        tonalElevation = 0.dp
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp, vertical = 14.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            ReviewAuthorAvatar(name = displayName)
+
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.Top
+                ) {
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(1.dp)
+                    ) {
+                        Text(
+                            text = displayName,
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = OnSurface,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Text(
+                            text = formatReviewTimestamp(review.updatedAt ?: review.createdAt),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = OnSurfaceVariant,
+                            fontSize = 11.sp
+                        )
+                    }
+
+                    Row(
+                        modifier = Modifier.padding(start = 10.dp, top = 1.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.Star,
+                            contentDescription = null,
+                            tint = Color(0xFFFFB800),
+                            modifier = Modifier.size(17.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = String.format("%.1f", review.rating.toDouble()),
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = OnSurface
+                        )
+                    }
+                }
+
+                Text(
+                    text = review.content,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = OnSurface,
+                    lineHeight = 19.sp
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ReviewAuthorAvatar(name: String) {
+    val initial = name.trim().firstOrNull()?.uppercaseChar()?.toString() ?: "?"
+    val avatarColors = listOf(
+        Color(0xFF9DBBFF),
+        Color(0xFF86DDB8),
+        Color(0xFFA7A0F6),
+        Color(0xFFF0B76D),
+        Color(0xFF7FC6E8)
+    )
+    val backgroundColor = avatarColors[initial.first().code % avatarColors.size]
+
+    Box(
+        modifier = Modifier
+            .size(36.dp)
+            .clip(CircleShape)
+            .background(backgroundColor),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = initial,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = Color.White
+        )
+    }
+}
+
+private fun formatReviewTimestamp(raw: String?): String {
+    if (raw.isNullOrBlank()) {
+        return "Không rõ thời gian"
+    }
+    val formatted = runCatching {
+        DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")
+            .withZone(ZoneId.systemDefault())
+            .format(Instant.parse(raw))
+    }.getOrDefault(raw)
+    return if (formatted.contains("/") && formatted.contains(" ")) {
+        formatted.replaceFirst(" ", " • ")
+    } else {
+        formatted
     }
 }

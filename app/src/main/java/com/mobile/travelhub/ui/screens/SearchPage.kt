@@ -57,8 +57,10 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.mobile.travelhub.R
 import com.mobile.travelhub.data.model.FeedPostResponse
+import com.mobile.travelhub.data.model.TravelPlaceListItemResponse
 import com.mobile.travelhub.data.model.UserProfileResponse
 import com.mobile.travelhub.ui.components.CommentItem
+import com.mobile.travelhub.ui.components.FeaturedLocationCard
 import com.mobile.travelhub.ui.components.FeedPostCard
 import com.mobile.travelhub.ui.components.FeedPostCardSkeleton
 import com.mobile.travelhub.ui.components.SimpleFormTextField
@@ -67,6 +69,7 @@ import com.mobile.travelhub.ui.components.LoadingContentSkeleton
 import com.mobile.travelhub.ui.components.LoadingListSkeleton
 import com.mobile.travelhub.ui.components.RetryButton
 import com.mobile.travelhub.ui.components.SearchBar
+import com.mobile.travelhub.ui.components.SkeletonBlock
 import com.mobile.travelhub.ui.components.UserResultCard
 import com.mobile.travelhub.ui.components.UserResultCardSkeleton
 import com.mobile.travelhub.ui.theme.OnSurface
@@ -84,6 +87,7 @@ import kotlinx.coroutines.delay
 fun SearchPage(
     onBack: () -> Unit,
     onUserClick: (Long) -> Unit,
+    onPlaceClick: (TravelPlaceListItemResponse) -> Unit,
     viewModel: SearchViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -141,17 +145,25 @@ fun SearchPage(
             CombinedSearchResults(
                 query = uiState.query,
                 users = uiState.users,
+                places = uiState.places,
                 posts = uiState.posts,
                 followingRequestUserIds = uiState.followingRequestUserIds,
                 likingPostIds = uiState.likingPostIds,
                 savingPostIds = uiState.savingPostIds,
                 isLoadingUsers = uiState.isLoadingUsers,
+                isLoadingPlaces = uiState.isLoadingPlaces,
+                isLoadingMorePlaces = uiState.isLoadingMorePlaces,
                 isLoadingPosts = uiState.isLoadingPosts,
                 usersErrorMessage = uiState.usersErrorMessage,
+                placesErrorMessage = uiState.placesErrorMessage,
+                placesLoadMoreErrorMessage = uiState.placesLoadMoreErrorMessage,
                 postsErrorMessage = uiState.postsErrorMessage,
+                hasMorePlaces = uiState.placesPage + 1 < uiState.placesTotalPages,
                 onRetry = { viewModel.search(uiState.query) },
+                onLoadMorePlaces = viewModel::loadMorePlaces,
                 onToggleFollow = viewModel::toggleFollow,
                 onUserClick = onUserClick,
+                onPlaceClick = onPlaceClick,
                 onLikeClick = viewModel::onLikeClicked,
                 onSaveClick = viewModel::onSaveClicked,
                 onCommentClick = viewModel::onCommentClicked
@@ -266,17 +278,25 @@ private fun SearchInput(
 private fun CombinedSearchResults(
     query: String,
     users: List<UserProfileResponse>,
+    places: List<TravelPlaceListItemResponse>,
     posts: List<FeedPostResponse>,
     followingRequestUserIds: Set<Long>,
     likingPostIds: Set<Long>,
     savingPostIds: Set<Long>,
     isLoadingUsers: Boolean,
+    isLoadingPlaces: Boolean,
+    isLoadingMorePlaces: Boolean,
     isLoadingPosts: Boolean,
     usersErrorMessage: String?,
+    placesErrorMessage: String?,
+    placesLoadMoreErrorMessage: String?,
     postsErrorMessage: String?,
+    hasMorePlaces: Boolean,
     onRetry: () -> Unit,
+    onLoadMorePlaces: () -> Unit,
     onToggleFollow: (UserProfileResponse) -> Unit,
     onUserClick: (Long) -> Unit,
+    onPlaceClick: (TravelPlaceListItemResponse) -> Unit,
     onLikeClick: (Long) -> Unit,
     onSaveClick: (Long) -> Unit,
     onCommentClick: (Long) -> Unit
@@ -286,6 +306,21 @@ private fun CombinedSearchResults(
         contentPadding = PaddingValues(top = 12.dp, bottom = 24.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
+        item(contentType = "places-carousel") {
+            PlaceCarouselSection(
+                query = query,
+                places = places,
+                isLoading = isLoadingPlaces,
+                isLoadingMore = isLoadingMorePlaces,
+                errorMessage = placesErrorMessage,
+                loadMoreErrorMessage = placesLoadMoreErrorMessage,
+                hasMore = hasMorePlaces,
+                onRetry = onRetry,
+                onLoadMore = onLoadMorePlaces,
+                onPlaceClick = onPlaceClick
+            )
+        }
+
         item(contentType = "users-carousel") {
             UserCarouselSection(
                 query = query,
@@ -333,6 +368,131 @@ private fun CombinedSearchResults(
                     onAuthorClick = { onUserClick(post.owner.id) }
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun PlaceCarouselSection(
+    query: String,
+    places: List<TravelPlaceListItemResponse>,
+    isLoading: Boolean,
+    isLoadingMore: Boolean,
+    errorMessage: String?,
+    loadMoreErrorMessage: String?,
+    hasMore: Boolean,
+    onRetry: () -> Unit,
+    onLoadMore: () -> Unit,
+    onPlaceClick: (TravelPlaceListItemResponse) -> Unit
+) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        SearchSectionTitle(
+            text = "Địa điểm",
+            modifier = Modifier.padding(horizontal = 16.dp)
+        )
+
+        when {
+            isLoading -> {
+                LazyRow(
+                    contentPadding = PaddingValues(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    items(4, contentType = { "place-skeleton" }) {
+                        SearchPlaceSkeletonCard()
+                    }
+                }
+            }
+            errorMessage != null -> UserCarouselStatusCard(
+                message = errorMessage,
+                onActionClick = onRetry
+            )
+            places.isEmpty() -> EmptySearchState(
+                query = query,
+                resultType = "địa điểm"
+            )
+            else -> {
+                LazyRow(
+                    contentPadding = PaddingValues(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    items(
+                        items = places,
+                        key = { it.id },
+                        contentType = { "place" }
+                    ) { place ->
+                        FeaturedLocationCard(
+                            country = place.province.name,
+                            city = place.name,
+                            imageUrl = place.mainImage,
+                            averageRating = place.averageRating,
+                            reviewCount = place.reviewCount,
+                            modifier = Modifier
+                                .width(220.dp)
+                                .height(270.dp),
+                            onClick = { onPlaceClick(place) }
+                        )
+                    }
+                    if (isLoadingMore) {
+                        item(contentType = "place-loading-more") {
+                            SearchPlaceSkeletonCard()
+                        }
+                    } else if (loadMoreErrorMessage != null) {
+                        item(contentType = "place-load-more-error") {
+                            PlaceCarouselStatusCard(
+                                message = loadMoreErrorMessage,
+                                onActionClick = onLoadMore
+                            )
+                        }
+                    } else if (hasMore) {
+                        item(contentType = "place-load-trigger") {
+                            LaunchedEffect(query, places.size) {
+                                onLoadMore()
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SearchPlaceSkeletonCard() {
+    SkeletonBlock(
+        modifier = Modifier
+            .width(220.dp)
+            .height(270.dp),
+        shape = RoundedCornerShape(10.dp)
+    )
+}
+
+@Composable
+private fun PlaceCarouselStatusCard(
+    message: String,
+    onActionClick: (() -> Unit)? = null
+) {
+    Row(
+        modifier = Modifier
+            .width(260.dp)
+            .height(96.dp)
+            .clip(RoundedCornerShape(8.dp))
+            .background(Color.White)
+            .padding(horizontal = 16.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        SearchIconBubble(type = SearchLeadingIcon.Place)
+        Text(
+            text = message,
+            modifier = Modifier
+                .weight(1f)
+                .padding(start = 12.dp, end = 8.dp),
+            color = OnSurfaceVariant,
+            style = MaterialTheme.typography.bodyMedium,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis
+        )
+        if (onActionClick != null) {
+            RetryButton(onClick = onActionClick)
         }
     }
 }
@@ -661,6 +821,7 @@ private fun SearchIconBubble(type: SearchLeadingIcon) {
         SearchLeadingIcon.History -> Icons.Outlined.History
         SearchLeadingIcon.Tag -> Icons.Outlined.Tag
         SearchLeadingIcon.User -> Icons.Outlined.Person
+        SearchLeadingIcon.Place -> Icons.Outlined.Search
     }
     Box(
         modifier = Modifier
@@ -753,7 +914,8 @@ private fun EmptySearchState(
 private enum class SearchLeadingIcon {
     History,
     Tag,
-    User
+    User,
+    Place
 }
 
 private fun FeedPostResponse.toHomePostUiModel(
