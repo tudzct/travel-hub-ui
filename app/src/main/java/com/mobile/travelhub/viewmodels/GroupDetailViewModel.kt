@@ -71,7 +71,8 @@ data class GroupDetailUiState(
     val members: List<GroupMemberUiModel> = emptyList(),
     val errorMessage: String? = null,
     val isCompleted: Boolean = false,
-    val isKickedOut: Boolean = false
+    val isKickedOut: Boolean = false,
+    val isRemovingMember: Boolean = false
 )
 
 @HiltViewModel
@@ -189,8 +190,23 @@ class GroupDetailViewModel @Inject constructor(
 
             val detail = detailResult.getOrNull() ?: return@launch
 
+            val placeId = detail.tripInfo.placeId
+            val placeImages = if (placeId != null) {
+                val currentPlaceId = _uiState.value.placeId
+                val currentPlaceImages = _uiState.value.placeImages
+                if (currentPlaceId == placeId && currentPlaceImages.isNotEmpty()) {
+                    currentPlaceImages
+                } else {
+                    runCatching { placeRepository.getPlaceDetail(placeId) }
+                        .map { detailResponse -> detailResponse.images.map { it.imageUrl } }
+                        .getOrDefault(emptyList())
+                }
+            } else {
+                emptyList()
+            }
+
             _uiState.update { state ->
-                val merged = state.mergeTripDetail(detail)
+                val merged = state.mergeTripDetail(detail).copy(placeImages = placeImages)
                 if (daysResult != null) {
                     val tripDays = daysResult.getOrNull() ?: emptyList()
                     merged.copy(
@@ -366,14 +382,21 @@ class GroupDetailViewModel @Inject constructor(
         if (tripId == -1L) return
 
         viewModelScope.launch {
+            _uiState.update { it.copy(isRemovingMember = true) }
             tripRepository.removeTripMember(tripId, userId)
                 .onSuccess {
-                    tripRepository.getTripDetail(tripId).onSuccess { detail ->
-                        _uiState.update { it.mergeTripDetail(detail) }
-                    }
-                    onDone(true, "Đã xóa thành viên")
+                    tripRepository.getTripDetail(tripId)
+                        .onSuccess { detail ->
+                            _uiState.update { it.mergeTripDetail(detail).copy(isRemovingMember = false) }
+                            onDone(true, "Đã xóa thành viên")
+                        }
+                        .onFailure { throwable ->
+                            _uiState.update { it.copy(isRemovingMember = false) }
+                            onDone(false, throwable.message ?: "Đã xóa thành viên nhưng không thể làm mới dữ liệu")
+                        }
                 }
                 .onFailure { throwable ->
+                    _uiState.update { it.copy(isRemovingMember = false) }
                     onDone(false, throwable.userMessage("Không thể xóa thành viên"))
                 }
         }

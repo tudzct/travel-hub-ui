@@ -493,13 +493,21 @@ fun BudgetSummaryCard(totalSpent: Double, budgetMax: Double) {
             
             Spacer(modifier = Modifier.height(12.dp))
             
+            val exceeded = totalSpent > budgetMax
             Text(
-                text = stringResource(
-                    R.string.budget_remaining,
-                    NumberUtils.formatVnd(budgetMax - totalSpent)
-                ),
+                text = if (exceeded) {
+                    stringResource(
+                        R.string.budget_exceeded,
+                        NumberUtils.formatVnd(totalSpent - budgetMax)
+                    )
+                } else {
+                    stringResource(
+                        R.string.budget_remaining,
+                        NumberUtils.formatVnd(budgetMax - totalSpent)
+                    )
+                },
                 fontSize = 12.sp,
-                color = OnSurfaceVariant
+                color = if (exceeded) SunsetOrange else OnSurfaceVariant
             )
         }
     }

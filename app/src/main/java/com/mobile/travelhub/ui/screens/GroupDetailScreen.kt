@@ -356,7 +356,25 @@ fun GroupDetailScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(stringResource(R.string.ui_448ae61e1f), fontWeight = FontWeight.ExtraBold, fontSize = 20.sp, color = OnSurface)
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text(
+                            text = stringResource(R.string.ui_448ae61e1f),
+                            fontWeight = FontWeight.ExtraBold,
+                            fontSize = 20.sp,
+                            color = OnSurface
+                        )
+                        if (!isInitialLoading) {
+                            Text(
+                                text = "(${uiState.members.size})",
+                                color = OnSurfaceVariant,
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                    }
                     Text(
                         text = stringResource(R.string.ui_b773dc5ed8),
                         color = PrimaryBlue,
@@ -366,56 +384,32 @@ fun GroupDetailScreen(
                     )
                 }
                 Spacer(modifier = Modifier.height(16.dp))
-                Card(
-                    shape = RoundedCornerShape(20.dp),
-                    colors = CardDefaults.cardColors(containerColor = SurfaceContainerLowest),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column(modifier = Modifier.padding(20.dp)) {
-                        if (isInitialLoading) {
+                if (isInitialLoading) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                        repeat(4) {
                             Box(
                                 modifier = Modifier
-                                    .width(120.dp)
-                                    .height(14.dp)
-                                    .clip(RoundedCornerShape(4.dp))
+                                    .size(44.dp)
+                                    .clip(CircleShape)
                                     .shimmerEffect()
                             )
-                        } else {
-                            Text(
-                                text = stringResource(R.string.member_count, uiState.members.size),
-                                color = OnSurface,
-                                fontWeight = FontWeight.Bold
-                            )
                         }
-                        Spacer(modifier = Modifier.height(16.dp))
-                        if (isInitialLoading) {
-                            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                                repeat(4) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(44.dp)
-                                            .clip(CircleShape)
-                                            .shimmerEffect()
-                                    )
-                                }
-                            }
-                        } else if (uiState.members.isEmpty()) {
-                            Text(
-                                text = stringResource(R.string.ui_14518e1450),
-                                color = OnSurfaceVariant,
-                                fontSize = 13.sp
+                    }
+                } else if (uiState.members.isEmpty()) {
+                    Text(
+                        text = stringResource(R.string.ui_14518e1450),
+                        color = OnSurfaceVariant,
+                        fontSize = 13.sp
+                    )
+                } else {
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        items(uiState.members) { member ->
+                            MemberAvatarItem(
+                                member = member,
+                                onClick = { onNavigateToProfile(member.userId) }
                             )
-                        } else {
-                            LazyRow(
-                                horizontalArrangement = Arrangement.spacedBy(16.dp)
-                            ) {
-                                items(uiState.members) { member ->
-                                    MemberAvatarItem(
-                                        member = member,
-                                        onClick = { onNavigateToProfile(member.userId) }
-                                    )
-                                }
-                            }
                         }
                     }
                 }
@@ -792,14 +786,15 @@ fun GroupDetailScreen(
                                     }
                                     
                                     val isMemberLeader = member.role.equals("LEADER", ignoreCase = true)
-                                    if (isLeader && !isMemberLeader) {
+                                    if (isLeader && !isMemberLeader && !isCompleted) {
                                         IconButton(
-                                            onClick = { memberToDelete = member }
+                                            onClick = { memberToDelete = member },
+                                            enabled = !uiState.isRemovingMember
                                         ) {
                                             Icon(
                                                 imageVector = Icons.Default.Delete,
                                                 contentDescription = stringResource(R.string.ui_035849d3f3),
-                                                tint = SunsetOrange
+                                                tint = if (uiState.isRemovingMember) SunsetOrange.copy(alpha = 0.5f) else SunsetOrange
                                             )
                                         }
                                     }
@@ -813,34 +808,55 @@ fun GroupDetailScreen(
 
         if (memberToDelete != null) {
             AlertDialog(
-                onDismissRequest = { memberToDelete = null },
+                onDismissRequest = { if (!uiState.isRemovingMember) memberToDelete = null },
                 title = { Text(stringResource(R.string.ui_035849d3f3)) },
                 text = {
-                    Text(
-                        stringResource(
-                            R.string.remove_member_confirmation,
-                            memberToDelete?.name.orEmpty()
+                    if (uiState.isRemovingMember) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
+                        ) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(20.dp),
+                                strokeWidth = 2.dp,
+                                color = SunsetOrange
+                            )
+                            Text("Đang xóa thành viên...", color = OnSurface)
+                        }
+                    } else {
+                        Text(
+                            stringResource(
+                                R.string.remove_member_confirmation,
+                                memberToDelete?.name.orEmpty()
+                            )
                         )
-                    )
+                    }
                 },
                 confirmButton = {
-                    TextButton(
-                        onClick = {
-                            val member = memberToDelete
-                            if (member != null) {
-                                viewModel.removeMember(member.userId) { success, message ->
-                                    Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                    if (!uiState.isRemovingMember) {
+                        TextButton(
+                            onClick = {
+                                val member = memberToDelete
+                                if (member != null) {
+                                    viewModel.removeMember(member.userId) { success, message ->
+                                        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                                        if (success) {
+                                            memberToDelete = null
+                                        }
+                                    }
                                 }
                             }
-                            memberToDelete = null
+                        ) {
+                            Text(stringResource(R.string.ui_aa1d94fc16), color = SunsetOrange, fontWeight = FontWeight.Bold)
                         }
-                    ) {
-                        Text(stringResource(R.string.ui_aa1d94fc16), color = SunsetOrange, fontWeight = FontWeight.Bold)
                     }
                 },
                 dismissButton = {
-                    TextButton(onClick = { memberToDelete = null }) {
-                        Text(stringResource(R.string.ui_34ca764caf))
+                    if (!uiState.isRemovingMember) {
+                        TextButton(onClick = { memberToDelete = null }) {
+                            Text(stringResource(R.string.ui_34ca764caf))
+                        }
                     }
                 },
                 containerColor = SurfaceContainerLowest
