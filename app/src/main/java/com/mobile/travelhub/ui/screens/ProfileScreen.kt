@@ -1,5 +1,6 @@
 package com.mobile.travelhub.ui.screens
 
+import androidx.compose.ui.res.stringResource
 import android.net.Uri
 import android.widget.Toast
 import androidx.compose.foundation.background
@@ -166,7 +167,11 @@ fun ProfileScreen(
                     avatarUrl = uploadedUrl
                 )
             } catch (e: Exception) {
-                Toast.makeText(context, e.userMessage("Không thể tải ảnh lên"), Toast.LENGTH_LONG).show()
+                Toast.makeText(
+                    context,
+                    e.userMessage(context.getString(R.string.image_upload_failed)),
+                    Toast.LENGTH_LONG
+                ).show()
             }
         }
     }
@@ -293,7 +298,7 @@ private fun ProfileScreenContent(
                         val navigateToHistory = onNavigateToHistory
                         if (navigateToHistory != null) {
                             NavigationDrawerItem(
-                                label = { Text("Recently viewed places") },
+                                label = { Text(stringResource(R.string.ui_e311ba4976)) },
                                 selected = false,
                                 onClick = {
                                     hideDrawerContentForNavigation = true
@@ -313,7 +318,7 @@ private fun ProfileScreenContent(
                             )
                         }
                         NavigationDrawerItem(
-                            label = { Text("Đổi mật khẩu") },
+                            label = { Text(stringResource(R.string.ui_d4e1de2330)) },
                             selected = false,
                             onClick = {
                                 onClearChangePasswordState()
@@ -329,7 +334,7 @@ private fun ProfileScreenContent(
                             modifier = Modifier.padding(horizontal = 12.dp)
                         )
                         NavigationDrawerItem(
-                            label = { Text("Logout") },
+                            label = { Text(stringResource(R.string.ui_e43d612e11)) },
                             selected = false,
                             onClick = {
                                 coroutineScope.launch { drawerState.close() }
@@ -372,7 +377,7 @@ private fun ProfileScreenContent(
                                     ) {
                                         Icon(
                                             imageVector = Icons.Outlined.Notifications,
-                                            contentDescription = "Notifications",
+                                            contentDescription = stringResource(R.string.ui_753a22b2eb),
                                             tint = OnSurface
                                         )
                                     }
@@ -393,7 +398,7 @@ private fun ProfileScreenContent(
                                     ) {
                                         Icon(
                                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                            contentDescription = "Back",
+                                            contentDescription = stringResource(R.string.ui_b52b36b726),
                                             tint = OnSurface
                                         )
                                     }
@@ -407,7 +412,7 @@ private fun ProfileScreenContent(
                                     ) {
                                         Icon(
                                             imageVector = Icons.Default.Menu,
-                                            contentDescription = "Open menu",
+                                            contentDescription = stringResource(R.string.ui_197101e9db),
                                             tint = OnSurface
                                         )
                                     }
@@ -453,7 +458,7 @@ private fun ProfileScreenContent(
                                             if (avatarUrl != null) {
                                                 AsyncImage(
                                                     model = avatarUrl,
-                                                    contentDescription = "Avatar",
+                                                    contentDescription = stringResource(R.string.ui_7631b26ea8),
                                                     modifier = Modifier
                                                         .fillMaxSize()
                                                         .clip(CircleShape)
@@ -463,7 +468,7 @@ private fun ProfileScreenContent(
                                             } else {
                                                 Image(
                                                     painter = painterResource(id = R.drawable.female_avatar_maker),
-                                                    contentDescription = "Avatar",
+                                                    contentDescription = stringResource(R.string.ui_7631b26ea8),
                                                     modifier = Modifier
                                                         .fillMaxSize()
                                                         .clip(CircleShape)
@@ -487,7 +492,7 @@ private fun ProfileScreenContent(
                                                 ) {
                                                     Icon(
                                                         imageVector = Icons.Default.AddCircle,
-                                                        contentDescription = "Change avatar",
+                                                        contentDescription = stringResource(R.string.ui_60f2e98ebe),
                                                         tint = PrimaryBlue,
                                                         modifier = Modifier.fillMaxSize()
                                                     )
@@ -520,15 +525,15 @@ private fun ProfileScreenContent(
                                             ) {
                                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                                     Text(text = profile.postsCount.toString(), fontWeight = FontWeight.Bold, fontSize = 18.sp)
-                                                    Text(text = "Posts", fontSize = 12.sp, color = Color.Gray)
+                                                    Text(text = stringResource(R.string.ui_a0ca0c3198), fontSize = 12.sp, color = Color.Gray)
                                                 }
                                                 Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.clickable { onNavigateToFollowers() }) {
                                                     Text(text = profile.followersCount.toString(), fontWeight = FontWeight.Bold, fontSize = 18.sp)
-                                                    Text(text = "Followers", fontSize = 12.sp, color = Color.Gray)
+                                                    Text(text = stringResource(R.string.ui_78eaabf4a6), fontSize = 12.sp, color = Color.Gray)
                                                 }
                                                 Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.clickable { onNavigateToFollowing() }) {
                                                     Text(text = profile.followingCount.toString(), fontWeight = FontWeight.Bold, fontSize = 18.sp)
-                                                    Text(text = "Following", fontSize = 12.sp, color = Color.Gray)
+                                                    Text(text = stringResource(R.string.ui_90eeb10083), fontSize = 12.sp, color = Color.Gray)
                                                 }
                                             }
                                         }
@@ -554,7 +559,7 @@ private fun ProfileScreenContent(
                                         ) {
                                             Icon(
                                                 imageVector = Icons.Default.LocationOn,
-                                                contentDescription = "Location",
+                                                contentDescription = stringResource(R.string.ui_d219c68101),
                                                 tint = Color.Gray,
                                                 modifier = Modifier.size(16.dp)
                                             )
@@ -587,7 +592,7 @@ private fun ProfileScreenContent(
                                                 ),
                                                 contentPadding = PaddingValues(0.dp)
                                             ) {
-                                                Text("Edit Profile", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold)
+                                                Text(stringResource(R.string.ui_cd280a41f7), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold)
                                             }
                                         } else {
                                             Button(
@@ -653,7 +658,7 @@ private fun ProfileScreenContent(
                                                         colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
                                                     ) {
                                                         Icon(Icons.Default.Refresh, contentDescription = null)
-                                                        Text(" Try Again", modifier = Modifier.padding(start = 8.dp))
+                                                        Text(stringResource(R.string.ui_d3bc9864fe), modifier = Modifier.padding(start = 8.dp))
                                                     }
                                                 }
                                             }
@@ -681,7 +686,7 @@ private fun ProfileScreenContent(
                                                     ) {
                                                         Icon(
                                                             imageVector = Icons.Outlined.PhotoCamera,
-                                                            contentDescription = "No Posts",
+                                                            contentDescription = stringResource(R.string.ui_1a3a388dd1),
                                                             modifier = Modifier.size(40.dp),
                                                             tint = Color.Gray
                                                         )
@@ -706,7 +711,7 @@ private fun ProfileScreenContent(
                                                             shape = RoundedCornerShape(24.dp),
                                                             colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
                                                         ) {
-                                                            Text("Create your first post", fontWeight = FontWeight.Bold)
+                                                            Text(stringResource(R.string.ui_454f9a145d), fontWeight = FontWeight.Bold)
                                                         }
                                                     }
                                                 }
@@ -807,7 +812,7 @@ fun ChangePasswordDialog(
                 verticalArrangement = Arrangement.spacedBy(18.dp)
             ) {
                 Text(
-                    text = "Đổi mật khẩu",
+                    text = stringResource(R.string.ui_d4e1de2330),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.ExtraBold,
                     color = OnSurface
@@ -815,17 +820,17 @@ fun ChangePasswordDialog(
                 PasswordDialogField(
                     value = currentPassword,
                     onValueChange = { currentPassword = it },
-                    label = "Mật khẩu hiện tại"
+                    label = stringResource(R.string.ui_9a3c6341b1)
                 )
                 PasswordDialogField(
                     value = newPassword,
                     onValueChange = { newPassword = it },
-                    label = "Mật khẩu mới"
+                    label = stringResource(R.string.ui_4267a600ce)
                 )
                 PasswordDialogField(
                     value = confirmPassword,
                     onValueChange = { confirmPassword = it },
-                    label = "Nhập lại mật khẩu mới"
+                    label = stringResource(R.string.ui_2766fdd4ce)
                 )
                 if (!errorMessage.isNullOrBlank()) {
                     Text(
@@ -847,7 +852,7 @@ fun ChangePasswordDialog(
                             contentColor = OnSurfaceVariant
                         )
                     ) {
-                        Text("Hủy")
+                        Text(stringResource(R.string.ui_34ca764caf))
                     }
                     Button(
                         onClick = { onSubmit(currentPassword, newPassword, confirmPassword) },
@@ -861,7 +866,7 @@ fun ChangePasswordDialog(
                         if (isLoading) {
                             InlineLoadingSkeleton(modifier = Modifier.size(18.dp))
                         } else {
-                            Text("Lưu")
+                            Text(stringResource(R.string.ui_a306970e8b))
                         }
                     }
                 }
@@ -928,11 +933,11 @@ fun ErrorLayout(message: String, onRetry: () -> Unit) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Text(text = "Connection Error", fontWeight = FontWeight.Bold, color = SunsetOrange)
+        Text(text = stringResource(R.string.ui_aca851b5d6), fontWeight = FontWeight.Bold, color = SunsetOrange)
         Text(text = message, textAlign = TextAlign.Center, color = OnSurfaceVariant, modifier = Modifier.padding(top = 8.dp, bottom = 24.dp))
         Button(onClick = onRetry, colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)) {
             Icon(Icons.Default.Refresh, contentDescription = null)
-            Text(" Try Again", modifier = Modifier.padding(start = 8.dp))
+            Text(stringResource(R.string.ui_d3bc9864fe), modifier = Modifier.padding(start = 8.dp))
         }
     }
 }
@@ -954,7 +959,7 @@ fun ErrorLayout(message: String, onRetry: () -> Unit) {
 //        HomePostUiModel(
 //            id = 1,
 //            username = "traveler",
-//            subtitle = "Hoi An, Viet Nam",
+//            subtitle = stringResource(R.string.ui_c487afb3ee),
 //            description = "Golden hour by the river.",
 //            imageUrls = emptyList(),
 //            likeCount = 120,

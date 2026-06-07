@@ -27,6 +27,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
@@ -36,6 +37,7 @@ import androidx.navigation.compose.composable
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.mobile.travelhub.data.model.TravelPlaceListItemResponse
 import com.mobile.travelhub.data.model.TopTravelerPeriod
+import com.mobile.travelhub.R
 import com.mobile.travelhub.ui.screens.ProfileScreen
 import com.mobile.travelhub.ui.screens.LoginScreen
 import com.mobile.travelhub.ui.screens.PlaceDetailScreen
@@ -201,7 +203,11 @@ private fun HomeDrawerScaffold(
                         modifier = Modifier.padding(top = 56.dp)
                     ) {
                         NavigationDrawerItem(
-                            label = { androidx.compose.material3.Text("Recently viewed places") },
+                            label = {
+                                androidx.compose.material3.Text(
+                                    stringResource(R.string.recently_viewed_places)
+                                )
+                            },
                             selected = false,
                             onClick = {
                                 hideDrawerContentForNavigation = true
@@ -220,7 +226,11 @@ private fun HomeDrawerScaffold(
                             modifier = Modifier.padding(horizontal = 12.dp)
                         )
                         NavigationDrawerItem(
-                            label = { androidx.compose.material3.Text("Đổi mật khẩu") },
+                            label = {
+                                androidx.compose.material3.Text(
+                                    stringResource(R.string.change_password)
+                                )
+                            },
                             selected = false,
                             onClick = {
                                 onClearChangePasswordState()
@@ -236,7 +246,9 @@ private fun HomeDrawerScaffold(
                             modifier = Modifier.padding(horizontal = 12.dp)
                         )
                         NavigationDrawerItem(
-                            label = { androidx.compose.material3.Text("Đăng xuất") },
+                            label = {
+                                androidx.compose.material3.Text(stringResource(R.string.logout))
+                            },
                             selected = false,
                             onClick = {
                                 coroutineScope.launch { drawerState.close() }

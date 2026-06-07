@@ -1,5 +1,6 @@
 package com.mobile.travelhub.ui.screens
 
+import androidx.compose.ui.res.stringResource
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.BorderStroke
@@ -85,6 +86,7 @@ import com.mobile.travelhub.viewmodels.ReviewViewModel
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import com.mobile.travelhub.R
 
 private val PlaceDetailHorizontalPadding = 16.dp
 private val PlaceDetailSectionPadding = 16.dp
@@ -153,10 +155,10 @@ fun PlaceDetailScreen(
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     OutlinedButton(onClick = onBack) {
-                        Text("Back")
+                        Text(stringResource(R.string.ui_b52b36b726))
                     }
                     Text(
-                        text = "Không thể tải địa điểm",
+                        text = stringResource(R.string.ui_3682846f79),
                         style = MaterialTheme.typography.headlineSmall
                     )
                     Text(
@@ -292,7 +294,7 @@ private fun PlaceHeroSection(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "No image",
+                        text = stringResource(R.string.ui_fc5e5bdcd5),
                         style = MaterialTheme.typography.bodyLarge,
                         color = OnSurfaceVariant
                     )
@@ -412,7 +414,7 @@ private fun PinnedBackButton(onBack: () -> Unit) {
         IconButton(onClick = onBack) {
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                contentDescription = "Back",
+                contentDescription = stringResource(R.string.ui_b52b36b726),
                 tint = Color.White
             )
         }
@@ -442,14 +444,14 @@ private fun PlaceInfoSection(detail: PlaceDetailUiModel) {
     ) {
         InfoRow(
             icon = Icons.Default.LocationOn,
-            label = "Khu vực",
+            label = stringResource(R.string.ui_c12e4bb029),
             value = detail.province.name
         )
         detail.openingTime?.takeIf { it.isNotBlank() }?.let {
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f))
             InfoRow(
                 icon = Icons.Default.AccessTime,
-                label = "Giờ mở cửa",
+                label = stringResource(R.string.ui_be5eb8d380),
                 value = it
             )
         }
@@ -520,7 +522,7 @@ private fun RelatedPlacesSection(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "Địa điểm liên quan",
+                text = stringResource(R.string.ui_a50f97d8d3),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold
             )
@@ -668,7 +670,7 @@ private fun ReviewSummarySection(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Text(
-            text = "Đánh giá",
+            text = stringResource(R.string.ui_d0170783fe),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold
         )
@@ -692,7 +694,7 @@ private fun ReviewSummarySection(
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = "$reviewCount reviews",
+                        text = stringResource(R.string.review_count, reviewCount),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -709,7 +711,7 @@ private fun ReviewSummarySection(
                 color = PrimaryBlue.copy(alpha = 0.08f)
             ) {
                 Text(
-                    text = "Đánh giá của bạn: ${myReview.rating} sao",
+                    text = stringResource(R.string.your_rating, myReview.rating),
                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
                     style = MaterialTheme.typography.bodyMedium,
                     color = PrimaryBlue
@@ -736,12 +738,12 @@ private fun ReviewPreviewSection(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "Đánh giá gần đây",
+                text = stringResource(R.string.ui_520354f2ab),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold
             )
             Text(
-                text = "Xem tất cả",
+                text = stringResource(R.string.ui_7e04025452),
                 modifier = Modifier.clickable(onClick = onShowAll),
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.primary
@@ -763,7 +765,7 @@ private fun ReviewPreviewSection(
 
             reviews.isEmpty() -> {
                 Text(
-                    text = "Chưa có đánh giá nào cho địa điểm này.",
+                    text = stringResource(R.string.ui_332a8650bb),
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -847,7 +849,7 @@ private fun ReviewBottomSheet(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Text(
-                text = "Đánh giá địa điểm",
+                text = stringResource(R.string.ui_b19c813eda),
                 style = MaterialTheme.typography.headlineSmall,
                 color = OnSurface,
                 fontWeight = FontWeight.Bold
@@ -877,7 +879,7 @@ private fun ReviewBottomSheet(
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Star,
-                                contentDescription = "$star sao",
+                                contentDescription = stringResource(R.string.star_count_description, star),
                                 tint = if (selected) starColor else OnSurfaceVariant.copy(alpha = 0.62f)
                             )
                         }
@@ -889,7 +891,7 @@ private fun ReviewBottomSheet(
                 value = uiState.content,
                 onValueChange = onContentChange,
                 modifier = Modifier.fillMaxWidth(),
-                placeholder = "Chia sẻ trải nghiệm của bạn",
+                placeholder = stringResource(R.string.ui_79d0b72c6c),
                 enabled = !uiState.isSubmitting,
                 singleLine = false,
                 minLines = 4,
@@ -930,7 +932,7 @@ private fun ReviewBottomSheet(
                             .height(10.dp)
                     )
                 } else {
-                    Text("Gửi đánh giá")
+                    Text(stringResource(R.string.ui_96ee09303d))
                 }
             }
 
@@ -986,7 +988,7 @@ private fun PlaceActionSection(
             )
             Spacer(modifier = Modifier.width(6.dp))
             Text(
-                text = "Chỉ đường",
+                text = stringResource(R.string.ui_982c95c3d7),
                 fontWeight = FontWeight.Bold
             )
         }

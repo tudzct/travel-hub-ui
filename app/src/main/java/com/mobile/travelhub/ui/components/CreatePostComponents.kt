@@ -1,5 +1,6 @@
 package com.mobile.travelhub.ui.components
 
+import androidx.compose.ui.res.stringResource
 import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -41,6 +42,7 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.mobile.travelhub.viewmodels.CreatePostUiState
 import com.mobile.travelhub.viewmodels.CreatePostViewModel
+import com.mobile.travelhub.R
 
 @Composable
 fun CreatePostScreenContent(
@@ -136,7 +138,7 @@ private fun CreatePostTopBar(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            text = "TẠO BÀI VIẾT",
+            text = stringResource(R.string.ui_03f9ddf337),
             style = MaterialTheme.typography.labelMedium,
             fontWeight = FontWeight.Bold,
             letterSpacing = 1.sp,
@@ -179,7 +181,7 @@ private fun UserHeaderSection(
             if (userAvatarUrl != null) {
                 AsyncImage(
                     model = userAvatarUrl,
-                    contentDescription = "User avatar",
+                    contentDescription = stringResource(R.string.ui_900527c977),
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize()
                 )
@@ -223,13 +225,13 @@ private fun UserHeaderSection(
             ) {
                 Icon(
                     imageVector = Icons.Rounded.Public,
-                    contentDescription = "Công khai",
+                    contentDescription = stringResource(R.string.ui_cde252312d),
                     modifier = Modifier.size(12.dp),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Spacer(modifier = Modifier.width(3.dp))
                 Text(
-                    text = "Công khai",
+                    text = stringResource(R.string.ui_cde252312d),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 10.sp
@@ -252,7 +254,7 @@ private fun DescriptionInputSection(
     SimpleFormTextField(
         value = description,
         onValueChange = onDescriptionChange,
-        placeholder = "Bạn đang nghĩ gì?",
+        placeholder = stringResource(R.string.ui_eeed751665),
         enabled = !isSubmitting,
         singleLine = false,
         minLines = 4,
@@ -279,7 +281,7 @@ private fun TravelPlaceSection(
 ) {
     Column(modifier = Modifier.padding(horizontal = 20.dp)) {
         DestinationPlacePicker(
-            label = "Địa điểm du lịch",
+            label = stringResource(R.string.ui_1e0698362b),
             selectedProvince = uiState.selectedProvince,
             selectedPlace = uiState.selectedPlace,
             provinces = uiState.provinces,
@@ -287,7 +289,7 @@ private fun TravelPlaceSection(
             isLoading = uiState.isLoadingLocations,
             enabled = !uiState.isSubmitting &&
                 (uiState.provinces.isNotEmpty() || uiState.provinceErrorMessage != null),
-            placeholder = "Chọn địa điểm",
+            placeholder = stringResource(R.string.ui_9433146e77),
             onProvinceSelected = onSelectProvince,
             onPlaceSelected = onSelectPlace,
             provinceErrorMessage = uiState.provinceErrorMessage,
@@ -316,7 +318,11 @@ private fun SelectedImagesSection(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "ẢNH: ${selectedImages.size}/${CreatePostViewModel.MAX_IMAGE_COUNT}",
+                text = stringResource(
+                    R.string.selected_image_count,
+                    selectedImages.size,
+                    CreatePostViewModel.MAX_IMAGE_COUNT
+                ),
                 style = MaterialTheme.typography.labelMedium,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -337,7 +343,7 @@ private fun SelectedImagesSection(
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = "Thêm ảnh",
+                        text = stringResource(R.string.ui_0f74781e9d),
                         fontWeight = FontWeight.SemiBold
                     )
                 }
@@ -388,7 +394,7 @@ private fun SelectedImagesSection(
                     }
                     Spacer(modifier = Modifier.height(12.dp))
                     Text(
-                        text = "Thêm ảnh",
+                        text = stringResource(R.string.ui_0f74781e9d),
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary
@@ -413,7 +419,7 @@ private fun PostImageItem(
     ) {
         AsyncImage(
             model = uri,
-            contentDescription = "Ảnh bài viết",
+            contentDescription = stringResource(R.string.ui_f6b00f2f1b),
             contentScale = ContentScale.Crop,
             modifier = Modifier.fillMaxSize()
         )
@@ -430,7 +436,7 @@ private fun PostImageItem(
         ) {
             Icon(
                 imageVector = Icons.Outlined.Close,
-                contentDescription = "Xóa ảnh",
+                contentDescription = stringResource(R.string.ui_a501ea7f86),
                 modifier = Modifier.size(18.dp),
                 tint = Color.White
             )

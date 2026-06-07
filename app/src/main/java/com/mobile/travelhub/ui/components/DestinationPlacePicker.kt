@@ -1,5 +1,6 @@
 package com.mobile.travelhub.ui.components
 
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -54,6 +55,7 @@ import com.mobile.travelhub.data.model.AdminProvinceResponse
 import com.mobile.travelhub.data.model.ProvinceResponse
 import com.mobile.travelhub.data.model.TravelPlaceListItemResponse
 import com.mobile.travelhub.ui.theme.TravelHubTheme
+import com.mobile.travelhub.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -269,7 +271,7 @@ private fun DestinationPickerSheet(
 
             if (!isChoosingProvince && selectedProvince != null) {
                 TextButton(onClick = onChooseProvince) {
-                    Text("Đổi tỉnh")
+                    Text(stringResource(R.string.ui_c969efe0e5))
                 }
             }
         }
@@ -282,7 +284,7 @@ private fun DestinationPickerSheet(
             when {
                 isLoading && provinces.isEmpty() -> LoadingPlaceList()
                 provinceErrorMessage != null && provinces.isEmpty() -> DestinationLoadError(
-                    title = "Không thể lấy danh sách tỉnh/thành phố",
+                    title = stringResource(R.string.ui_86143251a3),
                     message = provinceErrorMessage,
                     onRetry = onRetryProvinces
                 )
@@ -304,7 +306,7 @@ private fun DestinationPickerSheet(
             when {
                 isLoading -> LoadingPlaceList()
                 placesErrorMessage != null -> DestinationLoadError(
-                    title = "Không thể lấy địa điểm",
+                    title = stringResource(R.string.ui_230aa1c612),
                     message = placesErrorMessage,
                     onRetry = onRetryPlaces
                 )
@@ -493,7 +495,7 @@ private fun EmptyPlaceList() {
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = "Chưa có địa điểm cho tỉnh này",
+            text = stringResource(R.string.ui_4d8857d1a8),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -513,7 +515,7 @@ private fun DestinationPlacePickerSelectedPreview() {
                 .padding(20.dp)
         ) {
             DestinationPlacePicker(
-                label = "Điểm đến",
+                label = stringResource(R.string.ui_8dc001232f),
                 selectedProvince = provinces.first(),
                 selectedPlace = places.first(),
                 provinces = provinces,

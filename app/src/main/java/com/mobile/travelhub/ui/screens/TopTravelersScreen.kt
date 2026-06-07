@@ -1,5 +1,6 @@
 package com.mobile.travelhub.ui.screens
 
+import androidx.compose.ui.res.stringResource
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -44,6 +45,7 @@ import com.mobile.travelhub.ui.theme.OnSurfaceVariant
 import com.mobile.travelhub.ui.theme.PrimaryBlue
 import com.mobile.travelhub.ui.theme.SurfaceBg
 import com.mobile.travelhub.viewmodels.TopTravelersViewModel
+import com.mobile.travelhub.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -66,7 +68,7 @@ fun TopTravelersScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = "Top Travelers",
+                        text = stringResource(R.string.ui_8e40b4b1c6),
                         fontWeight = FontWeight.Bold,
                         color = OnSurface
                     )
@@ -75,7 +77,7 @@ fun TopTravelersScreen(
                     IconButton(onClick = onBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
+                            contentDescription = stringResource(R.string.ui_b52b36b726),
                             tint = OnSurface
                         )
                     }
@@ -107,7 +109,7 @@ fun TopTravelersScreen(
                         verticalArrangement = Arrangement.Center
                     ) {
                         Text(
-                            text = "Không thể tải danh sách người dùng nổi bật.",
+                            text = stringResource(R.string.ui_6725a49830),
                             color = OnSurfaceVariant
                         )
                         RetryButton(onClick = viewModel::refresh)
@@ -117,7 +119,7 @@ fun TopTravelersScreen(
                 state.items.isEmpty() -> {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Text(
-                            text = "Chưa có người dùng nổi bật trong giai đoạn này.",
+                            text = stringResource(R.string.ui_2ab957043f),
                             color = OnSurfaceVariant
                         )
                     }
@@ -166,7 +168,7 @@ fun TopTravelersScreen(
                                         UserResultCardSkeleton()
                                     } else {
                                         TextButton(onClick = viewModel::loadMore) {
-                                            Text("Load more", color = PrimaryBlue)
+                                            Text(stringResource(R.string.ui_dfe60ca92e), color = PrimaryBlue)
                                         }
                                     }
                                 }

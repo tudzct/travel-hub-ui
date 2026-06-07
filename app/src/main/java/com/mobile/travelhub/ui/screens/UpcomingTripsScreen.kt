@@ -1,5 +1,6 @@
 package com.mobile.travelhub.ui.screens
 
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -78,14 +79,14 @@ fun UpcomingTripsScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = "Sắp khởi hành",
+                        text = stringResource(R.string.ui_9183bdeb31),
                         fontWeight = FontWeight.ExtraBold,
                         color = OnSurface
                     )
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.ui_b52b36b726))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = SurfaceBg)
@@ -119,7 +120,7 @@ fun UpcomingTripsScreen(
             else if (upcomingTrips.isEmpty()) {
                 item {
                     Text(
-                        text = "Bạn chưa có chuyến đi nào sắp tới.",
+                        text = stringResource(R.string.ui_a5bb058cec),
                         color = OnSurfaceVariant,
                         fontSize = 14.sp
                     )
@@ -304,9 +305,9 @@ private fun UpcomingTripFullCard(
             }
 
             Column(modifier = Modifier.padding(18.dp)) {
-                TripDateLine(label = "Ngày đến", value = formatTripDate(trip.startDate))
+                TripDateLine(label = stringResource(R.string.ui_0483e7073e), value = formatTripDate(trip.startDate))
                 Spacer(modifier = Modifier.height(10.dp))
-                TripDateLine(label = "Ngày về", value = formatTripDate(trip.endDate))
+                TripDateLine(label = stringResource(R.string.ui_0febcc62b0), value = formatTripDate(trip.endDate))
                 Spacer(modifier = Modifier.height(10.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
@@ -317,7 +318,7 @@ private fun UpcomingTripFullCard(
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = "${trip.memberCount} thành viên",
+                        text = stringResource(R.string.member_count, trip.memberCount),
                         fontSize = 13.sp,
                         color = OnSurfaceVariant,
                         fontWeight = FontWeight.Medium
@@ -339,7 +340,7 @@ private fun TripDateLine(label: String, value: String) {
         )
         Spacer(modifier = Modifier.width(8.dp))
         Text(
-            text = "$label: ",
+            text = stringResource(R.string.label_value_format, label),
             fontSize = 13.sp,
             fontWeight = FontWeight.Bold,
             color = OnSurface

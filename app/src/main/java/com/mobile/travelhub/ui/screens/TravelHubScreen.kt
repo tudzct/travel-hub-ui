@@ -1,5 +1,6 @@
 package com.mobile.travelhub.ui.screens
 
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.DirectionsWalk
@@ -30,6 +31,7 @@ import com.mobile.travelhub.ui.components.layout.RoundedTopNavigationBar
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.mobile.travelhub.viewmodels.AuthViewModel
 import kotlinx.coroutines.delay
+import com.mobile.travelhub.R
 
 @Composable
 fun TravelHubScreen(
@@ -58,31 +60,31 @@ fun TravelHubScreen(
             screen = Screen.Home,
             icon = Icons.Outlined.Home,
             selectedIcon = Icons.Filled.Home,
-            label = "Home"
+            label = stringResource(R.string.ui_70f8bb9a8a)
         ),
         BottomNavItem(
             screen = Screen.Explore,
             icon = Icons.Outlined.TravelExplore,
             selectedIcon = Icons.Filled.TravelExplore,
-            label = "Explore"
+            label = stringResource(R.string.ui_b965ae66fc)
         ),
         BottomNavItem(
             screen = Screen.Trips,
             icon = Icons.AutoMirrored.Outlined.DirectionsWalk,
             selectedIcon = Icons.AutoMirrored.Filled.DirectionsWalk,
-            label = "Itinerary"
+            label = stringResource(R.string.ui_b1bed287e1)
         ),
         BottomNavItem(
             screen = Screen.CreatePost,
             icon = Icons.Outlined.Add,
             selectedIcon = Icons.Filled.Add,
-            label = "Create"
+            label = stringResource(R.string.ui_6e157c5da4)
         ),
         BottomNavItem(
             screen = Screen.Profile,
             icon = Icons.Outlined.AccountCircle,
             selectedIcon = Icons.Filled.AccountCircle,
-            label = "Profile"
+            label = stringResource(R.string.ui_ff4fc0276e)
         )
     )
 

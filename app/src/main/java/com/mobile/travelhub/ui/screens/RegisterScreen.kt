@@ -1,5 +1,6 @@
 package com.mobile.travelhub.ui.screens
 
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -48,6 +49,7 @@ import androidx.compose.ui.unit.dp
 import com.mobile.travelhub.ui.components.SimpleFormTextField
 import com.mobile.travelhub.ui.components.SkeletonBlock
 import com.mobile.travelhub.viewmodels.AuthUiState
+import com.mobile.travelhub.R
 
 @Composable
 fun RegisterScreen(
@@ -73,7 +75,7 @@ fun RegisterScreen(
 
         // ── Welcome heading ──
         Text(
-            text = "Create your\nTravelHub account",
+            text = stringResource(R.string.ui_39db080f29),
             style = MaterialTheme.typography.displayMedium,
             fontWeight = FontWeight.Bold,
             textAlign = TextAlign.Center,
@@ -94,7 +96,7 @@ fun RegisterScreen(
                     email = it
                     if (uiState.errorMessage != null) onDismissError()
                 },
-                placeholder = "Email address",
+                placeholder = stringResource(R.string.ui_c94d3175a6),
                 keyboardOptions = KeyboardOptions(
                     keyboardType = KeyboardType.Email,
                     imeAction = ImeAction.Next
@@ -105,7 +107,7 @@ fun RegisterScreen(
                 trailingIcon = {
                     Icon(
                         imageVector = Icons.Outlined.Email,
-                        contentDescription = "Email",
+                        contentDescription = stringResource(R.string.ui_84add5b295),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
                     )
                 },
@@ -121,7 +123,7 @@ fun RegisterScreen(
                     username = it
                     if (uiState.errorMessage != null) onDismissError()
                 },
-                placeholder = "Username",
+                placeholder = stringResource(R.string.ui_84c29015de),
                 keyboardOptions = KeyboardOptions(
                     keyboardType = KeyboardType.Text,
                     imeAction = ImeAction.Next
@@ -132,7 +134,7 @@ fun RegisterScreen(
                 trailingIcon = {
                     Icon(
                         imageVector = Icons.Outlined.Person,
-                        contentDescription = "Username",
+                        contentDescription = stringResource(R.string.ui_84c29015de),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
                     )
                 },
@@ -148,7 +150,7 @@ fun RegisterScreen(
                     password = it
                     if (uiState.errorMessage != null) onDismissError()
                 },
-                placeholder = "Password",
+                placeholder = stringResource(R.string.ui_8be3c943b1),
                 visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                 keyboardOptions = KeyboardOptions(
                     keyboardType = KeyboardType.Password,
@@ -208,7 +210,7 @@ fun RegisterScreen(
                     )
                 } else {
                     Text(
-                        text = "Create Account",
+                        text = stringResource(R.string.ui_eff4fd865f),
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.onPrimary

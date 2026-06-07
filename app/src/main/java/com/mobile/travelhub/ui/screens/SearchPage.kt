@@ -1,5 +1,6 @@
 package com.mobile.travelhub.ui.screens
 
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -114,7 +115,7 @@ fun SearchPage(
             IconButton(onClick = onBack) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
-                    contentDescription = "Back",
+                    contentDescription = stringResource(R.string.ui_b52b36b726),
                     tint = OnSurface
                 )
             }
@@ -189,7 +190,7 @@ private fun SearchSuggestionsContent(
         if (recentSearches.isNotEmpty()) {
             item(contentType = "recent-title") {
                 SearchSectionHeader(
-                    text = "Recent Searches",
+                    text = stringResource(R.string.ui_5820a93677),
                     actionText = "Clear",
                     onActionClick = onClearRecentSearches
                 )
@@ -211,7 +212,7 @@ private fun SearchSuggestionsContent(
 
 //        item(contentType = "trending-title") {
 //            SearchSectionTitle(
-//                text = "Trending Searches",
+//                text = stringResource(R.string.ui_3a69c31c04),
 //                modifier = Modifier.padding(top = if (recentSearches.isEmpty()) 0.dp else 8.dp)
 //            )
 //        }
@@ -240,7 +241,7 @@ private fun SearchInput(
     SearchBar(
         value = query,
         onValueChange = onQueryChange,
-        placeholder = "Search posts or users",
+        placeholder = stringResource(R.string.ui_e87eee7e22),
         modifier = modifier,
         trailingContent = if (query.isNotEmpty()) {
             {
@@ -250,7 +251,7 @@ private fun SearchInput(
                 ) {
                     Icon(
                         imageVector = Icons.Outlined.Close,
-                        contentDescription = "Clear search",
+                        contentDescription = stringResource(R.string.ui_67300d0fed),
                         tint = OnSurfaceVariant,
                         modifier = Modifier.size(18.dp)
                     )
@@ -300,7 +301,7 @@ private fun CombinedSearchResults(
 
         item(contentType = "posts-title") {
             SearchSectionTitle(
-                text = "Posts",
+                text = stringResource(R.string.ui_a0ca0c3198),
                 modifier = Modifier.padding(start = 16.dp, top = 6.dp, end = 16.dp)
             )
         }
@@ -311,7 +312,10 @@ private fun CombinedSearchResults(
                 SearchErrorState(message = postsErrorMessage, onRetry = onRetry)
             }
             posts.isEmpty() -> item(contentType = "posts-empty") {
-                EmptySearchState(query = query, resultType = "posts")
+                EmptySearchState(
+                    query = query,
+                    resultType = stringResource(R.string.result_type_posts)
+                )
             }
             else -> items(
                 items = posts,
@@ -351,7 +355,7 @@ private fun SearchCommentsSheet(
         containerColor = Color.White
     ) {
         Text(
-            text = "Comments",
+            text = stringResource(R.string.ui_fce06e20e5),
             style = MaterialTheme.typography.titleMedium,
             modifier = Modifier.padding(horizontal = 24.dp)
         )
@@ -373,7 +377,7 @@ private fun SearchCommentsSheet(
                 modifier = Modifier.padding(horizontal = 24.dp)
             )
             comments.isEmpty() -> Text(
-                text = "No comments yet",
+                text = stringResource(R.string.ui_d14da37946),
                 style = MaterialTheme.typography.bodyMedium,
                 color = OnSurfaceVariant,
                 modifier = Modifier.padding(horizontal = 24.dp)
@@ -407,7 +411,7 @@ private fun SearchCommentsSheet(
             SimpleFormTextField(
                 value = commentInput,
                 onValueChange = onCommentInputChanged,
-                placeholder = "Add a comment",
+                placeholder = stringResource(R.string.ui_3e18361540),
                 modifier = Modifier.weight(1f),
                 enabled = !isCommentSubmitting,
                 singleLine = false,
@@ -433,7 +437,7 @@ private fun SearchCommentsSheet(
                     Icon(
                         imageVector = Icons.AutoMirrored.Outlined.Send,
                         modifier = Modifier.size(16.dp),
-                        contentDescription = "Send comment",
+                        contentDescription = stringResource(R.string.ui_591e0e89f0),
                         tint = Color.White
                     )
                 }
@@ -467,7 +471,7 @@ private fun UserCarouselSection(
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
         SearchSectionTitle(
-            text = "Users",
+            text = stringResource(R.string.ui_57f2b181d0),
             modifier = Modifier.padding(horizontal = 16.dp)
         )
 
@@ -486,7 +490,10 @@ private fun UserCarouselSection(
                 message = errorMessage,
                 onActionClick = onRetry
             )
-            users.isEmpty() -> EmptySearchState(query = query, resultType = "users")
+            users.isEmpty() -> EmptySearchState(
+                query = query,
+                resultType = stringResource(R.string.result_type_users)
+            )
             else -> {
                 LazyRow(
                     contentPadding = PaddingValues(horizontal = 16.dp),
@@ -626,7 +633,7 @@ private fun SearchSuggestionRow(
             ) {
                 Icon(
                     imageVector = Icons.Outlined.Close,
-                    contentDescription = "Remove recent search",
+                    contentDescription = stringResource(R.string.ui_dc6650d176),
                     tint = OnSurfaceVariant,
                     modifier = Modifier.size(17.dp)
                 )
@@ -732,14 +739,14 @@ private fun EmptySearchState(
             )
         }
         Text(
-            text = "No $resultType for \"$query\"",
+            text = stringResource(R.string.no_search_results, resultType, query),
             modifier = Modifier.padding(top = 14.dp),
             color = OnSurface,
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold
         )
         Text(
-            text = "Try another keyword.",
+            text = stringResource(R.string.ui_60c49e0641),
             modifier = Modifier.padding(top = 4.dp),
             color = OnSurfaceVariant,
             fontSize = 13.sp

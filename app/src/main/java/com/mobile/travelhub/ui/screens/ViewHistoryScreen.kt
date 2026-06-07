@@ -1,5 +1,6 @@
 package com.mobile.travelhub.ui.screens
 
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -31,6 +32,7 @@ import com.mobile.travelhub.viewmodels.HistoryViewModel
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import com.mobile.travelhub.R
 
 @Composable
 fun ViewHistoryScreen(
@@ -55,10 +57,10 @@ fun ViewHistoryScreen(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         OutlinedButton(onClick = onBack) {
-            Text("Back")
+            Text(stringResource(R.string.ui_b52b36b726))
         }
         Text(
-            text = "Lịch sử xem địa điểm",
+            text = stringResource(R.string.ui_89871a4aee),
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold
         )
@@ -77,7 +79,7 @@ fun ViewHistoryScreen(
 
             uiState.items.isEmpty() -> {
                 Text(
-                    text = "Bạn chưa xem địa điểm nào.",
+                    text = stringResource(R.string.ui_cd42bab7f4),
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }

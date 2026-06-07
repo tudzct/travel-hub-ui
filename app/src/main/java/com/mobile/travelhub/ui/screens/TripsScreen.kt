@@ -1,5 +1,6 @@
 package com.mobile.travelhub.ui.screens
 
+import androidx.compose.ui.res.stringResource
 import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -106,9 +107,9 @@ fun TripsScreen(
                 shape = RoundedCornerShape(20.dp),
                 elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 4.dp)
             ) {
-                Icon(Icons.Default.FlightTakeoff, contentDescription = "New Trip")
+                Icon(Icons.Default.FlightTakeoff, contentDescription = stringResource(R.string.ui_77c36e7640))
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Chuyến đi mới", fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.ui_ab38c564dc), fontWeight = FontWeight.Bold)
             }
         }
     ) { padding ->
@@ -137,14 +138,14 @@ fun TripsScreen(
             item {
                 Column(modifier = Modifier.padding(horizontal = 24.dp, vertical = 24.dp)) {
                     Text(
-                        text = "Sẵn sàng lên đường nào,",
+                        text = stringResource(R.string.ui_8f23352824),
                         fontSize = 16.sp,
                         color = OnSurfaceVariant,
                         letterSpacing = 0.5.sp
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = "Nhà thám hiểm!",
+                        text = stringResource(R.string.ui_5a3d42db37),
                         fontWeight = FontWeight.ExtraBold,
                         fontSize = 32.sp,
                         color = OnSurface,
@@ -157,7 +158,7 @@ fun TripsScreen(
             item {
                 Column(modifier = Modifier.padding(horizontal = 24.dp)) {
                     Text(
-                        "Đang diễn ra",
+                        stringResource(R.string.ui_0811963e56),
                         fontWeight = FontWeight.ExtraBold,
                         fontSize = 18.sp,
                         color = OnSurface
@@ -189,13 +190,13 @@ fun TripsScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "Sắp khởi hành",
+                            text = stringResource(R.string.ui_9183bdeb31),
                             fontWeight = FontWeight.ExtraBold,
                             fontSize = 18.sp,
                             color = OnSurface
                         )
                         Text(
-                            text = "Xem tất cả",
+                            text = stringResource(R.string.ui_7e04025452),
                             color = PrimaryBlue,
                             fontWeight = FontWeight.Bold,
                             fontSize = 13.sp,
@@ -247,7 +248,7 @@ fun TripsScreen(
                         }
                     } else if (state.upcomingTrips.isEmpty()) {
                         Text(
-                            text = "Bạn chưa có chuyến đi nào sắp tới.",
+                            text = stringResource(R.string.ui_a5bb058cec),
                             color = OnSurfaceVariant,
                             fontSize = 14.sp
                         )
@@ -270,7 +271,7 @@ fun TripsScreen(
             item {
                 Column {
                     Text(
-                        text = "Nhật ký hành trình",
+                        text = stringResource(R.string.ui_f593bb6075),
                         fontWeight = FontWeight.ExtraBold,
                         fontSize = 18.sp,
                         color = OnSurface,
@@ -311,7 +312,7 @@ fun TripsScreen(
                         }
                     } else if (state.pastTrips.isEmpty()) {
                         Text(
-                            text = "Chưa có chuyến đi",
+                            text = stringResource(R.string.ui_8a9ea817b6),
                             color = OnSurfaceVariant,
                             fontSize = 14.sp,
                             modifier = Modifier.padding(horizontal = 24.dp)
@@ -510,7 +511,7 @@ fun AddTripOptionsContent(
     ) {
         if (!showJoinInput) {
             Text(
-                text = "Bắt đầu hành trình mới",
+                text = stringResource(R.string.ui_cac2fa7e3c),
                 fontWeight = FontWeight.ExtraBold,
                 fontSize = 20.sp,
                 color = OnSurface
@@ -519,16 +520,16 @@ fun AddTripOptionsContent(
             
             TripOptionItem(
                 icon = Icons.Default.Add,
-                title = "Tạo chuyến đi mới",
-                desc = "Lên kế hoạch từ đầu với bạn bè",
+                title = stringResource(R.string.ui_a7b24cbdc8),
+                desc = stringResource(R.string.ui_e935e26423),
                 color = PrimaryBlue,
                 onClick = onCreateNew
             )
             Spacer(modifier = Modifier.height(16.dp))
             TripOptionItem(
                 icon = Icons.Default.GroupAdd,
-                title = "Tham gia bằng mã",
-                desc = "Nhập mã để tham gia nhóm có sẵn",
+                title = stringResource(R.string.ui_d7e500da55),
+                desc = stringResource(R.string.ui_0d27dc79d6),
                 color = SunsetOrange,
                 onClick = {
                     showJoinInput = true
@@ -537,14 +538,14 @@ fun AddTripOptionsContent(
             Spacer(modifier = Modifier.height(16.dp))
         } else {
             Text(
-                text = "Tham gia chuyến đi",
+                text = stringResource(R.string.ui_4732924c6b),
                 fontWeight = FontWeight.ExtraBold,
                 fontSize = 20.sp,
                 color = OnSurface
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "Nhập mã gồm 8 ký tự được chia sẻ bởi Trưởng nhóm.",
+                text = stringResource(R.string.ui_ab465c45bd),
                 fontSize = 14.sp,
                 color = OnSurfaceVariant
             )
@@ -553,7 +554,7 @@ fun AddTripOptionsContent(
             SimpleFormTextField(
                 value = joinCode,
                 onValueChange = { joinCode = it.uppercase().take(8) },
-                placeholder = "Mã chuyến đi",
+                placeholder = stringResource(R.string.ui_63d05307ca),
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true
             )

@@ -40,6 +40,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -48,6 +49,7 @@ import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.mobile.travelhub.R
 import com.mobile.travelhub.navigation.Screen
 
 data class BottomNavItem(
@@ -186,11 +188,36 @@ fun RoundedTopNavigationBarPreview() {
     val navController = rememberNavController()
     RoundedTopNavigationBar(
         items = listOf(
-            BottomNavItem(Screen.Home, Icons.Outlined.Home, Icons.Filled.Home, "Home"),
-            BottomNavItem(Screen.Trips, Icons.Outlined.TravelExplore, Icons.Filled.TravelExplore, "Explore"),
-            BottomNavItem(Screen.Trips, Icons.AutoMirrored.Outlined.DirectionsWalk, Icons.AutoMirrored.Filled.DirectionsWalk, "Itinerary"),
-            BottomNavItem(Screen.CreatePost, Icons.Outlined.Add, Icons.Filled.Add, "Create"),
-            BottomNavItem(Screen.Profile, Icons.Outlined.AccountCircle, Icons.Filled.AccountCircle, "Profile")
+            BottomNavItem(
+                Screen.Home,
+                Icons.Outlined.Home,
+                Icons.Filled.Home,
+                stringResource(R.string.nav_home)
+            ),
+            BottomNavItem(
+                Screen.Trips,
+                Icons.Outlined.TravelExplore,
+                Icons.Filled.TravelExplore,
+                stringResource(R.string.nav_explore)
+            ),
+            BottomNavItem(
+                Screen.Trips,
+                Icons.AutoMirrored.Outlined.DirectionsWalk,
+                Icons.AutoMirrored.Filled.DirectionsWalk,
+                stringResource(R.string.nav_itinerary)
+            ),
+            BottomNavItem(
+                Screen.CreatePost,
+                Icons.Outlined.Add,
+                Icons.Filled.Add,
+                stringResource(R.string.nav_create)
+            ),
+            BottomNavItem(
+                Screen.Profile,
+                Icons.Outlined.AccountCircle,
+                Icons.Filled.AccountCircle,
+                stringResource(R.string.nav_profile)
+            )
         ),
         navController = navController
     )

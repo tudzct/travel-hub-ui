@@ -1,5 +1,6 @@
 package com.mobile.travelhub.ui.components.itinerary
 
+import androidx.compose.ui.res.stringResource
 import androidx.compose.animation.*
 import androidx.compose.foundation.*
 import androidx.compose.foundation.gestures.draggable
@@ -28,6 +29,7 @@ import sh.calvin.reorderable.rememberReorderableLazyListState
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import com.mobile.travelhub.viewmodels.ItineraryUiState
+import com.mobile.travelhub.R
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -62,7 +64,7 @@ fun ItineraryTopBar(
                 IconButton(onClick = onBack) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back",
+                        contentDescription = stringResource(R.string.ui_b52b36b726),
                         tint = OnSurface
                     )
                 }
@@ -73,7 +75,7 @@ fun ItineraryTopBar(
                 IconButton(onClick = onAssistantClick) {
                     Icon(
                         imageVector = Icons.Default.AutoAwesome,
-                        contentDescription = "Open travel assistant",
+                        contentDescription = stringResource(R.string.ui_66dfcf0455),
                         tint = PrimaryBlue
                     )
                 }

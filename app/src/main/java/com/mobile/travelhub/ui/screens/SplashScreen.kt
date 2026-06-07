@@ -1,5 +1,6 @@
 package com.mobile.travelhub.ui.screens
 
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -32,19 +33,19 @@ fun SplashScreen() {
     ) {
         Image(
             painter = painterResource(id = R.drawable.travel_hub_splash_art),
-            contentDescription = "Travel Hub",
+            contentDescription = stringResource(R.string.ui_a59ca6e82e),
             modifier = Modifier.size(112.dp)
         )
         Spacer(modifier = Modifier.height(20.dp))
         Text(
-            text = "Travel Hub",
+            text = stringResource(R.string.ui_a59ca6e82e),
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = "Plan. Share. Explore.",
+            text = stringResource(R.string.ui_e054374e55),
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,

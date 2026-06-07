@@ -1,5 +1,6 @@
 package com.mobile.travelhub.ui.screens
 
+import androidx.compose.ui.res.stringResource
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
@@ -72,6 +73,7 @@ import com.mobile.travelhub.ui.theme.SurfaceBg
 import com.mobile.travelhub.viewmodels.ExploreViewModel
 import com.mobile.travelhub.viewmodels.TopTravelersUiState
 import com.mobile.travelhub.viewmodels.TopTravelersViewModel
+import com.mobile.travelhub.R
 
 @Composable
 fun ExploreScreen(
@@ -150,7 +152,7 @@ fun ExploreScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Explore",
+                        text = stringResource(R.string.ui_b965ae66fc),
                         color = OnSurface,
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.ExtraBold
@@ -171,7 +173,7 @@ fun ExploreScreen(
                                 modifier = Modifier.size(17.dp)
                             )
                             Text(
-                                text = "Trợ lý AI",
+                                text = stringResource(R.string.ui_62894af0b2),
                                 modifier = Modifier.padding(start = 6.dp),
                                 color = OnSurface,
                                 fontWeight = FontWeight.Bold,
@@ -184,7 +186,7 @@ fun ExploreScreen(
                 SearchField(onClick = { isSearchExpanded = true })
 
 //        if (uiState.recentSearches.isNotEmpty()) {
-//            SectionLabel(text = "Recent Searches", topPadding = 18.dp)
+//            SectionLabel(text = stringResource(R.string.ui_5820a93677), topPadding = 18.dp)
 //            HorizontalChipRow(
 //                items = uiState.recentSearches,
 //                leadingIcon = true
@@ -193,7 +195,7 @@ fun ExploreScreen(
 //            SectionDivider()
 //        }
 
-                SectionTitle(text = "Địa điểm nổi bật", topPadding = 24.dp)
+                SectionTitle(text = stringResource(R.string.ui_758588c39a), topPadding = 24.dp)
                 FeaturedLocationsSection(
                     locations = uiState.featuredLocations,
                     isLoading = uiState.isLoadingFeaturedLocations,
@@ -233,7 +235,7 @@ private fun FeaturedLocationsSection(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = "Không thể tải địa điểm nổi bật.",
+                    text = stringResource(R.string.ui_625c9f2021),
                     color = OnSurfaceVariant,
                     fontSize = 13.sp
                 )
@@ -243,7 +245,7 @@ private fun FeaturedLocationsSection(
 
         locations.isEmpty() -> {
             Text(
-                text = "Chưa có địa điểm nổi bật.",
+                text = stringResource(R.string.ui_6e8c44726f),
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
                 color = OnSurfaceVariant,
                 fontSize = 13.sp
@@ -303,7 +305,7 @@ private fun SearchField(
 ) {
     SearchBar(
         value = "",
-        placeholder = "Search posts or users",
+        placeholder = stringResource(R.string.ui_e87eee7e22),
         onClick = onClick,
         modifier = Modifier
             .padding(horizontal = 16.dp, vertical = 14.dp)
@@ -446,7 +448,7 @@ private fun TopTravelersPreview(
     onSeeAll: () -> Unit
 ) {
     SectionTitleRow(
-        title = "Top Travelers",
+        title = stringResource(R.string.ui_8e40b4b1c6),
         action = "See All",
         topPadding = 36.dp,
         onActionClick = onSeeAll
@@ -474,7 +476,7 @@ private fun TopTravelersPreview(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = "Không thể tải danh sách người dùng nổi bật.",
+                    text = stringResource(R.string.ui_6725a49830),
                     color = OnSurfaceVariant,
                     fontSize = 13.sp
                 )
@@ -484,7 +486,7 @@ private fun TopTravelersPreview(
 
         state.items.isEmpty() -> {
             Text(
-                text = "Chưa có người dùng nổi bật trong giai đoạn này.",
+                text = stringResource(R.string.ui_2ab957043f),
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp),
                 color = OnSurfaceVariant,
                 fontSize = 13.sp

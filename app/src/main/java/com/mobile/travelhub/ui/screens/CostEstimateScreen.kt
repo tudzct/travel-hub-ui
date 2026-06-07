@@ -1,5 +1,6 @@
 package com.mobile.travelhub.ui.screens
 
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -73,7 +74,7 @@ fun CostEstimateScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = "Quản lý Chi phí",
+                        text = stringResource(R.string.ui_4ce4734973),
                         fontWeight = FontWeight.Bold,
                         color = OnSurface,
                         fontSize = 18.sp
@@ -81,7 +82,7 @@ fun CostEstimateScreen(
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = OnSurface)
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.ui_b52b36b726), tint = OnSurface)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = SurfaceBg)
@@ -95,7 +96,7 @@ fun CostEstimateScreen(
                     contentColor = Color.White,
                     shape = CircleShape
                 ) {
-                    Icon(Icons.Default.Add, contentDescription = "Add Expense")
+                    Icon(Icons.Default.Add, contentDescription = stringResource(R.string.ui_f53d122b20))
                 }
             }
         }
@@ -248,7 +249,7 @@ fun CostEstimateScreen(
                 // Individual Contributions
                 item {
                     Text(
-                        text = "Đã chi trả bởi",
+                        text = stringResource(R.string.ui_573c15f137),
                         fontWeight = FontWeight.Bold,
                         fontSize = 15.sp,
                         color = OnSurface,
@@ -264,7 +265,7 @@ fun CostEstimateScreen(
                         val contributions = uiState.contributions
                         if (contributions.isEmpty()) {
                             Text(
-                                text = "Chưa có khoản chi nào cho chuyến đi này.",
+                                text = stringResource(R.string.ui_b034ef2e0c),
                                 color = OnSurfaceVariant,
                                 fontSize = 13.sp
                             )
@@ -285,7 +286,7 @@ fun CostEstimateScreen(
                 // Recent Expenses List
                 item {
                     Text(
-                        text = "Giao dịch gần đây",
+                        text = stringResource(R.string.ui_d5c5cb14cc),
                         fontWeight = FontWeight.Bold,
                         fontSize = 15.sp,
                         color = OnSurface,
@@ -298,7 +299,7 @@ fun CostEstimateScreen(
                 if (recentExpenses.isEmpty()) {
                     item {
                         Text(
-                            text = "Chuyến đi này chưa có giao dịch nào.",
+                            text = stringResource(R.string.ui_1a5dca7037),
                             color = OnSurfaceVariant,
                             fontSize = 13.sp
                         )
@@ -380,7 +381,7 @@ fun AddExpenseContent(
             .padding(bottom = 40.dp)
     ) {
         Text(
-            text = "Thêm khoản chi",
+            text = stringResource(R.string.ui_74c24b11c3),
             fontWeight = FontWeight.ExtraBold,
             fontSize = 20.sp,
             color = OnSurface
@@ -390,7 +391,7 @@ fun AddExpenseContent(
         SimpleFormTextField(
             value = expenseTitle,
             onValueChange = { expenseTitle = it },
-            placeholder = "Tên khoản chi (VD: Ăn trưa, Vé tàu...)",
+            placeholder = stringResource(R.string.ui_5365fbceb0),
             modifier = Modifier.fillMaxWidth()
         )
         
@@ -402,7 +403,7 @@ fun AddExpenseContent(
                 val formatted = NumberUtils.formatTextFieldValue(newValue)
                 expenseAmountValue = formatted
             },
-            placeholder = "Số tiền (VND)",
+            placeholder = stringResource(R.string.ui_33eb57284b),
             modifier = Modifier.fillMaxWidth(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
         )
@@ -417,7 +418,7 @@ fun AddExpenseContent(
                 value = selectedCategory,
                 onValueChange = {},
                 readOnly = true,
-                placeholder = "Danh mục",
+                placeholder = stringResource(R.string.ui_fc7b5ce028),
                 trailingIcon = {
                     Icon(Icons.Default.ArrowDropDown, contentDescription = null)
                 },
@@ -476,7 +477,7 @@ fun BudgetSummaryCard(totalSpent: Double, budgetMax: Double) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column {
-                    Text("Tổng chi tiêu", fontSize = 13.sp, color = OnSurfaceVariant)
+                    Text(stringResource(R.string.ui_7817b94196), fontSize = 13.sp, color = OnSurfaceVariant)
                     Text(NumberUtils.formatVnd(totalSpent), fontWeight = FontWeight.ExtraBold, fontSize = 32.sp, color = OnSurface)
                 } 
             }
@@ -493,7 +494,10 @@ fun BudgetSummaryCard(totalSpent: Double, budgetMax: Double) {
             Spacer(modifier = Modifier.height(12.dp))
             
             Text(
-                text = "Còn lại ${NumberUtils.formatVnd(budgetMax - totalSpent)} trước khi vượt ngân sách",
+                text = stringResource(
+                    R.string.budget_remaining,
+                    NumberUtils.formatVnd(budgetMax - totalSpent)
+                ),
                 fontSize = 12.sp,
                 color = OnSurfaceVariant
             )
@@ -575,7 +579,11 @@ fun ExpenseRow(
         
         Column(modifier = Modifier.weight(1f)) {
             Text(expense.title, fontWeight = FontWeight.Bold, fontSize = 15.sp, color = OnSurface)
-            Text("Trả bởi ${expense.paidByName}", fontSize = 12.sp, color = OnSurfaceVariant)
+            Text(
+                stringResource(R.string.paid_by, expense.paidByName),
+                fontSize = 12.sp,
+                color = OnSurfaceVariant
+            )
         }
         
         Text(NumberUtils.formatVnd(expense.amount), fontWeight = FontWeight.ExtraBold, fontSize = 16.sp, color = PrimaryBlue)
@@ -612,8 +620,10 @@ fun EditExpenseContent(
     if (showDeleteConfirm) {
         AlertDialog(
             onDismissRequest = { showDeleteConfirm = false },
-            title = { Text("Xóa khoản chi", fontWeight = FontWeight.Bold) },
-            text = { Text("Bạn có chắc chắn muốn xóa khoản chi '${expense.title}' không?") },
+            title = { Text(stringResource(R.string.ui_9d47b1985c), fontWeight = FontWeight.Bold) },
+            text = {
+                Text(stringResource(R.string.delete_expense_confirmation, expense.title))
+            },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -623,12 +633,12 @@ fun EditExpenseContent(
                     },
                     colors = ButtonDefaults.textButtonColors(contentColor = SunsetOrange)
                 ) {
-                    Text("Xóa", fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.ui_aa1d94fc16), fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteConfirm = false }) {
-                    Text("Hủy")
+                    Text(stringResource(R.string.ui_34ca764caf))
                 }
             },
             containerColor = SurfaceContainerLowest
@@ -647,7 +657,7 @@ fun EditExpenseContent(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "Chỉnh sửa khoản chi",
+                text = stringResource(R.string.ui_c8eff87563),
                 fontWeight = FontWeight.ExtraBold,
                 fontSize = 20.sp,
                 color = OnSurface
@@ -657,7 +667,7 @@ fun EditExpenseContent(
             ) {
                 Icon(
                     imageVector = Icons.Default.Delete,
-                    contentDescription = "Delete Expense",
+                    contentDescription = stringResource(R.string.ui_1816483d8a),
                     tint = SunsetOrange
                 )
             }
@@ -667,7 +677,7 @@ fun EditExpenseContent(
         SimpleFormTextField(
             value = expenseTitle,
             onValueChange = { expenseTitle = it },
-            placeholder = "Tên khoản chi (VD: Ăn trưa, Vé tàu...)",
+            placeholder = stringResource(R.string.ui_5365fbceb0),
             modifier = Modifier.fillMaxWidth()
         )
         
@@ -679,7 +689,7 @@ fun EditExpenseContent(
                 val formatted = NumberUtils.formatTextFieldValue(newValue)
                 expenseAmountValue = formatted
             },
-            placeholder = "Số tiền (VND)",
+            placeholder = stringResource(R.string.ui_33eb57284b),
             modifier = Modifier.fillMaxWidth(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
         )
@@ -694,7 +704,7 @@ fun EditExpenseContent(
                 value = selectedCategory,
                 onValueChange = {},
                 readOnly = true,
-                placeholder = "Danh mục",
+                placeholder = stringResource(R.string.ui_fc7b5ce028),
                 trailingIcon = {
                     Icon(Icons.Default.ArrowDropDown, contentDescription = null)
                 },

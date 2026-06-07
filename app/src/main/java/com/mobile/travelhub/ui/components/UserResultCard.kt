@@ -1,5 +1,6 @@
 package com.mobile.travelhub.ui.components
 
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -38,6 +39,7 @@ import com.mobile.travelhub.ui.theme.OnSurface
 import com.mobile.travelhub.ui.theme.OnSurfaceVariant
 import com.mobile.travelhub.ui.theme.PrimaryBlue
 import com.mobile.travelhub.ui.theme.SurfaceContainer
+import com.mobile.travelhub.R
 
 @Composable
 fun UserResultCard(
@@ -101,7 +103,7 @@ fun UserResultCard(
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Text(
-                        text = "You",
+                        text = stringResource(R.string.ui_905cb326c7),
                         color = OnSurface,
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.Bold
@@ -184,7 +186,7 @@ private fun UserResultAvatar(
         } else {
             AsyncImage(
                 model = avatarUrl,
-                contentDescription = "$name avatar",
+                contentDescription = stringResource(R.string.avatar_description, name),
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize()
             )

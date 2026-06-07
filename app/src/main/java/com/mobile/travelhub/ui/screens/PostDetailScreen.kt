@@ -1,5 +1,6 @@
 package com.mobile.travelhub.ui.screens
 
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -32,6 +33,7 @@ import com.mobile.travelhub.ui.components.HomeCommentsBottomSheet
 import com.mobile.travelhub.ui.components.LoadingContentSkeleton
 import com.mobile.travelhub.ui.components.RetryButton
 import com.mobile.travelhub.viewmodels.PostDetailViewModel
+import com.mobile.travelhub.R
 
 @Composable
 fun PostDetailScreen(
@@ -122,11 +124,11 @@ private fun PostDetailTopBar(onBack: () -> Unit) {
             ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Back"
+                    contentDescription = stringResource(R.string.ui_b52b36b726)
                 )
             }
             Text(
-                text = "Post",
+                text = stringResource(R.string.ui_7858ac3ff6),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
             )
@@ -147,7 +149,7 @@ private fun PostDetailError(
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         Text(
-            text = "Không thể tải bài viết",
+            text = stringResource(R.string.ui_d03cf884c0),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold
         )

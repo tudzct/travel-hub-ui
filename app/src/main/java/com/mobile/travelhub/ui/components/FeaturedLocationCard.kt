@@ -1,5 +1,6 @@
 package com.mobile.travelhub.ui.components
 
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -34,6 +35,7 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.mobile.travelhub.ui.theme.SurfaceContainer
 import java.util.Locale
+import com.mobile.travelhub.R
 
 @Composable
 fun FeaturedLocationCard(
@@ -148,7 +150,7 @@ private fun LocationRatingBadge(
             )
         } else {
             Text(
-                text = "New",
+                text = stringResource(R.string.ui_6403f2b7eb),
                 color = Color.Black,
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Bold

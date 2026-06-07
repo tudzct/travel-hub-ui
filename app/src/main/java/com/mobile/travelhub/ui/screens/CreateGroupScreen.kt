@@ -1,5 +1,6 @@
 package com.mobile.travelhub.ui.screens
 
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -66,6 +67,7 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
+import com.mobile.travelhub.R
 
 private enum class TripDateSelectionStep {
     START,
@@ -110,7 +112,7 @@ fun CreateGroupScreen(
             TopAppBar(
                 title = {
                     Text(
-                        "TẠO CHUYẾN ĐI MỚI",
+                        stringResource(R.string.ui_a9fed78742),
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.Bold,
                         letterSpacing = 1.sp
@@ -118,12 +120,12 @@ fun CreateGroupScreen(
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Quay lại")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.ui_8a09e03d20))
                     }
                 },
                 actions = {
                     TextButton(onClick = onBack) {
-                        Text("Hủy")
+                        Text(stringResource(R.string.ui_34ca764caf))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -142,7 +144,7 @@ fun CreateGroupScreen(
             Spacer(modifier = Modifier.height(12.dp))
 
             EditProfileField(
-                label = "Tên chuyến đi",
+                label = stringResource(R.string.ui_ea611ea5b8),
                 value = uiState.name,
                 onValueChange = viewModel::updateName,
                 keyboardOptions = KeyboardOptions(
@@ -154,7 +156,7 @@ fun CreateGroupScreen(
             )
 
             DestinationPlacePicker(
-                label = "Điểm đến",
+                label = stringResource(R.string.ui_8dc001232f),
                 selectedProvince = uiState.selectedProvince,
                 selectedPlace = uiState.selectedPlace,
                 provinces = uiState.provinces,
@@ -162,7 +164,7 @@ fun CreateGroupScreen(
                 isLoading = uiState.isLoadingLocations,
                 enabled = !uiState.isSaving &&
                     (uiState.provinces.isNotEmpty() || uiState.provinceErrorMessage != null),
-                placeholder = "Chọn địa điểm",
+                placeholder = stringResource(R.string.ui_9433146e77),
                 modifier = Modifier.padding(top = 4.dp, bottom = 12.dp),
                 onProvinceSelected = { viewModel.selectProvince(it) },
                 onPlaceSelected = { viewModel.selectPlace(it) },
@@ -173,7 +175,7 @@ fun CreateGroupScreen(
             )
 
             TripDateRangeFieldInput(
-                label = "Ngày đi và ngày về",
+                label = stringResource(R.string.ui_be882ba540),
                 value = when {
                     uiState.startDate.isNotBlank() && uiState.endDate.isNotBlank() -> {
                         "${uiState.startDate} - ${uiState.endDate}"
@@ -191,7 +193,7 @@ fun CreateGroupScreen(
             )
 
             EditProfileField(
-                label = "Ngân sách dự kiến",
+                label = stringResource(R.string.ui_ed963f4527),
                 value = budgetMaxFieldVal,
                 onValueChange = { newValue ->
                     val formatted = NumberUtils.formatTextFieldValue(newValue)
@@ -324,7 +326,7 @@ fun CreateGroupScreen(
             },
             dismissButton = {
                 TextButton(onClick = { dateSelectionStep = null }) {
-                    Text("Hủy")
+                    Text(stringResource(R.string.ui_34ca764caf))
                 }
             }
         ) {

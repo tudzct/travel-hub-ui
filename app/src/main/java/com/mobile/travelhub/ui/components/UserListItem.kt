@@ -1,5 +1,6 @@
 package com.mobile.travelhub.ui.components
 
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -55,14 +56,14 @@ fun UserListItem(
             if (!avatarUrl.isNullOrBlank()) {
                 AsyncImage(
                     model = avatarUrl,
-                    contentDescription = "Avatar",
+                    contentDescription = stringResource(R.string.ui_7631b26ea8),
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop
                 )
             } else {
                 Image(
                     painter = painterResource(id = avatarRes),
-                    contentDescription = "Avatar",
+                    contentDescription = stringResource(R.string.ui_7631b26ea8),
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop
                 )

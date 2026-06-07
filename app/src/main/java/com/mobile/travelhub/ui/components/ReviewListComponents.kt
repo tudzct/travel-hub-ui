@@ -1,5 +1,6 @@
 package com.mobile.travelhub.ui.components
 
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -17,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.mobile.travelhub.viewmodels.ReviewListUiState
+import com.mobile.travelhub.R
 
 @Composable
 fun ReviewListScreenContent(
@@ -30,10 +32,10 @@ fun ReviewListScreenContent(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         OutlinedButton(onClick = onBack) {
-            Text("Back")
+            Text(stringResource(R.string.ui_b52b36b726))
         }
         Text(
-            text = "Tất cả đánh giá",
+            text = stringResource(R.string.ui_30333d8358),
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold
         )
@@ -52,7 +54,7 @@ fun ReviewListScreenContent(
 
             uiState.items.isEmpty() -> {
                 Text(
-                    text = "Chưa có đánh giá nào.",
+                    text = stringResource(R.string.ui_faac2d3623),
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
@@ -75,7 +77,10 @@ fun ReviewListScreenContent(
                                     fontWeight = FontWeight.SemiBold
                                 )
                                 Text(
-                                    text = "${review.rating}/5",
+                                    text = stringResource(
+                                        R.string.rating_out_of_five,
+                                        review.rating
+                                    ),
                                     style = MaterialTheme.typography.labelLarge,
                                     color = MaterialTheme.colorScheme.primary
                                 )

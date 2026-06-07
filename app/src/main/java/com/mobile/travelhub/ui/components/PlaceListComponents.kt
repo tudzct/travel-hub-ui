@@ -171,7 +171,7 @@ fun PlaceListScreenContent(
                 placeUiState.errorMessage != null && placeUiState.items.isEmpty() -> {
                     item {
                         FeedEmptyState(
-                            title = "Không thể tải địa điểm",
+                            title = stringResource(R.string.ui_3682846f79),
                             message = placeUiState.errorMessage.orEmpty(),
                             fullScreen = false,
                             onRetry = onRetryPlaces
@@ -182,7 +182,7 @@ fun PlaceListScreenContent(
                 placeUiState.items.isEmpty() -> {
                     item {
                         FeedEmptyState(
-                            title = "Chưa có địa điểm nào",
+                            title = stringResource(R.string.ui_cfc854b8a2),
                             message = "Dữ liệu địa điểm vẫn chưa được thêm vào hệ thống.",
                             fullScreen = false,
                             onRetry = null
@@ -209,7 +209,7 @@ fun PlaceListScreenContent(
                 homeUiState.errorMessage != null && homeUiState.posts.isEmpty() -> {
                     item {
                         FeedEmptyState(
-                            title = "Không thể tải bài viết",
+                            title = stringResource(R.string.ui_d03cf884c0),
                             message = homeUiState.errorMessage ?: "Không thể tải bài viết",
                             fullScreen = false,
                             onRetry = onRetryPosts
@@ -291,7 +291,7 @@ fun HomeCommentsBottomSheet(
         containerColor = Color.White
     ) {
         Text(
-            text = "Comments",
+            text = stringResource(R.string.ui_fce06e20e5),
             style = MaterialTheme.typography.titleMedium,
             modifier = Modifier.padding(horizontal = 24.dp)
         )
@@ -308,7 +308,7 @@ fun HomeCommentsBottomSheet(
             )
         } else if (comments.isEmpty()) {
             Text(
-                text = "No comments yet",
+                text = stringResource(R.string.ui_d14da37946),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(horizontal = 24.dp)
@@ -343,7 +343,7 @@ fun HomeCommentsBottomSheet(
             SimpleFormTextField(
                 value = commentInput,
                 onValueChange = onCommentInputChanged,
-                placeholder = "Add a comment",
+                placeholder = stringResource(R.string.ui_3e18361540),
                 modifier = Modifier.weight(1f),
                 enabled = !isCommentSubmitting,
                 singleLine = false,
@@ -369,7 +369,7 @@ fun HomeCommentsBottomSheet(
                     Icon(
                         imageVector = Icons.AutoMirrored.Outlined.Send,
                         modifier = Modifier.size(16.dp),
-                        contentDescription = "Send comment",
+                        contentDescription = stringResource(R.string.ui_591e0e89f0),
                         tint = Color.White
                     )
                 }
@@ -417,12 +417,12 @@ private fun FeedTopBar(
             ) {
                 Icon(
                     imageVector = Icons.Filled.Menu,
-                    contentDescription = "Open menu",
+                    contentDescription = stringResource(R.string.ui_197101e9db),
                     tint = VerdantOnSurface
                 )
             }
             Text(
-                text = "Travel Hub",
+                text = stringResource(R.string.ui_a59ca6e82e),
                 modifier = Modifier.align(Alignment.Center),
                 style = MaterialTheme.typography.titleMedium,
                 color = VerdantOnSurface,
@@ -435,7 +435,7 @@ private fun FeedTopBar(
             ) {
                 Icon(
                     imageVector = Icons.Outlined.Search,
-                    contentDescription = "Search",
+                    contentDescription = stringResource(R.string.ui_bce0641417),
                     tint = VerdantOnSurface
                 )
             }
@@ -756,12 +756,12 @@ fun FeedPostCard(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
-                    text = "${post.likeCount} likes",
+                    text = stringResource(R.string.like_count, post.likeCount),
                     style = MaterialTheme.typography.labelLarge,
                     color = VerdantOnSurface
                 )
                 Text(
-                    text = "${post.commentCount} comments",
+                    text = stringResource(R.string.comment_count, post.commentCount),
                     style = MaterialTheme.typography.labelLarge,
                     color = VerdantOnSurface
                 )
@@ -787,7 +787,7 @@ fun FeedPostCard(
                     ) {
                         Icon(
                             imageVector = if (post.isLiked) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
-                            contentDescription = "Like",
+                            contentDescription = stringResource(R.string.ui_c7e02c95fe),
                             tint = if (post.isLiked) MaterialTheme.colorScheme.error else VerdantOnSurface,
                             modifier = Modifier.size(26.dp)
                         )
@@ -804,7 +804,7 @@ fun FeedPostCard(
                     ) {
                         Icon(
                             painter = painterResource(R.drawable.message_circle),
-                            contentDescription = "Comment",
+                            contentDescription = stringResource(R.string.ui_153d7a58b3),
                             modifier = Modifier.size(24.dp),
                             tint = VerdantOnSurface
                         )
@@ -968,7 +968,7 @@ fun FeedPostCardPreview() {
             ownerId = 2L,
             username = "Duc Duong Hoang",
             ownerAvatarUrl = null,
-            subtitle = "Da Nang, Viet Nam",
+            subtitle = stringResource(R.string.ui_8d95e76955),
             description = "A calm afternoon by the river.",
             imageUrls = listOf("sample.jpg"),
             likeCount = 142,

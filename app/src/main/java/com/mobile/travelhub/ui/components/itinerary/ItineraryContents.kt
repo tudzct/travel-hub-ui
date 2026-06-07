@@ -1,5 +1,6 @@
 package com.mobile.travelhub.ui.components.itinerary
 
+import androidx.compose.ui.res.stringResource
 import androidx.compose.animation.*
 import androidx.compose.foundation.*
 import androidx.compose.foundation.gestures.draggable
@@ -30,6 +31,7 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import com.mobile.travelhub.ui.components.modifiers.shimmerEffect
 import com.mobile.travelhub.viewmodels.ItineraryUiState
+import com.mobile.travelhub.R
 
 
 @Composable
@@ -126,17 +128,17 @@ private fun ItineraryTimelineHeader(
 //                horizontalArrangement = Arrangement.spacedBy(8.dp)
 //            ) {
 //                ItineraryFilterChip(
-//                    label = "Tất cả",
+//                    label = stringResource(R.string.ui_f7a578dcbd),
 //                    selected = true,
 //                    icon = Icons.Default.TravelExplore
 //                )
 //                ItineraryFilterChip(
-//                    label = "Nhóm",
+//                    label = stringResource(R.string.ui_ce7eab0a1e),
 //                    selected = false,
 //                    icon = Icons.Default.PersonAdd
 //                )
 //                ItineraryFilterChip(
-//                    label = "Cá nhân",
+//                    label = stringResource(R.string.ui_b8a7951b65),
 //                    selected = false,
 //                    icon = Icons.Default.Person
 //                )
@@ -162,7 +164,7 @@ private fun ItineraryTimelineHeader(
 //                            modifier = Modifier.size(14.dp)
 //                        )
 //                        Text(
-//                            text = "Share",
+//                            text = stringResource(R.string.ui_09ca55ca52),
 //                            color = OnSurfaceVariant,
 //                            fontSize = 12.sp,
 //                            fontWeight = FontWeight.SemiBold
@@ -193,7 +195,7 @@ private fun ItineraryTimelineHeader(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "Tất cả lịch trình",
+                text = stringResource(R.string.ui_c0288bbf6f),
                 color = OnSurface,
                 fontWeight = FontWeight.ExtraBold,
                 fontSize = 21.sp
@@ -201,12 +203,12 @@ private fun ItineraryTimelineHeader(
 
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 ItineraryStatPill(
-                    label = "$dayCount ngày",
+                    label = stringResource(R.string.day_count, dayCount),
                     active = false,
                     icon = Icons.Default.CalendarMonth
                 )
                 ItineraryStatPill(
-                    label = "$stopCount điểm",
+                    label = stringResource(R.string.stop_count, stopCount),
                     active = true,
                     icon = Icons.Default.Place
                 )
@@ -327,7 +329,7 @@ private fun ItineraryTimelineDay(
                         fontSize = 13.sp
                     )
                     Text(
-                        text = "${day.events.size} địa điểm",
+                        text = stringResource(R.string.place_count, day.events.size),
                         color = OnSurfaceVariant,
                         fontWeight = FontWeight.Medium,
                         fontSize = 12.sp
@@ -341,7 +343,7 @@ private fun ItineraryTimelineDay(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Map,
-                        contentDescription = "Open day detail",
+                        contentDescription = stringResource(R.string.ui_dafc3f8f08),
                         tint = PrimaryBlue,
                         modifier = Modifier
                             .size(34.dp)
@@ -352,7 +354,7 @@ private fun ItineraryTimelineDay(
 
             if (day.events.isEmpty()) {
                 ItineraryTimelineEventCard(
-                    title = "Chưa có địa điểm",
+                    title = stringResource(R.string.ui_430558390f),
                     timeRange = "Thêm điểm đến cho ngày này",
                     badge = null,
                     onClick = onOpenDayDetail
@@ -581,7 +583,7 @@ fun ItineraryDayDetailContent(
                                     ) {
                                         Icon(
                                             imageVector = Icons.Default.DragIndicator,
-                                            contentDescription = "Reorder event",
+                                            contentDescription = stringResource(R.string.ui_860fd0e43c),
                                             tint = OnSurfaceVariant
                                         )
                                     }
@@ -597,7 +599,7 @@ fun ItineraryDayDetailContent(
         if (!isLoading && day != null && isEditMode) {
             item {
                 AddActionCard(
-                    title = "Add stop",
+                    title = stringResource(R.string.ui_982a83e6f2),
                     onClick = onAddStop
                 )
             }

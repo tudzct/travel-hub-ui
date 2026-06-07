@@ -1,5 +1,6 @@
 package com.mobile.travelhub.ui.screens
 
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -62,6 +63,7 @@ import com.mobile.travelhub.viewmodels.NotificationFilter
 import com.mobile.travelhub.viewmodels.NotificationModel
 import com.mobile.travelhub.viewmodels.NotificationType
 import com.mobile.travelhub.viewmodels.NotificationsViewModel
+import com.mobile.travelhub.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -176,7 +178,7 @@ private fun NotificationsPopupContent(
                                         color = Color.LightGray
                                     )
                                     Text(
-                                        text = "New notifications",
+                                        text = stringResource(R.string.ui_19469f4569),
                                         fontSize = 13.sp,
                                         color = Color.Gray,
                                         modifier = Modifier.padding(horizontal = 12.dp)
@@ -212,7 +214,7 @@ private fun NotificationsScreenPreview() {
             activeFilter = NotificationFilter.All,
             notifications = listOf(
                 NotificationModel(
-                    title = "Trip reminder",
+                    title = stringResource(R.string.ui_0d7f061615),
                     body = "Your Hanoi weekend trip starts in 2 days.",
                     isRead = false,
                     createdAt = Instant.parse("2026-05-12T09:15:00Z"),
@@ -220,7 +222,7 @@ private fun NotificationsScreenPreview() {
                     targetId = 10
                 ),
                 NotificationModel(
-                    title = "New follower",
+                    title = stringResource(R.string.ui_8021d65119),
                     body = "Linh Nguyen started following you.",
                     isRead = false,
                     createdAt = Instant.parse("2026-05-12T08:40:00Z"),
@@ -228,7 +230,7 @@ private fun NotificationsScreenPreview() {
                     targetId = null
                 ),
                 NotificationModel(
-                    title = "System",
+                    title = stringResource(R.string.ui_bc0792d8dc),
                     body = "Your profile is 90% complete. Add a bio to finish it.",
                     isRead = true,
                     createdAt = Instant.parse("2026-05-11T15:30:00Z"),
@@ -236,7 +238,7 @@ private fun NotificationsScreenPreview() {
                     targetId = 11
                 ),
                 NotificationModel(
-                    title = "New follower 2",
+                    title = stringResource(R.string.ui_abb47e9d75),
                     body = "Your profile is 90% complete. Add a bio to finish it.",
                     isRead = true,
                     createdAt = Instant.parse("2026-05-11T15:30:00Z"),
@@ -244,7 +246,7 @@ private fun NotificationsScreenPreview() {
                     targetId = null
                 ),
                 NotificationModel(
-                    title = "New follower 3",
+                    title = stringResource(R.string.ui_1d6aac0974),
                     body = "Your profile is 90% complete. Add a bio to finish it.",
                     isRead = true,
                     createdAt = Instant.parse("2026-05-11T15:30:00Z"),
@@ -252,7 +254,7 @@ private fun NotificationsScreenPreview() {
                     targetId = null
                 ),
                 NotificationModel(
-                    title = "New follower 4",
+                    title = stringResource(R.string.ui_2d1c64fe48),
                     body = "Your profile is 90% complete. Add a bio to finish it.",
                     isRead = true,
                     createdAt = Instant.parse("2026-05-11T15:30:00Z"),
@@ -260,7 +262,7 @@ private fun NotificationsScreenPreview() {
                     targetId = null
                 ),
                 NotificationModel(
-                    title = "New follower 5",
+                    title = stringResource(R.string.ui_c22cd9d2ce),
                     body = "Your profile is 90% complete. Add a bio to finish it.",
                     isRead = true,
                     createdAt = Instant.parse("2026-05-11T15:30:00Z"),
@@ -268,7 +270,7 @@ private fun NotificationsScreenPreview() {
                     targetId = null
                 ),
                 NotificationModel(
-                    title = "New follower 6",
+                    title = stringResource(R.string.ui_0a409dce1f),
                     body = "Your profile is 90% complete. Add a bio to finish it.",
                     isRead = true,
                     createdAt = Instant.parse("2026-05-11T15:30:00Z"),
@@ -385,7 +387,7 @@ private fun PopupTopBar(
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Text(
-            text = "Notifications",
+            text = stringResource(R.string.ui_753a22b2eb),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold,
             color = MaterialTheme.colorScheme.onSurface
@@ -398,7 +400,7 @@ private fun PopupTopBar(
                 onClick = onMarkAllRead,
                 enabled = hasUnreadNotifications && !isMarkingAllRead
             ) {
-                Text(text = "Mark all read")
+                Text(text = stringResource(R.string.ui_8958e22c23))
             }
         }
     }
@@ -590,13 +592,13 @@ private fun EmptyNotificationsPopup(onDismiss: () -> Unit) {
         }
         Spacer(modifier = Modifier.height(16.dp))
         Text(
-            text = "No notifications",
+            text = stringResource(R.string.ui_b08626f186),
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = "You'll be notified when there's activity in the group",
+            text = stringResource(R.string.ui_c1a4aa2a15),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )

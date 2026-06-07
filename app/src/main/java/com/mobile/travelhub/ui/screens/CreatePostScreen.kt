@@ -9,6 +9,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.mobile.travelhub.R
 import com.mobile.travelhub.ui.components.CreatePostScreenContent
 import com.mobile.travelhub.viewmodels.CreatePostViewModel
 
@@ -35,7 +36,11 @@ fun CreatePostScreen(
 
     LaunchedEffect(uiState.isPostCreated) {
         if (!uiState.isPostCreated) return@LaunchedEffect
-        Toast.makeText(context, "Post created successfully", Toast.LENGTH_SHORT).show()
+        Toast.makeText(
+            context,
+            context.getString(R.string.post_created_successfully),
+            Toast.LENGTH_SHORT
+        ).show()
         viewModel.consumePostCreated()
     }
 

@@ -1,5 +1,6 @@
 package com.mobile.travelhub.ui.screens
 
+import androidx.compose.ui.res.stringResource
 import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -87,7 +88,11 @@ fun GroupDetailScreen(
 
     LaunchedEffect(uiState.isKickedOut) {
         if (uiState.isKickedOut) {
-            Toast.makeText(context, "Bạn đã bị xóa hoặc không còn là thành viên của nhóm này", Toast.LENGTH_LONG).show()
+            Toast.makeText(
+                context,
+                context.getString(R.string.removed_from_group),
+                Toast.LENGTH_LONG
+            ).show()
             onBack()
         }
     }
@@ -309,7 +314,7 @@ fun GroupDetailScreen(
 
             Column(modifier = Modifier.padding(horizontal = 24.dp)) {
                 Text(
-                    text = "VỀ CHUYẾN ĐI",
+                    text = stringResource(R.string.ui_c39635df84),
                     fontWeight = FontWeight.Bold,
                     fontSize = 13.sp,
                     color = OnSurfaceVariant,
@@ -351,9 +356,9 @@ fun GroupDetailScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("Thành viên tham gia", fontWeight = FontWeight.ExtraBold, fontSize = 20.sp, color = OnSurface)
+                    Text(stringResource(R.string.ui_448ae61e1f), fontWeight = FontWeight.ExtraBold, fontSize = 20.sp, color = OnSurface)
                     Text(
-                        text = "Xem thêm",
+                        text = stringResource(R.string.ui_b773dc5ed8),
                         color = PrimaryBlue,
                         fontWeight = FontWeight.Bold,
                         fontSize = 14.sp,
@@ -377,7 +382,7 @@ fun GroupDetailScreen(
                             )
                         } else {
                             Text(
-                                text = "${uiState.members.size} thành viên",
+                                text = stringResource(R.string.member_count, uiState.members.size),
                                 color = OnSurface,
                                 fontWeight = FontWeight.Bold
                             )
@@ -396,7 +401,7 @@ fun GroupDetailScreen(
                             }
                         } else if (uiState.members.isEmpty()) {
                             Text(
-                                text = "Chưa có dữ liệu thành viên.",
+                                text = stringResource(R.string.ui_14518e1450),
                                 color = OnSurfaceVariant,
                                 fontSize = 13.sp
                             )
@@ -456,16 +461,20 @@ fun GroupDetailScreen(
                     AlertDialog(
                         onDismissRequest = { showDeleteConfirm = false },
                         title = {
-                            Text(text = "Xóa nhóm")
+                            Text(text = stringResource(R.string.ui_a4564eb2e2))
                         },
                         text = {
-                            Text(text = "Bạn có chắc muốn xóa nhóm này không? Thao tác này không thể hoàn tác.")
+                            Text(text = stringResource(R.string.ui_41518ec6bf))
                         },
                         confirmButton = {
                             TextButton(
                                 onClick = {
                                     if (!isLeader) {
-                                        Toast.makeText(context, "Bạn không có quyền xóa nhóm", Toast.LENGTH_SHORT).show()
+                                        Toast.makeText(
+                                            context,
+                                            context.getString(R.string.group_delete_forbidden),
+                                            Toast.LENGTH_SHORT
+                                        ).show()
                                         showDeleteConfirm = false
                                     } else {
                                         viewModel.deleteGroup(tripId) { success, message ->
@@ -478,14 +487,14 @@ fun GroupDetailScreen(
                                     }
                                 }
                             ) {
-                                Text(text = "Xóa", color = SunsetOrange)
+                                Text(text = stringResource(R.string.ui_aa1d94fc16), color = SunsetOrange)
                             }
                         },
                         dismissButton = {
                             TextButton(
                                 onClick = { showDeleteConfirm = false }
                             ) {
-                                Text(text = "Hủy")
+                                Text(text = stringResource(R.string.ui_34ca764caf))
                             }
                         }
                     )
@@ -494,8 +503,8 @@ fun GroupDetailScreen(
                 if (showLeaveConfirm) {
                     AlertDialog(
                         onDismissRequest = { showLeaveConfirm = false },
-                        title = { Text(text = "Rời nhóm") },
-                        text = { Text(text = "Bạn có chắc muốn rời nhóm này không?") },
+                        title = { Text(text = stringResource(R.string.ui_4bb91c8b42)) },
+                        text = { Text(text = stringResource(R.string.ui_8bab2c310d)) },
                         confirmButton = {
                             TextButton(
                                 onClick = {
@@ -507,10 +516,10 @@ fun GroupDetailScreen(
                                         }
                                     }
                                 }
-                            ) { Text(text = "Rời", color = SunsetOrange) }
+                            ) { Text(text = stringResource(R.string.ui_d354717258), color = SunsetOrange) }
                         },
                         dismissButton = {
-                            TextButton(onClick = { showLeaveConfirm = false }) { Text(text = "Hủy") }
+                            TextButton(onClick = { showLeaveConfirm = false }) { Text(text = stringResource(R.string.ui_34ca764caf)) }
                         }
                     )
                 }
@@ -532,7 +541,7 @@ fun GroupDetailScreen(
 
                     Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
                         Text(
-                            text = "Mã tham gia",
+                            text = stringResource(R.string.ui_02ad5216fa),
                             fontWeight = FontWeight.Bold,
                             fontSize = 12.sp,
                             color = OnSurfaceVariant,
@@ -560,13 +569,17 @@ fun GroupDetailScreen(
                                     val currentInviteCode = inviteCode.orEmpty()
                                     if (currentInviteCode.isNotBlank()) {
                                         clipboardManager.setText(AnnotatedString(currentInviteCode))
-                                        Toast.makeText(context, "Đã sao chép mã tham gia", Toast.LENGTH_SHORT).show()
+                                        Toast.makeText(
+                                            context,
+                                            context.getString(R.string.join_code_copied),
+                                            Toast.LENGTH_SHORT
+                                        ).show()
                                         showInviteMenu = false
                                     }
                                 },
                                 enabled = inviteCode != null && !uiState.isInviteCodeLoading && !isCompleted
                             ) {
-                                Icon(Icons.Default.ContentCopy, contentDescription = "Copy mã tham gia")
+                                Icon(Icons.Default.ContentCopy, contentDescription = stringResource(R.string.ui_35accf0b7c))
                             }
                         }
 
@@ -576,7 +589,7 @@ fun GroupDetailScreen(
                             Spacer(modifier = Modifier.height(12.dp))
 
                             Text(
-                                text = "Yêu cầu tham gia",
+                                text = stringResource(R.string.ui_7b208e75d2),
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 12.sp,
                                 color = OnSurfaceVariant,
@@ -590,7 +603,7 @@ fun GroupDetailScreen(
                                             InlineLoadingSkeleton(modifier = Modifier.size(16.dp))
                                         Spacer(modifier = Modifier.width(8.dp))
                                         Text(
-                                            text = "Đang tải yêu cầu...",
+                                            text = stringResource(R.string.ui_438eeb013a),
                                             fontSize = 14.sp,
                                             color = OnSurfaceVariant
                                         )
@@ -599,7 +612,7 @@ fun GroupDetailScreen(
 
                                 uiState.joinRequests.isEmpty() -> {
                                     Text(
-                                        text = "Không có yêu cầu nào",
+                                        text = stringResource(R.string.ui_f193b502d6),
                                         fontSize = 14.sp,
                                         color = OnSurfaceVariant
                                     )
@@ -612,11 +625,25 @@ fun GroupDetailScreen(
                                                 request = request,
                                                 onApprove = {
                                                     viewModel.approveJoinRequest(request.userId)
-                                                    Toast.makeText(context, "Đã chấp nhận ${request.name}", Toast.LENGTH_SHORT).show()
+                                                    Toast.makeText(
+                                                        context,
+                                                        context.getString(
+                                                            R.string.join_request_accepted,
+                                                            request.name
+                                                        ),
+                                                        Toast.LENGTH_SHORT
+                                                    ).show()
                                                 },
                                                 onReject = {
                                                     viewModel.rejectJoinRequest(request.userId)
-                                                    Toast.makeText(context, "Đã từ chối ${request.name}", Toast.LENGTH_SHORT).show()
+                                                    Toast.makeText(
+                                                        context,
+                                                        context.getString(
+                                                            R.string.join_request_rejected,
+                                                            request.name
+                                                        ),
+                                                        Toast.LENGTH_SHORT
+                                                    ).show()
                                                 },
                                                 onProfileClick = { userId ->
                                                     onNavigateToProfile(userId)
@@ -637,7 +664,7 @@ fun GroupDetailScreen(
                         val canLeave = !isLeader && role.isNotBlank() && role != "NON_MEMBER" && role != "PENDING"
                         if (canLeave) {
                             DropdownMenuItem(
-                                text = { Text("Rời nhóm", color = SunsetOrange) },
+                                text = { Text(stringResource(R.string.ui_4bb91c8b42), color = SunsetOrange) },
                                 leadingIcon = { Icon(Icons.Default.ExitToApp, contentDescription = null, tint = SunsetOrange) },
                                 onClick = {
                                     showInviteMenu = false
@@ -648,7 +675,7 @@ fun GroupDetailScreen(
 
                         if (isLeader) {
                             DropdownMenuItem(
-                                text = { Text("Xóa nhóm", color = if (isCompleted) Color.Gray.copy(alpha = 0.5f) else SunsetOrange) },
+                                text = { Text(stringResource(R.string.ui_a4564eb2e2), color = if (isCompleted) Color.Gray.copy(alpha = 0.5f) else SunsetOrange) },
                                 leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null, tint = if (isCompleted) Color.Gray.copy(alpha = 0.5f) else SunsetOrange) },
                                 enabled = !isCompleted,
                                 onClick = {
@@ -703,13 +730,13 @@ fun GroupDetailScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = "Thành viên nhóm",
+                                text = stringResource(R.string.ui_e91fb7a715),
                                 fontWeight = FontWeight.ExtraBold,
                                 fontSize = 20.sp,
                                 color = OnSurface
                             )
                             IconButton(onClick = { showManageMembersDialog = false }) {
-                                Icon(Icons.Default.Close, contentDescription = "Đóng")
+                                Icon(Icons.Default.Close, contentDescription = stringResource(R.string.ui_d2b73ab2ad))
                             }
                         }
                         Spacer(modifier = Modifier.height(16.dp))
@@ -771,7 +798,7 @@ fun GroupDetailScreen(
                                         ) {
                                             Icon(
                                                 imageVector = Icons.Default.Delete,
-                                                contentDescription = "Xóa thành viên",
+                                                contentDescription = stringResource(R.string.ui_035849d3f3),
                                                 tint = SunsetOrange
                                             )
                                         }
@@ -787,8 +814,15 @@ fun GroupDetailScreen(
         if (memberToDelete != null) {
             AlertDialog(
                 onDismissRequest = { memberToDelete = null },
-                title = { Text("Xóa thành viên") },
-                text = { Text("Bạn có chắc chắn muốn xóa thành viên '${memberToDelete?.name}' khỏi chuyến đi không?") },
+                title = { Text(stringResource(R.string.ui_035849d3f3)) },
+                text = {
+                    Text(
+                        stringResource(
+                            R.string.remove_member_confirmation,
+                            memberToDelete?.name.orEmpty()
+                        )
+                    )
+                },
                 confirmButton = {
                     TextButton(
                         onClick = {
@@ -801,12 +835,12 @@ fun GroupDetailScreen(
                             memberToDelete = null
                         }
                     ) {
-                        Text("Xóa", color = SunsetOrange, fontWeight = FontWeight.Bold)
+                        Text(stringResource(R.string.ui_aa1d94fc16), color = SunsetOrange, fontWeight = FontWeight.Bold)
                     }
                 },
                 dismissButton = {
                     TextButton(onClick = { memberToDelete = null }) {
-                        Text("Hủy")
+                        Text(stringResource(R.string.ui_34ca764caf))
                     }
                 },
                 containerColor = SurfaceContainerLowest
@@ -917,7 +951,7 @@ private fun GroupDetailInitialErrorState(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            text = "Không thể tải chi tiết chuyến đi",
+            text = stringResource(R.string.ui_28a4aafc8b),
             fontWeight = FontWeight.ExtraBold,
             fontSize = 20.sp,
             color = OnSurface
@@ -1004,7 +1038,7 @@ fun JoinRequestActionItem(
             ) {
                 Icon(
                     Icons.Default.Close,
-                    contentDescription = "Từ chối",
+                    contentDescription = stringResource(R.string.ui_63bbfd75f6),
                     tint = SunsetOrange,
                     modifier = Modifier.size(20.dp)
                 )
@@ -1020,7 +1054,7 @@ fun JoinRequestActionItem(
             ) {
                 Icon(
                     Icons.Default.Check,
-                    contentDescription = "Chấp nhận",
+                    contentDescription = stringResource(R.string.ui_ca41be9306),
                     tint = PrimaryBlue,
                     modifier = Modifier.size(20.dp)
                 )
