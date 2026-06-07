@@ -13,7 +13,6 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.History
@@ -23,6 +22,7 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.outlined.PhotoCamera
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.DrawerState
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -83,6 +83,7 @@ import com.mobile.travelhub.ui.components.HomeCommentsBottomSheet
 import com.mobile.travelhub.ui.components.InlineLoadingSkeleton
 import com.mobile.travelhub.ui.components.LoadingContentSkeleton
 import com.mobile.travelhub.ui.components.SimpleFormTextField
+import com.mobile.travelhub.ui.components.layout.MainMenuButton
 import com.mobile.travelhub.ui.theme.*
 import com.mobile.travelhub.viewmodels.HomePostUiModel
 import com.mobile.travelhub.viewmodels.ProfileViewModel
@@ -106,6 +107,7 @@ fun ProfileScreen(
     onFollowNotificationClick: (Long) -> Unit = {},
     onNavigateToUserProfile: (Long) -> Unit = {},
     onBack: (() -> Unit)? = null,
+    drawerState: DrawerState? = null,
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
     val isViewingOwnProfile = viewingUserId == null
@@ -224,7 +226,8 @@ fun ProfileScreen(
         onAvatarSelected = onAvatarSelected,
         changePasswordState = changePasswordState,
         onChangePassword = viewModel::changePassword,
-        onClearChangePasswordState = viewModel::clearChangePasswordState
+        onClearChangePasswordState = viewModel::clearChangePasswordState,
+        drawerState = drawerState
     )
 }
 
@@ -259,7 +262,8 @@ private fun ProfileScreenContent(
     onAvatarSelected: (Uri) -> Unit,
     changePasswordState: UiState<Boolean>,
     onChangePassword: (String, String, String) -> Unit,
-    onClearChangePasswordState: () -> Unit
+    onClearChangePasswordState: () -> Unit,
+    drawerState: DrawerState?
 ) {
     val profileTitle = (profileState as? UiState.Success)
         ?.data
@@ -267,7 +271,7 @@ private fun ProfileScreenContent(
         ?.takeIf { it.isNotBlank() }
         ?: "Profile"
     val scrollState = rememberScrollState()
-    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+    val activeDrawerState = drawerState ?: rememberDrawerState(initialValue = DrawerValue.Closed)
     val coroutineScope = rememberCoroutineScope()
     val avatarPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia()
@@ -285,12 +289,13 @@ private fun ProfileScreenContent(
     }
 
     ModalNavigationDrawer(
-        drawerState = drawerState,
+        drawerState = activeDrawerState,
         gesturesEnabled = isViewingOwnProfile,
         drawerContent = {
             if (isViewingOwnProfile && !hideDrawerContentForNavigation) {
                 ModalDrawerSheet(
-                    modifier = Modifier.width(280.dp)
+                    modifier = Modifier.width(280.dp),
+                    drawerContainerColor = Color.White
                 ) {
                     Column(
                         modifier = Modifier.padding(top = 56.dp)
@@ -303,7 +308,7 @@ private fun ProfileScreenContent(
                                 onClick = {
                                     hideDrawerContentForNavigation = true
                                     coroutineScope.launch {
-                                        drawerState.snapTo(DrawerValue.Closed)
+                                        activeDrawerState.snapTo(DrawerValue.Closed)
                                         withFrameNanos { }
                                         navigateToHistory()
                                     }
@@ -323,7 +328,7 @@ private fun ProfileScreenContent(
                             onClick = {
                                 onClearChangePasswordState()
                                 showChangePasswordDialog = true
-                                coroutineScope.launch { drawerState.close() }
+                                coroutineScope.launch { activeDrawerState.close() }
                             },
                             icon = {
                                 Icon(
@@ -337,7 +342,7 @@ private fun ProfileScreenContent(
                             label = { Text(stringResource(R.string.ui_e43d612e11)) },
                             selected = false,
                             onClick = {
-                                coroutineScope.launch { drawerState.close() }
+                                coroutineScope.launch { activeDrawerState.close() }
                                 onLogout?.invoke()
                             },
                             icon = {
@@ -363,8 +368,8 @@ private fun ProfileScreenContent(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(56.dp)
-                            .padding(horizontal = 4.dp),
+                            .height(52.dp)
+                            .padding(horizontal = 6.dp),
                         contentAlignment = Alignment.Center
                     ) {
                                 if (isViewingOwnProfile) {
@@ -403,19 +408,13 @@ private fun ProfileScreenContent(
                                         )
                                     }
                                 } else {
-                                    IconButton(
+                                    MainMenuButton(
                                         onClick = {
                                             hideDrawerContentForNavigation = false
-                                            coroutineScope.launch { drawerState.open() }
+                                            coroutineScope.launch { activeDrawerState.open() }
                                         },
                                         modifier = Modifier.align(Alignment.CenterStart)
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.Menu,
-                                            contentDescription = stringResource(R.string.ui_197101e9db),
-                                            tint = OnSurface
-                                        )
-                                    }
+                                    )
                                 }
 
                             }

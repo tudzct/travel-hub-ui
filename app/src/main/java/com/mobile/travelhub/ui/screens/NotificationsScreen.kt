@@ -26,8 +26,6 @@ import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.PersonAdd
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -57,6 +55,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import com.mobile.travelhub.ui.theme.SurfaceBg
 import com.mobile.travelhub.ui.theme.TravelHubTheme
 import com.mobile.travelhub.ui.components.SkeletonBlock
+import com.mobile.travelhub.ui.components.PillFilterChip
 import java.time.Instant
 import java.time.Duration
 import com.mobile.travelhub.viewmodels.NotificationFilter
@@ -423,21 +422,10 @@ private fun NotificationFilters(
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         items(filters, key = { it.name }) { filter ->
-            FilterChip(
+            PillFilterChip(
                 selected = filter == activeFilter,
                 onClick = { onFilterSelected(filter) },
-                shape = RoundedCornerShape(50),
-                label = {
-                    Text(
-                        text = filter.label,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                },
-                colors = FilterChipDefaults.filterChipColors(
-                    selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                    selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
-                )
+                label = filter.label
             )
         }
     }

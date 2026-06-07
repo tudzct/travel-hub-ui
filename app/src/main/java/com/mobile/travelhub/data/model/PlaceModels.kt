@@ -22,6 +22,7 @@ data class TravelPlaceListItemResponse(
     val description: String?,
     val province: ProvinceResponse,
     val mainImage: String?,
+    val images: List<TravelPlaceImageResponse> = emptyList(),
     val views: Int?,
     val openingTime: String?,
     val averageRating: Double,

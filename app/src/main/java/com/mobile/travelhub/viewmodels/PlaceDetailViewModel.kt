@@ -265,16 +265,24 @@ class PlaceDetailViewModel @Inject constructor(
     }
 
     private fun TravelPlaceListItemResponse.toDetailUiModel(): PlaceDetailUiModel {
+        val imageUrls = images
+            .sortedByDescending { it.main }
+            .map { it.imageUrl.trim() }
+            .filter { it.isNotBlank() }
+            .distinct()
+            .ifEmpty {
+                listOfNotNull(mainImage)
+                    .map { it.trim() }
+                    .filter { it.isNotBlank() }
+                    .distinct()
+            }
         return PlaceDetailUiModel(
             id = id,
             name = name,
             description = description,
             province = province,
-            mainImage = mainImage,
-            imageUrls = listOfNotNull(mainImage)
-                .map { it.trim() }
-                .filter { it.isNotBlank() }
-                .distinct(),
+            mainImage = imageUrls.firstOrNull() ?: mainImage,
+            imageUrls = imageUrls,
             views = views,
             openingTime = openingTime,
             reviewSummary = TravelPlaceReviewSummaryResponse(

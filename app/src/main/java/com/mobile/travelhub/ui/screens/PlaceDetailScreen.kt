@@ -41,7 +41,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -154,13 +153,30 @@ fun PlaceDetailScreen(
                         .padding(24.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    OutlinedButton(onClick = onBack) {
-                        Text(stringResource(R.string.ui_b52b36b726))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        IconButton(
+                            onClick = onBack,
+                            modifier = Modifier
+                                .size(44.dp)
+                                .background(Color(0xFFF2F4F7), CircleShape)
+                        ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = stringResource(R.string.ui_b52b36b726),
+                                tint = OnSurface
+                            )
+                        }
+                        Text(
+                            text = stringResource(R.string.ui_3682846f79),
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = OnSurface
+                        )
                     }
-                    Text(
-                        text = stringResource(R.string.ui_3682846f79),
-                        style = MaterialTheme.typography.headlineSmall
-                    )
                     Text(
                         text = uiState.errorMessage.orEmpty(),
                         style = MaterialTheme.typography.bodyLarge,
@@ -357,7 +373,10 @@ private fun PlaceHeroSection(
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            text = String.format("%.1f", detail.reviewSummary.averageRating),
+                            text = placeRatingLabel(
+                                averageRating = detail.reviewSummary.averageRating,
+                                reviewCount = detail.reviewSummary.reviewCount
+                            ),
                             color = Color.White,
                             fontSize = 11.sp,
                             fontWeight = FontWeight.ExtraBold
@@ -648,7 +667,10 @@ private fun RelatedPlaceCard(
                 )
                 Spacer(modifier = Modifier.width(3.dp))
                 Text(
-                    text = String.format("%.1f", place.averageRating),
+                    text = placeRatingLabel(
+                        averageRating = place.averageRating,
+                        reviewCount = place.reviewCount
+                    ),
                     style = MaterialTheme.typography.labelSmall,
                     color = Color.White,
                     fontWeight = FontWeight.SemiBold
@@ -689,12 +711,19 @@ private fun ReviewSummarySection(
                 Spacer(modifier = Modifier.width(8.dp))
                 Column {
                     Text(
-                        text = String.format("%.1f", averageRating),
+                        text = placeRatingLabel(
+                            averageRating = averageRating,
+                            reviewCount = reviewCount
+                        ),
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = stringResource(R.string.review_count, reviewCount),
+                        text = if (reviewCount > 0) {
+                            stringResource(R.string.review_count, reviewCount)
+                        } else {
+                            "Chưa có đánh giá"
+                        },
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -719,6 +748,13 @@ private fun ReviewSummarySection(
             }
         }
     }
+}
+
+private fun placeRatingLabel(averageRating: Double, reviewCount: Long): String {
+    if (reviewCount <= 0L || averageRating <= 0.0) {
+        return "Chưa có đánh giá"
+    }
+    return String.format("%.1f", averageRating)
 }
 
 @Composable

@@ -292,14 +292,15 @@ private fun ItineraryTimelineDay(
     onOpenDayDetail: () -> Unit,
     onEditEvent: (ItineraryEvent) -> Unit
 ) {
-    Row(
+    Surface(
         modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.Top,
-        horizontalArrangement = Arrangement.Center
+        shape = RoundedCornerShape(28.dp),
+        color = Color(0xFFF3EEF9),
+        shadowElevation = 0.dp
     ) {
         Column(
-            modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 14.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -326,7 +327,7 @@ private fun ItineraryTimelineDay(
                         text = day.dateLabel.ifBlank { day.label },
                         color = OnSurface,
                         fontWeight = FontWeight.ExtraBold,
-                        fontSize = 13.sp
+                        fontSize = 15.sp
                     )
                     Text(
                         text = stringResource(R.string.place_count, day.events.size),
@@ -338,8 +339,8 @@ private fun ItineraryTimelineDay(
 
                 Surface(
                     modifier = Modifier.clickable(onClick = onOpenDayDetail),
-                    shape = RoundedCornerShape(12.dp),
-                    color = PrimaryBlue.copy(alpha = 0.14f)
+                    shape = RoundedCornerShape(14.dp),
+                    color = Color(0xFFE6F1FB)
                 ) {
                     Icon(
                         imageVector = Icons.Default.Map,
@@ -440,8 +441,8 @@ private fun ItineraryTimelineEventCard(
                     }
                 ),
             shape = RoundedCornerShape(24.dp),
-            color = SurfaceContainerLowest,
-            shadowElevation = 6.dp
+            color = Color.White,
+            shadowElevation = 0.dp
         ) {
             Column(
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 13.dp),

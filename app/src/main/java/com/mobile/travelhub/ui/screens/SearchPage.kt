@@ -415,12 +415,7 @@ private fun SearchCommentsSheet(
                 modifier = Modifier.weight(1f),
                 enabled = !isCommentSubmitting,
                 singleLine = false,
-                maxLines = 3,
-                shape = RoundedCornerShape(24.dp),
-                focusedContainerColor = Color.White,
-                unfocusedContainerColor = Color.White,
-                disabledContainerColor = Color(0xFFF4F4F4),
-                focusedIndicatorColor = PrimaryBlue
+                maxLines = 3
             )
             Spacer(modifier = Modifier.width(8.dp))
             IconButton(

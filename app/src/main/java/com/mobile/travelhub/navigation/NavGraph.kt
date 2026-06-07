@@ -11,12 +11,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Lock
+import androidx.compose.material3.DrawerState
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.NavigationDrawerItem
-import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
@@ -175,6 +175,7 @@ sealed class Screen(
 
 @Composable
 private fun HomeDrawerScaffold(
+    drawerState: DrawerState,
     onNavigateToHistory: () -> Unit,
     onLogout: () -> Unit,
     changePasswordState: UiState<Boolean>,
@@ -182,7 +183,6 @@ private fun HomeDrawerScaffold(
     onClearChangePasswordState: () -> Unit,
     content: @Composable (openMenu: () -> Unit) -> Unit
 ) {
-    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val coroutineScope = rememberCoroutineScope()
     var hideDrawerContentForNavigation by remember { mutableStateOf(false) }
     var showChangePasswordDialog by remember { mutableStateOf(false) }
@@ -289,6 +289,7 @@ private fun HomeDrawerScaffold(
 @Composable
 fun NavGraph(
     navController: NavHostController,
+    mainDrawerState: DrawerState,
     innerPadding: PaddingValues,
     startDestination: String,
     authUiState: AuthUiState,
@@ -428,6 +429,7 @@ fun NavGraph(
             val profileViewModel: ProfileViewModel = hiltViewModel()
             val changePasswordState by profileViewModel.changePasswordState.collectAsState()
             HomeDrawerScaffold(
+                drawerState = mainDrawerState,
                 onNavigateToHistory = { navController.navigate(Screen.ViewHistory.route) { launchSingleTop = true } },
                 onLogout = {
                     onLogout()
@@ -620,6 +622,7 @@ fun NavGraph(
                 } else {
                     null
                 },
+                drawerState = mainDrawerState,
                 viewModel = profileViewModel
             )
         }
