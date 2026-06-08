@@ -64,7 +64,8 @@ data class ExpenseTransactionUiModel(
     val paidByName: String,
     val amount: Double,
     val date: String? = null,
-    val proofImageUrl: String? = null
+    val proofImageUrl: String? = null,
+    val splitUserIds: List<Long> = emptyList()
 )
 
 data class TripExpenseMemberUiModel(
@@ -254,7 +255,13 @@ class CostEstimateViewModel @Inject constructor(
         }
     }
 
-    fun addExpense(title: String, amountText: String, category: String, proofImageUri: Uri? = null) {
+    fun addExpense(
+        title: String,
+        amountText: String,
+        category: String,
+        splitUserIds: List<Long>,
+        proofImageUri: Uri? = null
+    ) {
         val state = _uiState.value
         val tripId = state.tripId
         val groupName = state.groupName
@@ -277,18 +284,32 @@ class CostEstimateViewModel @Inject constructor(
             _uiState.update { it.copy(errorMessage = "Bạn cần đăng nhập để thêm chi phí") }
             return
         }
+        val effectiveSplitUserIds = splitUserIds.distinct().filter { it > 0L }
+        if (effectiveSplitUserIds.isEmpty()) {
+            _uiState.update { it.copy(errorMessage = "Vui lòng chọn ít nhất một người cùng chia") }
+            return
+        }
 
         viewModelScope.launch {
-            _uiState.update { it.copy(isAddingExpense = true, errorMessage = null) }
+            val pendingId = -System.currentTimeMillis()
+            val pendingExpense = buildPendingExpense(
+                id = pendingId,
+                title = title.trim(),
+                category = category,
+                paidByUserId = sessionUserId,
+                amount = parsedAmount,
+                proofImageUrl = proofImageUri?.toString(),
+                splitUserIds = effectiveSplitUserIds
+            )
+            addPendingExpense(pendingExpense)
             val proofObjectName = if (proofImageUri != null) {
                 expenseProofRepository.uploadProof(proofImageUri)
                     .getOrElse { throwable ->
-                        _uiState.update {
-                            it.copy(
-                                isAddingExpense = false,
-                                errorMessage = throwable.userMessage("Không tải được ảnh minh chứng")
-                            )
-                        }
+                        removePendingExpense(
+                            pendingId = pendingId,
+                            amount = parsedAmount,
+                            errorMessage = throwable.userMessage("Không tải được ảnh minh chứng")
+                        )
                         return@launch
                     }
             } else {
@@ -303,18 +324,17 @@ class CostEstimateViewModel @Inject constructor(
                     category = category,
                     paidByUserId = sessionUserId,
                     proofImageUrl = proofObjectName,
-                    splitUserIds = state.members.map { it.userId }.ifEmpty { listOf(sessionUserId) }
+                    splitUserIds = effectiveSplitUserIds
                 )
-            ).onSuccess {
-                _uiState.update { it.copy(isAddingExpense = false) }
+            ).onSuccess { savedExpense ->
+                replacePendingExpense(pendingId, savedExpense.toUiModel())
                 loadExpenseSummary(tripId, groupName)
             }.onFailure { throwable ->
-                _uiState.update {
-                    it.copy(
-                        isAddingExpense = false,
-                        errorMessage = throwable.userMessage("Không thêm được chi phí")
-                    )
-                }
+                removePendingExpense(
+                    pendingId = pendingId,
+                    amount = parsedAmount,
+                    errorMessage = throwable.userMessage("Không thêm được chi phí")
+                )
             }
         }
     }
@@ -326,6 +346,7 @@ class CostEstimateViewModel @Inject constructor(
         category: String,
         paidByUserId: Long,
         existingProofImageUrl: String?,
+        splitUserIds: List<Long>,
         proofImageUri: Uri? = null
     ) {
         val state = _uiState.value
@@ -347,6 +368,11 @@ class CostEstimateViewModel @Inject constructor(
         }
         if (paidByUserId <= 0L) {
             _uiState.update { it.copy(errorMessage = "Không xác định được người thanh toán") }
+            return
+        }
+        val effectiveSplitUserIds = splitUserIds.distinct().filter { it > 0L }
+        if (effectiveSplitUserIds.isEmpty()) {
+            _uiState.update { it.copy(errorMessage = "Vui lòng chọn ít nhất một người cùng chia") }
             return
         }
 
@@ -376,7 +402,7 @@ class CostEstimateViewModel @Inject constructor(
                     category = category,
                     paidByUserId = paidByUserId,
                     proofImageUrl = proofImageValue,
-                    splitUserIds = state.members.map { it.userId }.ifEmpty { listOf(paidByUserId) }
+                    splitUserIds = effectiveSplitUserIds
                 )
             ).onSuccess {
                 _uiState.update { it.copy(isAddingExpense = false) }
@@ -467,15 +493,26 @@ class CostEstimateViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
-            _uiState.update { it.copy(isAddingExpense = true, errorMessage = null) }
+            val pendingId = -System.currentTimeMillis()
+            val effectiveExpenseDate = expenseDate.ifBlank { LocalDate.now().toString() }
+            val pendingExpense = buildPendingExpense(
+                id = pendingId,
+                title = title.trim(),
+                category = category,
+                paidByUserId = paidByUserId,
+                amount = parsedAmount,
+                proofImageUrl = draft.imageUri.toString(),
+                splitUserIds = effectiveSplitUserIds,
+                date = effectiveExpenseDate
+            )
+            addPendingExpense(pendingExpense, clearReceiptDraft = true)
             val proofObjectName = expenseProofRepository.uploadProof(draft.imageUri)
                 .getOrElse { throwable ->
-                    _uiState.update {
-                        it.copy(
-                            isAddingExpense = false,
-                            errorMessage = throwable.userMessage("Không tải được ảnh hóa đơn")
-                        )
-                    }
+                    removePendingExpense(
+                        pendingId = pendingId,
+                        amount = parsedAmount,
+                        errorMessage = throwable.userMessage("Không tải được ảnh hóa đơn")
+                    )
                     return@launch
                 }
             tripRepository.addTripExpense(
@@ -486,7 +523,7 @@ class CostEstimateViewModel @Inject constructor(
                     totalAmount = parsedAmount,
                     category = category,
                     paidByUserId = paidByUserId,
-                    expenseDate = expenseDate.ifBlank { LocalDate.now().toString() },
+                    expenseDate = effectiveExpenseDate,
                     note = note?.trim()?.ifBlank { null },
                     source = "OCR",
                     rawOcrText = draft.result.rawText,
@@ -494,16 +531,15 @@ class CostEstimateViewModel @Inject constructor(
                     splitType = "EQUAL",
                     splitUserIds = effectiveSplitUserIds
                 )
-            ).onSuccess {
-                _uiState.update { it.copy(isAddingExpense = false, receiptOcrDraft = null) }
+            ).onSuccess { savedExpense ->
+                replacePendingExpense(pendingId, savedExpense.toUiModel())
                 loadExpenseSummary(tripId, groupName)
             }.onFailure { throwable ->
-                _uiState.update {
-                    it.copy(
-                        isAddingExpense = false,
-                        errorMessage = throwable.userMessage("Không lưu được chi phí từ hóa đơn")
-                    )
-                }
+                removePendingExpense(
+                    pendingId = pendingId,
+                    amount = parsedAmount,
+                    errorMessage = throwable.userMessage("Không lưu được chi phí từ hóa đơn")
+                )
             }
         }
     }
@@ -603,7 +639,77 @@ class CostEstimateViewModel @Inject constructor(
             paidByName = paidByName.orEmpty(),
             amount = amount ?: 0.0,
             date = date,
-            proofImageUrl = proofImageUrl
+            proofImageUrl = proofImageUrl,
+            splitUserIds = splitUserIds
         )
+    }
+
+    private fun buildPendingExpense(
+        id: Long,
+        title: String,
+        category: String,
+        paidByUserId: Long,
+        amount: Double,
+        proofImageUrl: String?,
+        splitUserIds: List<Long>,
+        date: String = LocalDate.now().toString()
+    ): ExpenseTransactionUiModel {
+        val paidByName = _uiState.value.members
+            .firstOrNull { it.userId == paidByUserId }
+            ?.name
+            .orEmpty()
+            .ifBlank { "Bạn" }
+        return ExpenseTransactionUiModel(
+            id = id,
+            title = title,
+            category = category,
+            paidByUserId = paidByUserId,
+            paidByName = paidByName,
+            amount = amount,
+            date = date,
+            proofImageUrl = proofImageUrl,
+            splitUserIds = splitUserIds
+        )
+    }
+
+    private fun addPendingExpense(
+        expense: ExpenseTransactionUiModel,
+        clearReceiptDraft: Boolean = false
+    ) {
+        _uiState.update { state ->
+            state.copy(
+                isAddingExpense = true,
+                errorMessage = null,
+                receiptOcrDraft = if (clearReceiptDraft) null else state.receiptOcrDraft,
+                totalSpent = state.totalSpent + expense.amount,
+                transactions = listOf(expense) + state.transactions
+            )
+        }
+    }
+
+    private fun replacePendingExpense(pendingId: Long, savedExpense: ExpenseTransactionUiModel) {
+        _uiState.update { state ->
+            state.copy(
+                isAddingExpense = false,
+                transactions = state.transactions.map { expense ->
+                    if (expense.id == pendingId) savedExpense else expense
+                }
+            )
+        }
+    }
+
+    private fun removePendingExpense(
+        pendingId: Long,
+        amount: Double,
+        errorMessage: String
+    ) {
+        _uiState.update { state ->
+            state.copy(
+                isAddingExpense = false,
+                errorMessage = errorMessage,
+                totalSpent = (state.totalSpent - amount).coerceAtLeast(0.0),
+                transactions = state.transactions.filterNot { it.id == pendingId }
+            )
+        }
     }
 }

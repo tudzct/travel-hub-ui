@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -44,6 +45,7 @@ import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material.icons.filled.Photo
 import androidx.compose.material.icons.filled.Restaurant
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.BottomSheetDefaults
@@ -278,9 +280,10 @@ fun CostEstimateScreen(
                 dragHandle = { BottomSheetDefaults.DragHandle(color = SurfaceContainerLow) }
             ) {
                 AddExpenseContent(
+                    members = uiState.members,
                     isSaving = uiState.isAddingExpense,
-                    onSave = { title, amountText, category, proofImageUri ->
-                        viewModel.addExpense(title, amountText, category, proofImageUri)
+                    onSave = { title, amountText, category, splitUserIds, proofImageUri ->
+                        viewModel.addExpense(title, amountText, category, splitUserIds, proofImageUri)
                     },
                     onDismiss = { showAddExpense = false }
                 )
@@ -297,9 +300,10 @@ fun CostEstimateScreen(
                 val expense = editingExpense!!
                 EditExpenseContent(
                     expense = expense,
+                    members = uiState.members,
                     canEdit = !uiState.isCompleted,
                     isSaving = uiState.isAddingExpense,
-                    onSave = { title, amountText, category, proofImageUri ->
+                    onSave = { title, amountText, category, splitUserIds, proofImageUri ->
                         viewModel.editExpense(
                             expense.id,
                             title,
@@ -307,6 +311,7 @@ fun CostEstimateScreen(
                             category,
                             expense.paidByUserId,
                             expense.proofImageUrl,
+                            splitUserIds,
                             proofImageUri
                         )
                     },
@@ -1006,12 +1011,13 @@ private fun ModernExpenseRow(
     onClick: () -> Unit
 ) {
     val category = categoryVisual(expense.category)
+    val isPending = expense.id < 0L
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(18.dp))
             .background(Color.White)
-            .clickable(onClick = onClick)
+            .clickable(enabled = !isPending, onClick = onClick)
             .padding(horizontal = 14.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -1052,8 +1058,8 @@ private fun ModernExpenseRow(
                 overflow = TextOverflow.Ellipsis
             )
             Text(
-                text = formatExpenseDate(expense.date),
-                color = ExpenseMuted,
+                text = if (isPending) "Đang lưu..." else formatExpenseDate(expense.date),
+                color = if (isPending) PrimaryBlue else ExpenseMuted,
                 fontSize = 13.sp
             )
             Surface(
@@ -1092,14 +1098,16 @@ private fun ModernExpenseRow(
                     .size(18.dp)
             )
         }
-        Icon(
-            imageVector = Icons.Default.KeyboardArrowRight,
-            contentDescription = null,
-            tint = ExpenseMuted,
-            modifier = Modifier
-                .padding(start = 8.dp)
-                .size(18.dp)
-        )
+        if (!isPending) {
+            Icon(
+                imageVector = Icons.Default.KeyboardArrowRight,
+                contentDescription = null,
+                tint = ExpenseMuted,
+                modifier = Modifier
+                    .padding(start = 8.dp)
+                    .size(18.dp)
+            )
+        }
     }
 }
 
@@ -1135,6 +1143,7 @@ private fun ReceiptOcrConfirmContent(
     var selectedCategory by remember(draft.imageUri) { mutableStateOf("FOOD") }
     var categoryExpanded by remember { mutableStateOf(false) }
     var paidByExpanded by remember { mutableStateOf(false) }
+    var showReceiptImageFullScreen by remember(draft.imageUri) { mutableStateOf(false) }
     var paidByUserId by remember(draft.imageUri, effectiveMembers) {
         mutableStateOf(effectiveMembers.firstOrNull { it.isCurrentUser }?.userId ?: effectiveMembers.first().userId)
     }
@@ -1142,9 +1151,17 @@ private fun ReceiptOcrConfirmContent(
         mutableStateOf(effectiveMembers.map { it.userId }.filter { it > 0L }.toSet())
     }
 
+    if (showReceiptImageFullScreen) {
+        FullScreenProofImageDialog(
+            imageModel = draft.imageUri,
+            onDismiss = { showReceiptImageFullScreen = false }
+        )
+    }
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
+            .fillMaxHeight(0.9f)
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 24.dp)
             .padding(bottom = 40.dp),
@@ -1170,6 +1187,7 @@ private fun ReceiptOcrConfirmContent(
                 .fillMaxWidth()
                 .height(180.dp)
                 .clip(RoundedCornerShape(18.dp))
+                .clickable { showReceiptImageFullScreen = true }
                 .background(Color(0xFFF2F4F8)),
             contentScale = ContentScale.Crop
         )
@@ -1243,50 +1261,12 @@ private fun ReceiptOcrConfirmContent(
             }
         }
 
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(
-                text = "Người cùng chia",
-                color = ExpenseInk,
-                fontSize = 15.sp,
-                fontWeight = FontWeight.ExtraBold
-            )
-            effectiveMembers.forEach { member ->
-                val checked = splitUserIds.contains(member.userId)
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(14.dp))
-                        .background(Color(0xFFF7F9FC))
-                        .clickable {
-                            splitUserIds = if (checked) {
-                                splitUserIds - member.userId
-                            } else {
-                                splitUserIds + member.userId
-                            }
-                        }
-                        .padding(horizontal = 12.dp, vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Checkbox(
-                        checked = checked,
-                        onCheckedChange = { isChecked ->
-                            splitUserIds = if (isChecked) {
-                                splitUserIds + member.userId
-                            } else {
-                                splitUserIds - member.userId
-                            }
-                        }
-                    )
-                    Text(
-                        text = member.name,
-                        color = ExpenseInk,
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        modifier = Modifier.padding(start = 8.dp)
-                    )
-                }
-            }
-        }
+        SplitMemberSelector(
+            members = effectiveMembers,
+            selectedUserIds = splitUserIds,
+            enabled = !isSaving,
+            onSelectedUserIdsChange = { splitUserIds = it }
+        )
 
         OutlinedTextField(
             value = note,
@@ -1297,24 +1277,6 @@ private fun ReceiptOcrConfirmContent(
             maxLines = 4,
             shape = RoundedCornerShape(14.dp)
         )
-
-        if (result.rawText.isNotBlank()) {
-            HorizontalDivider(color = ExpenseBorder)
-            Text(
-                text = "Raw OCR",
-                color = ExpenseMuted,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.ExtraBold
-            )
-            Text(
-                text = result.rawText,
-                color = ExpenseMuted,
-                fontSize = 12.sp,
-                lineHeight = 17.sp,
-                maxLines = 8,
-                overflow = TextOverflow.Ellipsis
-            )
-        }
 
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -1356,18 +1318,147 @@ private fun ReceiptOcrConfirmContent(
     }
 }
 
+@Composable
+private fun SplitMemberSelector(
+    members: List<TripExpenseMemberUiModel>,
+    selectedUserIds: Set<Long>,
+    enabled: Boolean,
+    onSelectedUserIdsChange: (Set<Long>) -> Unit
+) {
+    var searchQuery by remember(members) { mutableStateOf("") }
+    val selectableMembers = remember(members) {
+        members.filter { it.userId > 0L }
+    }
+    val filteredMembers = remember(selectableMembers, searchQuery) {
+        val query = searchQuery.trim()
+        if (query.isBlank()) {
+            selectableMembers
+        } else {
+            selectableMembers.filter { member ->
+                member.name.contains(query, ignoreCase = true)
+            }
+        }
+    }
+
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(
+            text = "Người cùng chia",
+            color = ExpenseInk,
+            fontSize = 15.sp,
+            fontWeight = FontWeight.ExtraBold
+        )
+
+        OutlinedTextField(
+            value = searchQuery,
+            onValueChange = { searchQuery = it },
+            enabled = enabled,
+            label = { Text("Tìm thành viên trong chuyến đi") },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+            shape = RoundedCornerShape(14.dp),
+            leadingIcon = {
+                Icon(
+                    imageVector = Icons.Default.Search,
+                    contentDescription = null
+                )
+            },
+            trailingIcon = {
+                if (searchQuery.isNotBlank()) {
+                    IconButton(
+                        onClick = { searchQuery = "" },
+                        enabled = enabled
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = "Xóa tìm kiếm"
+                        )
+                    }
+                }
+            }
+        )
+
+        Text(
+            text = "Đã chọn ${selectedUserIds.size}/${selectableMembers.size} người",
+            color = ExpenseMuted,
+            fontSize = 13.sp,
+            fontWeight = FontWeight.Medium
+        )
+
+        if (filteredMembers.isEmpty()) {
+            Text(
+                text = "Không tìm thấy thành viên phù hợp",
+                color = ExpenseMuted,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Medium,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(Color(0xFFF7F9FC))
+                    .padding(14.dp)
+            )
+        } else {
+            filteredMembers.forEach { member ->
+                val checked = selectedUserIds.contains(member.userId)
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(Color(0xFFF7F9FC))
+                        .clickable(enabled = enabled) {
+                            onSelectedUserIdsChange(
+                                if (checked) {
+                                    selectedUserIds - member.userId
+                                } else {
+                                    selectedUserIds + member.userId
+                                }
+                            )
+                        }
+                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Checkbox(
+                        checked = checked,
+                        enabled = enabled,
+                        onCheckedChange = { isChecked ->
+                            onSelectedUserIdsChange(
+                                if (isChecked) {
+                                    selectedUserIds + member.userId
+                                } else {
+                                    selectedUserIds - member.userId
+                                }
+                            )
+                        }
+                    )
+                    Text(
+                        text = member.name,
+                        color = ExpenseInk,
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.padding(start = 8.dp)
+                    )
+                }
+            }
+        }
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddExpenseContent(
+    members: List<TripExpenseMemberUiModel>,
     isSaving: Boolean,
-    onSave: (String, String, String, android.net.Uri?) -> Unit,
+    onSave: (String, String, String, List<Long>, android.net.Uri?) -> Unit,
     onDismiss: () -> Unit
 ) {
+    val initialSplitUserIds = remember(members) {
+        members.map { it.userId }.filter { it > 0L }.toSet()
+    }
     var expenseTitle by remember { mutableStateOf("") }
     var expenseAmountValue by remember { mutableStateOf(TextFieldValue("")) }
     var selectedCategory by remember { mutableStateOf("FOOD") }
     var expanded by remember { mutableStateOf(false) }
     var proofImageUri by remember { mutableStateOf<android.net.Uri?>(null) }
+    var splitUserIds by remember(initialSplitUserIds) { mutableStateOf(initialSplitUserIds) }
     val proofPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia()
     ) { uri ->
@@ -1377,6 +1468,8 @@ fun AddExpenseContent(
     Column(
         modifier = Modifier
             .fillMaxWidth()
+            .fillMaxHeight(0.8f)
+            .verticalScroll(rememberScrollState())
             .padding(horizontal = 24.dp)
             .padding(bottom = 40.dp)
     ) {
@@ -1418,6 +1511,15 @@ fun AddExpenseContent(
 
         Spacer(modifier = Modifier.height(16.dp))
 
+        SplitMemberSelector(
+            members = members,
+            selectedUserIds = splitUserIds,
+            enabled = !isSaving,
+            onSelectedUserIdsChange = { splitUserIds = it }
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
         ExpenseProofImagePicker(
             imageModel = proofImageUri,
             enabled = !isSaving,
@@ -1436,7 +1538,13 @@ fun AddExpenseContent(
         Button(
             onClick = {
                 if (!isSaving) {
-                    onSave(expenseTitle, expenseAmountValue.text, selectedCategory, proofImageUri)
+                    onSave(
+                        expenseTitle,
+                        expenseAmountValue.text,
+                        selectedCategory,
+                        splitUserIds.toList(),
+                        proofImageUri
+                    )
                     onDismiss()
                 }
             },
@@ -1459,12 +1567,19 @@ fun AddExpenseContent(
 @Composable
 fun EditExpenseContent(
     expense: ExpenseTransactionUiModel,
+    members: List<TripExpenseMemberUiModel>,
     canEdit: Boolean,
     isSaving: Boolean,
-    onSave: (String, String, String, android.net.Uri?) -> Unit,
+    onSave: (String, String, String, List<Long>, android.net.Uri?) -> Unit,
     onDelete: () -> Unit,
     onDismiss: () -> Unit
 ) {
+    val fallbackSplitUserIds = remember(expense.id, members) {
+        members.map { it.userId }.filter { it > 0L }.toSet()
+    }
+    val initialSplitUserIds = remember(expense.id, expense.splitUserIds, fallbackSplitUserIds) {
+        expense.splitUserIds.filter { it > 0L }.toSet().ifEmpty { fallbackSplitUserIds }
+    }
     var expenseTitle by remember(expense.id) { mutableStateOf(expense.title) }
     var expenseAmountValue by remember(expense.id) {
         val initialText = NumberUtils.formatInputString(expense.amount.toInt().toString())
@@ -1474,6 +1589,7 @@ fun EditExpenseContent(
     var expanded by remember { mutableStateOf(false) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
     var replacementProofImageUri by remember(expense.id) { mutableStateOf<android.net.Uri?>(null) }
+    var splitUserIds by remember(expense.id, initialSplitUserIds) { mutableStateOf(initialSplitUserIds) }
     val proofPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia()
     ) { uri ->
@@ -1511,6 +1627,8 @@ fun EditExpenseContent(
     Column(
         modifier = Modifier
             .fillMaxWidth()
+            .fillMaxHeight(0.9f)
+            .verticalScroll(rememberScrollState())
             .padding(horizontal = 24.dp)
             .padding(bottom = 40.dp)
     ) {
@@ -1529,8 +1647,7 @@ fun EditExpenseContent(
                 IconButton(onClick = { showDeleteConfirm = true }) {
                 Icon(
                     imageVector = Icons.Default.Delete,
-                    contentDescription = stringResource(R.string.ui_1816483d8a),
-                    tint = SunsetOrange
+                    contentDescription = stringResource(R.string.ui_1816483d8a)
                 )
                 }
             }
@@ -1569,6 +1686,15 @@ fun EditExpenseContent(
 
         Spacer(modifier = Modifier.height(16.dp))
 
+        SplitMemberSelector(
+            members = members,
+            selectedUserIds = splitUserIds,
+            enabled = canEdit && !isSaving,
+            onSelectedUserIdsChange = { splitUserIds = it }
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
         ExpenseProofImagePicker(
             imageModel = replacementProofImageUri ?: expense.proofImageUrl,
             enabled = canEdit && !isSaving,
@@ -1589,7 +1715,13 @@ fun EditExpenseContent(
             Button(
                 onClick = {
                     if (!isSaving) {
-                        onSave(expenseTitle, expenseAmountValue.text, selectedCategory, replacementProofImageUri)
+                        onSave(
+                            expenseTitle,
+                            expenseAmountValue.text,
+                            selectedCategory,
+                            splitUserIds.toList(),
+                            replacementProofImageUri
+                        )
                         onDismiss()
                     }
                 },

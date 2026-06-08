@@ -185,7 +185,8 @@ data class TripExpenseTransactionResponse(
     val paidByName: String? = null,
     val amount: Double? = 0.0,
     val date: String? = null,
-    val proofImageUrl: String? = null
+    val proofImageUrl: String? = null,
+    val splitUserIds: List<Long> = emptyList()
 )
 
 data class TripExpenseResponse(
