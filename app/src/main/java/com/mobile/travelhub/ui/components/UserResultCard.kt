@@ -187,7 +187,7 @@ private fun UserResultFollowButton(
         enabled = !isLoading,
         colors = ButtonDefaults.buttonColors(
             containerColor = if (isFollowing) MaterialTheme.colorScheme.surfaceVariant else PrimaryBlue,
-            contentColor = if (isFollowing) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onPrimary,
+            contentColor = if (isFollowing) MaterialTheme.colorScheme.onSurface else Color.White,
             disabledContainerColor = if (isFollowing) {
                 MaterialTheme.colorScheme.surfaceVariant
             } else {
@@ -196,7 +196,7 @@ private fun UserResultFollowButton(
             disabledContentColor = if (isFollowing) {
                 MaterialTheme.colorScheme.onSurfaceVariant
             } else {
-                MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.82f)
+                Color.White.copy(alpha = 0.82f)
             }
         ),
         shape = RoundedCornerShape(18.dp),

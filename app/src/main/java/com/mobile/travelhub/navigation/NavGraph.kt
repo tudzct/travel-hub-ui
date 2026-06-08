@@ -194,47 +194,17 @@ private fun HomeDrawerScaffold(
         }
     }
 
-    ModalNavigationDrawer(
-        drawerState = drawerState,
-        scrimColor = Color.Black.copy(alpha = 0.38f),
-        drawerContent = {
-            if (!hideDrawerContentForNavigation) {
-                TravelHubDrawerContent(
-                    profile = profile,
-                    onProfileClick = {
-                        coroutineScope.launch {
-                            drawerState.close()
-                            onNavigateToProfile()
-                        }
-                    },
-                    onEditProfileClick = {
-                        coroutineScope.launch {
-                            drawerState.close()
-                            onNavigateToEditProfile()
-                        }
-                    },
-                    onChangePasswordClick = {
-                        coroutineScope.launch {
-                            drawerState.close()
-                            onClearChangePasswordState()
-                            showChangePasswordDialog = true
-                        }
-                    },
-                    onLogoutClick = {
-                        coroutineScope.launch {
-                            drawerState.close()
-                            onLogout()
-                        }
-                    },
-                    isDarkThemeEnabled = isDarkThemeEnabled,
-                    onDarkThemeChange = onDarkThemeChange
-                )
-            }
-        }
-    ) {
+    val openDrawer = {
+        coroutineScope.launch { drawerState.open() }
+    }
+    val drawerVisible =
+        drawerState.currentValue != DrawerValue.Closed || drawerState.targetValue != DrawerValue.Closed
+
+    @Composable
+    fun HomeShellBody() {
         content {
             hideDrawerContentForNavigation = false
-            coroutineScope.launch { drawerState.open() }
+            openDrawer()
         }
         if (showChangePasswordDialog) {
             ChangePasswordDialog(
@@ -246,6 +216,51 @@ private fun HomeDrawerScaffold(
                 onSubmit = onChangePassword
             )
         }
+    }
+
+    if (drawerVisible) {
+        ModalNavigationDrawer(
+            drawerState = drawerState,
+            scrimColor = Color.Black.copy(alpha = 0.38f),
+            drawerContent = {
+                if (!hideDrawerContentForNavigation) {
+                    TravelHubDrawerContent(
+                        profile = profile,
+                        onProfileClick = {
+                            coroutineScope.launch {
+                                drawerState.close()
+                                onNavigateToProfile()
+                            }
+                        },
+                        onEditProfileClick = {
+                            coroutineScope.launch {
+                                drawerState.close()
+                                onNavigateToEditProfile()
+                            }
+                        },
+                        onChangePasswordClick = {
+                            coroutineScope.launch {
+                                drawerState.close()
+                                onClearChangePasswordState()
+                                showChangePasswordDialog = true
+                            }
+                        },
+                        onLogoutClick = {
+                            coroutineScope.launch {
+                                drawerState.close()
+                                onLogout()
+                            }
+                        },
+                        isDarkThemeEnabled = isDarkThemeEnabled,
+                        onDarkThemeChange = onDarkThemeChange
+                    )
+                }
+            }
+        ) {
+            HomeShellBody()
+        }
+    } else {
+        HomeShellBody()
     }
 }
 
