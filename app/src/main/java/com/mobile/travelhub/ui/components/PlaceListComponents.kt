@@ -282,7 +282,11 @@ fun PlaceListScreenContent(
                 commentErrorMessage = homeUiState.commentErrorMessage,
                 onDismiss = onDismissCommentSheet,
                 onCommentInputChanged = onCommentInputChanged,
-                onCommentSubmit = onCommentSubmit
+                onCommentSubmit = onCommentSubmit,
+                onAuthorClick = { userId ->
+                    onDismissCommentSheet()
+                    onAuthorClick(userId)
+                }
             )
         }
     }
@@ -299,7 +303,8 @@ fun HomeCommentsBottomSheet(
     commentErrorMessage: String?,
     onDismiss: () -> Unit,
     onCommentInputChanged: (String) -> Unit,
-    onCommentSubmit: () -> Unit
+    onCommentSubmit: () -> Unit,
+    onAuthorClick: (Long) -> Unit
 ) {
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -343,7 +348,8 @@ fun HomeCommentsBottomSheet(
                         comment = comment.content,
                         time = comment.timeAgoLabel,
                         avatarUrl = comment.avatarUrl,
-                        avatarRes = R.drawable.female_avatar_maker
+                        avatarRes = R.drawable.female_avatar_maker,
+                        onAuthorClick = { onAuthorClick(comment.ownerId) }
                     )
                 }
             }

@@ -176,7 +176,11 @@ fun SearchPage(
             commentErrorMessage = uiState.commentErrorMessage,
             onDismiss = viewModel::onCommentDismissed,
             onCommentInputChanged = viewModel::onCommentInputChanged,
-            onCommentSubmit = viewModel::submitComment
+            onCommentSubmit = viewModel::submitComment,
+            onAuthorClick = { userId ->
+                viewModel.onCommentDismissed()
+                onUserClick(userId)
+            }
         )
     }
 }
@@ -503,7 +507,8 @@ private fun SearchCommentsSheet(
     commentErrorMessage: String?,
     onDismiss: () -> Unit,
     onCommentInputChanged: (String) -> Unit,
-    onCommentSubmit: () -> Unit
+    onCommentSubmit: () -> Unit,
+    onAuthorClick: (Long) -> Unit
 ) {
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -551,7 +556,8 @@ private fun SearchCommentsSheet(
                         comment = comment.content,
                         time = comment.timeAgoLabel,
                         avatarUrl = comment.avatarUrl,
-                        avatarRes = R.drawable.female_avatar_maker
+                        avatarRes = R.drawable.female_avatar_maker,
+                        onAuthorClick = { onAuthorClick(comment.ownerId) }
                     )
                 }
             }

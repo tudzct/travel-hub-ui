@@ -551,7 +551,11 @@ private fun ProfileScreenContent(
                             commentErrorMessage = profilePostsState.commentErrorMessage,
                             onDismiss = onCommentDismissed,
                             onCommentInputChanged = onCommentInputChanged,
-                            onCommentSubmit = onCommentSubmit
+                            onCommentSubmit = onCommentSubmit,
+                            onAuthorClick = { userId ->
+                                onCommentDismissed()
+                                onNavigateToUserProfile(userId)
+                            }
                         )
                     }
                     if (showChangePasswordDialog) {

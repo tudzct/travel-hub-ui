@@ -3,6 +3,7 @@ package com.mobile.travelhub.ui.components
 import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -30,7 +31,8 @@ fun CommentItem(
     comment: String,
     time: String,
     avatarUrl: String?,
-    avatarRes: Int
+    avatarRes: Int,
+    onAuthorClick: (() -> Unit)? = null
 ) {
     Row(
         modifier = Modifier
@@ -42,6 +44,13 @@ fun CommentItem(
                 .size(32.dp)
                 .clip(CircleShape)
                 .background(MaterialTheme.colorScheme.surfaceVariant)
+                .then(
+                    if (onAuthorClick != null) {
+                        Modifier.clickable(onClick = onAuthorClick)
+                    } else {
+                        Modifier
+                    }
+                )
         ) {
             if (avatarUrl.isNullOrBlank()) {
                 Image(
@@ -72,7 +81,14 @@ fun CommentItem(
                 Text(
                     text = name,
                     style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.then(
+                        if (onAuthorClick != null) {
+                            Modifier.clickable(onClick = onAuthorClick)
+                        } else {
+                            Modifier
+                        }
+                    )
                 )
                 Text(
                     text = stringResource(R.string.comment_time_format, time),

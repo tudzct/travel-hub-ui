@@ -709,6 +709,7 @@ class ProfileViewModel @Inject constructor(
 
         return HomeCommentUiModel(
             id = response.id?.toString() ?: "${createdAt.orEmpty()}-${username}-${content.hashCode()}",
+            ownerId = response.owner?.id ?: 0L,
             username = username,
             avatarUrl = response.owner?.avatarUrl?.takeIf { it.isNotBlank() },
             content = content,

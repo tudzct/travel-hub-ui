@@ -98,7 +98,11 @@ fun PostDetailScreen(
                 commentErrorMessage = uiState.commentErrorMessage,
                 onDismiss = viewModel::onCommentDismissed,
                 onCommentInputChanged = viewModel::onCommentInputChanged,
-                onCommentSubmit = viewModel::submitComment
+                onCommentSubmit = viewModel::submitComment,
+                onAuthorClick = { userId ->
+                    viewModel.onCommentDismissed()
+                    onAuthorClick(userId)
+                }
             )
         }
     }

@@ -44,6 +44,7 @@ data class HomePostUiModel(
 
 data class HomeCommentUiModel(
     val id: String,
+    val ownerId: Long,
     val username: String,
     val avatarUrl: String?,
     val content: String,
@@ -486,6 +487,7 @@ class HomeViewModel @Inject constructor(
 
         return HomeCommentUiModel(
             id = response.id?.toString() ?: "${createdAt.orEmpty()}-${username}-${content.hashCode()}",
+            ownerId = response.owner?.id ?: 0L,
             username = username,
             avatarUrl = response.owner?.avatarUrl?.takeIf { it.isNotBlank() },
             content = content,
