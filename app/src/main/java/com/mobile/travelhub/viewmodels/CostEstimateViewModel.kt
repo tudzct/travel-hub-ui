@@ -4,6 +4,7 @@ import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mobile.travelhub.data.AuthRepository
+import com.mobile.travelhub.data.ExpenseProofRepository
 import com.mobile.travelhub.data.TripRepository
 import com.mobile.travelhub.data.userMessage
 import com.mobile.travelhub.data.model.CreateTripExpenseRequest
@@ -62,7 +63,8 @@ data class ExpenseTransactionUiModel(
     val paidByUserId: Long,
     val paidByName: String,
     val amount: Double,
-    val date: String? = null
+    val date: String? = null,
+    val proofImageUrl: String? = null
 )
 
 data class TripExpenseMemberUiModel(
@@ -96,6 +98,7 @@ data class SettlementUiModel(
 class CostEstimateViewModel @Inject constructor(
     private val tripRepository: TripRepository,
     private val authRepository: AuthRepository,
+    private val expenseProofRepository: ExpenseProofRepository,
     private val receiptOcrService: ReceiptOcrService
 ) : ViewModel() {
 
@@ -251,7 +254,7 @@ class CostEstimateViewModel @Inject constructor(
         }
     }
 
-    fun addExpense(title: String, amountText: String, category: String) {
+    fun addExpense(title: String, amountText: String, category: String, proofImageUri: Uri? = null) {
         val state = _uiState.value
         val tripId = state.tripId
         val groupName = state.groupName
@@ -277,6 +280,20 @@ class CostEstimateViewModel @Inject constructor(
 
         viewModelScope.launch {
             _uiState.update { it.copy(isAddingExpense = true, errorMessage = null) }
+            val proofObjectName = if (proofImageUri != null) {
+                expenseProofRepository.uploadProof(proofImageUri)
+                    .getOrElse { throwable ->
+                        _uiState.update {
+                            it.copy(
+                                isAddingExpense = false,
+                                errorMessage = throwable.userMessage("Không tải được ảnh minh chứng")
+                            )
+                        }
+                        return@launch
+                    }
+            } else {
+                null
+            }
             tripRepository.addTripExpense(
                 tripId = tripId,
                 request = CreateTripExpenseRequest(
@@ -285,6 +302,7 @@ class CostEstimateViewModel @Inject constructor(
                     totalAmount = parsedAmount,
                     category = category,
                     paidByUserId = sessionUserId,
+                    proofImageUrl = proofObjectName,
                     splitUserIds = state.members.map { it.userId }.ifEmpty { listOf(sessionUserId) }
                 )
             ).onSuccess {
@@ -301,7 +319,15 @@ class CostEstimateViewModel @Inject constructor(
         }
     }
 
-    fun editExpense(expenseId: Long, title: String, amountText: String, category: String, paidByUserId: Long) {
+    fun editExpense(
+        expenseId: Long,
+        title: String,
+        amountText: String,
+        category: String,
+        paidByUserId: Long,
+        existingProofImageUrl: String?,
+        proofImageUri: Uri? = null
+    ) {
         val state = _uiState.value
         val tripId = state.tripId
         val groupName = state.groupName
@@ -326,6 +352,20 @@ class CostEstimateViewModel @Inject constructor(
 
         viewModelScope.launch {
             _uiState.update { it.copy(isAddingExpense = true, errorMessage = null) }
+            val proofImageValue = if (proofImageUri != null) {
+                expenseProofRepository.uploadProof(proofImageUri)
+                    .getOrElse { throwable ->
+                        _uiState.update {
+                            it.copy(
+                                isAddingExpense = false,
+                                errorMessage = throwable.userMessage("Không tải được ảnh minh chứng")
+                            )
+                        }
+                        return@launch
+                    }
+            } else {
+                existingProofImageUrl
+            }
             tripRepository.updateTripExpense(
                 tripId = tripId,
                 expenseId = expenseId,
@@ -335,6 +375,7 @@ class CostEstimateViewModel @Inject constructor(
                     totalAmount = parsedAmount,
                     category = category,
                     paidByUserId = paidByUserId,
+                    proofImageUrl = proofImageValue,
                     splitUserIds = state.members.map { it.userId }.ifEmpty { listOf(paidByUserId) }
                 )
             ).onSuccess {
@@ -427,6 +468,16 @@ class CostEstimateViewModel @Inject constructor(
 
         viewModelScope.launch {
             _uiState.update { it.copy(isAddingExpense = true, errorMessage = null) }
+            val proofObjectName = expenseProofRepository.uploadProof(draft.imageUri)
+                .getOrElse { throwable ->
+                    _uiState.update {
+                        it.copy(
+                            isAddingExpense = false,
+                            errorMessage = throwable.userMessage("Không tải được ảnh hóa đơn")
+                        )
+                    }
+                    return@launch
+                }
             tripRepository.addTripExpense(
                 tripId = tripId,
                 request = CreateTripExpenseRequest(
@@ -439,6 +490,7 @@ class CostEstimateViewModel @Inject constructor(
                     note = note?.trim()?.ifBlank { null },
                     source = "OCR",
                     rawOcrText = draft.result.rawText,
+                    proofImageUrl = proofObjectName,
                     splitType = "EQUAL",
                     splitUserIds = effectiveSplitUserIds
                 )
@@ -550,7 +602,8 @@ class CostEstimateViewModel @Inject constructor(
             paidByUserId = paidByUserId ?: -1L,
             paidByName = paidByName.orEmpty(),
             amount = amount ?: 0.0,
-            date = date
+            date = date,
+            proofImageUrl = proofImageUrl
         )
     }
 }

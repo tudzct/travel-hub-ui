@@ -143,6 +143,7 @@ data class CreateTripExpenseRequest(
     val note: String? = null,
     val source: String = "MANUAL",
     val rawOcrText: String? = null,
+    val proofImageUrl: String? = null,
     val splitType: String = "EQUAL",
     val splitUserIds: List<Long> = emptyList()
 )
@@ -157,6 +158,7 @@ data class UpdateTripExpenseRequest(
     val note: String? = null,
     val source: String = "MANUAL",
     val rawOcrText: String? = null,
+    val proofImageUrl: String? = null,
     val splitType: String = "EQUAL",
     val splitUserIds: List<Long> = emptyList()
 )
@@ -182,7 +184,8 @@ data class TripExpenseTransactionResponse(
     val paidByUserId: Long? = null,
     val paidByName: String? = null,
     val amount: Double? = 0.0,
-    val date: String? = null
+    val date: String? = null,
+    val proofImageUrl: String? = null
 )
 
 data class TripExpenseResponse(

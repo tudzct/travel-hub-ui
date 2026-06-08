@@ -30,9 +30,11 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.AddPhotoAlternate
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ConfirmationNumber
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DirectionsCar
@@ -40,9 +42,9 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Hotel
 import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.MoreHoriz
+import androidx.compose.material.icons.filled.Photo
 import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material.icons.filled.Tune
-import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.Button
@@ -96,6 +98,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.mobile.travelhub.R
@@ -238,14 +242,12 @@ fun CostEstimateScreen(
                     }
                 } else {
                     items(uiState.transactions.take(6), key = { it.id }) { expense ->
-                        ModernExpenseRow(
-                            expense = expense,
-                            onClick = {
-                                if (!uiState.isCompleted) {
-                                    editingExpense = expense
-                                }
-                            }
-                        )
+                    ModernExpenseRow(
+                        expense = expense,
+                        onClick = {
+                            editingExpense = expense
+                        }
+                    )
                     }
                 }
             } else {
@@ -260,9 +262,7 @@ fun CostEstimateScreen(
                         ModernExpenseRow(
                             expense = expense,
                             onClick = {
-                                if (!uiState.isCompleted) {
-                                    editingExpense = expense
-                                }
+                                editingExpense = expense
                             }
                         )
                     }
@@ -279,8 +279,8 @@ fun CostEstimateScreen(
             ) {
                 AddExpenseContent(
                     isSaving = uiState.isAddingExpense,
-                    onSave = { title, amountText, category ->
-                        viewModel.addExpense(title, amountText, category)
+                    onSave = { title, amountText, category, proofImageUri ->
+                        viewModel.addExpense(title, amountText, category, proofImageUri)
                     },
                     onDismiss = { showAddExpense = false }
                 )
@@ -297,9 +297,18 @@ fun CostEstimateScreen(
                 val expense = editingExpense!!
                 EditExpenseContent(
                     expense = expense,
+                    canEdit = !uiState.isCompleted,
                     isSaving = uiState.isAddingExpense,
-                    onSave = { title, amountText, category ->
-                        viewModel.editExpense(expense.id, title, amountText, category, expense.paidByUserId)
+                    onSave = { title, amountText, category, proofImageUri ->
+                        viewModel.editExpense(
+                            expense.id,
+                            title,
+                            amountText,
+                            category,
+                            expense.paidByUserId,
+                            expense.proofImageUrl,
+                            proofImageUri
+                        )
                     },
                     onDelete = {
                         viewModel.deleteExpense(expense.id)
@@ -932,7 +941,7 @@ private fun InvoiceOcrBanner(
             Spacer(Modifier.width(6.dp))
             Column {
                 Text(
-                    "Nhập chi tiêu thủ công",
+                    "Nhập thủ công",
                     fontWeight = FontWeight.ExtraBold,
                     fontSize = 13.sp,
                     maxLines = 1,
@@ -1073,6 +1082,16 @@ private fun ModernExpenseRow(
             textAlign = TextAlign.End,
             maxLines = 1
         )
+        if (!expense.proofImageUrl.isNullOrBlank()) {
+            Icon(
+                imageVector = Icons.Default.Photo,
+                contentDescription = "Có ảnh minh chứng",
+                tint = PrimaryBlue,
+                modifier = Modifier
+                    .padding(start = 8.dp)
+                    .size(18.dp)
+            )
+        }
         Icon(
             imageVector = Icons.Default.KeyboardArrowRight,
             contentDescription = null,
@@ -1341,13 +1360,19 @@ private fun ReceiptOcrConfirmContent(
 @Composable
 fun AddExpenseContent(
     isSaving: Boolean,
-    onSave: (String, String, String) -> Unit,
+    onSave: (String, String, String, android.net.Uri?) -> Unit,
     onDismiss: () -> Unit
 ) {
     var expenseTitle by remember { mutableStateOf("") }
     var expenseAmountValue by remember { mutableStateOf(TextFieldValue("")) }
     var selectedCategory by remember { mutableStateOf("FOOD") }
     var expanded by remember { mutableStateOf(false) }
+    var proofImageUri by remember { mutableStateOf<android.net.Uri?>(null) }
+    val proofPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia()
+    ) { uri ->
+        proofImageUri = uri
+    }
 
     Column(
         modifier = Modifier
@@ -1391,12 +1416,27 @@ fun AddExpenseContent(
             onCategorySelected = { selectedCategory = it }
         )
 
+        Spacer(modifier = Modifier.height(16.dp))
+
+        ExpenseProofImagePicker(
+            imageModel = proofImageUri,
+            enabled = !isSaving,
+            emptyText = "Chưa chọn ảnh minh chứng",
+            actionText = "Thêm ảnh minh chứng",
+            onPickImage = {
+                proofPickerLauncher.launch(
+                    PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                )
+            },
+            onClearImage = { proofImageUri = null }
+        )
+
         Spacer(modifier = Modifier.height(24.dp))
 
         Button(
             onClick = {
                 if (!isSaving) {
-                    onSave(expenseTitle, expenseAmountValue.text, selectedCategory)
+                    onSave(expenseTitle, expenseAmountValue.text, selectedCategory, proofImageUri)
                     onDismiss()
                 }
             },
@@ -1419,8 +1459,9 @@ fun AddExpenseContent(
 @Composable
 fun EditExpenseContent(
     expense: ExpenseTransactionUiModel,
+    canEdit: Boolean,
     isSaving: Boolean,
-    onSave: (String, String, String) -> Unit,
+    onSave: (String, String, String, android.net.Uri?) -> Unit,
     onDelete: () -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -1432,6 +1473,12 @@ fun EditExpenseContent(
     var selectedCategory by remember(expense.id) { mutableStateOf(expense.category) }
     var expanded by remember { mutableStateOf(false) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
+    var replacementProofImageUri by remember(expense.id) { mutableStateOf<android.net.Uri?>(null) }
+    val proofPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia()
+    ) { uri ->
+        replacementProofImageUri = uri
+    }
 
     if (showDeleteConfirm) {
         AlertDialog(
@@ -1478,12 +1525,14 @@ fun EditExpenseContent(
                 fontSize = 20.sp,
                 color = OnSurface
             )
-            IconButton(onClick = { showDeleteConfirm = true }) {
+            if (canEdit) {
+                IconButton(onClick = { showDeleteConfirm = true }) {
                 Icon(
                     imageVector = Icons.Default.Delete,
                     contentDescription = stringResource(R.string.ui_1816483d8a),
                     tint = SunsetOrange
                 )
+                }
             }
         }
         Spacer(modifier = Modifier.height(24.dp))
@@ -1491,6 +1540,7 @@ fun EditExpenseContent(
         SimpleFormTextField(
             value = expenseTitle,
             onValueChange = { expenseTitle = it },
+            enabled = canEdit && !isSaving,
             placeholder = stringResource(R.string.ui_5365fbceb0),
             modifier = Modifier.fillMaxWidth()
         )
@@ -1502,6 +1552,7 @@ fun EditExpenseContent(
             onValueChange = { newValue ->
                 expenseAmountValue = NumberUtils.formatTextFieldValue(newValue)
             },
+            enabled = canEdit && !isSaving,
             placeholder = stringResource(R.string.ui_33eb57284b),
             modifier = Modifier.fillMaxWidth(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
@@ -1516,26 +1567,173 @@ fun EditExpenseContent(
             onCategorySelected = { selectedCategory = it }
         )
 
+        Spacer(modifier = Modifier.height(16.dp))
+
+        ExpenseProofImagePicker(
+            imageModel = replacementProofImageUri ?: expense.proofImageUrl,
+            enabled = canEdit && !isSaving,
+            emptyText = "Khoản chi này chưa có ảnh minh chứng",
+            actionText = if (expense.proofImageUrl.isNullOrBlank()) "Thêm ảnh minh chứng" else "Thay ảnh minh chứng",
+            onPickImage = {
+                proofPickerLauncher.launch(
+                    PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                )
+            },
+            onClearImage = { replacementProofImageUri = null },
+            showClear = replacementProofImageUri != null
+        )
+
         Spacer(modifier = Modifier.height(24.dp))
 
-        Button(
-            onClick = {
-                if (!isSaving) {
-                    onSave(expenseTitle, expenseAmountValue.text, selectedCategory)
-                    onDismiss()
-                }
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp),
-            shape = RoundedCornerShape(20.dp),
-            enabled = !isSaving,
-            colors = ButtonDefaults.buttonColors(
-                containerColor = PrimaryBlue,
-                contentColor = Color.White
+        if (canEdit) {
+            Button(
+                onClick = {
+                    if (!isSaving) {
+                        onSave(expenseTitle, expenseAmountValue.text, selectedCategory, replacementProofImageUri)
+                        onDismiss()
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                shape = RoundedCornerShape(20.dp),
+                enabled = !isSaving,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = PrimaryBlue,
+                    contentColor = Color.White
+                )
+            ) {
+                Text(if (isSaving) "Đang lưu..." else "Cập nhật chi phí", fontWeight = FontWeight.Bold)
+            }
+        }
+    }
+}
+
+@Composable
+private fun ExpenseProofImagePicker(
+    imageModel: Any?,
+    enabled: Boolean,
+    emptyText: String,
+    actionText: String,
+    onPickImage: () -> Unit,
+    onClearImage: () -> Unit,
+    showClear: Boolean = true
+) {
+    var fullScreenImageModel by remember(imageModel) { mutableStateOf<Any?>(null) }
+
+    if (fullScreenImageModel != null) {
+        FullScreenProofImageDialog(
+            imageModel = fullScreenImageModel!!,
+            onDismiss = { fullScreenImageModel = null }
+        )
+    }
+
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Text(
+            text = "Ảnh minh chứng",
+            color = ExpenseInk,
+            fontSize = 15.sp,
+            fontWeight = FontWeight.ExtraBold
+        )
+        if (imageModel != null && imageModel.toString().isNotBlank()) {
+            AsyncImage(
+                model = imageModel,
+                contentDescription = "Ảnh minh chứng chi tiêu",
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(190.dp)
+                    .clip(RoundedCornerShape(18.dp))
+                    .clickable { fullScreenImageModel = imageModel }
+                    .background(Color(0xFFF2F4F8)),
+                contentScale = ContentScale.Crop
             )
+        } else {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(Color(0xFFF7F9FC))
+                    .padding(14.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Photo,
+                    contentDescription = null,
+                    tint = ExpenseMuted,
+                    modifier = Modifier.size(22.dp)
+                )
+                Text(
+                    text = emptyText,
+                    color = ExpenseMuted,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium,
+                    modifier = Modifier.padding(start = 10.dp)
+                )
+            }
+        }
+
+        if (enabled) {
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                TextButton(onClick = onPickImage) {
+                    Icon(
+                        imageVector = Icons.Default.AddPhotoAlternate,
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(Modifier.width(6.dp))
+                    Text(actionText, fontWeight = FontWeight.Bold)
+                }
+                if (showClear && imageModel != null) {
+                    TextButton(onClick = onClearImage) {
+                        Text("Bỏ ảnh vừa chọn", fontWeight = FontWeight.Bold, color = SunsetOrange)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun FullScreenProofImageDialog(
+    imageModel: Any,
+    onDismiss: () -> Unit
+) {
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.94f))
+                .clickable(onClick = onDismiss),
+            contentAlignment = Alignment.Center
         ) {
-            Text(if (isSaving) "Đang lưu..." else "Cập nhật chi phí", fontWeight = FontWeight.Bold)
+            AsyncImage(
+                model = imageModel,
+                contentDescription = "Ảnh minh chứng chi tiêu",
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp)
+                    .clickable(enabled = false) {},
+                contentScale = ContentScale.Fit
+            )
+
+            IconButton(
+                onClick = onDismiss,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(18.dp)
+                    .size(44.dp)
+                    .clip(CircleShape)
+                    .background(Color.White.copy(alpha = 0.16f))
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Close,
+                    contentDescription = "Đóng ảnh",
+                    tint = Color.White
+                )
+            }
         }
     }
 }
