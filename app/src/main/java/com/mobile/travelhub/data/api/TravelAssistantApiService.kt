@@ -6,7 +6,7 @@ import retrofit2.http.Body
 import retrofit2.http.POST
 
 interface TravelAssistantApiService {
-    @POST("/api/ai/travel-assistant/chat")
+    @POST("/api/travel-assistant/chat")
     suspend fun chat(
         @Body request: TravelAssistantChatRequest
     ): TravelAssistantChatResponse

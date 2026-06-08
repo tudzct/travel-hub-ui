@@ -68,6 +68,19 @@ object NetworkModule {
 
     @Provides
     @Singleton
+    @Named("ai")
+    fun provideAiOkHttpClient(): OkHttpClient {
+        return OkHttpClient.Builder()
+            .connectTimeout(10, TimeUnit.SECONDS)
+            .readTimeout(0, TimeUnit.MILLISECONDS)
+            .writeTimeout(0, TimeUnit.MILLISECONDS)
+            .callTimeout(0, TimeUnit.MILLISECONDS)
+            .addInterceptor(logging)
+            .build()
+    }
+
+    @Provides
+    @Singleton
     @Named("authenticated")
     fun provideRetrofit(okHttpClient: OkHttpClient): Retrofit {
         return RetrofitFactory.create(
@@ -169,7 +182,11 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun provideTravelAssistantApiService(@Named("public") retrofit: Retrofit): TravelAssistantApiService {
+    fun provideTravelAssistantApiService(@Named("ai") okHttpClient: OkHttpClient): TravelAssistantApiService {
+        val retrofit = RetrofitFactory.create(
+            baseUrl = ApiConfig.AI_BASE_URL,
+            client = okHttpClient
+        )
         return retrofit.create(TravelAssistantApiService::class.java)
     }
 

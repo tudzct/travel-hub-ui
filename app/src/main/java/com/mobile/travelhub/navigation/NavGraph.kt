@@ -476,6 +476,11 @@ fun NavGraph(
                 onSearchActiveChange = onExploreSearchActiveChange,
                 onSearchUserClick = ::navigateToUserProfile,
                 onPlaceClick = ::navigateToPlaceDetail,
+                onAssistantClick = {
+                    navController.navigate(Screen.Chat.createRoute()) {
+                        launchSingleTop = true
+                    }
+                },
                 onTravelerClick = { userId, currentUser ->
                     val route = if (currentUser) {
                         Screen.Profile.route

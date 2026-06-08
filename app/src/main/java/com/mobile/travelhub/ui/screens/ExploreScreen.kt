@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -31,6 +32,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.Icon
@@ -78,6 +80,7 @@ fun ExploreScreen(
     onPlaceClick: (TravelPlaceListItemResponse) -> Unit = {},
     onTravelerClick: (Long, Boolean) -> Unit = { _, _ -> },
     onSeeAllTopTravelers: (TopTravelerPeriod) -> Unit = {},
+    onAssistantClick: () -> Unit = {},
     topTravelersViewModel: TopTravelersViewModel = hiltViewModel(),
     exploreViewModel: ExploreViewModel = hiltViewModel()
 ) {
@@ -107,30 +110,31 @@ fun ExploreScreen(
         isSearchExpanded = false
     }
 
-    AnimatedContent(
-        targetState = isSearchExpanded,
-        transitionSpec = {
-            (
-                fadeIn(tween(220)) + scaleIn(
-                    initialScale = 0.96f,
-                    animationSpec = tween(220)
+    Box(modifier = Modifier.fillMaxSize()) {
+        AnimatedContent(
+            targetState = isSearchExpanded,
+            transitionSpec = {
+                (
+                    fadeIn(tween(220)) + scaleIn(
+                        initialScale = 0.96f,
+                        animationSpec = tween(220)
+                    )
+                ).togetherWith(
+                    fadeOut(tween(150)) + scaleOut(
+                        targetScale = 0.98f,
+                        animationSpec = tween(150)
+                    )
                 )
-            ).togetherWith(
-                fadeOut(tween(150)) + scaleOut(
-                    targetScale = 0.98f,
-                    animationSpec = tween(150)
+            },
+            label = "explore-search-expand"
+        ) { searchExpanded ->
+            if (searchExpanded) {
+                SearchPage(
+                    onBack = { isSearchExpanded = false },
+                    onUserClick = onSearchUserClick,
+                    onPlaceClick = onPlaceClick
                 )
-            )
-        },
-        label = "explore-search-expand"
-    ) { searchExpanded ->
-        if (searchExpanded) {
-            SearchPage(
-                onBack = { isSearchExpanded = false },
-                onUserClick = onSearchUserClick,
-                onPlaceClick = onPlaceClick
-            )
-        } else {
+            } else {
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
@@ -138,22 +142,22 @@ fun ExploreScreen(
                         .verticalScroll(rememberScrollState())
                         .padding(top = 10.dp, bottom = 24.dp)
                 ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = stringResource(R.string.ui_b965ae66fc),
-                        color = MaterialTheme.colorScheme.onSurface,
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.ExtraBold
-                    )
-                }
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = stringResource(R.string.ui_b965ae66fc),
+                            color = MaterialTheme.colorScheme.onSurface,
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.ExtraBold
+                        )
+                    }
 
-                SearchField(onClick = { isSearchExpanded = true })
+                    SearchField(onClick = { isSearchExpanded = true })
 
 //        if (uiState.recentSearches.isNotEmpty()) {
 //            SectionLabel(text = stringResource(R.string.ui_5820a93677), topPadding = 18.dp)
@@ -165,26 +169,62 @@ fun ExploreScreen(
 //            SectionDivider()
 //        }
 
-                SectionTitle(text = stringResource(R.string.ui_758588c39a), topPadding = 24.dp)
-                FeaturedLocationsSection(
-                    locations = uiState.featuredLocations,
-                    isLoading = uiState.isLoadingFeaturedLocations,
-                    errorMessage = uiState.featuredLocationsError,
-                    onRetry = exploreViewModel::loadFeaturedLocations,
-                    onPlaceClick = onPlaceClick
-                )
+                    SectionTitle(text = stringResource(R.string.ui_758588c39a), topPadding = 24.dp)
+                    FeaturedLocationsSection(
+                        locations = uiState.featuredLocations,
+                        isLoading = uiState.isLoadingFeaturedLocations,
+                        errorMessage = uiState.featuredLocationsError,
+                        onRetry = exploreViewModel::loadFeaturedLocations,
+                        onPlaceClick = onPlaceClick
+                    )
 
-                TopTravelersPreview(
-                    state = topTravelersState,
-                    onPeriodSelected = topTravelersViewModel::loadPreview,
-                    onRetry = topTravelersViewModel::refresh,
-                    onTravelerClick = onTravelerClick,
-                    onToggleFollow = topTravelersViewModel::toggleFollow,
-                    onSeeAll = { onSeeAllTopTravelers(topTravelersState.period) }
-                )
+                    TopTravelersPreview(
+                        state = topTravelersState,
+                        onPeriodSelected = topTravelersViewModel::loadPreview,
+                        onRetry = topTravelersViewModel::refresh,
+                        onTravelerClick = onTravelerClick,
+                        onToggleFollow = topTravelersViewModel::toggleFollow,
+                        onSeeAll = { onSeeAllTopTravelers(topTravelersState.period) }
+                    )
+                }
             }
         }
+
+        if (!isSearchExpanded) {
+            ExtendedAssistantButton(
+                onClick = onAssistantClick,
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .navigationBarsPadding()
+                    .padding(end = 16.dp, bottom = 20.dp)
+            )
+        }
     }
+}
+
+@Composable
+private fun ExtendedAssistantButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    androidx.compose.material3.ExtendedFloatingActionButton(
+        onClick = onClick,
+        icon = {
+            Icon(
+                imageVector = Icons.Filled.AutoAwesome,
+                contentDescription = null
+            )
+        },
+        text = {
+            Text(
+                text = stringResource(R.string.ui_62894af0b2),
+                fontWeight = FontWeight.Bold
+            )
+        },
+        containerColor = PrimaryBlue,
+        contentColor = Color.White,
+        modifier = modifier
+    )
 }
 @Composable
 private fun FeaturedLocationsSection(
