@@ -72,11 +72,6 @@ import com.mobile.travelhub.ui.components.SearchBar
 import com.mobile.travelhub.ui.components.SkeletonBlock
 import com.mobile.travelhub.ui.components.UserResultCard
 import com.mobile.travelhub.ui.components.UserResultCardSkeleton
-import com.mobile.travelhub.ui.theme.OnSurface
-import com.mobile.travelhub.ui.theme.OnSurfaceVariant
-import com.mobile.travelhub.ui.theme.OutlineVariant
-import com.mobile.travelhub.ui.theme.PrimaryBlue
-import com.mobile.travelhub.ui.theme.SurfaceBg
 import com.mobile.travelhub.utils.PostsUtils
 import com.mobile.travelhub.viewmodels.HomeCommentUiModel
 import com.mobile.travelhub.viewmodels.HomePostUiModel
@@ -108,7 +103,7 @@ fun SearchPage(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(SurfaceBg)
+            .background(MaterialTheme.colorScheme.background)
     ) {
         Row(
             modifier = Modifier
@@ -120,7 +115,7 @@ fun SearchPage(
                 Icon(
                     imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
                     contentDescription = stringResource(R.string.ui_b52b36b726),
-                    tint = OnSurface
+                    tint = MaterialTheme.colorScheme.onSurface
                 )
             }
             SearchInput(
@@ -264,7 +259,7 @@ private fun SearchInput(
                     Icon(
                         imageVector = Icons.Outlined.Close,
                         contentDescription = stringResource(R.string.ui_67300d0fed),
-                        tint = OnSurfaceVariant,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(18.dp)
                     )
                 }
@@ -486,7 +481,7 @@ private fun PlaceCarouselStatusCard(
             modifier = Modifier
                 .weight(1f)
                 .padding(start = 12.dp, end = 8.dp),
-            color = OnSurfaceVariant,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             style = MaterialTheme.typography.bodyMedium,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis
@@ -539,7 +534,7 @@ private fun SearchCommentsSheet(
             comments.isEmpty() -> Text(
                 text = stringResource(R.string.ui_d14da37946),
                 style = MaterialTheme.typography.bodyMedium,
-                color = OnSurfaceVariant,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(horizontal = 24.dp)
             )
             else -> LazyColumn(
@@ -684,7 +679,7 @@ private fun UserCarouselStatusCard(
             modifier = Modifier
                 .weight(1f)
                 .padding(start = 12.dp, end = 8.dp),
-            color = OnSurfaceVariant,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             style = MaterialTheme.typography.bodyMedium,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis
@@ -700,12 +695,12 @@ private fun SearchSectionTitle(
     text: String,
     modifier: Modifier = Modifier
 ) {
-    Text(
-        text = text,
-        color = OnSurfaceVariant,
-        style = MaterialTheme.typography.labelLarge,
-        fontWeight = FontWeight.Bold,
-        modifier = modifier.padding(top = 4.dp, bottom = 4.dp)
+        Text(
+            text = text,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            style = MaterialTheme.typography.labelLarge,
+            fontWeight = FontWeight.Bold,
+            modifier = modifier.padding(top = 4.dp, bottom = 4.dp)
     )
 }
 
@@ -725,7 +720,7 @@ private fun SearchSectionHeader(
     ) {
         Text(
             text = text,
-            color = OnSurfaceVariant,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             style = MaterialTheme.typography.labelLarge,
             fontWeight = FontWeight.Bold
         )
@@ -736,7 +731,7 @@ private fun SearchSectionHeader(
         ) {
             Text(
                 text = actionText,
-                color = PrimaryBlue,
+                color = MaterialTheme.colorScheme.primary,
                 style = MaterialTheme.typography.labelLarge,
                 fontWeight = FontWeight.Bold
             )
@@ -761,7 +756,7 @@ private fun SearchSuggestionRow(
         ) {
             Text(
                 text = text,
-                color = OnSurface,
+                color = MaterialTheme.colorScheme.onSurface,
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.SemiBold,
                 maxLines = 1,
@@ -776,7 +771,7 @@ private fun SearchSuggestionRow(
                 Icon(
                     imageVector = Icons.Outlined.Close,
                     contentDescription = stringResource(R.string.ui_dc6650d176),
-                    tint = OnSurfaceVariant,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.size(17.dp)
                 )
             }
@@ -817,7 +812,7 @@ private fun SearchIconBubble(type: SearchLeadingIcon) {
         Icon(
             imageVector = icon,
             contentDescription = null,
-            tint = PrimaryBlue,
+            tint = MaterialTheme.colorScheme.primary,
             modifier = Modifier.size(18.dp)
         )
     }
@@ -848,7 +843,7 @@ private fun SearchErrorState(
     ) {
         Text(
             text = message,
-            color = OnSurface,
+            color = MaterialTheme.colorScheme.onSurface,
             style = MaterialTheme.typography.bodyMedium
         )
         RetryButton(onClick = onRetry)
@@ -870,28 +865,28 @@ private fun EmptySearchState(
             modifier = Modifier
                 .size(54.dp)
                 .clip(CircleShape)
-                .background(Color(0xFFEFF2FA))
-                .border(1.dp, OutlineVariant, CircleShape),
+                .background(MaterialTheme.colorScheme.surfaceVariant)
+                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape),
             contentAlignment = Alignment.Center
         ) {
             Icon(
                 imageVector = Icons.Outlined.Search,
                 contentDescription = null,
-                tint = OnSurfaceVariant,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(24.dp)
             )
         }
         Text(
             text = stringResource(R.string.no_search_results, resultType, query),
             modifier = Modifier.padding(top = 14.dp),
-            color = OnSurface,
+            color = MaterialTheme.colorScheme.onSurface,
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold
         )
         Text(
             text = stringResource(R.string.ui_60c49e0641),
             modifier = Modifier.padding(top = 4.dp),
-            color = OnSurfaceVariant,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontSize = 13.sp
         )
     }

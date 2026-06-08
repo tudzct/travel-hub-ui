@@ -52,7 +52,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.compose.ui.tooling.preview.Preview
-import com.mobile.travelhub.ui.theme.SurfaceBg
 import com.mobile.travelhub.ui.theme.TravelHubTheme
 import com.mobile.travelhub.ui.components.SkeletonBlock
 import com.mobile.travelhub.ui.components.PillFilterChip
@@ -121,7 +120,7 @@ private fun NotificationsPopupContent(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        containerColor = SurfaceBg,
+        containerColor = MaterialTheme.colorScheme.surface,
         shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
     ) {
         Column(
@@ -174,17 +173,17 @@ private fun NotificationsPopupContent(
                                 ) {
                                     HorizontalDivider(
                                         modifier = Modifier.weight(1f),
-                                        color = Color.LightGray
+                                        color = MaterialTheme.colorScheme.outlineVariant
                                     )
                                     Text(
                                         text = stringResource(R.string.ui_19469f4569),
                                         fontSize = 13.sp,
-                                        color = Color.Gray,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         modifier = Modifier.padding(horizontal = 12.dp)
                                     )
                                     HorizontalDivider(
                                         modifier = Modifier.weight(1f),
-                                        color = Color.LightGray
+                                        color = MaterialTheme.colorScheme.outlineVariant
                                     )
                                 }
                             }
@@ -568,13 +567,13 @@ private fun EmptyNotificationsPopup(onDismiss: () -> Unit) {
             modifier = Modifier
                 .size(92.dp)
                 .clip(CircleShape)
-                .background(Color.LightGray),
+                .background(MaterialTheme.colorScheme.surfaceVariant),
             contentAlignment = Alignment.Center
         ) {
             Icon(
                 imageVector = Icons.Outlined.Notifications,
                 contentDescription = null,
-                tint = Color.White,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(38.dp)
             )
         }

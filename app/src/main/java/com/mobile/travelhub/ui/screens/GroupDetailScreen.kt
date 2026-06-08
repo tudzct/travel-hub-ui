@@ -146,7 +146,7 @@ fun GroupDetailScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(SurfaceBg)
+            .background(MaterialTheme.colorScheme.background)
     ) {
         if (!showInitialError) {
         Column(
@@ -267,7 +267,7 @@ fun GroupDetailScreen(
                 modifier = Modifier
                     .offset(y = (-18).dp)
                     .clip(RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
-                    .background(Color.White)
+                    .background(MaterialTheme.colorScheme.surface)
                     .padding(horizontal = 20.dp)
                     .padding(top = 28.dp, bottom = 28.dp)
             ) {
@@ -298,22 +298,22 @@ fun GroupDetailScreen(
 
                 Spacer(modifier = Modifier.height(28.dp))
 
-                Text(
-                    text = stringResource(R.string.ui_c39635df84),
-                    fontWeight = FontWeight.ExtraBold,
-                    fontSize = 13.sp,
-                    color = OnSurfaceVariant,
-                    letterSpacing = 0.8.sp
-                )
+                        Text(
+                            text = stringResource(R.string.ui_c39635df84),
+                            fontWeight = FontWeight.ExtraBold,
+                            fontSize = 13.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            letterSpacing = 0.8.sp
+                        )
 
                 Spacer(modifier = Modifier.height(18.dp))
 
                 Column(modifier = Modifier.fillMaxWidth()) {
                     if (isInitialLoading) {
                         TripDetailRowSkeleton()
-                        HorizontalDivider(color = SurfaceContainerLow, modifier = Modifier.padding(vertical = 10.dp))
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant, modifier = Modifier.padding(vertical = 10.dp))
                         TripDetailRowSkeleton()
-                        HorizontalDivider(color = SurfaceContainerLow, modifier = Modifier.padding(vertical = 10.dp))
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant, modifier = Modifier.padding(vertical = 10.dp))
                         TripDetailRowSkeleton()
                     } else {
                         TripDetailRow(
@@ -321,13 +321,13 @@ fun GroupDetailScreen(
                             value = displayTripDateRange(uiState.startDate, uiState.endDate),
                             icon = Icons.Default.CalendarMonth
                         )
-                        HorizontalDivider(color = SurfaceContainerLow, modifier = Modifier.padding(vertical = 8.dp))
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant, modifier = Modifier.padding(vertical = 8.dp))
                         TripDetailRow(
                             label = "Số điểm dừng",
                             value = uiState.totalStops.toString(),
                             icon = Icons.Default.Star
                         )
-                        HorizontalDivider(color = SurfaceContainerLow, modifier = Modifier.padding(vertical = 8.dp))
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant, modifier = Modifier.padding(vertical = 8.dp))
                         TripDetailRow(
                             label = "Trạng thái",
                             value = uiState.statusLabel.ifBlank { "Chưa xác định" },
@@ -353,13 +353,13 @@ fun GroupDetailScreen(
                             text = stringResource(R.string.ui_448ae61e1f),
                             fontWeight = FontWeight.ExtraBold,
                             fontSize = 14.sp,
-                            color = OnSurface,
+                            color = MaterialTheme.colorScheme.onSurface,
                             letterSpacing = 0.4.sp
                         )
                         if (!isInitialLoading) {
                             Text(
                                 text = "(${uiState.members.size})",
-                                color = OnSurfaceVariant,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.Medium
                             )
@@ -367,7 +367,7 @@ fun GroupDetailScreen(
                     }
                     Text(
                         text = stringResource(R.string.ui_b773dc5ed8),
-                        color = PrimaryBlue,
+                        color = MaterialTheme.colorScheme.primary,
                         fontWeight = FontWeight.Bold,
                         fontSize = 13.sp,
                         modifier = Modifier.clickable { showManageMembersDialog = true }
@@ -380,7 +380,7 @@ fun GroupDetailScreen(
                 } else if (uiState.members.isEmpty()) {
                     Text(
                         text = stringResource(R.string.ui_14518e1450),
-                        color = OnSurfaceVariant,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontSize = 13.sp
                     )
                 } else {
@@ -404,12 +404,12 @@ fun GroupDetailScreen(
                 modifier = Modifier
                     .size(42.dp)
                     .clip(CircleShape)
-                    .background(Color.White.copy(alpha = 0.88f))
+                    .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.92f))
             ) {
                 Icon(
                     Icons.AutoMirrored.Filled.ArrowBack,
                     "Back",
-                    tint = Color(0xFF1F2937),
+                    tint = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.size(21.dp)
                 )
             }
@@ -420,12 +420,12 @@ fun GroupDetailScreen(
                         modifier = Modifier
                             .size(42.dp)
                             .clip(CircleShape)
-                            .background(Color.White.copy(alpha = 0.88f))
+                            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.92f))
                     ) {
                         Icon(
                             Icons.Default.MoreVert,
                             "More",
-                            tint = Color(0xFF1F2937),
+                            tint = MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier.size(21.dp)
                         )
                     }

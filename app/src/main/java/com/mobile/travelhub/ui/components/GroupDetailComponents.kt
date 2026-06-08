@@ -65,17 +65,17 @@ fun FeatureCard(
         modifier = modifier
             .height(84.dp)
             .clip(RoundedCornerShape(18.dp))
-            .background(color.copy(alpha = 0.08f))
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
             .clickable(onClick = onClick)
             .padding(horizontal = 16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Box(
-            modifier = Modifier
-                .size(40.dp)
-                .clip(CircleShape)
-                .background(color.copy(alpha = 0.11f)),
-            contentAlignment = Alignment.Center
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(color.copy(alpha = 0.16f)),
+                contentAlignment = Alignment.Center
         ) {
             Icon(
                 icon,
@@ -92,7 +92,7 @@ fun FeatureCard(
                 text = label,
                 fontWeight = FontWeight.Bold,
                 fontSize = 15.sp,
-                color = OnSurface,
+                color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
@@ -100,7 +100,7 @@ fun FeatureCard(
             Text(
                 text = if (label == "Chi phí") "Ước tính chi tiết" else "Xem chi tiết",
                 fontSize = 12.sp,
-                color = OnSurfaceVariant,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
@@ -133,7 +133,7 @@ fun TripDetailRow(
         Text(
             text = label,
             modifier = Modifier.weight(1f),
-            color = OnSurfaceVariant,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontWeight = FontWeight.Bold,
             fontSize = 13.sp
         )
@@ -142,35 +142,28 @@ fun TripDetailRow(
                 text = pillText,
                 modifier = Modifier
                     .clip(RoundedCornerShape(50))
-                    .background(Color(0xFF27AE60).copy(alpha = 0.16f))
+                    .background(MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.7f))
                     .padding(horizontal = 6.dp, vertical = 1.dp),
-                color = Color(0xFF15935A),
+                color = MaterialTheme.colorScheme.onTertiaryContainer,
                 fontSize = 12.sp
             )
             trailingText?.let {
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
                     text = it,
-                    color = OnSurface,
+                    color = MaterialTheme.colorScheme.onSurface,
                     fontSize = 12.sp
                 )
             }
         } else {
             Text(
                 text = value,
-                color = OnSurface,
+                color = MaterialTheme.colorScheme.onSurface,
                 fontSize = 13.sp,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
         }
-        Spacer(modifier = Modifier.width(10.dp))
-        Icon(
-            imageVector = Icons.Rounded.ChevronRight,
-            contentDescription = null,
-            tint = OnSurfaceVariant.copy(alpha = 0.68f),
-            modifier = Modifier.size(24.dp)
-        )
     }
 }
 
@@ -183,7 +176,7 @@ fun TripMemberCard(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(18.dp))
-            .border(1.dp, SurfaceContainerLow, RoundedCornerShape(18.dp))
+            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(18.dp))
             .background(MaterialTheme.colorScheme.surface)
             .clickable { onClick() }
             .padding(horizontal = 18.dp, vertical = 18.dp),
@@ -202,7 +195,7 @@ fun TripMemberCard(
                 text = member.name,
                 fontWeight = FontWeight.Bold,
                 fontSize = 15.sp,
-                color = OnSurface,
+                color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
@@ -211,20 +204,20 @@ fun TripMemberCard(
                 Row(
                     modifier = Modifier
                         .clip(RoundedCornerShape(50))
-                        .background(PrimaryBlue.copy(alpha = 0.12f))
+                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f))
                         .padding(horizontal = 10.dp, vertical = 4.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
                         text = "♛",
-                        color = PrimaryBlue,
+                        color = MaterialTheme.colorScheme.primary,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
                         text = "Trưởng nhóm",
-                        color = PrimaryBlue,
+                        color = MaterialTheme.colorScheme.primary,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Medium
                     )
@@ -251,13 +244,13 @@ fun GroupDetailInitialErrorState(
             text = stringResource(R.string.ui_28a4aafc8b),
             fontWeight = FontWeight.ExtraBold,
             fontSize = 20.sp,
-            color = OnSurface
+            color = MaterialTheme.colorScheme.onSurface
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
             text = message.ifBlank { "Vui lòng thử lại sau." },
             fontSize = 14.sp,
-            color = OnSurfaceVariant,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
         )
         Spacer(modifier = Modifier.height(20.dp))
@@ -281,7 +274,7 @@ fun JoinRequestActionItem(
             modifier = Modifier
                 .size(44.dp)
                 .clip(CircleShape)
-                .background(PrimaryBlue.copy(alpha = 0.12f))
+                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f))
                 .clickable { onProfileClick(request.userId) },
             contentAlignment = Alignment.Center
         ) {
@@ -306,7 +299,7 @@ fun JoinRequestActionItem(
                 text = request.name,
                 fontWeight = FontWeight.Bold,
                 fontSize = 15.sp,
-                color = OnSurface,
+                color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
@@ -323,7 +316,7 @@ fun JoinRequestActionItem(
                 Icon(
                     Icons.Default.Close,
                     contentDescription = stringResource(R.string.ui_63bbfd75f6),
-                    tint = SunsetOrange,
+                    tint = MaterialTheme.colorScheme.error,
                     modifier = Modifier.size(20.dp)
                 )
             }
@@ -332,14 +325,14 @@ fun JoinRequestActionItem(
                 modifier = Modifier
                     .size(40.dp)
                     .clip(CircleShape)
-                    .background(PrimaryBlue.copy(alpha = 0.12f))
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f))
                     .clickable { onApprove() },
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     Icons.Default.Check,
                     contentDescription = stringResource(R.string.ui_ca41be9306),
-                    tint = PrimaryBlue,
+                    tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(20.dp)
                 )
             }
@@ -362,7 +355,7 @@ fun MemberAvatarItem(
             modifier = Modifier
                 .size(56.dp)
                 .clip(CircleShape)
-                .background(PrimaryBlue.copy(alpha = 0.12f)),
+                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)),
             contentAlignment = Alignment.Center
         ) {
             if (!member.avatarUrl.isNullOrBlank()) {
@@ -385,7 +378,7 @@ fun MemberAvatarItem(
             text = member.name,
             fontWeight = FontWeight.Medium,
             fontSize = 12.sp,
-            color = OnSurface,
+            color = MaterialTheme.colorScheme.onSurface,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
             textAlign = TextAlign.Center
@@ -411,7 +404,7 @@ fun ManageMembersDialog(
         Dialog(onDismissRequest = onDismiss) {
             Card(
                 shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(containerColor = SurfaceContainerLowest),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = 40.dp)
@@ -430,7 +423,7 @@ fun ManageMembersDialog(
                             text = stringResource(R.string.ui_e91fb7a715),
                             fontWeight = FontWeight.ExtraBold,
                             fontSize = 20.sp,
-                            color = OnSurface
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                         IconButton(onClick = onDismiss) {
                             Icon(Icons.Default.Close, contentDescription = stringResource(R.string.ui_d2b73ab2ad))
@@ -452,7 +445,7 @@ fun ManageMembersDialog(
                                     modifier = Modifier
                                         .size(40.dp)
                                         .clip(CircleShape)
-                                        .background(PrimaryBlue.copy(alpha = 0.12f))
+                                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f))
                                         .clickable { onMemberClick(member.userId) },
                                     contentAlignment = Alignment.Center
                                 ) {
@@ -477,10 +470,10 @@ fun ManageMembersDialog(
                                         text = member.name,
                                         fontWeight = FontWeight.Bold,
                                         fontSize = 15.sp,
-                                        color = OnSurface
+                                        color = MaterialTheme.colorScheme.onSurface
                                     )
                                     val roleText = if (member.role.equals("LEADER", ignoreCase = true)) "Trưởng nhóm" else "Thành viên"
-                                    val roleColor = if (member.role.equals("LEADER", ignoreCase = true)) SunsetOrange else OnSurfaceVariant
+                                    val roleColor = if (member.role.equals("LEADER", ignoreCase = true)) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.onSurfaceVariant
                                     Text(
                                         text = roleText,
                                         fontSize = 12.sp,
@@ -498,7 +491,7 @@ fun ManageMembersDialog(
                                         Icon(
                                             imageVector = Icons.Default.Delete,
                                             contentDescription = stringResource(R.string.ui_035849d3f3),
-                                            tint = if (isRemovingMember) SunsetOrange.copy(alpha = 0.5f) else SunsetOrange
+                                            tint = if (isRemovingMember) MaterialTheme.colorScheme.error.copy(alpha = 0.5f) else MaterialTheme.colorScheme.error
                                         )
                                     }
                                 }
@@ -524,9 +517,9 @@ fun ManageMembersDialog(
                         CircularProgressIndicator(
                             modifier = Modifier.size(20.dp),
                             strokeWidth = 2.dp,
-                            color = SunsetOrange
+                            color = MaterialTheme.colorScheme.error
                         )
-                        Text("Đang xóa thành viên...", color = OnSurface)
+                        Text("Đang xóa thành viên...", color = MaterialTheme.colorScheme.onSurface)
                     }
                 } else {
                     Text(
@@ -548,7 +541,7 @@ fun ManageMembersDialog(
                             }
                         }
                     ) {
-                        Text(stringResource(R.string.ui_aa1d94fc16), color = SunsetOrange, fontWeight = FontWeight.Bold)
+                        Text(stringResource(R.string.ui_aa1d94fc16), color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
                     }
                 }
             },
@@ -559,7 +552,7 @@ fun ManageMembersDialog(
                     }
                 }
             },
-            containerColor = SurfaceContainerLowest
+            containerColor = MaterialTheme.colorScheme.surface
         )
     }
 }
@@ -603,7 +596,7 @@ fun GroupDetailMoreMenu(
                 text = stringResource(R.string.ui_02ad5216fa),
                 fontWeight = FontWeight.Bold,
                 fontSize = 12.sp,
-                color = OnSurfaceVariant,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 letterSpacing = 0.6.sp
             )
             Spacer(modifier = Modifier.height(8.dp))
@@ -618,7 +611,7 @@ fun GroupDetailMoreMenu(
                     text = inviteCodeText,
                     fontWeight = FontWeight.ExtraBold,
                     fontSize = 18.sp,
-                    color = OnSurface,
+                    color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f)
@@ -651,7 +644,7 @@ fun GroupDetailMoreMenu(
                     text = stringResource(R.string.ui_7b208e75d2),
                     fontWeight = FontWeight.Bold,
                     fontSize = 12.sp,
-                    color = OnSurfaceVariant,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     letterSpacing = 0.6.sp
                 )
                 Spacer(modifier = Modifier.height(8.dp))
@@ -664,7 +657,7 @@ fun GroupDetailMoreMenu(
                             Text(
                                 text = stringResource(R.string.ui_438eeb013a),
                                 fontSize = 14.sp,
-                                color = OnSurfaceVariant
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
@@ -673,7 +666,7 @@ fun GroupDetailMoreMenu(
                         Text(
                             text = stringResource(R.string.ui_f193b502d6),
                             fontSize = 14.sp,
-                            color = OnSurfaceVariant
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
 
@@ -704,8 +697,8 @@ fun GroupDetailMoreMenu(
             val canLeave = !isLeader && role.isNotBlank() && role != "NON_MEMBER" && role != "PENDING"
             if (canLeave) {
                 DropdownMenuItem(
-                    text = { Text(stringResource(R.string.ui_4bb91c8b42), color = SunsetOrange) },
-                    leadingIcon = { Icon(Icons.Default.ExitToApp, contentDescription = null, tint = SunsetOrange) },
+                    text = { Text(stringResource(R.string.ui_4bb91c8b42), color = MaterialTheme.colorScheme.error) },
+                    leadingIcon = { Icon(Icons.Default.ExitToApp, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
                     onClick = {
                         onDismiss()
                         onLeaveGroupClick()
@@ -715,8 +708,8 @@ fun GroupDetailMoreMenu(
 
             if (isLeader) {
                 DropdownMenuItem(
-                    text = { Text(stringResource(R.string.ui_a4564eb2e2), color = if (isCompleted) Color.Gray.copy(alpha = 0.5f) else SunsetOrange) },
-                    leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null, tint = if (isCompleted) Color.Gray.copy(alpha = 0.5f) else SunsetOrange) },
+                    text = { Text(stringResource(R.string.ui_a4564eb2e2), color = if (isCompleted) MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f) else MaterialTheme.colorScheme.error) },
+                    leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null, tint = if (isCompleted) MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f) else MaterialTheme.colorScheme.error) },
                     enabled = !isCompleted,
                     onClick = {
                         onDismiss()

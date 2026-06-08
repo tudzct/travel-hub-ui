@@ -210,7 +210,7 @@ fun PlaceListScreenContent(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(4.dp)
-                        .background(Color(0xFFE0E0E0))
+                        .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f))
                 )
             }
 
@@ -740,19 +740,19 @@ fun FeedPostCard(
                     horizontalArrangement = Arrangement.Center
                 ) {
                     repeat(imageCount) { index ->
-                        Box(
-                            modifier = Modifier
-                                .padding(horizontal = 2.dp)
-                                .size(6.dp)
-                                .clip(CircleShape)
-                                .background(
-                                    if (pagerState.currentPage == index) {
-                                        Color.White
-                                    } else {
-                                        Color.White.copy(alpha = 0.5f)
-                                    }
+                                Box(
+                                    modifier = Modifier
+                                        .padding(horizontal = 2.dp)
+                                        .size(6.dp)
+                                        .clip(CircleShape)
+                                        .background(
+                                            if (pagerState.currentPage == index) {
+                                                MaterialTheme.colorScheme.onSurface
+                                            } else {
+                                                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                                            }
+                                        )
                                 )
-                        )
                     }
                 }
             }

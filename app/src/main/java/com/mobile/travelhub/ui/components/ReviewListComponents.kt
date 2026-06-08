@@ -55,11 +55,6 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.Dp
 import coil.compose.AsyncImage
 import com.mobile.travelhub.data.model.TravelPlaceReviewResponse
-import com.mobile.travelhub.ui.theme.OnSurface
-import com.mobile.travelhub.ui.theme.OnSurfaceVariant
-import com.mobile.travelhub.ui.theme.PrimaryBlue
-import com.mobile.travelhub.ui.theme.SurfaceBg
-import com.mobile.travelhub.ui.theme.SurfaceContainerLow
 import com.mobile.travelhub.viewmodels.ReviewListUiState
 import java.time.Instant
 import java.time.ZoneId
@@ -77,7 +72,7 @@ fun ReviewListScreenContent(
     onWriteReview: () -> Unit
 ) {
     Scaffold(
-        containerColor = SurfaceBg,
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             ReviewListTopBar(
                 reviewCount = uiState.summary?.reviewCount ?: uiState.totalElements,
@@ -94,8 +89,8 @@ fun ReviewListScreenContent(
                     .height(56.dp),
                 shape = RoundedCornerShape(999.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = PrimaryBlue,
-                    contentColor = Color.White
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
                 )
             ) {
                 Icon(
@@ -187,7 +182,7 @@ private fun ReviewListBody(
                 Text(
                     text = "Chưa có đánh giá phù hợp",
                     modifier = Modifier.padding(horizontal = 24.dp, vertical = 32.dp),
-                    color = OnSurfaceVariant,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     style = MaterialTheme.typography.bodyLarge
                 )
             }
@@ -237,14 +232,14 @@ private fun ReviewListTopBar(
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                 contentDescription = "Quay lại",
-                tint = OnSurface
+                tint = MaterialTheme.colorScheme.onSurface
             )
         }
         Text(
             text = "Đánh giá ($reviewCount)",
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.ExtraBold,
-            color = OnSurface,
+            color = MaterialTheme.colorScheme.onSurface,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
         )
@@ -271,7 +266,7 @@ private fun ReviewSummaryHeader(uiState: ReviewListUiState) {
             if (total > 0) {
                 Text(
                     text = String.format("%.1f", average),
-                    color = OnSurface,
+                    color = MaterialTheme.colorScheme.onSurface,
                     fontSize = 48.sp,
                     lineHeight = 52.sp,
                     fontWeight = FontWeight.ExtraBold
@@ -280,7 +275,7 @@ private fun ReviewSummaryHeader(uiState: ReviewListUiState) {
             } else {
                 Text(
                     text = "Chưa có đánh giá",
-                    color = OnSurface,
+                    color = MaterialTheme.colorScheme.onSurface,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold
                 )
@@ -288,14 +283,14 @@ private fun ReviewSummaryHeader(uiState: ReviewListUiState) {
             Text(
                 text = ratingLabel(average, total),
                 modifier = Modifier.padding(top = 6.dp),
-                color = OnSurface,
+                color = MaterialTheme.colorScheme.onSurface,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold
             )
             Text(
                 text = "$total đánh giá",
                 modifier = Modifier.padding(top = 4.dp),
-                color = OnSurfaceVariant,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 style = MaterialTheme.typography.bodyMedium
             )
         }
@@ -331,7 +326,7 @@ private fun RatingDistributionRow(
         Text(
             text = "$rating sao",
             modifier = Modifier.width(46.dp),
-            color = OnSurface,
+            color = MaterialTheme.colorScheme.onSurface,
             style = MaterialTheme.typography.bodyMedium
         )
         LinearProgressIndicator(
@@ -341,12 +336,12 @@ private fun RatingDistributionRow(
                 .height(8.dp)
                 .clip(RoundedCornerShape(999.dp)),
             color = Color(0xFFFFB300),
-            trackColor = SurfaceContainerLow
+            trackColor = MaterialTheme.colorScheme.surfaceVariant
         )
         Text(
             text = count.toString(),
             modifier = Modifier.width(28.dp),
-            color = OnSurface,
+            color = MaterialTheme.colorScheme.onSurface,
             style = MaterialTheme.typography.bodyMedium
         )
     }
@@ -393,11 +388,11 @@ private fun RatingFilterChip(
         onClick = onClick,
         enabled = enabled,
         shape = RoundedCornerShape(999.dp),
-        color = if (selected) PrimaryBlue.copy(alpha = 0.08f) else Color.White,
-        contentColor = if (selected) PrimaryBlue else OnSurface,
+        color = if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.12f) else MaterialTheme.colorScheme.surface,
+        contentColor = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
         border = androidx.compose.foundation.BorderStroke(
             width = 1.dp,
-            color = if (selected) PrimaryBlue else SurfaceContainerLow
+            color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant
         ),
         shadowElevation = 0.dp,
         tonalElevation = 0.dp
@@ -442,14 +437,14 @@ private fun ReviewSortRow(
             ) {
                 Text(
                     text = "Sắp xếp: $selectedLabel",
-                    color = OnSurface,
+                    color = MaterialTheme.colorScheme.onSurface,
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.SemiBold
                 )
                 Icon(
                     imageVector = Icons.Outlined.KeyboardArrowDown,
                     contentDescription = null,
-                    tint = OnSurface,
+                    tint = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.size(18.dp)
                 )
             }
@@ -462,7 +457,7 @@ private fun ReviewSortRow(
                         text = {
                             Text(
                                 text = option.label,
-                                color = if (option.value == selectedSort) PrimaryBlue else OnSurface,
+                                color = if (option.value == selectedSort) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
                                 fontWeight = if (option.value == selectedSort) FontWeight.SemiBold else FontWeight.Normal
                             )
                         },
@@ -498,7 +493,7 @@ fun TravelPlaceReviewCard(
         color = MaterialTheme.colorScheme.surface,
         shadowElevation = 0.dp,
         tonalElevation = 0.dp,
-        border = androidx.compose.foundation.BorderStroke(1.dp, SurfaceContainerLow.copy(alpha = 0.8f))
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.8f))
     ) {
         Column(
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp),
@@ -526,7 +521,7 @@ fun TravelPlaceReviewCard(
                         Text(
                             text = displayName,
                             modifier = Modifier.clickable(onClick = onAuthorClick),
-                            color = OnSurface,
+                            color = MaterialTheme.colorScheme.onSurface,
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.ExtraBold,
                             maxLines = 1,
@@ -534,7 +529,7 @@ fun TravelPlaceReviewCard(
                         )
                         Text(
                             text = formatReviewTimestamp(review.updatedAt ?: review.createdAt),
-                            color = OnSurfaceVariant,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             style = MaterialTheme.typography.bodyMedium
                         )
                     }
@@ -544,7 +539,7 @@ fun TravelPlaceReviewCard(
 
             Text(
                 text = review.content,
-                color = OnSurface,
+                color = MaterialTheme.colorScheme.onSurface,
                 style = MaterialTheme.typography.bodyMedium,
                 lineHeight = 21.sp
             )
@@ -565,7 +560,7 @@ fun TravelPlaceReviewCardSkeleton(
         color = MaterialTheme.colorScheme.surface,
         shadowElevation = 0.dp,
         tonalElevation = 0.dp,
-        border = androidx.compose.foundation.BorderStroke(1.dp, SurfaceContainerLow.copy(alpha = 0.8f))
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.8f))
     ) {
         Column(
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp),
@@ -761,7 +756,7 @@ private fun ReviewAuthorAvatar(
                 text = initial,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
-                color = Color.White
+                color = MaterialTheme.colorScheme.onPrimary
             )
         }
     }
