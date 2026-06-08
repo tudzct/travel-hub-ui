@@ -16,6 +16,10 @@ data class UploadItem(
     val url: String
 )
 
+data class AvatarUploadResponse(
+    val avatarUrl: String
+)
+
 data class PostCreateRequest(
     val description: String,
     val imageUrls: List<String>,

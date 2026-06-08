@@ -83,6 +83,8 @@ import coil.compose.AsyncImage
 import com.mobile.travelhub.R
 import com.mobile.travelhub.data.model.UserProfileResponse
 import com.mobile.travelhub.data.userMessage
+import com.mobile.travelhub.ui.components.AvatarCropperScreen
+import com.mobile.travelhub.ui.components.CroppedAvatar
 import com.mobile.travelhub.ui.components.FeedPostCard
 import com.mobile.travelhub.ui.components.FeedPostCardSkeleton
 import com.mobile.travelhub.ui.components.HomeCommentsBottomSheet
@@ -122,6 +124,7 @@ fun ProfileScreen(
 ) {
     val isViewingOwnProfile = viewingUserId == null
     val context = LocalContext.current
+    val imageUploadFailedMessage = stringResource(R.string.image_upload_failed)
     val coroutineScope = rememberCoroutineScope()
 
     val profileState by if (isViewingOwnProfile) {
@@ -152,22 +155,15 @@ fun ProfileScreen(
         }
     }
 
-    val onAvatarSelected: (Uri) -> Unit = onAvatarSelected@{ uri ->
-        if (!isViewingOwnProfile) return@onAvatarSelected
-        val currentProfile = (profileState as? UiState.Success)?.data ?: return@onAvatarSelected
+    val onAvatarCropped: (CroppedAvatar) -> Unit = onAvatarCropped@{ avatar ->
+        if (!isViewingOwnProfile) return@onAvatarCropped
+        val currentProfile = (profileState as? UiState.Success)?.data ?: return@onAvatarCropped
         coroutineScope.launch {
             try {
-                val bytes = context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
-                    ?: throw IllegalStateException("Không thể đọc ảnh đã chọn")
-                val mimeType = context.contentResolver.getType(uri) ?: "image/jpeg"
-                val fileName = uri.lastPathSegment
-                    ?.substringAfterLast('/')
-                    ?.takeIf { it.isNotBlank() }
-                    ?: "avatar.jpg"
                 val uploadedUrl = viewModel.uploadAvatar(
-                    imageBytes = bytes,
-                    mimeType = mimeType,
-                    fileName = fileName
+                    imageBytes = avatar.bytes,
+                    mimeType = avatar.mimeType,
+                    fileName = avatar.fileName
                 )
                 viewModel.updateProfile(
                     name = currentProfile.name,
@@ -181,7 +177,7 @@ fun ProfileScreen(
             } catch (e: Exception) {
                 Toast.makeText(
                     context,
-                    e.userMessage(context.getString(R.string.image_upload_failed)),
+                    e.userMessage(imageUploadFailedMessage),
                     Toast.LENGTH_LONG
                 ).show()
             }
@@ -234,7 +230,7 @@ fun ProfileScreen(
         onCommentDismissed = viewModel::onCommentDismissed,
         onCommentInputChanged = viewModel::onCommentInputChanged,
         onCommentSubmit = viewModel::submitComment,
-        onAvatarSelected = onAvatarSelected,
+        onAvatarCropped = onAvatarCropped,
         changePasswordState = changePasswordState,
         onChangePassword = viewModel::changePassword,
         onClearChangePasswordState = viewModel::clearChangePasswordState,
@@ -272,7 +268,7 @@ private fun ProfileScreenContent(
     onCommentDismissed: () -> Unit,
     onCommentInputChanged: (String) -> Unit,
     onCommentSubmit: () -> Unit,
-    onAvatarSelected: (Uri) -> Unit,
+    onAvatarCropped: (CroppedAvatar) -> Unit,
     changePasswordState: UiState<Boolean>,
     onChangePassword: (String, String, String) -> Unit,
     onClearChangePasswordState: () -> Unit,
@@ -287,10 +283,11 @@ private fun ProfileScreenContent(
     val scrollState = rememberScrollState()
     val activeDrawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val coroutineScope = rememberCoroutineScope()
+    var selectedAvatarUri by remember { mutableStateOf<Uri?>(null) }
     val avatarPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia()
     ) { uri: Uri? ->
-        uri?.let(onAvatarSelected)
+        selectedAvatarUri = uri
     }
     var showNotifications by remember { mutableStateOf(false) }
     var showChangePasswordDialog by remember { mutableStateOf(false) }
@@ -566,6 +563,16 @@ private fun ProfileScreenContent(
                                 onClearChangePasswordState()
                             },
                             onSubmit = onChangePassword
+                        )
+                    }
+                    selectedAvatarUri?.let { imageUri ->
+                        AvatarCropperScreen(
+                            imageUri = imageUri,
+                            onCancel = { selectedAvatarUri = null },
+                            onCropDone = { avatar ->
+                                selectedAvatarUri = null
+                                onAvatarCropped(avatar)
+                            }
                         )
                     }
                 }

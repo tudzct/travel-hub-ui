@@ -6,13 +6,13 @@ import com.mobile.travelhub.data.model.AuthResponse
 import com.mobile.travelhub.data.model.AuthSession
 import com.mobile.travelhub.data.model.FirebaseSessionRequest
 import com.mobile.travelhub.data.model.LoginRequest
+import com.mobile.travelhub.data.model.RefreshTokenRequest
 import com.mobile.travelhub.data.model.RegisterRequest
 import com.mobile.travelhub.data.model.authResponseFromJson
 import com.mobile.travelhub.data.model.toJson
 import com.mobile.travelhub.data.model.toSession
 import com.google.firebase.auth.FirebaseAuth
 import com.google.android.gms.tasks.Tasks
-import kotlinx.coroutines.tasks.await
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.IOException
 import javax.inject.Inject
@@ -28,24 +28,17 @@ class AuthRepository @Inject constructor(
 
     suspend fun register(request: RegisterRequest): Result<AuthResponse> {
         return runCatching {
-            firebaseAuth.createUserWithEmailAndPassword(request.email, request.password).await()
-            syncFirebaseSession(
-                FirebaseSessionRequest(
-                    username = request.username,
-                    name = request.name
-                )
-            ).getOrThrow()
-        }.onFailure {
-            if (getSavedSession() == null) {
-                firebaseAuth.signOut()
-            }
+            executeAuthCall {
+                authApiService.register(request)
+            }.getOrThrow()
         }
     }
 
     suspend fun login(request: LoginRequest): Result<AuthResponse> {
         return runCatching {
-            firebaseAuth.signInWithEmailAndPassword(request.email, request.password).await()
-            syncFirebaseSession(FirebaseSessionRequest()).getOrThrow()
+            executeAuthCall {
+                authApiService.login(request)
+            }.getOrThrow()
         }
     }
 
@@ -53,11 +46,13 @@ class AuthRepository @Inject constructor(
         return runCatching {
             val currentSession = getSavedSession()
                 ?: throw IllegalStateException("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.")
-            val token = getFreshFirebaseIdToken(forceRefresh = true)
+            val refreshToken = currentSession.refreshToken.takeIf { it.isNotBlank() }
                 ?: throw IllegalStateException("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.")
-            val nextSession = currentSession.copy(accessToken = token)
-            saveSession(nextSession)
-            nextSession
+            val response = executeAuthCall {
+                authApiService.refresh(RefreshTokenRequest(refreshToken))
+            }.getOrThrow()
+            saveSession(response)
+            response.toSession()
         }
     }
 
@@ -69,6 +64,7 @@ class AuthRepository @Inject constructor(
         saveSession(
             AuthResponse(
                 accessToken = session.accessToken,
+                refreshToken = session.refreshToken,
                 userId = session.userId,
                 isOnboarded = session.isOnboarded
             )
@@ -76,10 +72,6 @@ class AuthRepository @Inject constructor(
     }
 
     fun getSavedSession(): AuthSession? {
-        if (firebaseAuth.currentUser == null) {
-            prefs.edit().remove(KEY_SESSION).apply()
-            return null
-        }
         val raw = prefs.getString(KEY_SESSION, null) ?: return null
         val session = runCatching { authResponseFromJson(raw).toSession() }.getOrNull()
             ?: run {
@@ -95,7 +87,7 @@ class AuthRepository @Inject constructor(
         firebaseAuth.signOut()
     }
 
-    fun getAccessToken(): String? = getFreshFirebaseIdToken(forceRefresh = false)
+    fun getAccessToken(): String? = getSavedSession()?.accessToken
 
     private fun syncFirebaseSession(request: FirebaseSessionRequest): Result<AuthResponse> {
         val idToken = getFreshFirebaseIdToken(forceRefresh = true)

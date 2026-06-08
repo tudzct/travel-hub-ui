@@ -460,7 +460,7 @@ class ProfileViewModel @Inject constructor(
         gender: String,
         location: String,
         avatarUrl: String? = null
-    ) {
+    ): UserProfileResponse {
         _updateStatus.value = UiState.Loading
         try {
             if (sessionUserId <= 0L) {
@@ -470,15 +470,15 @@ class ProfileViewModel @Inject constructor(
 
             val request = ProfileUpdateRequest(
                 id = sessionUserId,
-                username = username,
-                name = name,
-                bio = bio,
-                dateOfBirth = dob,
-                gender = gender,
-                location = location,
+                username = username.trim(),
+                name = name.trim(),
+                bio = bio.takeIf { it.isNotBlank() },
+                dateOfBirth = dob.takeIf { it.isNotBlank() },
+                gender = gender.takeIf { it.isNotBlank() },
+                location = location.takeIf { it.isNotBlank() },
                 email = currentProfile?.email,
                 phoneNumber = currentProfile?.phoneNumber,
-                avatarUrl = avatarUrl ?: currentProfile?.avatarUrl,
+                avatarUrl = avatarUrl?.takeIf { it.isNotBlank() } ?: currentProfile?.avatarUrl,
                 isFollowing = currentProfile?.isFollowing ?: false,
                 postsCount = currentProfile?.postsCount ?: 0,
                 followersCount = currentProfile?.followersCount ?: 0,
@@ -490,10 +490,12 @@ class ProfileViewModel @Inject constructor(
             _profileState.value = UiState.Success(response)
             _updateStatus.value = UiState.Success(true)
             Log.d("API_SUCCESS", "Cập nhật Profile thành công!")
+            return response
         } catch (e: Exception) {
             val errorMsg = e.userMessage("Không thể cập nhật hồ sơ")
             Log.e("API_ERROR", errorMsg, e)
             _updateStatus.value = UiState.Error(errorMsg)
+            throw e
         }
     }
 

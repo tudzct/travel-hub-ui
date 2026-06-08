@@ -19,6 +19,10 @@ data class FirebaseSessionRequest(
     val name: String? = null
 )
 
+data class RefreshTokenRequest(
+    val refreshToken: String
+)
+
 data class AuthResponse(
     val accessToken: String,
     val refreshToken: String = "",
@@ -28,12 +32,14 @@ data class AuthResponse(
 
 data class AuthSession(
     val accessToken: String,
+    val refreshToken: String = "",
     val userId: Int,
     val isOnboarded: Boolean = false
 )
 
 fun AuthResponse.toSession(): AuthSession = AuthSession(
     accessToken = accessToken,
+    refreshToken = refreshToken,
     userId = userId,
     isOnboarded = isOnboarded
 )
