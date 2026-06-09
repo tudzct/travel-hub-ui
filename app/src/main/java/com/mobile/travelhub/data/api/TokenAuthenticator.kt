@@ -63,13 +63,18 @@ class TokenAuthenticator @Inject constructor(
         return result
     }
 
-    private fun isAuthEndpoint(path: String): Boolean = path == SESSION_PATH
+    private fun isAuthEndpoint(path: String): Boolean = path in AUTH_PATHS
 
     private companion object {
         private const val HEADER_AUTHORIZATION = "Authorization"
         private const val BEARER_PREFIX = "Bearer "
         private const val MAX_AUTH_RETRIES = 2
 
-        private const val SESSION_PATH = "/api/auth/session"
+        private val AUTH_PATHS = setOf(
+            "/api/auth/session",
+            "/api/auth/login",
+            "/api/auth/register",
+            "/api/auth/refresh"
+        )
     }
 }

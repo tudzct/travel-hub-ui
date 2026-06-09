@@ -1,20 +1,19 @@
 package com.mobile.travelhub.data
 
-import android.webkit.MimeTypeMap
-import com.mobile.travelhub.BuildConfig
-import io.github.jan.supabase.SupabaseClient
-import io.github.jan.supabase.storage.storage
-import io.ktor.http.ContentType
+import android.util.Log
+import com.mobile.travelhub.data.api.UploadApiService
 import java.io.IOException
-import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.MultipartBody
+import okhttp3.RequestBody.Companion.toRequestBody
 
 @Singleton
 class AvatarRepository @Inject constructor(
-    private val supabaseClient: SupabaseClient
+    private val uploadApiService: UploadApiService
 ) {
     suspend fun uploadAvatar(
         userId: Long,
@@ -29,44 +28,23 @@ class AvatarRepository @Inject constructor(
             .trim()
             .takeIf { it.startsWith("image/") }
             ?: "image/jpeg"
-        val bucketName = BuildConfig.SUPABASE_STORAGE_BUCKET.takeIf { it.isNotBlank() }
-            ?: throw IOException("Chưa cấu hình kho lưu trữ ảnh")
-        val objectPath = buildObjectPath(
-            userId = userId,
-            mimeType = safeMimeType,
-            fileName = fileName
+        val requestBody = imageBytes.toRequestBody(safeMimeType.toMediaType())
+        val filePart = MultipartBody.Part.createFormData(
+            name = "file",
+            filename = fileName.ifBlank { DEFAULT_FILE_NAME },
+            body = requestBody
         )
-        val bucket = supabaseClient.storage.from(bucketName)
 
         runCatching {
-            bucket.upload(
-                path = objectPath,
-                data = imageBytes
-            ) {
-                upsert = false
-                contentType = ContentType.parse(safeMimeType)
-            }
+            uploadApiService.uploadAvatar(filePart).avatarUrl
         }.getOrElse { throwable ->
+            Log.e(TAG, "Unable to upload avatar file", throwable)
             throw IOException("Không thể tải ảnh đại diện lên. Vui lòng thử lại sau.", throwable)
         }
-
-        bucket.publicUrl(objectPath)
     }
 
-    private fun buildObjectPath(
-        userId: Long,
-        mimeType: String,
-        fileName: String
-    ): String {
-        val extensionFromMime = MimeTypeMap.getSingleton().getExtensionFromMimeType(mimeType)
-        val extensionFromName = fileName
-            .substringAfterLast('.', "")
-            .takeIf { it.isNotBlank() }
-        val extension = (extensionFromMime ?: extensionFromName ?: "jpg")
-            .lowercase()
-            .filter(Char::isLetterOrDigit)
-            .ifBlank { "jpg" }
-
-        return "public/avatars/$userId/${System.currentTimeMillis()}-${UUID.randomUUID()}.$extension"
+    private companion object {
+        private const val TAG = "AvatarRepository"
+        private const val DEFAULT_FILE_NAME = "avatar.jpg"
     }
 }
