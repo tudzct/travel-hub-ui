@@ -1,6 +1,5 @@
 package com.mobile.travelhub.ui.components
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -39,13 +38,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import coil.compose.AsyncImage
-import com.mobile.travelhub.R
+import coil.compose.SubcomposeAsyncImage
 import com.mobile.travelhub.data.model.UserProfileResponse
 
 @Composable
@@ -121,7 +120,8 @@ fun TravelHubAvatar(
     contentDescription: String?,
     modifier: Modifier = Modifier,
     borderWidth: Dp = 0.dp,
-    borderColor: Color = Color.Transparent
+    borderColor: Color = Color.Transparent,
+    fallbackName: String? = null
 ) {
     val avatarModifier = modifier
         .clip(CircleShape)
@@ -134,21 +134,65 @@ fun TravelHubAvatar(
         )
 
     if (!avatarUrl.isNullOrBlank()) {
-        AsyncImage(
+        SubcomposeAsyncImage(
             model = avatarUrl,
             contentDescription = contentDescription,
             modifier = avatarModifier,
             contentScale = ContentScale.Crop,
-            placeholder = painterResource(R.drawable.female_avatar_maker),
-            error = painterResource(R.drawable.female_avatar_maker),
-            fallback = painterResource(R.drawable.female_avatar_maker)
+            loading = {
+                AvatarInitialFallback(
+                    name = fallbackName,
+                    contentDescription = contentDescription,
+                    modifier = Modifier.fillMaxSize()
+                )
+            },
+            error = {
+                AvatarInitialFallback(
+                    name = fallbackName,
+                    contentDescription = contentDescription,
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
         )
     } else {
-        Image(
-            painter = painterResource(id = R.drawable.female_avatar_maker),
+        AvatarInitialFallback(
+            name = fallbackName,
             contentDescription = contentDescription,
-            modifier = avatarModifier,
-            contentScale = ContentScale.Crop
+            modifier = avatarModifier
+        )
+    }
+}
+
+@Composable
+private fun AvatarInitialFallback(
+    name: String?,
+    contentDescription: String?,
+    modifier: Modifier = Modifier
+) {
+    val initial = name
+        ?.trim()
+        ?.firstOrNull { it.isLetterOrDigit() }
+        ?.uppercaseChar()
+        ?.toString()
+        ?: "?"
+
+    Box(
+        modifier = modifier
+            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.14f))
+            .then(
+                if (contentDescription != null) {
+                    Modifier.semantics { this.contentDescription = contentDescription }
+                } else {
+                    Modifier
+                }
+            ),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = initial,
+            color = MaterialTheme.colorScheme.primary,
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.ExtraBold
         )
     }
 }
@@ -173,6 +217,7 @@ private fun DrawerProfileHeader(
         TravelHubAvatar(
             avatarUrl = profile?.avatarUrl,
             contentDescription = "Ảnh đại diện",
+            fallbackName = profile?.name ?: profile?.username,
             modifier = Modifier.size(56.dp)
         )
 

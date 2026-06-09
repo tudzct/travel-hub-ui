@@ -63,15 +63,12 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -79,7 +76,6 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
-import coil.compose.AsyncImage
 
 import com.mobile.travelhub.R
 import com.mobile.travelhub.data.model.UserProfileResponse
@@ -609,6 +605,7 @@ private fun ProfileHeaderSection(
             TravelHubAvatar(
                 avatarUrl = avatarUrl,
                 contentDescription = stringResource(R.string.ui_7631b26ea8),
+                fallbackName = displayName,
                 modifier = Modifier.fillMaxSize(),
                 borderWidth = 0.dp
             )

@@ -185,6 +185,7 @@ fun TripMemberCard(
         TravelHubAvatar(
             avatarUrl = member.avatarUrl,
             contentDescription = member.name,
+            fallbackName = member.name,
             modifier = Modifier.size(66.dp)
         )
 
