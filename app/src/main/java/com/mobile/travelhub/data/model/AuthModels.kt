@@ -14,11 +14,6 @@ data class LoginRequest(
     val password: String
 )
 
-data class FirebaseSessionRequest(
-    val username: String? = null,
-    val name: String? = null
-)
-
 data class RefreshTokenRequest(
     val refreshToken: String
 )

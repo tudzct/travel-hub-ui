@@ -1,13 +1,11 @@
 package com.mobile.travelhub.data.api
 
 import com.mobile.travelhub.data.model.AuthResponse
-import com.mobile.travelhub.data.model.FirebaseSessionRequest
 import com.mobile.travelhub.data.model.LoginRequest
 import com.mobile.travelhub.data.model.RefreshTokenRequest
 import com.mobile.travelhub.data.model.RegisterRequest
 import retrofit2.Call
 import retrofit2.http.Body
-import retrofit2.http.Header
 import retrofit2.http.POST
 
 interface AuthApiService {
@@ -19,10 +17,4 @@ interface AuthApiService {
 
     @POST("api/auth/refresh")
     fun refresh(@Body request: RefreshTokenRequest): Call<AuthResponse>
-
-    @POST("api/auth/session")
-    fun syncFirebaseSession(
-        @Header("Authorization") authorization: String,
-        @Body request: FirebaseSessionRequest
-    ): Call<AuthResponse>
 }
