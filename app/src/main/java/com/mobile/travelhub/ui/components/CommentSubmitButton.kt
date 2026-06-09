@@ -16,6 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.mobile.travelhub.R
@@ -52,7 +53,7 @@ fun CommentSubmitAction(
                 )
             } else {
                 Icon(
-                    imageVector = Icons.AutoMirrored.Outlined.Send,
+                    painter = painterResource(R.drawable.paper_plane_right),
                     contentDescription = stringResource(R.string.ui_591e0e89f0),
                     modifier = Modifier.size(18.dp),
                     tint = Color.White
