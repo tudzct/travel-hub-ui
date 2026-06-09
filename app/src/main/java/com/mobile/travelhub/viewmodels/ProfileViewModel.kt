@@ -516,7 +516,7 @@ class ProfileViewModel @Inject constructor(
             _profileState.value = UiState.Success(refreshedProfile)
             _updateStatus.value = UiState.Success(true)
             Log.d("API_SUCCESS", "Cập nhật Profile thành công!")
-            return response
+            return refreshedProfile
         } catch (e: Exception) {
             val errorMsg = e.userMessage("Không thể cập nhật hồ sơ")
             Log.e("API_ERROR", errorMsg, e)

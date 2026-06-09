@@ -20,7 +20,6 @@ import com.mobile.travelhub.data.api.TravelAssistantApiService
 import com.mobile.travelhub.data.api.TokenAuthenticator
 import com.mobile.travelhub.data.api.UploadApiService
 import com.mobile.travelhub.data.api.UserApiService
-import com.google.firebase.auth.FirebaseAuth
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -44,10 +43,6 @@ object NetworkModule {
         redactHeader("Authorization")
         level = HttpLoggingInterceptor.Level.BODY
     }
-    @Provides
-    @Singleton
-    fun provideFirebaseAuth(): FirebaseAuth = FirebaseAuth.getInstance()
-
     @Provides
     @Singleton
     fun provideOkHttpClient(

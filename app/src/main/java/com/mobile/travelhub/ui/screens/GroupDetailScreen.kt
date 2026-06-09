@@ -163,18 +163,15 @@ fun GroupDetailScreen(
                         .fillMaxWidth()
                         .height(380.dp)
                 ) {
-                    val coverImageUrl = uiState.coverImageUrl?.takeIf { it.isNotBlank() }
+                    val coverImageUrl = uiState.coverImageUrl?.trim()?.takeIf { it.isNotBlank() }
                     val images = remember(coverImageUrl, uiState.placeImages) {
-                        val list = mutableListOf<String>()
-                        if (coverImageUrl != null) {
-                            list.add(coverImageUrl)
-                        }
-                        uiState.placeImages.forEach { img ->
-                            if (img != coverImageUrl && img.isNotBlank()) {
-                                list.add(img)
-                            }
-                        }
-                        list.distinct()
+                        buildList {
+                            coverImageUrl?.let(::add)
+                            uiState.placeImages
+                                .map { it.trim() }
+                                .filter { it.isNotBlank() }
+                                .forEach(::add)
+                        }.distinct()
                     }
 
 

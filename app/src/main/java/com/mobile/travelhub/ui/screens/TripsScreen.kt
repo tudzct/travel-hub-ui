@@ -506,10 +506,29 @@ fun ActiveJourneyCardV2(
 
 @Composable
 private fun EmptyUpcomingTripCard(onClick: () -> Unit) {
+    EmptyTripSectionCard(
+        title = "Chưa có chuyến đi nào sắp tới.",
+        description = "Hãy lên kế hoạch cho chuyến đi tiếp theo của bạn!",
+        modifier = Modifier.fillMaxWidth(),
+        onClick = onClick
+    )
+}
+
+@Composable
+private fun EmptyTripSectionCard(
+    title: String,
+    description: String,
+    modifier: Modifier = Modifier,
+    onClick: (() -> Unit)? = null
+) {
+    val cardModifier = if (onClick != null) {
+        modifier.clickable(onClick = onClick)
+    } else {
+        modifier
+    }
+
     ElevatedCard(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick),
+        modifier = cardModifier,
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.elevatedCardColors(containerColor = SurfaceContainerLowest),
         elevation = CardDefaults.elevatedCardElevation(defaultElevation = 6.dp)
@@ -540,13 +559,13 @@ private fun EmptyUpcomingTripCard(onClick: () -> Unit) {
                 verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 Text(
-                    text = "Chưa có chuyến đi nào sắp tới.",
+                    text = title,
                     color = OnSurface,
                     fontWeight = FontWeight.ExtraBold,
                     style = MaterialTheme.typography.titleMedium
                 )
                 Text(
-                    text = "Hãy lên kế hoạch cho chuyến đi tiếp theo của bạn!",
+                    text = description,
                     color = OnSurfaceVariant,
                     style = MaterialTheme.typography.bodyMedium
                 )
@@ -909,29 +928,12 @@ fun UpcomingTripItem(
 
 @Composable
 private fun EmptyJourneyJournalCard(modifier: Modifier = Modifier) {
-    Row(
+    EmptyTripSectionCard(
+        title = "Chưa có nhật ký hành trình.",
+        description = "Các chuyến đi đã hoàn thành sẽ xuất hiện ở đây.",
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(22.dp))
-            .background(SurfaceContainerLowest)
-            .padding(horizontal = 24.dp, vertical = 26.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Image(
-            painter = painterResource(id = R.drawable.img_no_trip),
-            contentDescription = null,
-            modifier = Modifier.size(width = 136.dp, height = 88.dp),
-            contentScale = ContentScale.Fit
-        )
-        Spacer(modifier = Modifier.width(18.dp))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = "Chưa có chuyến đi",
-                fontWeight = FontWeight.ExtraBold,
-                color = OnSurface
-            )
-        }
-    }
+    )
 }
 
 private fun String.requiresBankAccountUpdate(): Boolean {

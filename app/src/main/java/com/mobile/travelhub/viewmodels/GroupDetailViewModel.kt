@@ -94,6 +94,10 @@ class GroupDetailViewModel @Inject constructor(
                 tripRepository.consumeFreshlyCreatedTripDetail(tripId)
             }
             if (freshlyCreatedDetail != null) {
+                val placeImages = loadPlaceImages(
+                    placeId = freshlyCreatedDetail.tripInfo.placeId,
+                    fallbackImages = freshlyCreatedDetail.tripInfo.imageUrls
+                )
                 _uiState.update {
                     GroupDetailUiState(
                         isLoading = false,
@@ -102,7 +106,7 @@ class GroupDetailViewModel @Inject constructor(
                         totalStops = 0,
                         errorMessage = null,
                         isKickedOut = false
-                    ).mergeTripDetail(freshlyCreatedDetail)
+                    ).mergeTripDetail(freshlyCreatedDetail).copy(placeImages = placeImages)
                 }
                 return@launch
             }
@@ -193,20 +197,10 @@ class GroupDetailViewModel @Inject constructor(
 
             val detail = detailResult.getOrNull() ?: return@launch
 
-            val placeId = detail.tripInfo.placeId
-            val placeImages = if (placeId != null) {
-                val currentPlaceId = _uiState.value.placeId
-                val currentPlaceImages = _uiState.value.placeImages
-                if (currentPlaceId == placeId && currentPlaceImages.isNotEmpty()) {
-                    currentPlaceImages
-                } else {
-                    runCatching { placeRepository.getPlaceDetail(placeId) }
-                        .map { detailResponse -> detailResponse.images.map { it.imageUrl } }
-                        .getOrDefault(emptyList())
-                }
-            } else {
-                emptyList()
-            }
+            val placeImages = loadPlaceImages(
+                placeId = detail.tripInfo.placeId,
+                fallbackImages = detail.tripInfo.imageUrls
+            )
 
             _uiState.update { state ->
                 val merged = state.mergeTripDetail(detail).copy(placeImages = placeImages)
@@ -430,6 +424,30 @@ class GroupDetailViewModel @Inject constructor(
                     onDone(false, throwable.userMessage("Không thể xóa thành viên"))
                 }
         }
+    }
+
+    private suspend fun loadPlaceImages(
+        placeId: Long?,
+        fallbackImages: List<String>
+    ): List<String> {
+        val sanitizedFallback = fallbackImages.map { it.trim() }.filter { it.isNotBlank() }
+        if (placeId == null) return sanitizedFallback
+
+        val currentPlaceId = _uiState.value.placeId
+        val currentPlaceImages = _uiState.value.placeImages.map { it.trim() }.filter { it.isNotBlank() }
+        if (currentPlaceId == placeId && currentPlaceImages.isNotEmpty()) {
+            return currentPlaceImages
+        }
+
+        val placeImages = runCatching { placeRepository.getPlaceDetail(placeId) }
+            .map { detailResponse ->
+                detailResponse.images
+                    .map { it.imageUrl.trim() }
+                    .filter { it.isNotBlank() }
+            }
+            .getOrDefault(sanitizedFallback)
+
+        return placeImages.ifEmpty { sanitizedFallback }
     }
 
 

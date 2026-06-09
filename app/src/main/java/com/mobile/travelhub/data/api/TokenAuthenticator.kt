@@ -71,7 +71,6 @@ class TokenAuthenticator @Inject constructor(
         private const val MAX_AUTH_RETRIES = 2
 
         private val AUTH_PATHS = setOf(
-            "/api/auth/session",
             "/api/auth/login",
             "/api/auth/register",
             "/api/auth/refresh"
