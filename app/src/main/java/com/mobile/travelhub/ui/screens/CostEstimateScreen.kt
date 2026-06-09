@@ -64,6 +64,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
@@ -116,6 +117,7 @@ import com.mobile.travelhub.ui.theme.SunsetOrange
 import com.mobile.travelhub.utils.NumberUtils
 import com.mobile.travelhub.viewmodels.CostEstimateViewModel
 import com.mobile.travelhub.viewmodels.ExpenseTransactionUiModel
+import com.mobile.travelhub.viewmodels.ExpenseSplitShareUiModel
 import com.mobile.travelhub.viewmodels.ReceiptOcrDraft
 import com.mobile.travelhub.viewmodels.SettlementUiModel
 import com.mobile.travelhub.viewmodels.TripExpenseMemberUiModel
@@ -133,6 +135,8 @@ private val ExpenseInk = Color(0xFF0B1020)
 private val ExpenseMuted = Color(0xFF586174)
 private val ExpenseBorder = Color(0xFFE8ECF4)
 private val ExpenseSoftBlue = Color(0xFFEAF4FF)
+private const val SPLIT_EQUAL = "EQUAL"
+private const val SPLIT_CUSTOM = "CUSTOM"
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -211,10 +215,8 @@ fun CostEstimateScreen(
                     TripSettlementPanel(
                         canFinishTrip = uiState.canFinishTrip,
                         isCompleted = uiState.isCompleted,
-                        isFinishingTrip = uiState.isFinishingTrip,
                         currentUserId = uiState.currentUserId,
-                        settlements = uiState.settlements,
-                        onFinishTrip = { viewModel.finishTrip() }
+                        settlements = uiState.settlements
                     )
                 }
 
@@ -282,8 +284,8 @@ fun CostEstimateScreen(
                 AddExpenseContent(
                     members = uiState.members,
                     isSaving = uiState.isAddingExpense,
-                    onSave = { title, amountText, category, splitUserIds, proofImageUri ->
-                        viewModel.addExpense(title, amountText, category, splitUserIds, proofImageUri)
+                    onSave = { title, amountText, category, splitType, splitUserIds, splitShares, proofImageUri ->
+                        viewModel.addExpense(title, amountText, category, splitType, splitUserIds, splitShares, proofImageUri)
                     },
                     onDismiss = { showAddExpense = false }
                 )
@@ -303,7 +305,7 @@ fun CostEstimateScreen(
                     members = uiState.members,
                     canEdit = !uiState.isCompleted,
                     isSaving = uiState.isAddingExpense,
-                    onSave = { title, amountText, category, splitUserIds, proofImageUri ->
+                    onSave = { title, amountText, category, splitType, splitUserIds, splitShares, proofImageUri ->
                         viewModel.editExpense(
                             expense.id,
                             title,
@@ -311,7 +313,9 @@ fun CostEstimateScreen(
                             category,
                             expense.paidByUserId,
                             expense.proofImageUrl,
+                            splitType,
                             splitUserIds,
+                            splitShares,
                             proofImageUri
                         )
                     },
@@ -334,7 +338,7 @@ fun CostEstimateScreen(
                     draft = uiState.receiptOcrDraft!!,
                     members = uiState.members,
                     isSaving = uiState.isAddingExpense,
-                    onConfirm = { title, amountText, category, expenseDate, note, paidByUserId, splitUserIds ->
+                    onConfirm = { title, amountText, category, expenseDate, note, paidByUserId, splitType, splitUserIds, splitShares ->
                         viewModel.submitReceiptOcrExpense(
                             title = title,
                             amountText = amountText,
@@ -342,7 +346,9 @@ fun CostEstimateScreen(
                             expenseDate = expenseDate,
                             note = note,
                             paidByUserId = paidByUserId,
-                            splitUserIds = splitUserIds
+                            splitType = splitType,
+                            splitUserIds = splitUserIds,
+                            splitShares = splitShares
                         )
                     },
                     onDismiss = { viewModel.dismissReceiptOcrDraft() }
@@ -492,10 +498,8 @@ private fun ExpenseOverviewCard(
 private fun TripSettlementPanel(
     canFinishTrip: Boolean,
     isCompleted: Boolean,
-    isFinishingTrip: Boolean,
     currentUserId: Long,
-    settlements: List<SettlementUiModel>,
-    onFinishTrip: () -> Unit
+    settlements: List<SettlementUiModel>
 ) {
     val payableSettlements = remember(settlements, currentUserId) {
         settlements
@@ -532,7 +536,7 @@ private fun TripSettlementPanel(
                             if (isCompleted) {
                                 "Chưa có khoản thanh toán nào cần xử lý"
                             } else if (canFinishTrip) {
-                                "Kết thúc chuyến đi để tính khoản cần chuyển"
+                                "Kết thúc chuyến đi ở trang chính để tính khoản cần chuyển"
                             } else {
                                 "Trưởng nhóm sẽ kết thúc chuyến đi để tính thanh toán"
                             }
@@ -551,36 +555,6 @@ private fun TripSettlementPanel(
                         contentDescription = null,
                         tint = ExpenseGreen,
                         modifier = Modifier.size(28.dp)
-                    )
-                }
-            }
-
-            if (canFinishTrip) {
-                Button(
-                    onClick = onFinishTrip,
-                    enabled = !isFinishingTrip,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(50.dp),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = ExpenseInk,
-                        contentColor = Color.White,
-                        disabledContainerColor = ExpenseInk.copy(alpha = 0.42f),
-                        disabledContentColor = Color.White
-                    )
-                ) {
-                    if (isFinishingTrip) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(18.dp),
-                            strokeWidth = 2.dp,
-                            color = Color.White
-                        )
-                        Spacer(Modifier.width(8.dp))
-                    }
-                    Text(
-                        text = if (isFinishingTrip) "Đang tính toán..." else "Kết thúc chuyến đi",
-                        fontWeight = FontWeight.ExtraBold
                     )
                 }
             }
@@ -1088,16 +1062,6 @@ private fun ModernExpenseRow(
             textAlign = TextAlign.End,
             maxLines = 1
         )
-        if (!expense.proofImageUrl.isNullOrBlank()) {
-            Icon(
-                imageVector = Icons.Default.Photo,
-                contentDescription = "Có ảnh minh chứng",
-                tint = PrimaryBlue,
-                modifier = Modifier
-                    .padding(start = 8.dp)
-                    .size(18.dp)
-            )
-        }
         if (!isPending) {
             Icon(
                 imageVector = Icons.Default.KeyboardArrowRight,
@@ -1124,13 +1088,15 @@ private fun ReceiptOcrConfirmContent(
         expenseDate: String,
         note: String?,
         paidByUserId: Long,
-        splitUserIds: List<Long>
+        splitType: String,
+        splitUserIds: List<Long>,
+        splitShares: List<ExpenseSplitShareUiModel>
     ) -> Unit,
     onDismiss: () -> Unit
 ) {
     val result = draft.result
     val defaultTitle = result.merchantName?.takeIf { it.isNotBlank() } ?: "Chi phí từ hóa đơn"
-    val defaultAmount = result.totalAmount?.let { NumberUtils.formatInputString(it.toString()) }.orEmpty()
+    val defaultAmount = result.totalAmount?.let { NumberUtils.formatInputString(it.toLong().toString()) }.orEmpty()
     val effectiveMembers = members.ifEmpty {
         listOf(TripExpenseMemberUiModel(userId = -1L, name = "Tôi", isCurrentUser = true))
     }
@@ -1150,6 +1116,8 @@ private fun ReceiptOcrConfirmContent(
     var splitUserIds by remember(draft.imageUri, effectiveMembers) {
         mutableStateOf(effectiveMembers.map { it.userId }.filter { it > 0L }.toSet())
     }
+    var splitType by remember(draft.imageUri) { mutableStateOf(SPLIT_EQUAL) }
+    var customSplitValues by remember(draft.imageUri) { mutableStateOf<Map<Long, TextFieldValue>>(emptyMap()) }
 
     if (showReceiptImageFullScreen) {
         FullScreenProofImageDialog(
@@ -1261,9 +1229,14 @@ private fun ReceiptOcrConfirmContent(
             }
         }
 
-        SplitMemberSelector(
+        SplitOptionEditor(
             members = effectiveMembers,
+            totalAmountText = amountValue.text,
+            splitType = splitType,
+            onSplitTypeChange = { splitType = it },
             selectedUserIds = splitUserIds,
+            customSplitValues = customSplitValues,
+            onCustomSplitValuesChange = { customSplitValues = it },
             enabled = !isSaving,
             onSelectedUserIdsChange = { splitUserIds = it }
         )
@@ -1298,7 +1271,9 @@ private fun ReceiptOcrConfirmContent(
                             expenseDate,
                             note,
                             paidByUserId,
-                            splitUserIds.toList()
+                            splitType,
+                            splitUserIds.toList(),
+                            buildSplitShares(splitUserIds, customSplitValues)
                         )
                     }
                 },
@@ -1316,6 +1291,193 @@ private fun ReceiptOcrConfirmContent(
             }
         }
     }
+}
+
+@Composable
+private fun SplitOptionEditor(
+    members: List<TripExpenseMemberUiModel>,
+    totalAmountText: String,
+    splitType: String,
+    onSplitTypeChange: (String) -> Unit,
+    selectedUserIds: Set<Long>,
+    customSplitValues: Map<Long, TextFieldValue>,
+    onCustomSplitValuesChange: (Map<Long, TextFieldValue>) -> Unit,
+    enabled: Boolean,
+    onSelectedUserIdsChange: (Set<Long>) -> Unit
+) {
+    val totalAmount = remember(totalAmountText) { parseMoneyInputToLong(totalAmountText) ?: 0L }
+    val selectedMembers = remember(members, selectedUserIds) {
+        members.filter { it.userId in selectedUserIds && it.userId > 0L }
+    }
+    val assignedAmount = remember(customSplitValues, selectedUserIds) {
+        selectedUserIds.sumOf { userId -> parseMoneyInputToLong(customSplitValues[userId]?.text.orEmpty()) ?: 0L }
+    }
+    val remainingAmount = totalAmount - assignedAmount
+
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Text(
+            text = "Cách chia",
+            color = ExpenseInk,
+            fontSize = 15.sp,
+            fontWeight = FontWeight.ExtraBold
+        )
+
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            SplitTypeChip(
+                title = "Chia đều",
+                subtitle = "Tự chia theo số người",
+                selected = splitType == SPLIT_EQUAL,
+                enabled = enabled,
+                onClick = { onSplitTypeChange(SPLIT_EQUAL) },
+                modifier = Modifier.weight(1f)
+            )
+            SplitTypeChip(
+                title = "Chia cụ thể",
+                subtitle = "Nhập số tiền từng người",
+                selected = splitType == SPLIT_CUSTOM,
+                enabled = enabled,
+                onClick = { onSplitTypeChange(SPLIT_CUSTOM) },
+                modifier = Modifier.weight(1f)
+            )
+        }
+
+        SplitMemberSelector(
+            members = members,
+            selectedUserIds = selectedUserIds,
+            enabled = enabled,
+            onSelectedUserIdsChange = { newSelection ->
+                onSelectedUserIdsChange(newSelection)
+                onCustomSplitValuesChange(customSplitValues.filterKeys { it in newSelection })
+            }
+        )
+
+        if (splitType == SPLIT_CUSTOM) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(Color(0xFFF7F9FC))
+                    .padding(14.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Text(
+                    text = "Đã nhập ${NumberUtils.formatVnd(assignedAmount.toDouble())} • Còn lại ${NumberUtils.formatVnd(remainingAmount.coerceAtLeast(0L).toDouble())}",
+                    color = if (remainingAmount < 0L) SunsetOrange else ExpenseMuted,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+
+                TextButton(
+                    enabled = enabled && totalAmount > 0L && selectedMembers.isNotEmpty(),
+                    onClick = {
+                        onCustomSplitValuesChange(
+                            autoFillCustomSplitValues(
+                                totalAmount = totalAmount,
+                                selectedMembers = selectedMembers,
+                                currentValues = customSplitValues
+                            )
+                        )
+                    }
+                ) {
+                    Text("Tự chia phần còn lại", fontWeight = FontWeight.Bold)
+                }
+
+                selectedMembers.forEach { member ->
+                    OutlinedTextField(
+                        value = customSplitValues[member.userId] ?: TextFieldValue(""),
+                        onValueChange = { value ->
+                            onCustomSplitValuesChange(
+                                customSplitValues + (member.userId to NumberUtils.formatTextFieldValue(value))
+                            )
+                        },
+                        enabled = enabled,
+                        label = { Text(member.name) },
+                        modifier = Modifier.fillMaxWidth(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        singleLine = true,
+                        shape = RoundedCornerShape(14.dp)
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SplitTypeChip(
+    title: String,
+    subtitle: String,
+    selected: Boolean,
+    enabled: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier
+            .clip(RoundedCornerShape(14.dp))
+            .background(if (selected) ExpenseSoftBlue else Color(0xFFF7F9FC))
+            .clickable(enabled = enabled, onClick = onClick)
+            .padding(horizontal = 10.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        RadioButton(
+            selected = selected,
+            enabled = enabled,
+            onClick = onClick
+        )
+        Column(modifier = Modifier.padding(start = 4.dp)) {
+            Text(title, color = ExpenseInk, fontSize = 14.sp, fontWeight = FontWeight.ExtraBold)
+            Text(subtitle, color = ExpenseMuted, fontSize = 11.sp, lineHeight = 14.sp)
+        }
+    }
+}
+
+private fun buildSplitShares(
+    selectedUserIds: Set<Long>,
+    customSplitValues: Map<Long, TextFieldValue>
+): List<ExpenseSplitShareUiModel> {
+    return selectedUserIds.mapNotNull { userId ->
+        val amount = parseMoneyInputToLong(customSplitValues[userId]?.text.orEmpty()) ?: return@mapNotNull null
+        if (amount <= 0L) return@mapNotNull null
+        ExpenseSplitShareUiModel(userId = userId, amount = amount.toDouble())
+    }
+}
+
+private fun autoFillCustomSplitValues(
+    totalAmount: Long,
+    selectedMembers: List<TripExpenseMemberUiModel>,
+    currentValues: Map<Long, TextFieldValue>
+): Map<Long, TextFieldValue> {
+    val emptyMembers = selectedMembers.filter { member ->
+        parseMoneyInputToLong(currentValues[member.userId]?.text.orEmpty()) == null
+    }
+    val targetMembers = emptyMembers.ifEmpty { selectedMembers }
+    val lockedAmount = if (emptyMembers.isEmpty()) {
+        0L
+    } else {
+        selectedMembers
+            .filterNot { it in targetMembers }
+            .sumOf { parseMoneyInputToLong(currentValues[it.userId]?.text.orEmpty()) ?: 0L }
+    }
+    val amountToSplit = (totalAmount - lockedAmount).coerceAtLeast(0L)
+    val distributedAmounts = splitAmountEvenly(amountToSplit, targetMembers.map { it.userId })
+    return currentValues + distributedAmounts.mapValues { (_, amount) ->
+        val text = NumberUtils.formatInputString(amount.toString())
+        TextFieldValue(text = text, selection = TextRange(text.length))
+    }
+}
+
+private fun splitAmountEvenly(totalAmount: Long, userIds: List<Long>): Map<Long, Long> {
+    if (userIds.isEmpty()) return emptyMap()
+    val baseAmount = totalAmount / userIds.size
+    val remainder = (totalAmount % userIds.size).toInt()
+    return userIds.mapIndexed { index, userId ->
+        userId to (baseAmount + if (index >= userIds.size - remainder) 1L else 0L)
+    }.toMap()
+}
+
+private fun parseMoneyInputToLong(value: String): Long? {
+    return value.replace(".", "").trim().takeIf { it.isNotBlank() }?.toLongOrNull()
 }
 
 @Composable
@@ -1447,7 +1609,7 @@ private fun SplitMemberSelector(
 fun AddExpenseContent(
     members: List<TripExpenseMemberUiModel>,
     isSaving: Boolean,
-    onSave: (String, String, String, List<Long>, android.net.Uri?) -> Unit,
+    onSave: (String, String, String, String, List<Long>, List<ExpenseSplitShareUiModel>, android.net.Uri?) -> Unit,
     onDismiss: () -> Unit
 ) {
     val initialSplitUserIds = remember(members) {
@@ -1459,6 +1621,8 @@ fun AddExpenseContent(
     var expanded by remember { mutableStateOf(false) }
     var proofImageUri by remember { mutableStateOf<android.net.Uri?>(null) }
     var splitUserIds by remember(initialSplitUserIds) { mutableStateOf(initialSplitUserIds) }
+    var splitType by remember { mutableStateOf(SPLIT_EQUAL) }
+    var customSplitValues by remember { mutableStateOf<Map<Long, TextFieldValue>>(emptyMap()) }
     val proofPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia()
     ) { uri ->
@@ -1511,9 +1675,14 @@ fun AddExpenseContent(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        SplitMemberSelector(
+        SplitOptionEditor(
             members = members,
+            totalAmountText = expenseAmountValue.text,
+            splitType = splitType,
+            onSplitTypeChange = { splitType = it },
             selectedUserIds = splitUserIds,
+            customSplitValues = customSplitValues,
+            onCustomSplitValuesChange = { customSplitValues = it },
             enabled = !isSaving,
             onSelectedUserIdsChange = { splitUserIds = it }
         )
@@ -1542,7 +1711,9 @@ fun AddExpenseContent(
                         expenseTitle,
                         expenseAmountValue.text,
                         selectedCategory,
+                        splitType,
                         splitUserIds.toList(),
+                        buildSplitShares(splitUserIds, customSplitValues),
                         proofImageUri
                     )
                     onDismiss()
@@ -1570,7 +1741,7 @@ fun EditExpenseContent(
     members: List<TripExpenseMemberUiModel>,
     canEdit: Boolean,
     isSaving: Boolean,
-    onSave: (String, String, String, List<Long>, android.net.Uri?) -> Unit,
+    onSave: (String, String, String, String, List<Long>, List<ExpenseSplitShareUiModel>, android.net.Uri?) -> Unit,
     onDelete: () -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -1582,7 +1753,7 @@ fun EditExpenseContent(
     }
     var expenseTitle by remember(expense.id) { mutableStateOf(expense.title) }
     var expenseAmountValue by remember(expense.id) {
-        val initialText = NumberUtils.formatInputString(expense.amount.toInt().toString())
+        val initialText = NumberUtils.formatInputString(expense.amount.toLong().toString())
         mutableStateOf(TextFieldValue(text = initialText, selection = TextRange(initialText.length)))
     }
     var selectedCategory by remember(expense.id) { mutableStateOf(expense.category) }
@@ -1590,6 +1761,15 @@ fun EditExpenseContent(
     var showDeleteConfirm by remember { mutableStateOf(false) }
     var replacementProofImageUri by remember(expense.id) { mutableStateOf<android.net.Uri?>(null) }
     var splitUserIds by remember(expense.id, initialSplitUserIds) { mutableStateOf(initialSplitUserIds) }
+    var splitType by remember(expense.id) { mutableStateOf(if (expense.splitType.equals(SPLIT_CUSTOM, ignoreCase = true)) SPLIT_CUSTOM else SPLIT_EQUAL) }
+    var customSplitValues by remember(expense.id, expense.splitShares) {
+        mutableStateOf(
+            expense.splitShares.associate { share ->
+                val text = NumberUtils.formatInputString(share.amount.toLong().toString())
+                share.userId to TextFieldValue(text = text, selection = TextRange(text.length))
+            }
+        )
+    }
     val proofPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia()
     ) { uri ->
@@ -1686,9 +1866,14 @@ fun EditExpenseContent(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        SplitMemberSelector(
+        SplitOptionEditor(
             members = members,
+            totalAmountText = expenseAmountValue.text,
+            splitType = splitType,
+            onSplitTypeChange = { splitType = it },
             selectedUserIds = splitUserIds,
+            customSplitValues = customSplitValues,
+            onCustomSplitValuesChange = { customSplitValues = it },
             enabled = canEdit && !isSaving,
             onSelectedUserIdsChange = { splitUserIds = it }
         )
@@ -1719,7 +1904,9 @@ fun EditExpenseContent(
                             expenseTitle,
                             expenseAmountValue.text,
                             selectedCategory,
+                            splitType,
                             splitUserIds.toList(),
+                            buildSplitShares(splitUserIds, customSplitValues),
                             replacementProofImageUri
                         )
                         onDismiss()

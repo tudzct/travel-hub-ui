@@ -73,7 +73,8 @@ data class GroupDetailUiState(
     val errorMessage: String? = null,
     val isCompleted: Boolean = false,
     val isKickedOut: Boolean = false,
-    val isRemovingMember: Boolean = false
+    val isRemovingMember: Boolean = false,
+    val isFinishingTrip: Boolean = false
 )
 
 @HiltViewModel
@@ -368,6 +369,40 @@ class GroupDetailViewModel @Inject constructor(
                 }
                 .onFailure { throwable ->
                     onDone(false, throwable.userMessage("Không xóa được nhóm"))
+                }
+        }
+    }
+
+    fun finishTrip(onDone: (Boolean, String) -> Unit) {
+        val state = uiState.value
+        val tripId = state.tripId
+        if (tripId == -1L) return
+        if (!state.myRole.equals("LEADER", ignoreCase = true)) {
+            onDone(false, "Chỉ trưởng nhóm có thể kết thúc chuyến đi")
+            return
+        }
+        if (state.isCompleted) {
+            onDone(false, "Chuyến đi đã hoàn thành")
+            return
+        }
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(isFinishingTrip = true, errorMessage = null) }
+            tripRepository.finishTrip(tripId)
+                .onSuccess {
+                    _uiState.update {
+                        it.copy(
+                            isFinishingTrip = false,
+                            isCompleted = true,
+                            statusLabel = "Đã hoàn thành"
+                        )
+                    }
+                    loadGroup(tripId = tripId, groupName = state.groupName, isSilent = true)
+                    onDone(true, "Đã kết thúc chuyến đi")
+                }
+                .onFailure { throwable ->
+                    _uiState.update { it.copy(isFinishingTrip = false) }
+                    onDone(false, throwable.userMessage("Không kết thúc được chuyến đi"))
                 }
         }
     }

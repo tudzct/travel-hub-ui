@@ -11,6 +11,7 @@ import com.mobile.travelhub.data.model.CreateTripExpenseRequest
 import com.mobile.travelhub.data.model.ReceiptOcrResult
 import com.mobile.travelhub.data.model.SettlementResponse
 import com.mobile.travelhub.data.model.TripMemberResponse
+import com.mobile.travelhub.data.model.TripExpenseSplitShareRequest
 import com.mobile.travelhub.data.model.UpdateTripExpenseRequest
 import com.mobile.travelhub.data.model.TripExpenseContributionResponse
 import com.mobile.travelhub.data.model.TripExpenseTransactionResponse
@@ -65,7 +66,14 @@ data class ExpenseTransactionUiModel(
     val amount: Double,
     val date: String? = null,
     val proofImageUrl: String? = null,
-    val splitUserIds: List<Long> = emptyList()
+    val splitType: String = "EQUAL",
+    val splitUserIds: List<Long> = emptyList(),
+    val splitShares: List<ExpenseSplitShareUiModel> = emptyList()
+)
+
+data class ExpenseSplitShareUiModel(
+    val userId: Long,
+    val amount: Double
 )
 
 data class TripExpenseMemberUiModel(
@@ -259,7 +267,9 @@ class CostEstimateViewModel @Inject constructor(
         title: String,
         amountText: String,
         category: String,
+        splitType: String,
         splitUserIds: List<Long>,
+        splitShares: List<ExpenseSplitShareUiModel>,
         proofImageUri: Uri? = null
     ) {
         val state = _uiState.value
@@ -289,6 +299,7 @@ class CostEstimateViewModel @Inject constructor(
             _uiState.update { it.copy(errorMessage = "Vui lòng chọn ít nhất một người cùng chia") }
             return
         }
+        val effectiveSplitShares = normalizeSplitShares(splitType, parsedAmount, effectiveSplitUserIds, splitShares) ?: return
 
         viewModelScope.launch {
             val pendingId = -System.currentTimeMillis()
@@ -299,7 +310,9 @@ class CostEstimateViewModel @Inject constructor(
                 paidByUserId = sessionUserId,
                 amount = parsedAmount,
                 proofImageUrl = proofImageUri?.toString(),
-                splitUserIds = effectiveSplitUserIds
+                splitUserIds = effectiveSplitUserIds,
+                splitType = normalizeSplitType(splitType),
+                splitShares = effectiveSplitShares
             )
             addPendingExpense(pendingExpense)
             val proofObjectName = if (proofImageUri != null) {
@@ -324,6 +337,8 @@ class CostEstimateViewModel @Inject constructor(
                     category = category,
                     paidByUserId = sessionUserId,
                     proofImageUrl = proofObjectName,
+                    splitType = normalizeSplitType(splitType),
+                    splitShares = effectiveSplitShares.map { TripExpenseSplitShareRequest(it.userId, it.amount) },
                     splitUserIds = effectiveSplitUserIds
                 )
             ).onSuccess { savedExpense ->
@@ -346,7 +361,9 @@ class CostEstimateViewModel @Inject constructor(
         category: String,
         paidByUserId: Long,
         existingProofImageUrl: String?,
+        splitType: String,
         splitUserIds: List<Long>,
+        splitShares: List<ExpenseSplitShareUiModel>,
         proofImageUri: Uri? = null
     ) {
         val state = _uiState.value
@@ -375,6 +392,7 @@ class CostEstimateViewModel @Inject constructor(
             _uiState.update { it.copy(errorMessage = "Vui lòng chọn ít nhất một người cùng chia") }
             return
         }
+        val effectiveSplitShares = normalizeSplitShares(splitType, parsedAmount, effectiveSplitUserIds, splitShares) ?: return
 
         viewModelScope.launch {
             _uiState.update { it.copy(isAddingExpense = true, errorMessage = null) }
@@ -402,6 +420,8 @@ class CostEstimateViewModel @Inject constructor(
                     category = category,
                     paidByUserId = paidByUserId,
                     proofImageUrl = proofImageValue,
+                    splitType = normalizeSplitType(splitType),
+                    splitShares = effectiveSplitShares.map { TripExpenseSplitShareRequest(it.userId, it.amount) },
                     splitUserIds = effectiveSplitUserIds
                 )
             ).onSuccess {
@@ -458,7 +478,9 @@ class CostEstimateViewModel @Inject constructor(
         expenseDate: String,
         note: String?,
         paidByUserId: Long,
-        splitUserIds: List<Long>
+        splitType: String,
+        splitUserIds: List<Long>,
+        splitShares: List<ExpenseSplitShareUiModel>
     ) {
         val state = _uiState.value
         val draft = state.receiptOcrDraft
@@ -491,6 +513,7 @@ class CostEstimateViewModel @Inject constructor(
             _uiState.update { it.copy(errorMessage = "Vui lòng chọn ít nhất một người cùng chia") }
             return
         }
+        val effectiveSplitShares = normalizeSplitShares(splitType, parsedAmount, effectiveSplitUserIds, splitShares) ?: return
 
         viewModelScope.launch {
             val pendingId = -System.currentTimeMillis()
@@ -503,6 +526,8 @@ class CostEstimateViewModel @Inject constructor(
                 amount = parsedAmount,
                 proofImageUrl = draft.imageUri.toString(),
                 splitUserIds = effectiveSplitUserIds,
+                splitType = normalizeSplitType(splitType),
+                splitShares = effectiveSplitShares,
                 date = effectiveExpenseDate
             )
             addPendingExpense(pendingExpense, clearReceiptDraft = true)
@@ -528,7 +553,8 @@ class CostEstimateViewModel @Inject constructor(
                     source = "OCR",
                     rawOcrText = draft.result.rawText,
                     proofImageUrl = proofObjectName,
-                    splitType = "EQUAL",
+                    splitType = normalizeSplitType(splitType),
+                    splitShares = effectiveSplitShares.map { TripExpenseSplitShareRequest(it.userId, it.amount) },
                     splitUserIds = effectiveSplitUserIds
                 )
             ).onSuccess { savedExpense ->
@@ -640,7 +666,14 @@ class CostEstimateViewModel @Inject constructor(
             amount = amount ?: 0.0,
             date = date,
             proofImageUrl = proofImageUrl,
-            splitUserIds = splitUserIds
+            splitType = splitType ?: "EQUAL",
+            splitUserIds = splitUserIds,
+            splitShares = splitShares.map {
+                ExpenseSplitShareUiModel(
+                    userId = it.userId ?: -1L,
+                    amount = it.amount ?: 0.0
+                )
+            }.filter { it.userId > 0L && it.amount > 0.0 }
         )
     }
 
@@ -652,6 +685,8 @@ class CostEstimateViewModel @Inject constructor(
         amount: Double,
         proofImageUrl: String?,
         splitUserIds: List<Long>,
+        splitType: String = "EQUAL",
+        splitShares: List<ExpenseSplitShareUiModel> = emptyList(),
         date: String = LocalDate.now().toString()
     ): ExpenseTransactionUiModel {
         val paidByName = _uiState.value.members
@@ -668,8 +703,46 @@ class CostEstimateViewModel @Inject constructor(
             amount = amount,
             date = date,
             proofImageUrl = proofImageUrl,
-            splitUserIds = splitUserIds
+            splitType = splitType,
+            splitUserIds = splitUserIds,
+            splitShares = splitShares
         )
+    }
+
+    private fun normalizeSplitType(splitType: String): String {
+        return if (splitType.equals("CUSTOM", ignoreCase = true)) "CUSTOM" else "EQUAL"
+    }
+
+    private fun normalizeSplitShares(
+        splitType: String,
+        totalAmount: Double,
+        splitUserIds: List<Long>,
+        splitShares: List<ExpenseSplitShareUiModel>
+    ): List<ExpenseSplitShareUiModel>? {
+        if (!splitType.equals("CUSTOM", ignoreCase = true)) {
+            return emptyList()
+        }
+        val selectedUserIds = splitUserIds.toSet()
+        val effectiveShares = splitShares
+            .filter { it.userId in selectedUserIds && it.amount > 0.0 }
+            .groupBy { it.userId }
+            .map { (userId, shares) ->
+                ExpenseSplitShareUiModel(userId = userId, amount = shares.sumOf { it.amount })
+            }
+        if (effectiveShares.size != selectedUserIds.size) {
+            _uiState.update { it.copy(errorMessage = "Vui lòng nhập số tiền cho từng người cùng chia") }
+            return null
+        }
+        val totalSplitAmount = effectiveShares.sumOf { it.amount }
+        if (kotlin.math.abs(totalSplitAmount - totalAmount) > 0.5) {
+            _uiState.update { it.copy(errorMessage = "Tổng tiền chia phải bằng tổng tiền hóa đơn") }
+            return null
+        }
+        if (effectiveShares.any { it.amount > totalAmount }) {
+            _uiState.update { it.copy(errorMessage = "Số tiền chia của một người không được vượt quá tổng tiền") }
+            return null
+        }
+        return effectiveShares
     }
 
     private fun addPendingExpense(

@@ -1,7 +1,11 @@
 package com.mobile.travelhub.ui.screens
 
 import androidx.compose.ui.res.stringResource
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.DirectionsWalk
 import androidx.compose.material.icons.automirrored.outlined.DirectionsWalk
@@ -15,7 +19,6 @@ import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.PostAdd
 import androidx.compose.material.icons.outlined.TravelExplore
-import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -24,6 +27,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.unit.dp
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.mobile.travelhub.navigation.NavGraph
@@ -101,11 +106,43 @@ fun TravelHubScreen(
         ?.substringBefore("/") == Screen.Explore.route
     val showBottomBar = Screen.fromRoute(currentRoute)?.showBottomBar == true &&
         !(isExploreRoute && isExploreSearchExpanded)
+    val currentBaseRoute = currentRoute
+        ?.substringBefore("?")
+        ?.substringBefore("/")
+    val effectiveBaseRoute = currentBaseRoute
+        ?: startDestination.substringBefore("?").substringBefore("/")
+    val bottomOverlayPadding = if (showBottomBar && effectiveBaseRoute != Screen.Home.route) 44.dp else 0.dp
+    val contentModifier = when {
+        effectiveBaseRoute == Screen.Home.route -> Modifier.fillMaxSize()
+        bottomOverlayPadding > 0.dp -> Modifier
+            .fillMaxSize()
+            .statusBarsPadding()
+            .padding(bottom = bottomOverlayPadding)
+        else -> Modifier
+            .fillMaxSize()
+            .statusBarsPadding()
+    }
 
-    Scaffold(
-        modifier = Modifier.fillMaxSize(),
-        bottomBar = {
-            if (showBottomBar) {
+    Box(modifier = Modifier.fillMaxSize()) {
+        Box(modifier = contentModifier) {
+            NavGraph(
+                navController = navController,
+                innerPadding = PaddingValues(0.dp),
+                startDestination = startDestination,
+                authUiState = authUiState,
+                homeReloadSignal = homeReloadSignal,
+                onExploreSearchActiveChange = { isExploreSearchExpanded = it },
+                onLogin = authViewModel::login,
+                onRegister = authViewModel::register,
+                onClearAuthError = authViewModel::clearError,
+                onLogout = authViewModel::logout,
+                isDarkThemeEnabled = isDarkThemeEnabled,
+                onDarkThemeChange = onDarkThemeChange
+            )
+        }
+
+        if (showBottomBar) {
+            Box(modifier = Modifier.align(Alignment.BottomCenter)) {
                 RoundedTopNavigationBar(
                     items = navItems,
                     navController = navController,
@@ -114,20 +151,5 @@ fun TravelHubScreen(
                 )
             }
         }
-    ) { innerPadding ->
-        NavGraph(
-            navController = navController,
-            innerPadding = innerPadding,
-            startDestination = startDestination,
-            authUiState = authUiState,
-            homeReloadSignal = homeReloadSignal,
-            onExploreSearchActiveChange = { isExploreSearchExpanded = it },
-            onLogin = authViewModel::login,
-            onRegister = authViewModel::register,
-            onClearAuthError = authViewModel::clearError,
-            onLogout = authViewModel::logout,
-            isDarkThemeEnabled = isDarkThemeEnabled,
-            onDarkThemeChange = onDarkThemeChange
-        )
     }
 }

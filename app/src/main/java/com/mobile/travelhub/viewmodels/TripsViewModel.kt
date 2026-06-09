@@ -104,6 +104,31 @@ class TripsViewModel @Inject constructor(
             // First, lookup trip by invite code without creating join request
             tripRepository.getTripByInviteCode(normalizedCode)
                 .onSuccess { tripInfo ->
+                    if (_uiState.value.hasJoinedTrip(tripInfo.id)) {
+                        _uiState.update { it.copy(isJoining = false) }
+                        onResult(false, "Bạn đã tham gia chuyến đi này")
+                        return@onSuccess
+                    }
+
+                    var alreadyJoinedLatestDashboard = false
+                    tripRepository.getDashboard()
+                        .onSuccess { dashboard ->
+                            _uiState.update {
+                                it.copy(
+                                    activeTrip = dashboard.activeTrip?.toUiModel(),
+                                    upcomingTrips = dashboard.upcomingTrips.map { it.toUiModel() },
+                                    pastTrips = dashboard.pastTrips.map { it.toUiModel() }
+                                )
+                            }
+                            alreadyJoinedLatestDashboard = dashboard.hasJoinedTrip(tripInfo.id)
+                        }
+
+                    if (alreadyJoinedLatestDashboard) {
+                        _uiState.update { it.copy(isJoining = false) }
+                        onResult(false, "Bạn đã tham gia chuyến đi này")
+                        return@onSuccess
+                    }
+
                     if (isPastDate(tripInfo.endDate)) {
                         _uiState.update { it.copy(isJoining = false) }
                         onResult(false, "Chuyến đi đã kết thúc")
@@ -186,6 +211,12 @@ class TripsViewModel @Inject constructor(
         if (raw.contains("kết thúc", ignoreCase = true) || raw.contains("đã hoàn thành", ignoreCase = true) || raw.contains("ended", ignoreCase = true)) {
             return "Chuyến đi đã kết thúc"
         }
+        if (raw.contains("đã tham gia", ignoreCase = true) || raw.contains("already a member", ignoreCase = true)) {
+            return "Bạn đã tham gia chuyến đi này"
+        }
+        if (raw.contains("ngân hàng", ignoreCase = true) || raw.contains("số tài khoản", ignoreCase = true) || raw.contains("bank account", ignoreCase = true)) {
+            return raw
+        }
 
         return when (throwable.httpStatusCode()) {
             400 -> "Mã chuyến đi không hợp lệ"
@@ -193,5 +224,17 @@ class TripsViewModel @Inject constructor(
             409 -> "Bạn đã gửi yêu cầu hoặc đã là thành viên của nhóm này"
             else -> throwable.userMessage("Không tham gia được chuyến đi")
         }
+    }
+
+    private fun TripsUiState.hasJoinedTrip(tripId: Long): Boolean {
+        return activeTrip?.tripId == tripId ||
+                upcomingTrips.any { it.tripId == tripId } ||
+                pastTrips.any { it.tripId == tripId }
+    }
+
+    private fun TripDashboardResponse.hasJoinedTrip(tripId: Long): Boolean {
+        return activeTrip?.tripId == tripId ||
+                upcomingTrips.any { it.tripId == tripId } ||
+                pastTrips.any { it.tripId == tripId }
     }
 }

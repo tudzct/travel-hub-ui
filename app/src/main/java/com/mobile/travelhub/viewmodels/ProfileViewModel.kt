@@ -11,6 +11,7 @@ import com.mobile.travelhub.data.api.UserApiService
 import com.mobile.travelhub.data.httpStatusCode
 import com.mobile.travelhub.data.userMessage
 import com.mobile.travelhub.data.model.AdminProvinceResponse
+import com.mobile.travelhub.data.model.BankAccountRequest
 import com.mobile.travelhub.data.model.FeedPostResponse
 import com.mobile.travelhub.data.model.ChangePasswordRequest
 import com.mobile.travelhub.data.model.PostCommentResponse
@@ -459,12 +460,21 @@ class ProfileViewModel @Inject constructor(
         dob: String,
         gender: String,
         location: String,
+        bankCode: String,
+        bankName: String,
+        accountNumber: String,
+        accountName: String,
         avatarUrl: String? = null
     ) {
         _updateStatus.value = UiState.Loading
         try {
             if (sessionUserId <= 0L) {
                 error("Bạn cần đăng nhập để cập nhật hồ sơ")
+            }
+            val bankValues = listOf(bankCode, bankName, accountNumber, accountName).map { it.trim() }
+            val hasAnyBankValue = bankValues.any { it.isNotBlank() }
+            if (hasAnyBankValue && bankValues.any { it.isBlank() }) {
+                error("Vui lòng nhập đầy đủ ngân hàng, mã ngân hàng, số tài khoản và tên tài khoản")
             }
             val currentProfile = (_profileState.value as? UiState.Success)?.data
 
@@ -484,10 +494,26 @@ class ProfileViewModel @Inject constructor(
                 followersCount = currentProfile?.followersCount ?: 0,
                 followingCount = currentProfile?.followingCount ?: 0
             )
-            val response = withContext(Dispatchers.IO) {
+            withContext(Dispatchers.IO) {
                 userApiService.updateMyProfile(request)
             }
-            _profileState.value = UiState.Success(response)
+            if (hasAnyBankValue) {
+                withContext(Dispatchers.IO) {
+                    userApiService.upsertDefaultBankAccount(
+                        BankAccountRequest(
+                            bankCode = bankCode.trim(),
+                            bankName = bankName.trim(),
+                            accountNumber = accountNumber.trim(),
+                            accountName = accountName.trim(),
+                            isDefault = true
+                        )
+                    )
+                }
+            }
+            val refreshedProfile = withContext(Dispatchers.IO) {
+                userApiService.getMyProfile()
+            }
+            _profileState.value = UiState.Success(refreshedProfile)
             _updateStatus.value = UiState.Success(true)
             Log.d("API_SUCCESS", "Cập nhật Profile thành công!")
         } catch (e: Exception) {
