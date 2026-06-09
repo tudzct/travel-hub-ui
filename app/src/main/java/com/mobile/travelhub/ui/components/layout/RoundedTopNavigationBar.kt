@@ -2,7 +2,6 @@ package com.mobile.travelhub.ui.components.layout
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.spring
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -12,7 +11,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -38,7 +36,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -83,58 +80,74 @@ fun RoundedTopNavigationBar(
             ?.substringBefore("?")
             ?.substringBefore("/")
     }
-
-    Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .border(
-                width = 1.dp,
-                color = Color.LightGray.copy(alpha = 0.4f),
-            ),
-        shadowElevation = 12.dp,
-        tonalElevation = 0.dp,
-        color = MaterialTheme.colorScheme.surface
-    ) {
-        Row(
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Surface(
             modifier = Modifier
                 .fillMaxWidth()
-                .navigationBarsPadding()
-                .height(68.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly,
-            verticalAlignment = Alignment.CenterVertically
+                .height(74.dp),
+            shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+            shadowElevation = 8.dp,
+            tonalElevation = 0.dp,
+            color = MaterialTheme.colorScheme.surface
         ) {
-            items.forEach { item ->
-                val screen = item.screen
-                val isSelected = when {
-                    screen == null -> false
-                    screen == Screen.Profile -> isProfileRoute(currentRoute)
-                    else -> baseRoute(currentRoute) == screen.route
-                }
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(74.dp),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                items.forEach { item ->
+                    val screen = item.screen
+                    val isSelected = when {
+                        screen == null -> false
+                        screen == Screen.Profile -> isProfileRoute(currentRoute)
+                        else -> baseRoute(currentRoute) == screen.route
+                    }
 
-                val iconColor by animateColorAsState(
-                    targetValue = if (isSelected)
-                        MaterialTheme.colorScheme.primary
-                    else
-                        MaterialTheme.colorScheme.onSurfaceVariant,
-                    animationSpec = spring(),
-                    label = "iconColor"
-                )
+                    val iconColor by animateColorAsState(
+                        targetValue = if (isSelected)
+                            MaterialTheme.colorScheme.primary
+                        else
+                            MaterialTheme.colorScheme.onSurfaceVariant,
+                        animationSpec = spring(),
+                        label = "iconColor"
+                    )
 
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .clip(RoundedCornerShape(50))
-                        .clickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = null
-                        ) {
-                            if (screen == null) return@clickable
-                            onNavigationRequest {
-                                val currentBaseRoute = baseRoute(currentRoute)
-                                if (screen == Screen.Home) {
-                                    if (currentBaseRoute == Screen.Home.route) {
-                                        onHomeReselected()
-                                    } else {
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(50))
+                            .clickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = null
+                            ) {
+                                if (screen == null) return@clickable
+                                onNavigationRequest {
+                                    val currentBaseRoute = baseRoute(currentRoute)
+                                    if (screen == Screen.Home) {
+                                        if (currentBaseRoute == Screen.Home.route) {
+                                            onHomeReselected()
+                                        } else {
+                                            navController.navigate(screen.route) {
+                                                popUpTo(navController.graph.findStartDestination().id) {
+                                                    saveState = true
+                                                }
+                                                launchSingleTop = true
+                                                restoreState = true
+                                            }
+                                        }
+                                    } else if (screen == Screen.Profile) {
+                                        if (currentBaseRoute != Screen.Profile.route) {
+                                            navController.navigate(Screen.Profile.route) {
+                                                popUpTo(navController.graph.findStartDestination().id) {
+                                                    saveState = true
+                                                }
+                                                launchSingleTop = true
+                                                restoreState = true
+                                            }
+                                        }
+                                    } else if (currentBaseRoute != screen.route) {
                                         navController.navigate(screen.route) {
                                             popUpTo(navController.graph.findStartDestination().id) {
                                                 saveState = true
@@ -143,49 +156,31 @@ fun RoundedTopNavigationBar(
                                             restoreState = true
                                         }
                                     }
-                                } else if (screen == Screen.Profile) {
-                                    if (currentBaseRoute != Screen.Profile.route) {
-                                        navController.navigate(Screen.Profile.route) {
-                                            popUpTo(navController.graph.findStartDestination().id) {
-                                                saveState = true
-                                            }
-                                            launchSingleTop = true
-                                            restoreState = true
-                                        }
-                                    }
-                                } else if (currentBaseRoute != screen.route) {
-                                    navController.navigate(screen.route) {
-                                        popUpTo(navController.graph.findStartDestination().id) {
-                                            saveState = true
-                                        }
-                                        launchSingleTop = true
-                                        restoreState = true
-                                    }
                                 }
-                            }
-                        },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
+                            },
+                        contentAlignment = Alignment.Center
                     ) {
-                        Icon(
-                            imageVector = if (isSelected) item.selectedIcon else item.icon,
-                            contentDescription = item.contentDescription,
-                            tint = iconColor,
-                            modifier = Modifier.size(22.dp)
-                        )
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Text(
-                            text = item.label,
-                            color = iconColor,
-                            fontSize = 11.sp,
-                            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
-                            maxLines = 1,
-                            style = MaterialTheme.typography.labelSmall
-                        )
+                        Column(
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            Icon(
+                                imageVector = if (isSelected) item.selectedIcon else item.icon,
+                                contentDescription = item.contentDescription,
+                                tint = iconColor,
+                                modifier = Modifier.size(22.dp)
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = item.label,
+                                color = iconColor,
+                                fontSize = 11.sp,
+                                fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                                maxLines = 1,
+                                style = MaterialTheme.typography.labelSmall
+                            )
+                        }
                     }
                 }
             }

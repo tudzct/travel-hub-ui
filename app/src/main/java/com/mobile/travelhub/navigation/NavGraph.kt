@@ -545,6 +545,9 @@ fun NavGraph(
                 },
                 onNavigateToCreateGroup = {
                     navController.navigate(Screen.CreateGroup.route) { launchSingleTop = true }
+                },
+                onNavigateToEditProfile = {
+                    navController.navigate(Screen.EditProfile.route) { launchSingleTop = true }
                 }
             )
         }
