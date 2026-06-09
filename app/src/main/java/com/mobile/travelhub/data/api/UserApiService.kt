@@ -3,6 +3,8 @@ package com.mobile.travelhub.data.api
 import com.mobile.travelhub.data.model.PageResponse
 import com.mobile.travelhub.data.model.PaginationResponse
 import com.mobile.travelhub.data.model.ProfileUpdateRequest
+import com.mobile.travelhub.data.model.BankAccountRequest
+import com.mobile.travelhub.data.model.BankAccountResponse
 import com.mobile.travelhub.data.model.ChangePasswordRequest
 import com.mobile.travelhub.data.model.GetPostsResponse
 import com.mobile.travelhub.data.model.UserProfileResponse
@@ -88,6 +90,11 @@ interface UserApiService {
         @Path("id") id: Long,
         @Body request: ProfileUpdateRequest
     ): UserProfileResponse
+
+    @PUT("api/me/bank-accounts/default")
+    suspend fun upsertDefaultBankAccount(
+        @Body request: BankAccountRequest
+    ): BankAccountResponse
 
     @POST("api/users/{targetUserId}/follow")
     suspend fun followUser(

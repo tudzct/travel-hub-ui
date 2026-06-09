@@ -135,16 +135,39 @@ data class TripDetailResponse(
 
 data class CreateTripExpenseRequest(
     val title: String,
-    val amount: Double,
+    val amount: Double? = null,
+    val totalAmount: Double? = null,
     val category: String,
-    val paidByUserId: Long
+    val paidByUserId: Long,
+    val expenseDate: String? = null,
+    val note: String? = null,
+    val source: String = "MANUAL",
+    val rawOcrText: String? = null,
+    val proofImageUrl: String? = null,
+    val splitType: String = "EQUAL",
+    val splitUserIds: List<Long> = emptyList(),
+    val splitShares: List<TripExpenseSplitShareRequest> = emptyList()
 )
 
 data class UpdateTripExpenseRequest(
     val title: String,
-    val amount: Double,
+    val amount: Double? = null,
+    val totalAmount: Double? = null,
     val category: String,
-    val paidByUserId: Long
+    val paidByUserId: Long,
+    val expenseDate: String? = null,
+    val note: String? = null,
+    val source: String = "MANUAL",
+    val rawOcrText: String? = null,
+    val proofImageUrl: String? = null,
+    val splitType: String = "EQUAL",
+    val splitUserIds: List<Long> = emptyList(),
+    val splitShares: List<TripExpenseSplitShareRequest> = emptyList()
+)
+
+data class TripExpenseSplitShareRequest(
+    val userId: Long,
+    val amount: Double
 )
 
 data class TripExpenseSummaryResponse(
@@ -168,11 +191,39 @@ data class TripExpenseTransactionResponse(
     val paidByUserId: Long? = null,
     val paidByName: String? = null,
     val amount: Double? = 0.0,
-    val date: String? = null
+    val date: String? = null,
+    val proofImageUrl: String? = null,
+    val splitType: String? = "EQUAL",
+    val splitUserIds: List<Long> = emptyList(),
+    val splitShares: List<TripExpenseSplitShareResponse> = emptyList()
+)
+
+data class TripExpenseSplitShareResponse(
+    val userId: Long? = null,
+    val amount: Double? = 0.0
 )
 
 data class TripExpenseResponse(
     val summary: TripExpenseSummaryResponse,
     val contributions: List<TripExpenseContributionResponse> = emptyList(),
     val transactions: List<TripExpenseTransactionResponse> = emptyList()
+)
+
+data class SettlementReceiverResponse(
+    val userId: Long? = null,
+    val bankCode: String? = null,
+    val bankName: String? = null,
+    val accountNumber: String? = null,
+    val accountName: String? = null
+)
+
+data class SettlementResponse(
+    val id: Long? = null,
+    val tripId: Long? = null,
+    val fromUserId: Long? = null,
+    val toUserId: Long? = null,
+    val amount: Double? = 0.0,
+    val status: String? = null,
+    val transferContent: String? = null,
+    val receiver: SettlementReceiverResponse? = null
 )

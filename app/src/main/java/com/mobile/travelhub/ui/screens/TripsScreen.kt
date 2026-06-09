@@ -2,6 +2,7 @@ package com.mobile.travelhub.ui.screens
 
 import androidx.compose.ui.res.stringResource
 import android.widget.Toast
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -18,6 +19,7 @@ import androidx.compose.material.icons.filled.FlightTakeoff
 import androidx.compose.material.icons.filled.GroupAdd
 import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -28,12 +30,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.mobile.travelhub.ui.components.ActiveTripSkeleton
@@ -55,7 +57,8 @@ fun TripsScreen(
     createdGroupName: String? = null,
     onNavigateToGroupDetail: (Long, String) -> Unit = { _, _ -> },
     onNavigateToUpcomingTrips: () -> Unit = {},
-    onNavigateToCreateGroup: () -> Unit = {}
+    onNavigateToCreateGroup: () -> Unit = {},
+    onNavigateToEditProfile: () -> Unit = {}
 ) {
     val viewModel: TripsViewModel = hiltViewModel()
     val state by viewModel.uiState.collectAsState()
@@ -106,6 +109,8 @@ fun TripsScreen(
         }
     }
     var showAddTripSheet by remember { mutableStateOf(false) }
+    var bankAccountPromptMessage by remember { mutableStateOf<String?>(null) }
+    var joinSheetErrorMessage by remember { mutableStateOf<String?>(null) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     Scaffold(
@@ -113,13 +118,18 @@ fun TripsScreen(
         floatingActionButton = {
             ExtendedFloatingActionButton(
                 onClick = { showAddTripSheet = true },
-                containerColor = PrimaryBlue,
-                contentColor = Color.White,
-                shape = RoundedCornerShape(30.dp),
-                elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 8.dp),
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
+                shape = RoundedCornerShape(16.dp),
+                elevation = FloatingActionButtonDefaults.elevation(
+                    defaultElevation = 0.dp,
+                    pressedElevation = 0.dp,
+                    focusedElevation = 0.dp,
+                    hoveredElevation = 0.dp
+                ),
                 modifier = Modifier
-                    .height(64.dp)
-                    .padding(end = 4.dp)
+                    .height(66.dp)
+                    .padding(end = 4.dp, bottom = 4.dp)
             ) {
                 Icon(
                     Icons.Default.FlightTakeoff,
@@ -129,7 +139,8 @@ fun TripsScreen(
                 Spacer(modifier = Modifier.width(14.dp))
                 Text(
                     stringResource(R.string.ui_ab38c564dc),
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.labelLarge
                 )
             }
         }
@@ -138,7 +149,7 @@ fun TripsScreen(
             state = listState,
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(
-                top = 0.dp,
+                top = padding.calculateTopPadding(),
                 bottom = 100.dp 
             )
         ) {
@@ -157,31 +168,38 @@ fun TripsScreen(
 
             // Personalized Header
             item {
-                Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 28.dp)) {
+                Column(modifier = Modifier.padding(horizontal = 24.dp, vertical = 28.dp)) {
                     Text(
                         text = stringResource(R.string.ui_8f23352824),
-                        color = OnSurfaceVariant,
-                        fontSize = 18.sp
+                        color = OnSurface,
+                        style = MaterialTheme.typography.titleLarge
                     )
                     Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = stringResource(R.string.ui_5a3d42db37),
-                        fontWeight = FontWeight.ExtraBold,
-                        color = OnSurface,
-                        fontSize = 38.sp,
-                        lineHeight = 44.sp
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = stringResource(R.string.ui_5a3d42db37),
+                            fontWeight = FontWeight.ExtraBold,
+                            color = OnSurface,
+                            style = MaterialTheme.typography.displayMedium
+                        )
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Text(
+                            text = "✦",
+                            color = MaterialTheme.colorScheme.primary,
+                            style = MaterialTheme.typography.headlineLarge
+                        )
+                    }
                 }
             }
 
             // Current Active Trip (More immersive)
             item {
-                Column(modifier = Modifier.padding(horizontal = 20.dp)) {
+                Column(modifier = Modifier.padding(horizontal = 24.dp)) {
                     Text(
                         stringResource(R.string.ui_0811963e56),
                         fontWeight = FontWeight.ExtraBold,
                         color = OnSurface,
-                        fontSize = 18.sp
+                        style = MaterialTheme.typography.titleLarge
                     )
                     Spacer(modifier = Modifier.height(14.dp))
                     if (state.isLoading && state.activeTrip == null) {
@@ -193,11 +211,11 @@ fun TripsScreen(
                         )
                     }
                 }
-                Spacer(modifier = Modifier.height(30.dp))
+                Spacer(modifier = Modifier.height(32.dp))
             }
             
             item {
-                Column(modifier = Modifier.padding(horizontal = 20.dp)) {
+                Column(modifier = Modifier.padding(horizontal = 24.dp)) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -207,28 +225,36 @@ fun TripsScreen(
                             text = stringResource(R.string.ui_9183bdeb31),
                             fontWeight = FontWeight.ExtraBold,
                             color = OnSurface,
-                            fontSize = 22.sp
+                            style = MaterialTheme.typography.titleLarge
                         )
-                        Text(
-                            text = stringResource(R.string.ui_7e04025452),
-                            color = PrimaryBlue,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.clickable(onClick = onNavigateToUpcomingTrips)
-                        )
+                        Row(
+                            modifier = Modifier.clickable(onClick = onNavigateToUpcomingTrips),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = stringResource(R.string.ui_7e04025452),
+                                color = MaterialTheme.colorScheme.primary,
+                                fontWeight = FontWeight.Bold,
+                                style = MaterialTheme.typography.titleSmall
+                            )
+                            Icon(
+                                imageVector = Icons.Default.KeyboardArrowRight,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(22.dp)
+                            )
+                        }
                     }
                     Spacer(modifier = Modifier.height(16.dp))
                 }
             }
 
             item {
-                Column(modifier = Modifier.padding(horizontal = 20.dp)) {
+                Column(modifier = Modifier.padding(horizontal = 24.dp)) {
                     if (state.isLoading && state.upcomingTrips.isEmpty()) {
                         UpcomingTripsSkeleton()
                     } else if (state.upcomingTrips.isEmpty()) {
-                        Text(
-                            text = stringResource(R.string.ui_a5bb058cec),
-                            color = OnSurfaceVariant
-                        )
+                        EmptyUpcomingTripCard(onClick = { showAddTripSheet = true })
                     } else {
                         state.upcomingTrips.forEachIndexed { index, trip ->
                             UpcomingTripItem(
@@ -251,20 +277,20 @@ fun TripsScreen(
                         text = stringResource(R.string.ui_f593bb6075),
                         fontWeight = FontWeight.ExtraBold,
                         color = OnSurface,
-                        fontSize = 22.sp,
-                        modifier = Modifier.padding(horizontal = 20.dp)
+                        style = MaterialTheme.typography.titleLarge,
+                        modifier = Modifier.padding(horizontal = 24.dp)
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     if (state.isLoading && state.pastTrips.isEmpty()) {
                         PastMemoriesSkeleton()
                     } else if (state.pastTrips.isEmpty()) {
                         EmptyJourneyJournalCard(
-                            modifier = Modifier.padding(horizontal = 20.dp)
+                            modifier = Modifier.padding(horizontal = 24.dp)
                         )
                     } else {
                         LazyRow(
                             contentPadding = PaddingValues(horizontal = 24.dp),
-                            horizontalArrangement = Arrangement.spacedBy(16.dp)
+                            horizontalArrangement = Arrangement.spacedBy(18.dp)
                         ) {
                             items(
                                 items = state.pastTrips,
@@ -286,28 +312,86 @@ fun TripsScreen(
         // Bottom Sheet for adding trips
         if (showAddTripSheet) {
             ModalBottomSheet(
-                onDismissRequest = { showAddTripSheet = false },
+                onDismissRequest = {
+                    showAddTripSheet = false
+                    joinSheetErrorMessage = null
+                },
                 sheetState = sheetState,
                 containerColor = SurfaceContainerLowest,
                 dragHandle = { BottomSheetDefaults.DragHandle(color = SurfaceContainerLow) }
             ) {
                 AddTripOptionsContent(
-                    onDismiss = { showAddTripSheet = false },
+                    onDismiss = {
+                        showAddTripSheet = false
+                        joinSheetErrorMessage = null
+                    },
                     onCreateNew = {
                         showAddTripSheet = false
                         onNavigateToCreateGroup()
                     },
                     onJoinTrip = { joinCode, onDone ->
+                        joinSheetErrorMessage = null
                         viewModel.joinTrip(joinCode) { success, message ->
-                            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
-                            onDone()
-                            showAddTripSheet = false
+                            if (success) {
+                                Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                                joinSheetErrorMessage = null
+                                onDone(true)
+                                showAddTripSheet = false
+                            } else if (message.requiresBankAccountUpdate()) {
+                                joinSheetErrorMessage = null
+                                bankAccountPromptMessage = message
+                                onDone(true)
+                                showAddTripSheet = false
+                            } else {
+                                joinSheetErrorMessage = message
+                                onDone(false)
+                            }
                         }
                     },
                     isJoining = state.isJoining,
-                    joinErrorMessage = state.errorMessage
+                    joinErrorMessage = joinSheetErrorMessage,
+                    onJoinErrorClear = { joinSheetErrorMessage = null }
                 )
             }
+        }
+
+        if (bankAccountPromptMessage != null) {
+            AlertDialog(
+                onDismissRequest = { bankAccountPromptMessage = null },
+                containerColor = Color.White,
+                titleContentColor = OnSurface,
+                textContentColor = OnSurfaceVariant,
+                title = {
+                    Text(
+                        text = "Cập nhật tài khoản ngân hàng",
+                        fontWeight = FontWeight.ExtraBold
+                    )
+                },
+                text = {
+                    Text(
+                        text = bankAccountPromptMessage
+                            ?: "Bạn cần cập nhật tài khoản ngân hàng trước khi tham gia chuyến đi."
+                    )
+                },
+                dismissButton = {
+                    TextButton(onClick = { bankAccountPromptMessage = null }) {
+                        Text("Hủy")
+                    }
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            bankAccountPromptMessage = null
+                            onNavigateToEditProfile()
+                        }
+                    ) {
+                        Text(
+                            text = "Cập nhật",
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            )
         }
     }
 }
@@ -318,10 +402,11 @@ fun ActiveJourneyCardV2(
     trip: com.mobile.travelhub.viewmodels.UpcomingTripUiModel?,
     onNavigateToGroupDetail: (Long, String) -> Unit
 ) {
+    val primary = MaterialTheme.colorScheme.primary
     Card(
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = SurfaceContainerLowest),
-        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = primary),
+        elevation = CardDefaults.cardElevation(defaultElevation = 10.dp),
         modifier = Modifier
             .fillMaxWidth()
             .clickable(enabled = trip != null) {
@@ -342,46 +427,35 @@ fun ActiveJourneyCardV2(
                     modifier = Modifier.fillMaxSize()
                 )
             } else {
-                val imageRes = if (trip == null) {
-                    R.drawable.img_no_trip
-                } else {
-                    R.drawable.ic_launcher_background
-                }
-                Image(
-                    painter = painterResource(id = imageRes),
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize()
-                )
+                PrimaryMountainIllustration(modifier = Modifier.fillMaxSize())
             }
 
-            // Dark gradient from bottom
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(
                         brush = Brush.verticalGradient(
                             colors = listOf(
-                                Color.Transparent,
-                                Color.Black.copy(alpha = 0.18f),
-                                Color.Black.copy(alpha = 0.76f)
+                                primary.copy(alpha = 0.08f),
+                                primary.copy(alpha = 0.28f),
+                                primary.copy(alpha = 0.84f)
                             )
                         )
                     )
             )
 
-            // Info bottom left
             Column(
                 modifier = Modifier
-                    .align(Alignment.BottomStart)
-                    .padding(start = 18.dp, end = 18.dp, bottom = 22.dp)
+                    .align(Alignment.TopStart)
+                    .padding(start = 20.dp, top = 24.dp, end = 20.dp)
             ) {
                 Text(
                     text = trip?.name ?: "Chưa có chuyến đi diễn ra",
                     fontWeight = FontWeight.ExtraBold,
-                    color = Color.White
+                    color = Color.White,
+                    style = MaterialTheme.typography.headlineSmall
                 )
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(10.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Default.LocationOn, null, tint = Color.White, modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(8.dp))
@@ -389,9 +463,93 @@ fun ActiveJourneyCardV2(
                         trip?.location?.takeIf { it.isNotBlank() }
                             ?: "Hãy lên kế hoạch cho chuyến đi tiếp theo của bạn!",
                         color = Color.White,
-                        fontWeight = FontWeight.Medium
+                        fontWeight = FontWeight.Medium,
+                        style = MaterialTheme.typography.bodyLarge
                     )
                 }
+            }
+
+            Surface(
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(end = 18.dp, bottom = 18.dp)
+                    .height(56.dp)
+                    .clickable(enabled = trip != null) {
+                        trip?.let { onNavigateToGroupDetail(it.tripId, it.name) }
+                    },
+                shape = RoundedCornerShape(28.dp),
+                color = SurfaceContainerLowest,
+                shadowElevation = 4.dp
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 20.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.CalendarToday,
+                        contentDescription = null,
+                        tint = primary,
+                        modifier = Modifier.size(22.dp)
+                    )
+                    Text(
+                        text = "Xem chi tiết",
+                        color = primary,
+                        fontWeight = FontWeight.ExtraBold,
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun EmptyUpcomingTripCard(onClick: () -> Unit) {
+    ElevatedCard(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.elevatedCardColors(containerColor = SurfaceContainerLowest),
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 6.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp, vertical = 24.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(72.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.CalendarToday,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(34.dp)
+                )
+            }
+            Spacer(modifier = Modifier.width(18.dp))
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Text(
+                    text = "Chưa có chuyến đi nào sắp tới.",
+                    color = OnSurface,
+                    fontWeight = FontWeight.ExtraBold,
+                    style = MaterialTheme.typography.titleMedium
+                )
+                Text(
+                    text = "Hãy lên kế hoạch cho chuyến đi tiếp theo của bạn!",
+                    color = OnSurfaceVariant,
+                    style = MaterialTheme.typography.bodyMedium
+                )
             }
         }
     }
@@ -407,15 +565,18 @@ fun PastMemoryCard(place: String, date: String, imageUrl: String? = null, onClic
             localDate.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))
         }.getOrDefault(rawDate)
     }
-    Column(
+    ElevatedCard(
         modifier = Modifier
-            .width(130.dp)
-            .clickable(onClick = onClick)
+            .width(180.dp)
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.elevatedCardColors(containerColor = SurfaceContainerLowest),
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 6.dp)
     ) {
         Box(
             modifier = Modifier
-                .size(130.dp)
-                .clip(RoundedCornerShape(24.dp))
+                .fillMaxWidth()
+                .height(126.dp)
         ) {
             val resolvedImageUrl = imageUrl?.takeIf { it.isNotBlank() }
             if (resolvedImageUrl != null) {
@@ -438,9 +599,108 @@ fun PastMemoryCard(place: String, date: String, imageUrl: String? = null, onClic
                 )
             }
         }
-        Spacer(modifier = Modifier.height(12.dp))
-        Text(place, fontWeight = FontWeight.ExtraBold, color = OnSurface)
-        Text(cleanDate, color = OnSurfaceVariant)
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(14.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Text(
+                text = place,
+                fontWeight = FontWeight.ExtraBold,
+                color = OnSurface,
+                style = MaterialTheme.typography.titleSmall
+            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Default.CalendarToday,
+                    contentDescription = null,
+                    tint = OnSurfaceVariant,
+                    modifier = Modifier.size(16.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = cleanDate,
+                    color = OnSurfaceVariant,
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun PrimaryMountainIllustration(modifier: Modifier = Modifier) {
+    val primary = MaterialTheme.colorScheme.primary
+    Box(
+        modifier = modifier.background(
+            Brush.verticalGradient(
+                colors = listOf(
+                    primary.copy(alpha = 0.62f),
+                    primary.copy(alpha = 0.38f),
+                    primary.copy(alpha = 0.92f)
+                )
+            )
+        )
+    ) {
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val w = size.width
+            val h = size.height
+
+            drawCircle(
+                color = Color.White.copy(alpha = 0.58f),
+                radius = w * 0.07f,
+                center = androidx.compose.ui.geometry.Offset(w * 0.88f, h * 0.2f)
+            )
+
+            fun ridge(vararg points: Pair<Float, Float>) = Path().apply {
+                moveTo(0f, h)
+                points.forEachIndexed { index, point ->
+                    val x = point.first * w
+                    val y = point.second * h
+                    if (index == 0) lineTo(x, y) else lineTo(x, y)
+                }
+                lineTo(w, h)
+                close()
+            }
+
+            drawPath(
+                path = ridge(
+                    0f to 0.56f,
+                    0.12f to 0.5f,
+                    0.25f to 0.6f,
+                    0.42f to 0.54f,
+                    0.62f to 0.64f,
+                    0.82f to 0.48f,
+                    1f to 0.62f
+                ),
+                color = Color.White.copy(alpha = 0.2f)
+            )
+            drawPath(
+                path = ridge(
+                    0f to 0.72f,
+                    0.2f to 0.58f,
+                    0.38f to 0.72f,
+                    0.56f to 0.6f,
+                    0.75f to 0.72f,
+                    0.92f to 0.58f,
+                    1f to 0.66f
+                ),
+                color = primary.copy(alpha = 0.45f)
+            )
+            drawPath(
+                path = ridge(
+                    0f to 0.86f,
+                    0.16f to 0.72f,
+                    0.36f to 0.78f,
+                    0.52f to 0.9f,
+                    0.7f to 0.76f,
+                    0.9f to 0.7f,
+                    1f to 0.76f
+                ),
+                color = primary.copy(alpha = 0.86f)
+            )
+        }
     }
 }
 
@@ -448,9 +708,10 @@ fun PastMemoryCard(place: String, date: String, imageUrl: String? = null, onClic
 fun AddTripOptionsContent(
     onDismiss: () -> Unit,
     onCreateNew: () -> Unit,
-    onJoinTrip: (String, () -> Unit) -> Unit,
+    onJoinTrip: (String, (Boolean) -> Unit) -> Unit,
     isJoining: Boolean,
-    joinErrorMessage: String?
+    joinErrorMessage: String?,
+    onJoinErrorClear: () -> Unit = {}
 ) {
     var showJoinInput by remember { mutableStateOf(false) }
     var joinCode by remember { mutableStateOf("") }
@@ -500,9 +761,21 @@ fun AddTripOptionsContent(
             )
             Spacer(modifier = Modifier.height(24.dp))
 
+            if (!joinErrorMessage.isNullOrBlank()) {
+                Text(
+                    text = joinErrorMessage,
+                    color = SunsetOrange,
+                    fontWeight = FontWeight.SemiBold,
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+            }
             SimpleFormTextField(
                 value = joinCode,
-                onValueChange = { joinCode = it.uppercase().take(8) },
+                onValueChange = {
+                    joinCode = it.uppercase().take(8)
+                    onJoinErrorClear()
+                },
                 placeholder = stringResource(R.string.ui_63d05307ca),
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true
@@ -510,8 +783,10 @@ fun AddTripOptionsContent(
             Spacer(modifier = Modifier.height(24.dp))
             Button(
                 onClick = {
-                    onJoinTrip(joinCode) {
-                        joinCode = ""
+                    onJoinTrip(joinCode) { shouldClearCode ->
+                        if (shouldClearCode) {
+                            joinCode = ""
+                        }
                     }
                 },
                 modifier = Modifier
@@ -619,7 +894,7 @@ fun UpcomingTripItem(
                         trip.startDate?.let { "Bắt đầu $it" } ?: "Đang chờ ngày khởi hành"
                     },
                     fontWeight = FontWeight.Medium,
-                    fontSize = 13.sp
+                    style = MaterialTheme.typography.bodySmall
                 )
             }
         }
@@ -657,4 +932,10 @@ private fun EmptyJourneyJournalCard(modifier: Modifier = Modifier) {
             )
         }
     }
+}
+
+private fun String.requiresBankAccountUpdate(): Boolean {
+    return contains("ngân hàng", ignoreCase = true) ||
+        contains("số tài khoản", ignoreCase = true) ||
+        contains("bank account", ignoreCase = true)
 }

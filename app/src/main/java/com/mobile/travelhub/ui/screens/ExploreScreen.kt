@@ -35,6 +35,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -152,7 +153,7 @@ fun ExploreScreen(
                         Text(
                             text = stringResource(R.string.ui_b965ae66fc),
                             color = MaterialTheme.colorScheme.onSurface,
-                            style = MaterialTheme.typography.headlineSmall,
+                            style = MaterialTheme.typography.headlineLarge,
                             fontWeight = FontWeight.ExtraBold
                         )
                     }
@@ -196,7 +197,7 @@ fun ExploreScreen(
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
                     .navigationBarsPadding()
-                    .padding(end = 16.dp, bottom = 20.dp)
+                    .padding(end = 16.dp, bottom = 24.dp)
             )
         }
     }
@@ -223,6 +224,12 @@ private fun ExtendedAssistantButton(
         },
         containerColor = PrimaryBlue,
         contentColor = Color.White,
+        elevation = FloatingActionButtonDefaults.elevation(
+            defaultElevation = 0.dp,
+            pressedElevation = 0.dp,
+            focusedElevation = 0.dp,
+            hoveredElevation = 0.dp
+        ),
         modifier = modifier
     )
 }

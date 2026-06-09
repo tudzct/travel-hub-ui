@@ -102,6 +102,7 @@ fun GroupDetailScreen(
     var showInviteMenu by remember { mutableStateOf(false) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
     var showLeaveConfirm by remember { mutableStateOf(false) }
+    var showFinishTripConfirm by remember { mutableStateOf(false) }
     var showItinerarySheet by remember { mutableStateOf(false) }
     var showManageMembersDialog by remember { mutableStateOf(false) }
     var memberToDelete by remember { mutableStateOf<com.mobile.travelhub.viewmodels.GroupMemberUiModel?>(null) }
@@ -153,7 +154,6 @@ fun GroupDetailScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(scrollState)
-                .padding(bottom = 80.dp)
         ) {
             if (isInitialLoading) {
                 GroupDetailHeaderSkeleton()
@@ -389,6 +389,44 @@ fun GroupDetailScreen(
                         onClick = { onNavigateToProfile(uiState.members.first().userId) }
                     )
                 }
+
+                if (!isInitialLoading && isLeader && !isCompleted) {
+                    Spacer(modifier = Modifier.height(28.dp))
+                    Button(
+                        onClick = { showFinishTripConfirm = true },
+                        enabled = !uiState.isFinishingTrip,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(52.dp),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary,
+                            disabledContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.42f),
+                            disabledContentColor = MaterialTheme.colorScheme.onPrimary
+                        )
+                    ) {
+                        if (uiState.isFinishingTrip) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(18.dp),
+                                strokeWidth = 2.dp,
+                                color = MaterialTheme.colorScheme.onPrimary
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                        } else {
+                            Icon(
+                                imageVector = Icons.Default.Check,
+                                contentDescription = null,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                        }
+                        Text(
+                            text = if (uiState.isFinishingTrip) "Đang kết thúc..." else "Kết thúc chuyến đi",
+                            fontWeight = FontWeight.ExtraBold
+                        )
+                    }
+                }
             }
         }
 
@@ -533,6 +571,45 @@ fun GroupDetailScreen(
                         },
                         dismissButton = {
                             TextButton(onClick = { showLeaveConfirm = false }) { Text(text = stringResource(R.string.ui_34ca764caf)) }
+                        }
+                    )
+                }
+
+                if (showFinishTripConfirm) {
+                    AlertDialog(
+                        onDismissRequest = {
+                            if (!uiState.isFinishingTrip) {
+                                showFinishTripConfirm = false
+                            }
+                        },
+                        title = { Text(text = "Kết thúc chuyến đi?") },
+                        text = {
+                            Text(
+                                text = "Sau khi kết thúc, hệ thống sẽ tính các khoản cần thanh toán và chuyến đi không thể tiếp tục chỉnh sửa chi phí."
+                            )
+                        },
+                        confirmButton = {
+                            TextButton(
+                                enabled = !uiState.isFinishingTrip,
+                                onClick = {
+                                    viewModel.finishTrip { success, message ->
+                                        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                                        if (success) {
+                                            showFinishTripConfirm = false
+                                        }
+                                    }
+                                }
+                            ) {
+                                Text(text = "Kết thúc", fontWeight = FontWeight.Bold)
+                            }
+                        },
+                        dismissButton = {
+                            TextButton(
+                                enabled = !uiState.isFinishingTrip,
+                                onClick = { showFinishTripConfirm = false }
+                            ) {
+                                Text(text = stringResource(R.string.ui_34ca764caf))
+                            }
                         }
                     )
                 }

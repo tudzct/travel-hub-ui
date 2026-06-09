@@ -6,6 +6,7 @@ import com.mobile.travelhub.data.model.TripDetailResponse
 import com.mobile.travelhub.data.model.UpdateTripRequest
 import com.mobile.travelhub.data.model.JoinTripRequest
 import com.mobile.travelhub.data.model.JoinTripResultResponse
+import com.mobile.travelhub.data.model.SettlementResponse
 import com.mobile.travelhub.data.model.TripInviteCodeResponse
 import retrofit2.http.Body
 import retrofit2.http.DELETE
@@ -58,4 +59,14 @@ interface TripApiService {
     suspend fun regenerateInviteCode(
         @Path("tripId") tripId: Long
     ): TripInviteCodeResponse
+
+    @POST("api/trips/{tripId}/finish")
+    suspend fun finishTrip(
+        @Path("tripId") tripId: Long
+    ): List<SettlementResponse>
+
+    @GET("api/trips/{tripId}/settlements")
+    suspend fun listSettlements(
+        @Path("tripId") tripId: Long
+    ): List<SettlementResponse>
 }

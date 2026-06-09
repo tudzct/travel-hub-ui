@@ -27,7 +27,10 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.AlternateEmail
+import androidx.compose.material.icons.outlined.AccountBalance
+import androidx.compose.material.icons.outlined.Badge
 import androidx.compose.material.icons.outlined.ChevronRight
+import androidx.compose.material.icons.outlined.CreditCard
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Email
 import androidx.compose.material.icons.outlined.Person
@@ -117,6 +120,10 @@ fun EditProfileScreen(
     var location by remember { mutableStateOf("") }
 
     var email by remember { mutableStateOf("") }
+    var bankCode by remember { mutableStateOf("") }
+    var bankName by remember { mutableStateOf("") }
+    var accountNumber by remember { mutableStateOf("") }
+    var accountName by remember { mutableStateOf("") }
 
     var originalName by remember { mutableStateOf("") }
     var originalHandle by remember { mutableStateOf("") }
@@ -124,6 +131,10 @@ fun EditProfileScreen(
     var originalDob by remember { mutableStateOf("") }
     var originalLocation by remember { mutableStateOf("") }
     var originalGender by remember { mutableStateOf("") }
+    var originalBankCode by remember { mutableStateOf("") }
+    var originalBankName by remember { mutableStateOf("") }
+    var originalAccountNumber by remember { mutableStateOf("") }
+    var originalAccountName by remember { mutableStateOf("") }
 
     var showConfirmDialog by remember { mutableStateOf(false) }
 
@@ -168,6 +179,10 @@ fun EditProfileScreen(
                     dob = dob,
                     gender = gender,
                     location = location,
+                    bankCode = bankCode,
+                    bankName = bankName,
+                    accountNumber = accountNumber,
+                    accountName = accountName,
                     avatarUrl = finalAvatarUrl
                 )
                 android.util.Log.d(
@@ -222,13 +237,20 @@ fun EditProfileScreen(
             gender = data.gender ?: ""
             location = data.location ?: ""
             email = data.email ?: ""
-
+            bankCode = data.bankCode.orEmpty()
+            bankName = data.bankName.orEmpty()
+            accountNumber = data.accountNumber.orEmpty()
+            accountName = data.accountName.orEmpty()
             originalName = data.name
             originalHandle = data.username
             originalBio = data.bio ?: ""
             originalDob = data.dateOfBirth ?: ""
             originalLocation = data.location ?: ""
             originalGender = data.gender ?: ""
+            originalBankCode = data.bankCode.orEmpty()
+            originalBankName = data.bankName.orEmpty()
+            originalAccountNumber = data.accountNumber.orEmpty()
+            originalAccountName = data.accountName.orEmpty()
         }
     }
 
@@ -252,6 +274,8 @@ fun EditProfileScreen(
 
     val hasChanges = name != originalName || handle != originalHandle || bio != originalBio ||
         location != originalLocation || gender != originalGender ||
+        bankCode != originalBankCode || bankName != originalBankName ||
+        accountNumber != originalAccountNumber || accountName != originalAccountName ||
         pendingAvatar != null
 
     val handleBack = {
@@ -420,6 +444,54 @@ fun EditProfileScreen(
                 value = email,
                 onValueChange = { email = it },
                 enabled = false,
+                iconInCircle = true
+            )
+
+            Spacer(modifier = Modifier.height(34.dp))
+
+            EditProfileSectionTitle("Thông tin ngân hàng")
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            EditProfileInputCard(
+                icon = Icons.Outlined.AccountBalance,
+                label = "Mã ngân hàng",
+                value = bankCode,
+                onValueChange = { bankCode = it.uppercase().take(30) },
+                placeholder = "VD: VCB, BIDV, MBBANK",
+                iconInCircle = true
+            )
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            EditProfileInputCard(
+                icon = Icons.Outlined.AccountBalance,
+                label = "Tên ngân hàng",
+                value = bankName,
+                onValueChange = { bankName = it },
+                placeholder = "VD: Vietcombank",
+                iconInCircle = true
+            )
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            EditProfileInputCard(
+                icon = Icons.Outlined.CreditCard,
+                label = "Số tài khoản",
+                value = accountNumber,
+                onValueChange = { accountNumber = it.filter { char -> char.isDigit() }.take(50) },
+                placeholder = "Nhập số tài khoản",
+                iconInCircle = true
+            )
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            EditProfileInputCard(
+                icon = Icons.Outlined.Badge,
+                label = "Tên chủ tài khoản",
+                value = accountName,
+                onValueChange = { accountName = it },
+                placeholder = "Tên trên tài khoản ngân hàng",
                 iconInCircle = true
             )
 

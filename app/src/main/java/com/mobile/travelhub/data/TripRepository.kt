@@ -17,6 +17,7 @@ import com.mobile.travelhub.data.model.UpdateTripMemberRoleRequest
 import com.mobile.travelhub.data.model.UpdateTripRequest
 import com.mobile.travelhub.data.model.JoinTripRequest
 import com.mobile.travelhub.data.model.JoinTripResultResponse
+import com.mobile.travelhub.data.model.SettlementResponse
 import com.mobile.travelhub.data.model.TripInviteCodeResponse
 import com.mobile.travelhub.data.model.UpdateTripExpenseRequest
 import javax.inject.Inject
@@ -32,15 +33,18 @@ class TripRepository @Inject constructor(
     private val detailCache = java.util.concurrent.ConcurrentHashMap<Long, TripDetailResponse>()
     private val daysCache = java.util.concurrent.ConcurrentHashMap<Long, List<TripDayResponse>>()
     private val expenseCache = java.util.concurrent.ConcurrentHashMap<Long, TripExpenseResponse>()
+    private val settlementCache = java.util.concurrent.ConcurrentHashMap<Long, List<SettlementResponse>>()
     private val freshlyCreatedTripIds = java.util.concurrent.ConcurrentHashMap.newKeySet<Long>()
 
     fun getCachedTripDetail(tripId: Long): TripDetailResponse? = detailCache[tripId]
     fun getCachedTripDays(tripId: Long): List<TripDayResponse>? = daysCache[tripId]
     fun getCachedTripExpenses(tripId: Long): TripExpenseResponse? = expenseCache[tripId]
+    fun getCachedTripSettlements(tripId: Long): List<SettlementResponse>? = settlementCache[tripId]
     fun clearCache(tripId: Long) {
         detailCache.remove(tripId)
         daysCache.remove(tripId)
         expenseCache.remove(tripId)
+        settlementCache.remove(tripId)
         freshlyCreatedTripIds.remove(tripId)
     }
 
@@ -99,6 +103,23 @@ class TripRepository @Inject constructor(
 
     suspend fun regenerateInviteCode(tripId: Long): Result<TripInviteCodeResponse> {
         return runCatching { tripApiService.regenerateInviteCode(tripId) }
+    }
+
+    suspend fun finishTrip(tripId: Long): Result<List<SettlementResponse>> {
+        return runCatching {
+            val response = tripApiService.finishTrip(tripId)
+            settlementCache[tripId] = response
+            detailCache.remove(tripId)
+            response
+        }
+    }
+
+    suspend fun listTripSettlements(tripId: Long): Result<List<SettlementResponse>> {
+        return runCatching {
+            val response = tripApiService.listSettlements(tripId)
+            settlementCache[tripId] = response
+            response
+        }
     }
 
     suspend fun getJoinRequests(tripId: Long): Result<List<TripJoinRequestResponse>> {
