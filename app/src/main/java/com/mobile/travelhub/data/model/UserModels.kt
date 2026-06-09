@@ -18,7 +18,31 @@ data class UserProfileResponse(
     val postsCount: Int = 0,
     val followersCount: Int = 0,
     val followingCount: Int = 0,
-    val avatarUrl: String? = null
+    val avatarUrl: String? = null,
+    val hasBankAccount: Boolean = false,
+    val bankCode: String? = null,
+    val bankName: String? = null,
+    val accountNumber: String? = null,
+    val accountName: String? = null
+)
+
+data class BankAccountRequest(
+    val bankCode: String,
+    val bankName: String,
+    val accountNumber: String,
+    val accountName: String,
+    val isDefault: Boolean = true
+)
+
+data class BankAccountResponse(
+    val id: Long? = null,
+    val bankCode: String? = null,
+    val bankName: String? = null,
+    val accountNumber: String? = null,
+    val accountName: String? = null,
+    val isDefault: Boolean = false,
+    val createdAt: String? = null,
+    val updatedAt: String? = null
 )
 
 data class UserSummaryResponse(

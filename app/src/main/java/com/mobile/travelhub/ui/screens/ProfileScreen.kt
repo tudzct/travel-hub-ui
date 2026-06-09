@@ -15,6 +15,7 @@ import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.outlined.AddBox
+import androidx.compose.material.icons.outlined.AccountBalance
 import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material.icons.outlined.FavoriteBorder
@@ -176,6 +177,10 @@ fun ProfileScreen(
                     dob = currentProfile.dateOfBirth.orEmpty(),
                     gender = currentProfile.gender.orEmpty(),
                     location = currentProfile.location.orEmpty(),
+                    bankCode = currentProfile.bankCode.orEmpty(),
+                    bankName = currentProfile.bankName.orEmpty(),
+                    accountNumber = currentProfile.accountNumber.orEmpty(),
+                    accountName = currentProfile.accountName.orEmpty(),
                     avatarUrl = uploadedUrl
                 )
             } catch (e: Exception) {
@@ -441,6 +446,13 @@ private fun ProfileScreenContent(
                                     Spacer(modifier = Modifier.height(14.dp))
 
                                     if (isViewingOwnProfile) {
+                                        ProfileBankAccountCard(
+                                            profile = profile,
+                                            onClick = onNavigateToEditProfile
+                                        )
+
+                                        Spacer(modifier = Modifier.height(14.dp))
+
                                         ProfileEditRow(onClick = onNavigateToEditProfile)
                                     } else {
                                         ProfileFollowButton(
@@ -725,6 +737,78 @@ private fun ProfileStatDivider() {
             .width(1.dp)
             .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.8f))
     )
+}
+
+@Composable
+private fun ProfileBankAccountCard(
+    profile: UserProfileResponse,
+    onClick: () -> Unit
+) {
+    val hasBankAccount = profile.hasBankAccount &&
+        !profile.bankName.isNullOrBlank() &&
+        !profile.accountNumber.isNullOrBlank()
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 22.dp)
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(14.dp),
+        color = if (hasBankAccount) {
+            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
+        } else {
+            Color(0xFFFFF7ED)
+        },
+        border = BorderStroke(
+            1.dp,
+            if (hasBankAccount) {
+                MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f)
+            } else {
+                Color(0xFFF59E0B).copy(alpha = 0.45f)
+            }
+        )
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = Icons.Outlined.AccountBalance,
+                contentDescription = null,
+                tint = if (hasBankAccount) MaterialTheme.colorScheme.primary else Color(0xFFD97706),
+                modifier = Modifier.size(24.dp)
+            )
+            Spacer(modifier = Modifier.width(14.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = if (hasBankAccount) profile.bankName.orEmpty() else "Chưa có thông tin ngân hàng",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = if (hasBankAccount) {
+                        "${profile.accountNumber.orEmpty()} - ${profile.accountName.orEmpty()}"
+                    } else {
+                        "Cập nhật ngân hàng và số tài khoản để tham gia chuyến đi"
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+            Icon(
+                imageVector = Icons.Outlined.ChevronRight,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(22.dp)
+            )
+        }
+    }
 }
 
 @Composable
