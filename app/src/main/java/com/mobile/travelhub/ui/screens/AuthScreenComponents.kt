@@ -1,6 +1,7 @@
 package com.mobile.travelhub.ui.screens
 
 import androidx.compose.foundation.BorderStroke
+import com.mobile.travelhub.ui.theme.isDarkTheme
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -52,10 +53,23 @@ import com.mobile.travelhub.ui.components.SkeletonBlock
 
 private val AuthBlue = Color(0xFF2F7DF1)
 private val AuthBlueDark = Color(0xFF246EE7)
-private val AuthText = Color(0xFF111827)
-private val AuthMuted = Color(0xFF6B7280)
-private val AuthField = Color(0xFFF7F8FC)
-private val AuthStroke = Color(0xFFE1E5EE)
+
+private val AuthText: Color
+    @Composable
+    get() = if (isDarkTheme) Color(0xFFEEEEEE) else Color(0xFF111827)
+
+private val AuthMuted: Color
+    @Composable
+    get() = if (isDarkTheme) Color(0xFF9CA3AF) else Color(0xFF6B7280)
+
+private val AuthField: Color
+    @Composable
+    get() = if (isDarkTheme) Color(0xFF2D2D2D) else Color(0xFFF7F8FC)
+
+private val AuthStroke: Color
+    @Composable
+    get() = if (isDarkTheme) Color(0xFF444444) else Color(0xFFE1E5EE)
+
 private val AuthOrange = Color(0xFFFF8A00)
 
 @Composable
@@ -65,8 +79,8 @@ fun AuthLogo(modifier: Modifier = Modifier) {
             .size(72.dp)
             .shadow(18.dp, RoundedCornerShape(18.dp), ambientColor = Color(0x223B82F6))
             .clip(RoundedCornerShape(18.dp))
-            .background(Color(0xFFF5F7FC))
-            .border(1.dp, Color(0xFFE9EDF5), RoundedCornerShape(18.dp)),
+            .background(if (isDarkTheme) MaterialTheme.colorScheme.surfaceVariant else Color(0xFFF5F7FC))
+            .border(1.dp, if (isDarkTheme) MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f) else Color(0xFFE9EDF5), RoundedCornerShape(18.dp)),
         contentAlignment = Alignment.Center
     ) {
         Icon(
@@ -129,7 +143,7 @@ fun AuthSubtitle(text: String, modifier: Modifier = Modifier) {
             letterSpacing = 0.sp
         ),
         textAlign = TextAlign.Center,
-        color = Color(0xFF4B5563),
+        color = AuthMuted,
         modifier = modifier.fillMaxWidth()
     )
 }
@@ -265,7 +279,7 @@ fun AuthDivider(text: String = "hoặc") {
         )
         Text(
             text = text,
-            color = Color(0xFF4B5563),
+            color = AuthMuted,
             style = MaterialTheme.typography.bodyMedium.copy(fontSize = 15.sp)
         )
         Box(
@@ -289,7 +303,7 @@ fun GoogleAuthButton(
             .fillMaxWidth()
             .height(58.dp),
         shape = RoundedCornerShape(14.dp),
-        color = Color.White,
+        color = if (isDarkTheme) MaterialTheme.colorScheme.surfaceVariant else Color.White,
         border = BorderStroke(1.dp, AuthStroke)
     ) {
         Row(
@@ -400,13 +414,13 @@ fun PasswordStrengthMeter(password: String, modifier: Modifier = Modifier) {
     ) {
         Text(
             text = "Mật khẩu phải có ít nhất 8 ký tự",
-            color = Color(0xFF4B5563),
+            color = AuthMuted,
             style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp, letterSpacing = 0.sp),
             modifier = Modifier.weight(1f)
         )
         Text(
             text = buildAnnotatedString {
-                withStyle(SpanStyle(color = Color(0xFF4B5563))) {
+                withStyle(SpanStyle(color = AuthMuted)) {
                     append("Độ mạnh: ")
                 }
                 withStyle(SpanStyle(color = labelColor, fontWeight = FontWeight.Bold)) {

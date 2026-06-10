@@ -178,7 +178,7 @@ fun TravelAssistantScreen(
             state.errorMessage?.let { error ->
                 item(key = "error") {
                     Surface(
-                        color = Color(0xFFFFEDEA),
+                        color = MaterialTheme.colorScheme.errorContainer,
                         shape = RoundedCornerShape(12.dp),
                         modifier = Modifier
                             .fillMaxWidth()
@@ -187,7 +187,7 @@ fun TravelAssistantScreen(
                         Text(
                             text = error,
                             modifier = Modifier.padding(12.dp),
-                            color = Color(0xFF9B2C21),
+                            color = MaterialTheme.colorScheme.onErrorContainer,
                             style = MaterialTheme.typography.bodySmall
                         )
                     }

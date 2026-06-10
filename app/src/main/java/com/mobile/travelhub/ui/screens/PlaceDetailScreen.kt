@@ -133,11 +133,13 @@ fun PlaceDetailScreen(
         }
     }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+    Surface(
+        modifier = Modifier.fillMaxSize(),
+        color = MaterialTheme.colorScheme.background
     ) {
+        Box(
+            modifier = Modifier.fillMaxSize()
+        ) {
         when {
             uiState.isLoading && uiState.detail == null -> {
                 PlaceDetailLoadingSkeleton()
@@ -193,8 +195,9 @@ fun PlaceDetailScreen(
             }
 
             uiState.detail != null -> {
-                val detail = uiState.detail ?: return
-                LazyColumn(
+                val detail = uiState.detail
+                if (detail != null) {
+                    LazyColumn(
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(bottom = 24.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -287,6 +290,7 @@ fun PlaceDetailScreen(
                 }
 
                 PinnedBackButton(onBack = onBack)
+                }
             }
         }
 
@@ -303,6 +307,7 @@ fun PlaceDetailScreen(
             )
         }
     }
+}
 }
 
 @Composable

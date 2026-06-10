@@ -42,6 +42,7 @@ import com.mobile.travelhub.ui.theme.OnSurface
 import com.mobile.travelhub.ui.theme.OnSurfaceVariant
 import com.mobile.travelhub.ui.theme.PrimaryBlue
 import com.mobile.travelhub.ui.theme.SurfaceBg
+import com.mobile.travelhub.ui.theme.isDarkTheme
 import com.mobile.travelhub.viewmodels.HistoryViewModel
 import java.time.Instant
 import java.time.ZoneId
@@ -79,7 +80,7 @@ fun ViewHistoryScreen(
                 modifier = Modifier
                     .size(44.dp)
                     .background(
-                        color = Color(0xFFF2F4F7),
+                        color = MaterialTheme.colorScheme.surfaceVariant,
                         shape = CircleShape
                     )
             ) {
@@ -105,7 +106,7 @@ fun ViewHistoryScreen(
             uiState.errorMessage != null && uiState.items.isEmpty() -> {
                 Text(
                     text = uiState.errorMessage.orEmpty(),
-                    color = Color(0xFFC93C3C)
+                    color = MaterialTheme.colorScheme.error
                 )
             }
 
@@ -127,7 +128,7 @@ fun ViewHistoryScreen(
                                 .fillMaxWidth()
                                 .clickable { onPlaceClick(item.placeId) },
                             shape = RoundedCornerShape(28.dp),
-                            color = Color(0xFFF3EEF9),
+                            color = if (isDarkTheme) Color(0xFF231E2A) else Color(0xFFF3EEF9),
                             shadowElevation = 0.dp
                         ) {
                             Row(

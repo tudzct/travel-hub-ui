@@ -773,7 +773,7 @@ private fun RatingStars(
             Icon(
                 imageVector = Icons.Filled.Star,
                 contentDescription = null,
-                tint = if (index < roundedRating) Color(0xFFFFB300) else Color(0xFFD6D9DF),
+                tint = if (index < roundedRating) Color(0xFFFFB300) else MaterialTheme.colorScheme.outlineVariant,
                 modifier = Modifier.size(starSize.dp)
             )
         }

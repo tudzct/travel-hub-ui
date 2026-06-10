@@ -162,7 +162,8 @@ private fun CreatePostTopBar(
             text = stringResource(R.string.ui_03f9ddf337),
             modifier = Modifier.align(Alignment.Center),
             style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onBackground
         )
 
         TextButton(

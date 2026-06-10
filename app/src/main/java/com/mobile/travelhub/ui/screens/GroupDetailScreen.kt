@@ -535,7 +535,7 @@ fun GroupDetailScreen(
                                     }
                                 }
                             ) {
-                                Text(text = stringResource(R.string.ui_aa1d94fc16), color = SunsetOrange)
+                                Text(text = stringResource(R.string.ui_aa1d94fc16), color = MaterialTheme.colorScheme.error)
                             }
                         },
                         dismissButton = {
@@ -564,7 +564,7 @@ fun GroupDetailScreen(
                                         }
                                     }
                                 }
-                            ) { Text(text = stringResource(R.string.ui_d354717258), color = SunsetOrange) }
+                            ) { Text(text = stringResource(R.string.ui_d354717258), color = MaterialTheme.colorScheme.error) }
                         },
                         dismissButton = {
                             TextButton(onClick = { showLeaveConfirm = false }) { Text(text = stringResource(R.string.ui_34ca764caf)) }

@@ -97,7 +97,7 @@ fun ItineraryOverviewContent(
                                 modifier = Modifier.size(14.dp)
                             )
                             Text(
-                                text = if (state.isCompleted) "Chuyến đi đã hoàn thành (Chế độ chỉ xem)" else "Long press a place to edit",
+                                text = if (state.isCompleted) "Chuyến đi đã hoàn thành (Chế độ chỉ xem)" else "Nhấn giữ để chỉnh sửa",
                                 color = OnSurfaceVariant.copy(alpha = if (state.isCompleted) 0.5f else 0.72f),
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Medium
@@ -295,7 +295,7 @@ private fun ItineraryTimelineDay(
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(28.dp),
-        color = Color(0xFFF3EEF9),
+        color = if (isDarkTheme) Color(0xFF211B27) else Color(0xFFF4F0F8),
         shadowElevation = 0.dp
     ) {
         Column(
@@ -340,7 +340,7 @@ private fun ItineraryTimelineDay(
                 Surface(
                     modifier = Modifier.clickable(onClick = onOpenDayDetail),
                     shape = RoundedCornerShape(14.dp),
-                    color = Color(0xFFE6F1FB)
+                    color = if (isDarkTheme) Color(0xFF362C40) else Color(0xFFEBE4F3)
                 ) {
                     Icon(
                         imageVector = Icons.Default.Map,
@@ -441,7 +441,7 @@ private fun ItineraryTimelineEventCard(
                     }
                 ),
             shape = RoundedCornerShape(24.dp),
-            color = Color.White,
+            color = if (isDarkTheme) Color(0xFF2B2233) else SurfaceContainerLowest,
             shadowElevation = 0.dp
         ) {
             Column(

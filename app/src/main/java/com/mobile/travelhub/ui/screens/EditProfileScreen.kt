@@ -881,7 +881,7 @@ private fun EditProfileInputCard(
                     enabled = enabled,
                     singleLine = maxLength == null,
                     textStyle = MaterialTheme.typography.bodyLarge.copy(
-                        color = if (enabled) Color.Black else Color.Black,
+                        color = if (enabled) EditProfileInk else EditProfileMuted,
                         fontWeight = FontWeight.Normal
                     ),
                     modifier = Modifier.fillMaxWidth(),
@@ -941,12 +941,29 @@ private fun EditProfileFieldIcon(
     }
 }
 
-private val EditProfileBackground = Color(0xFFFFFFFF)
-private val EditProfileInk = Color(0xFF111827)
-private val EditProfileMuted = Color(0xFF5F6B7A)
-private val EditProfileIcon = Color(0xFF3F4A59)
-private val EditProfileBorder = Color(0xFFE8ECF2)
-private val EditProfileSoftBlue = Color(0xFFEAF3FF)
+private val EditProfileBackground: Color
+    @Composable
+    get() = MaterialTheme.colorScheme.surface
+
+private val EditProfileInk: Color
+    @Composable
+    get() = MaterialTheme.colorScheme.onSurface
+
+private val EditProfileMuted: Color
+    @Composable
+    get() = MaterialTheme.colorScheme.onSurfaceVariant
+
+private val EditProfileIcon: Color
+    @Composable
+    get() = MaterialTheme.colorScheme.onSurfaceVariant
+
+private val EditProfileBorder: Color
+    @Composable
+    get() = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f)
+
+private val EditProfileSoftBlue: Color
+    @Composable
+    get() = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
 
 private const val AVATAR_OUTPUT_SIZE = 500
 private const val AVATAR_JPEG_QUALITY = 85

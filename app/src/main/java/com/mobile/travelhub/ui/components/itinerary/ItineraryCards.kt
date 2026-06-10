@@ -34,7 +34,8 @@ import com.mobile.travelhub.R
 
 @Composable
 fun DayContinuousTimelineCard(day: ItineraryDay) {
-    val segments = remember(day.events) { buildTimelineSegments(day.events) }
+    val emptyColor = SurfaceContainerLow
+    val segments = remember(day.events, emptyColor) { buildTimelineSegments(day.events, emptyColor) }
 
     Card(
         shape = RoundedCornerShape(28.dp),
@@ -644,7 +645,7 @@ fun AddActionCard(
         ) {
             Box(
                 modifier = Modifier
-                    .background(Color.White.copy(alpha = 0.85f), RoundedCornerShape(16.dp))
+                    .background(if (isDarkTheme) Color.White.copy(alpha = 0.15f) else Color.White.copy(alpha = 0.85f), RoundedCornerShape(16.dp))
                     .padding(10.dp)
             ) {
                 Icon(Icons.Default.Add, contentDescription = null, tint = PrimaryBlue)
@@ -685,7 +686,7 @@ data class TimelineSegmentUi(
     val color: Color
 )
 
-private fun buildTimelineSegments(events: List<ItineraryEvent>): List<TimelineSegmentUi> {
+private fun buildTimelineSegments(events: List<ItineraryEvent>, emptyColor: Color): List<TimelineSegmentUi> {
     if (events.isEmpty()) return emptyList()
     val sorted = events.sortedBy { parseTimeMinutes(it.startTime) }
     val segments = mutableListOf<TimelineSegmentUi>()
@@ -699,7 +700,7 @@ private fun buildTimelineSegments(events: List<ItineraryEvent>): List<TimelineSe
                 startTime = minutesToTime(cursor),
                 endTime = minutesToTime(eventStart),
                 durationMinutes = max(15, eventStart - cursor),
-                color = SurfaceContainerLow
+                color = emptyColor
             )
         }
         segments += TimelineSegmentUi(

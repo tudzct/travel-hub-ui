@@ -358,7 +358,7 @@ fun TripsScreen(
         if (bankAccountPromptMessage != null) {
             AlertDialog(
                 onDismissRequest = { bankAccountPromptMessage = null },
-                containerColor = Color.White,
+                containerColor = MaterialTheme.colorScheme.surface,
                 titleContentColor = OnSurface,
                 textContentColor = OnSurfaceVariant,
                 title = {

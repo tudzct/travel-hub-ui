@@ -428,6 +428,42 @@ private fun ProfileScreenContent(
                                         }
                                     )
 
+                                    if (!profile.bio.isNullOrBlank() || !profile.location.isNullOrBlank()) {
+                                        Spacer(modifier = Modifier.height(8.dp))
+                                        Column(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(horizontal = 22.dp),
+                                            verticalArrangement = Arrangement.spacedBy(4.dp)
+                                        ) {
+                                            if (!profile.bio.isNullOrBlank()) {
+                                                Text(
+                                                    text = profile.bio,
+                                                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
+                                                    color = MaterialTheme.colorScheme.onSurface
+                                                )
+                                            }
+                                            if (!profile.location.isNullOrBlank()) {
+                                                Row(
+                                                    verticalAlignment = Alignment.CenterVertically,
+                                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                                ) {
+                                                    Icon(
+                                                        imageVector = Icons.Default.LocationOn,
+                                                        contentDescription = null,
+                                                        tint = MaterialTheme.colorScheme.primary,
+                                                        modifier = Modifier.size(16.dp)
+                                                    )
+                                                    Text(
+                                                        text = profile.location,
+                                                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
+                                                        color = MaterialTheme.colorScheme.onSurface
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+
                                     Spacer(modifier = Modifier.height(12.dp))
 
                                     ProfileStatsCard(
@@ -760,14 +796,14 @@ private fun ProfileBankAccountCard(
         color = if (hasBankAccount) {
             MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
         } else {
-            Color(0xFFFFF7ED)
+            BankCardWarningBg
         },
         border = BorderStroke(
             1.dp,
             if (hasBankAccount) {
                 MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f)
             } else {
-                Color(0xFFF59E0B).copy(alpha = 0.45f)
+                BankCardWarningBorder
             }
         )
     ) {
@@ -778,7 +814,7 @@ private fun ProfileBankAccountCard(
             Icon(
                 imageVector = Icons.Outlined.AccountBalance,
                 contentDescription = null,
-                tint = if (hasBankAccount) MaterialTheme.colorScheme.primary else Color(0xFFD97706),
+                tint = if (hasBankAccount) MaterialTheme.colorScheme.primary else BankCardWarningIcon,
                 modifier = Modifier.size(24.dp)
             )
             Spacer(modifier = Modifier.width(14.dp))
@@ -963,7 +999,21 @@ private fun ProfileEmptyPostsState(
     }
 }
 
-private val ProfileBlue = Color(0xFF1677F2)
+private val ProfileBlue: Color
+    @Composable
+    get() = MaterialTheme.colorScheme.primary
+
+private val BankCardWarningBg: Color
+    @Composable
+    get() = if (isDarkTheme) Color(0xFF3E2D1D) else Color(0xFFFFF7ED)
+
+private val BankCardWarningBorder: Color
+    @Composable
+    get() = if (isDarkTheme) Color(0xFF8C5C26).copy(alpha = 0.45f) else Color(0xFFF59E0B).copy(alpha = 0.45f)
+
+private val BankCardWarningIcon: Color
+    @Composable
+    get() = if (isDarkTheme) Color(0xFFF59E0B) else Color(0xFFD97706)
 
 @Composable
 fun ChangePasswordDialog(
