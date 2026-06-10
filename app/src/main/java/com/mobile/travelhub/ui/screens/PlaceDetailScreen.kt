@@ -34,7 +34,6 @@ import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -42,11 +41,9 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -70,12 +67,9 @@ import coil.compose.AsyncImage
 import com.mobile.travelhub.data.model.TravelPlaceListItemResponse
 import com.mobile.travelhub.data.model.TravelPlaceReviewResponse
 import com.mobile.travelhub.ui.components.ExpandableDescription
-import com.mobile.travelhub.ui.components.SimpleFormTextField
 import com.mobile.travelhub.ui.components.ReviewWriteSheet
 import com.mobile.travelhub.ui.components.TravelPlaceReviewCard
 import com.mobile.travelhub.ui.components.TravelPlaceReviewCardSkeleton
-import com.mobile.travelhub.ui.components.InlineLoadingSkeleton
-import com.mobile.travelhub.ui.components.LoadingContentSkeleton
 import com.mobile.travelhub.ui.components.LoadingListSkeleton
 import com.mobile.travelhub.ui.components.RetryButton
 import com.mobile.travelhub.ui.components.SkeletonBlock
@@ -146,7 +140,7 @@ fun PlaceDetailScreen(
     ) {
         when {
             uiState.isLoading && uiState.detail == null -> {
-                LoadingContentSkeleton(modifier = Modifier.fillMaxSize())
+                PlaceDetailLoadingSkeleton()
             }
 
             uiState.errorMessage != null && uiState.detail == null -> {
@@ -469,6 +463,231 @@ private fun PinnedBackButton(onBack: () -> Unit) {
                 tint = MaterialTheme.colorScheme.onSurface
             )
         }
+    }
+}
+
+@Composable
+private fun PlaceDetailLoadingSkeleton() {
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background),
+        contentPadding = PaddingValues(bottom = 24.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        item {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(380.dp)
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
+            ) {
+                SkeletonBlock(
+                    modifier = Modifier.fillMaxSize(),
+                    shape = RoundedCornerShape(0.dp)
+                )
+                SkeletonBlock(
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .padding(start = 16.dp, top = 48.dp)
+                        .size(48.dp),
+                    shape = CircleShape
+                )
+                Column(
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .fillMaxWidth()
+                        .padding(start = 24.dp, end = 24.dp, bottom = 28.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    SkeletonBlock(
+                        modifier = Modifier
+                            .width(92.dp)
+                            .height(24.dp),
+                        shape = RoundedCornerShape(999.dp)
+                    )
+                    SkeletonBlock(
+                        modifier = Modifier
+                            .fillMaxWidth(0.72f)
+                            .height(34.dp),
+                        shape = RoundedCornerShape(10.dp)
+                    )
+                }
+            }
+        }
+
+        item {
+            FlatSection {
+                Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                    PlaceInfoRowSkeleton()
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f))
+                    PlaceInfoRowSkeleton()
+                }
+            }
+        }
+
+        item {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                SectionTitleSkeleton()
+                FlatSection {
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        SkeletonBlock(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(14.dp)
+                        )
+                        SkeletonBlock(
+                            modifier = Modifier
+                                .fillMaxWidth(0.92f)
+                                .height(14.dp)
+                        )
+                        SkeletonBlock(
+                            modifier = Modifier
+                                .fillMaxWidth(0.66f)
+                                .height(14.dp)
+                        )
+                    }
+                }
+            }
+        }
+
+        item {
+            SkeletonBlock(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = PlaceDetailHorizontalPadding)
+                    .height(52.dp),
+                shape = RoundedCornerShape(16.dp)
+            )
+        }
+
+        item {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                SectionTitleSkeleton()
+                FlatSection {
+                    ReviewSummarySkeleton()
+                }
+            }
+        }
+
+        item {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = PlaceDetailHorizontalPadding),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    SkeletonBlock(
+                        modifier = Modifier
+                            .width(120.dp)
+                            .height(20.dp),
+                        shape = RoundedCornerShape(8.dp)
+                    )
+                    SkeletonBlock(
+                        modifier = Modifier
+                            .width(62.dp)
+                            .height(16.dp),
+                        shape = RoundedCornerShape(8.dp)
+                    )
+                }
+                repeat(2) {
+                    TravelPlaceReviewCardSkeleton(horizontalPadding = 0.dp)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SectionTitleSkeleton() {
+    SkeletonBlock(
+        modifier = Modifier
+            .padding(horizontal = PlaceDetailHorizontalPadding)
+            .width(104.dp)
+            .height(20.dp),
+        shape = RoundedCornerShape(8.dp)
+    )
+}
+
+@Composable
+private fun PlaceInfoRowSkeleton() {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        SkeletonBlock(
+            modifier = Modifier.size(40.dp),
+            shape = CircleShape
+        )
+        Spacer(modifier = Modifier.width(12.dp))
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            SkeletonBlock(
+                modifier = Modifier
+                    .width(76.dp)
+                    .height(12.dp),
+                shape = RoundedCornerShape(6.dp)
+            )
+            SkeletonBlock(
+                modifier = Modifier
+                    .fillMaxWidth(0.62f)
+                    .height(18.dp),
+                shape = RoundedCornerShape(8.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun ReviewSummarySkeleton() {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Row(
+            modifier = Modifier.weight(1f),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            SkeletonBlock(
+                modifier = Modifier.size(28.dp),
+                shape = CircleShape
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                SkeletonBlock(
+                    modifier = Modifier
+                        .width(86.dp)
+                        .height(26.dp),
+                    shape = RoundedCornerShape(8.dp)
+                )
+                SkeletonBlock(
+                    modifier = Modifier
+                        .width(110.dp)
+                        .height(14.dp),
+                    shape = RoundedCornerShape(7.dp)
+                )
+            }
+        }
+        SkeletonBlock(
+            modifier = Modifier
+                .width(118.dp)
+                .height(42.dp),
+            shape = RoundedCornerShape(999.dp)
+        )
     }
 }
 

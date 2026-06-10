@@ -1336,7 +1336,18 @@ private fun SplitOptionEditor(
                 subtitle = "Nhập số tiền từng người",
                 selected = splitType == SPLIT_CUSTOM,
                 enabled = enabled,
-                onClick = { onSplitTypeChange(SPLIT_CUSTOM) },
+                onClick = {
+                    onSplitTypeChange(SPLIT_CUSTOM)
+                    if (totalAmount > 0L && selectedMembers.isNotEmpty() && customSplitValues.isEmpty()) {
+                        onCustomSplitValuesChange(
+                            autoFillCustomSplitValues(
+                                totalAmount = totalAmount,
+                                selectedMembers = selectedMembers,
+                                currentValues = customSplitValues
+                            )
+                        )
+                    }
+                },
                 modifier = Modifier.weight(1f)
             )
         }
@@ -1344,10 +1355,25 @@ private fun SplitOptionEditor(
         SplitMemberSelector(
             members = members,
             selectedUserIds = selectedUserIds,
+            customAmounts = if (splitType == SPLIT_CUSTOM) customSplitValues.toMoneyMap() else emptyMap(),
             enabled = enabled,
             onSelectedUserIdsChange = { newSelection ->
                 onSelectedUserIdsChange(newSelection)
-                onCustomSplitValuesChange(customSplitValues.filterKeys { it in newSelection })
+                val retainedValues = customSplitValues.filterKeys { it in newSelection }
+                val nextSelectedMembers = members.filter { it.userId in newSelection && it.userId > 0L }
+                val hasEmptyCustomAmount = nextSelectedMembers.any { member ->
+                    parseMoneyInputToLong(retainedValues[member.userId]?.text.orEmpty()) == null
+                }
+                val nextCustomValues = if (splitType == SPLIT_CUSTOM && totalAmount > 0L && hasEmptyCustomAmount) {
+                    autoFillCustomSplitValues(
+                        totalAmount = totalAmount,
+                        selectedMembers = nextSelectedMembers,
+                        currentValues = retainedValues
+                    )
+                } else {
+                    retainedValues
+                }
+                onCustomSplitValuesChange(nextCustomValues)
             }
         )
 
@@ -1383,19 +1409,15 @@ private fun SplitOptionEditor(
                 }
 
                 selectedMembers.forEach { member ->
-                    OutlinedTextField(
+                    CustomSplitAmountRow(
+                        member = member,
                         value = customSplitValues[member.userId] ?: TextFieldValue(""),
+                        enabled = enabled,
                         onValueChange = { value ->
                             onCustomSplitValuesChange(
                                 customSplitValues + (member.userId to NumberUtils.formatTextFieldValue(value))
                             )
-                        },
-                        enabled = enabled,
-                        label = { Text(member.name) },
-                        modifier = Modifier.fillMaxWidth(),
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        singleLine = true,
-                        shape = RoundedCornerShape(14.dp)
+                        }
                     )
                 }
             }
@@ -1429,6 +1451,63 @@ private fun SplitTypeChip(
             Text(title, color = ExpenseInk, fontSize = 14.sp, fontWeight = FontWeight.ExtraBold)
             Text(subtitle, color = ExpenseMuted, fontSize = 11.sp, lineHeight = 14.sp)
         }
+    }
+}
+
+@Composable
+private fun CustomSplitAmountRow(
+    member: TripExpenseMemberUiModel,
+    value: TextFieldValue,
+    enabled: Boolean,
+    onValueChange: (TextFieldValue) -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
+            .background(Color.White)
+            .padding(start = 12.dp, top = 8.dp, end = 8.dp, bottom = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(2.dp)
+        ) {
+            Text(
+                text = member.name,
+                color = ExpenseInk,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Text(
+                text = if (value.text.isBlank()) "Chưa nhập" else "${value.text} đ",
+                color = if (value.text.isBlank()) ExpenseMuted else PrimaryBlue,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+        OutlinedTextField(
+            value = value,
+            onValueChange = onValueChange,
+            enabled = enabled,
+            modifier = Modifier.width(150.dp),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            singleLine = true,
+            trailingIcon = {
+                Text(
+                    text = "đ",
+                    color = ExpenseMuted,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            shape = RoundedCornerShape(12.dp)
+        )
     }
 }
 
@@ -1480,10 +1559,18 @@ private fun parseMoneyInputToLong(value: String): Long? {
     return value.replace(".", "").trim().takeIf { it.isNotBlank() }?.toLongOrNull()
 }
 
+private fun Map<Long, TextFieldValue>.toMoneyMap(): Map<Long, Long> {
+    return mapNotNull { (userId, value) ->
+        val amount = parseMoneyInputToLong(value.text) ?: return@mapNotNull null
+        userId to amount
+    }.toMap()
+}
+
 @Composable
 private fun SplitMemberSelector(
     members: List<TripExpenseMemberUiModel>,
     selectedUserIds: Set<Long>,
+    customAmounts: Map<Long, Long>,
     enabled: Boolean,
     onSelectedUserIdsChange: (Set<Long>) -> Unit
 ) {
@@ -1561,6 +1648,7 @@ private fun SplitMemberSelector(
         } else {
             filteredMembers.forEach { member ->
                 val checked = selectedUserIds.contains(member.userId)
+                val customAmount = customAmounts[member.userId]
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -1591,13 +1679,39 @@ private fun SplitMemberSelector(
                             )
                         }
                     )
-                    Text(
-                        text = member.name,
-                        color = ExpenseInk,
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        modifier = Modifier.padding(start = 8.dp)
-                    )
+                    Row(
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(start = 8.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = member.name,
+                            color = ExpenseInk,
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f)
+                        )
+                        if (checked && customAmount != null) {
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Surface(
+                                shape = RoundedCornerShape(999.dp),
+                                color = ExpenseSoftBlue
+                            ) {
+                                Text(
+                                    text = NumberUtils.formatVnd(customAmount.toDouble()),
+                                    color = PrimaryBlue,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                                    maxLines = 1
+                                )
+                            }
+                        }
+                    }
                 }
             }
         }
