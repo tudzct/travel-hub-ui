@@ -379,7 +379,8 @@ fun EditProfileScreen(
                 icon = Icons.Outlined.Person,
                 label = "Họ và tên",
                 value = name,
-                onValueChange = { name = it }
+                onValueChange = { name = it },
+                iconInCircle = true
             )
 
             Spacer(modifier = Modifier.height(14.dp))
@@ -388,7 +389,8 @@ fun EditProfileScreen(
                 icon = Icons.Outlined.AlternateEmail,
                 label = "Tên người dùng",
                 value = handle,
-                onValueChange = { handle = it }
+                onValueChange = { handle = it },
+                iconInCircle = true
             )
 
             Spacer(modifier = Modifier.height(14.dp))
@@ -400,7 +402,8 @@ fun EditProfileScreen(
                 onValueChange = { bio = it.take(120) },
                 placeholder = "Giới thiệu về bạn...",
                 maxLength = 120,
-                minHeight = 82.dp
+                minHeight = 82.dp,
+                iconInCircle = true
             )
 
             Spacer(modifier = Modifier.height(34.dp))

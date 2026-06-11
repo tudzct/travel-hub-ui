@@ -698,8 +698,9 @@ fun GroupDetailMoreMenu(
             val canLeave = !isLeader && role.isNotBlank() && role != "NON_MEMBER" && role != "PENDING"
             if (canLeave) {
                 DropdownMenuItem(
-                    text = { Text(stringResource(R.string.ui_4bb91c8b42), color = MaterialTheme.colorScheme.error) },
-                    leadingIcon = { Icon(Icons.Default.ExitToApp, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
+                    text = { Text(stringResource(R.string.ui_4bb91c8b42), color = if (isCompleted) MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f) else MaterialTheme.colorScheme.error) },
+                    leadingIcon = { Icon(Icons.Default.ExitToApp, contentDescription = null, tint = if (isCompleted) MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f) else MaterialTheme.colorScheme.error) },
+                    enabled = !isCompleted,
                     onClick = {
                         onDismiss()
                         onLeaveGroupClick()
