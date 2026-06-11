@@ -293,6 +293,9 @@ private fun ProfileScreenContent(
     var showNotifications by remember { mutableStateOf(false) }
     var showChangePasswordDialog by remember { mutableStateOf(false) }
     var hideDrawerContentForNavigation by remember { mutableStateOf(false) }
+    val drawerVisible =
+        activeDrawerState.currentValue != DrawerValue.Closed ||
+            activeDrawerState.targetValue != DrawerValue.Closed
 
     LaunchedEffect(changePasswordState) {
         if (changePasswordState is UiState.Success) {
@@ -305,24 +308,30 @@ private fun ProfileScreenContent(
         gesturesEnabled = isViewingOwnProfile,
         scrimColor = Color.Black.copy(alpha = 0.38f),
         drawerContent = {
-            if (isViewingOwnProfile && !hideDrawerContentForNavigation) {
+            if (drawerVisible && isViewingOwnProfile && !hideDrawerContentForNavigation) {
                 TravelHubDrawerContent(
                     profile = (profileState as? UiState.Success)?.data,
                     onProfileClick = {
                         coroutineScope.launch { activeDrawerState.close() }
                     },
                     onEditProfileClick = {
-                        coroutineScope.launch { activeDrawerState.close() }
-                        onNavigateToEditProfile()
+                        coroutineScope.launch {
+                            activeDrawerState.close()
+                            onNavigateToEditProfile()
+                        }
                     },
                     onChangePasswordClick = {
-                        onClearChangePasswordState()
-                        showChangePasswordDialog = true
-                        coroutineScope.launch { activeDrawerState.close() }
+                        coroutineScope.launch {
+                            activeDrawerState.close()
+                            onClearChangePasswordState()
+                            showChangePasswordDialog = true
+                        }
                     },
                     onLogoutClick = {
-                        coroutineScope.launch { activeDrawerState.close() }
-                        onLogout?.invoke()
+                        coroutineScope.launch {
+                            activeDrawerState.close()
+                            onLogout?.invoke()
+                        }
                     },
                     isDarkThemeEnabled = isDarkThemeEnabled,
                     onDarkThemeChange = onDarkThemeChange
