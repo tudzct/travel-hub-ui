@@ -73,6 +73,10 @@ class PlaceRepository @Inject constructor(
         return placeApiService.upsertReview(placeId = placeId, body = body)
     }
 
+    suspend fun deleteReview(placeId: Long) {
+        placeApiService.deleteReview(placeId = placeId)
+    }
+
     suspend fun getViewHistory(
         page: Int = 0,
         pageSize: Int = 10

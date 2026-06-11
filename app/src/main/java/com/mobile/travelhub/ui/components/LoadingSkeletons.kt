@@ -20,9 +20,14 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
@@ -241,77 +246,173 @@ fun CardWithTextsSkeleton(
 
 // --- Screen Specific Skeletons ---
 
-fun LazyListScope.costEstimateLoadingSkeleton() {
-    // Skeleton Budget Card
-    item {
-        SkeletonBlock(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(140.dp),
-            shape = RoundedCornerShape(28.dp)
-        )
-    }
-
-    // Skeleton Contributions Label
-    item {
-        SkeletonBlock(
-            modifier = Modifier
-                .width(100.dp)
-                .height(16.dp),
-            shape = RoundedCornerShape(4.dp)
-        )
-    }
-
-    // Skeleton Contributions list
-    item {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+@Composable
+fun ExpenseOverviewCardSkeleton() {
+    Card(
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(containerColor = SurfaceContainerLowest),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(
+            modifier = Modifier.padding(18.dp),
+            verticalArrangement = Arrangement.spacedBy(18.dp)
         ) {
-            repeat(3) {
-                AvatarWithTextsSkeleton(
-                    avatarSize = 40.dp,
-                    textLines = listOf(48.dp, 56.dp),
-                    modifier = Modifier
-                        .width(90.dp)
-                        .clip(RoundedCornerShape(20.dp))
-                        .background(SurfaceContainerLowest)
-                        .padding(vertical = 12.dp)
-                )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top
+            ) {
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    SkeletonBlock(modifier = Modifier.width(100.dp).height(16.dp))
+                    SkeletonBlock(modifier = Modifier.width(180.dp).height(32.dp))
+                    SkeletonBlock(modifier = Modifier.width(80.dp).height(16.dp))
+                }
+                Box(
+                    modifier = Modifier.size(144.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    SkeletonBlock(modifier = Modifier.fillMaxSize(), shape = CircleShape)
+                    Box(
+                        modifier = Modifier
+                            .size(88.dp)
+                            .clip(CircleShape)
+                            .background(SurfaceContainerLowest)
+                    )
+                }
+            }
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f))
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                repeat(3) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            SkeletonBlock(modifier = Modifier.size(14.dp), shape = CircleShape)
+                            Spacer(modifier = Modifier.width(14.dp))
+                            SkeletonBlock(modifier = Modifier.width(80.dp).height(14.dp))
+                        }
+                        SkeletonBlock(modifier = Modifier.width(70.dp).height(14.dp))
+                    }
+                }
             }
         }
     }
+}
 
-    // Skeleton Recent Expenses Label
-    item {
+@Composable
+fun TripSettlementPanelSkeleton() {
+    Card(
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(containerColor = SurfaceContainerLowest),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                SkeletonBlock(modifier = Modifier.width(180.dp).height(18.dp))
+                SkeletonBlock(modifier = Modifier.width(240.dp).height(13.dp))
+            }
+        }
+    }
+}
+
+@Composable
+fun InvoiceOcrBannerSkeleton() {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
         SkeletonBlock(
             modifier = Modifier
-                .width(140.dp)
-                .height(16.dp),
-            shape = RoundedCornerShape(4.dp)
+                .weight(1f)
+                .height(64.dp),
+            shape = RoundedCornerShape(14.dp)
+        )
+        SkeletonBlock(
+            modifier = Modifier
+                .weight(1f)
+                .height(64.dp),
+            shape = RoundedCornerShape(14.dp)
         )
     }
+}
 
-    // Skeleton Transactions list
-    items(3) {
-        ImageTextRowSkeleton(
-            imageSize = 44.dp,
-            imageShape = RoundedCornerShape(12.dp),
-            textLines = listOf(120.dp, 80.dp),
-            trailingContent = {
-                SkeletonBlock(
-                    modifier = Modifier
-                        .width(60.dp)
-                        .height(16.dp),
-                    shape = RoundedCornerShape(4.dp)
-                )
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(20.dp))
-                .background(SurfaceContainerLowest)
-                .padding(16.dp)
+@Composable
+fun SectionHeaderSkeleton() {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        SkeletonBlock(modifier = Modifier.width(130.dp).height(18.dp))
+        SkeletonBlock(modifier = Modifier.width(60.dp).height(16.dp))
+    }
+}
+
+@Composable
+fun ModernExpenseRowSkeleton() {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(18.dp))
+            .background(SurfaceContainerLowest)
+            .padding(horizontal = 14.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        SkeletonBlock(
+            modifier = Modifier.size(54.dp),
+            shape = CircleShape
         )
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .padding(start = 14.dp, end = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            SkeletonBlock(modifier = Modifier.width(120.dp).height(15.dp))
+            SkeletonBlock(modifier = Modifier.width(100.dp).height(13.dp))
+            SkeletonBlock(modifier = Modifier.width(80.dp).height(13.dp))
+            SkeletonBlock(
+                modifier = Modifier.width(70.dp).height(22.dp),
+                shape = RoundedCornerShape(12.dp)
+            )
+        }
+        SkeletonBlock(
+            modifier = Modifier
+                .width(82.dp)
+                .height(16.dp)
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        SkeletonBlock(
+            modifier = Modifier.size(18.dp),
+            shape = CircleShape
+        )
+    }
+}
+
+fun LazyListScope.costEstimateLoadingSkeleton() {
+    item {
+        ExpenseOverviewCardSkeleton()
+    }
+    item {
+        TripSettlementPanelSkeleton()
+    }
+    item {
+        InvoiceOcrBannerSkeleton()
+    }
+    item {
+        SectionHeaderSkeleton()
+    }
+    items(3) {
+        ModernExpenseRowSkeleton()
     }
 }
 
@@ -397,19 +498,14 @@ fun GroupDetailHeaderSkeleton(
         Column(
             modifier = Modifier
                 .align(Alignment.BottomStart)
-                .padding(24.dp)
+                .padding(horizontal = 24.dp)
+                .padding(bottom = 54.dp)
         ) {
-            SkeletonBlock(
-                modifier = Modifier
-                    .width(96.dp)
-                    .height(24.dp),
-                shape = RoundedCornerShape(24.dp)
-            )
             Spacer(modifier = Modifier.height(12.dp))
             SkeletonBlock(
                 modifier = Modifier
                     .width(260.dp)
-                    .height(42.dp),
+                    .height(28.dp),
                 shape = RoundedCornerShape(8.dp)
             )
             Spacer(modifier = Modifier.height(12.dp))
@@ -435,63 +531,95 @@ fun GroupMembersSkeleton(
     modifier: Modifier = Modifier
 ) {
     Row(
-        modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(16.dp)
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(18.dp))
+            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(18.dp))
+            .background(MaterialTheme.colorScheme.surface)
+            .padding(horizontal = 18.dp, vertical = 18.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        repeat(4) {
-            AvatarWithTextsSkeleton(
-                avatarSize = 44.dp
+        SkeletonBlock(
+            modifier = Modifier.size(66.dp),
+            shape = CircleShape
+        )
+        Spacer(modifier = Modifier.width(18.dp))
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            SkeletonBlock(
+                modifier = Modifier
+                    .width(120.dp)
+                    .height(15.dp)
+            )
+            SkeletonBlock(
+                modifier = Modifier
+                    .width(90.dp)
+                    .height(20.dp),
+                shape = RoundedCornerShape(10.dp)
             )
         }
     }
 }
 
 @Composable
-fun FeatureCardSkeleton() {
-    Column(
-        modifier = Modifier
-            .width(90.dp)
-            .padding(vertical = 12.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+fun FeatureCardSkeleton(
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier
+            .height(84.dp)
+            .clip(RoundedCornerShape(18.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+            .padding(horizontal = 16.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Box(
-            modifier = Modifier
-                .size(48.dp)
-                .clip(CircleShape)
-                .shimmerEffect()
+        SkeletonBlock(
+            modifier = Modifier.size(40.dp),
+            shape = CircleShape
         )
-
-        Box(
-            modifier = Modifier
-                .width(60.dp)
-                .height(14.dp)
-                .clip(RoundedCornerShape(4.dp))
-                .shimmerEffect()
-        )
+        Spacer(modifier = Modifier.width(16.dp))
+        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            SkeletonBlock(
+                modifier = Modifier
+                    .width(80.dp)
+                    .height(15.dp)
+            )
+            SkeletonBlock(
+                modifier = Modifier
+                    .width(60.dp)
+                    .height(12.dp)
+            )
+        }
     }
 }
 
 @Composable
-fun TripDetailRowSkeleton() {
+fun TripDetailRowSkeleton(
+    modifier: Modifier = Modifier
+) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
+        modifier = modifier
+            .fillMaxWidth()
+            .height(42.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Box(
+        SkeletonBlock(
+            modifier = Modifier.size(26.dp),
+            shape = CircleShape
+        )
+        Spacer(modifier = Modifier.width(20.dp))
+        SkeletonBlock(
             modifier = Modifier
                 .width(88.dp)
-                .height(12.dp)
-                .clip(RoundedCornerShape(4.dp))
-                .shimmerEffect()
+                .height(13.dp)
         )
-        Box(
+        Spacer(modifier = Modifier.weight(1f))
+        SkeletonBlock(
             modifier = Modifier
-                .width(140.dp)
-                .height(12.dp)
-                .clip(RoundedCornerShape(4.dp))
-                .shimmerEffect()
+                .width(100.dp)
+                .height(13.dp)
         )
     }
 }

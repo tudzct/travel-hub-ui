@@ -44,6 +44,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -103,6 +105,7 @@ fun PlaceDetailScreen(
     val reviewUiState by reviewViewModel.uiState.collectAsState()
     val context = LocalContext.current
     var showReviewSheet by remember { mutableStateOf(false) }
+    var reviewToDelete by remember { mutableStateOf<TravelPlaceReviewResponse?>(null) }
 
     LaunchedEffect(placeId, initialPlace?.id) {
         if (initialPlace != null) {
@@ -297,7 +300,8 @@ fun PlaceDetailScreen(
             PinnedBackButton(onBack = onBack)
         }
 
-        if (showReviewSheet && uiState.detail != null) {
+        val detail = uiState.detail
+        if (showReviewSheet && detail != null) {
             ReviewWriteSheet(
                 uiState = reviewUiState,
                 titleResId = R.string.ui_b19c813eda,
@@ -306,7 +310,36 @@ fun PlaceDetailScreen(
                 onDismiss = { showReviewSheet = false },
                 onRatingChange = reviewViewModel::updateRating,
                 onContentChange = reviewViewModel::updateContent,
-                onSubmit = { reviewViewModel.submit(uiState.detail!!.id) }
+                onSubmit = { reviewViewModel.submit(detail.id) },
+                onDelete = if (detail.myReview != null) { {
+                    showReviewSheet = false
+                    reviewToDelete = detail.myReview
+                } } else null
+            )
+        }
+
+        if (reviewToDelete != null) {
+            AlertDialog(
+                onDismissRequest = { reviewToDelete = null },
+                title = { Text(text = "Xóa đánh giá") },
+                text = { Text(text = "Bạn có chắc chắn muốn xóa đánh giá này không? Thao tác này không thể hoàn tác.") },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            reviewToDelete = null
+                            placeDetailViewModel.deleteReview(placeId)
+                        }
+                    ) {
+                        Text(text = "Xóa", color = MaterialTheme.colorScheme.error)
+                    }
+                },
+                dismissButton = {
+                    TextButton(
+                        onClick = { reviewToDelete = null }
+                    ) {
+                        Text(text = "Hủy")
+                    }
+                }
             )
         }
     }
