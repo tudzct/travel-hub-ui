@@ -15,8 +15,10 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -270,13 +272,15 @@ private fun ChatMessageBubble(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .height(IntrinsicSize.Min)
                         .horizontalScroll(rememberScrollState()),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     message.places.forEach { place ->
                         PlaceReferenceCard(
                             place = place,
-                            onClick = { onPlaceClick(place.id) }
+                            onClick = { onPlaceClick(place.id) },
+                            modifier = Modifier.fillMaxHeight()
                         )
                     }
                 }
@@ -288,15 +292,17 @@ private fun ChatMessageBubble(
 @Composable
 private fun PlaceReferenceCard(
     place: TravelAssistantPlaceReference,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     Surface(
         color = SurfaceContainerLowest,
         shape = RoundedCornerShape(24.dp),
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
         shadowElevation = 2.dp,
-        modifier = Modifier
+        modifier = modifier
             .width(200.dp)
+            .fillMaxHeight()
     ) {
         Column(
             modifier = Modifier.padding(8.dp),
