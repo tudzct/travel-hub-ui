@@ -70,6 +70,7 @@ fun ItineraryOverviewContent(
                     day = day,
                     index = index,
                     isLast = index == state.days.lastIndex,
+                    isCompleted = state.isCompleted,
                     onOpenDayDetail = { onOpenDayDetail(day.dayIndex) },
                     onEditEvent = onEditEvent
                 )
@@ -289,6 +290,7 @@ private fun ItineraryTimelineDay(
     day: ItineraryDay,
     index: Int,
     isLast: Boolean,
+    isCompleted: Boolean,
     onOpenDayDetail: () -> Unit,
     onEditEvent: (ItineraryEvent) -> Unit
 ) {
@@ -368,7 +370,7 @@ private fun ItineraryTimelineDay(
                         placeName = event.placeName,
                         badge = eventIndex + 1,
                         onClick = onOpenDayDetail,
-                        onLongClick = { onEditEvent(event) }
+                        onLongClick = if (isCompleted) null else { { onEditEvent(event) } }
                     )
                 }
             }

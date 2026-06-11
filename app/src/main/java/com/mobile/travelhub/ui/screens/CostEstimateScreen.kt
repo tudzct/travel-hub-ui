@@ -1958,7 +1958,7 @@ fun EditExpenseContent(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = stringResource(R.string.ui_c8eff87563),
+                text = if (canEdit) stringResource(R.string.ui_c8eff87563) else "Chi tiết khoản chi",
                 fontWeight = FontWeight.ExtraBold,
                 fontSize = 20.sp,
                 color = OnSurface
@@ -2002,7 +2002,8 @@ fun EditExpenseContent(
             selectedCategory = selectedCategory,
             expanded = expanded,
             onExpandedChange = { expanded = it },
-            onCategorySelected = { selectedCategory = it }
+            onCategorySelected = { selectedCategory = it },
+            enabled = canEdit && !isSaving
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -2204,38 +2205,42 @@ private fun ExpenseCategoryDropdown(
     selectedCategory: String,
     expanded: Boolean,
     onExpandedChange: (Boolean) -> Unit,
-    onCategorySelected: (String) -> Unit
+    onCategorySelected: (String) -> Unit,
+    enabled: Boolean = true
 ) {
     ExposedDropdownMenuBox(
-        expanded = expanded,
-        onExpandedChange = { onExpandedChange(!expanded) }
+        expanded = if (enabled) expanded else false,
+        onExpandedChange = { if (enabled) onExpandedChange(!expanded) }
     ) {
         SimpleFormTextField(
             value = categoryVisual(selectedCategory).label,
             onValueChange = {},
             readOnly = true,
+            enabled = enabled,
             placeholder = stringResource(R.string.ui_fc7b5ce028),
-            trailingIcon = {
-                Icon(Icons.Default.ArrowDropDown, contentDescription = null)
-            },
+            trailingIcon = if (enabled) {
+                { Icon(Icons.Default.ArrowDropDown, contentDescription = null) }
+            } else null,
             modifier = Modifier
                 .menuAnchor()
                 .fillMaxWidth()
         )
-        ExposedDropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { onExpandedChange(false) },
-            containerColor = MaterialTheme.colorScheme.surface,
-            tonalElevation = 0.dp
-        ) {
-            listOf("FOOD", "STAY", "TRANSPORT", "ENTRY").forEach { category ->
-                DropdownMenuItem(
-                    text = { Text(categoryVisual(category).label) },
-                    onClick = {
-                        onCategorySelected(category)
-                        onExpandedChange(false)
-                    }
-                )
+        if (enabled) {
+            ExposedDropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { onExpandedChange(false) },
+                containerColor = MaterialTheme.colorScheme.surface,
+                tonalElevation = 0.dp
+            ) {
+                listOf("FOOD", "STAY", "TRANSPORT", "ENTRY").forEach { category ->
+                    DropdownMenuItem(
+                        text = { Text(categoryVisual(category).label) },
+                        onClick = {
+                            onCategorySelected(category)
+                            onExpandedChange(false)
+                        }
+                    )
+                }
             }
         }
     }
