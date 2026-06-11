@@ -18,6 +18,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
@@ -297,7 +298,7 @@ private fun ItineraryTimelineDay(
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(28.dp),
-        color = if (isDarkTheme) Color(0xFF211B27) else Color(0xFFF4F0F8),
+        color = itineraryDayContainerColor(),
         shadowElevation = 0.dp
     ) {
         Column(
@@ -342,7 +343,7 @@ private fun ItineraryTimelineDay(
                 Surface(
                     modifier = Modifier.clickable(onClick = onOpenDayDetail),
                     shape = RoundedCornerShape(14.dp),
-                    color = if (isDarkTheme) Color(0xFF362C40) else Color(0xFFEBE4F3)
+                    color = itineraryMapButtonContainerColor()
                 ) {
                     Icon(
                         imageVector = Icons.Default.Map,
@@ -443,7 +444,7 @@ private fun ItineraryTimelineEventCard(
                     }
                 ),
             shape = RoundedCornerShape(24.dp),
-            color = if (isDarkTheme) Color(0xFF2B2233) else SurfaceContainerLowest,
+            color = itineraryEventContainerColor(),
             shadowElevation = 0.dp
         ) {
             Column(
@@ -495,6 +496,7 @@ fun ItineraryDayDetailContent(
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
+            .background(SurfaceBg)
             .padding(paddingValues),
         state = lazyListState,
         contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 120.dp),
@@ -680,4 +682,22 @@ private fun ItineraryDayDetailSkeleton() {
             }
         }
     }
+}
+
+@Composable
+private fun itineraryDayContainerColor(): Color {
+    return PrimaryBlue.copy(alpha = if (isDarkTheme) 0.14f else 0.06f)
+        .compositeOver(SurfaceContainerLow)
+}
+
+@Composable
+private fun itineraryMapButtonContainerColor(): Color {
+    return PrimaryBlue.copy(alpha = if (isDarkTheme) 0.18f else 0.10f)
+        .compositeOver(SurfaceContainerLowest)
+}
+
+@Composable
+private fun itineraryEventContainerColor(): Color {
+    return PrimaryBlue.copy(alpha = if (isDarkTheme) 0.08f else 0.03f)
+        .compositeOver(SurfaceContainerLowest)
 }

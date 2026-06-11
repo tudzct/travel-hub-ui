@@ -62,8 +62,7 @@ data class TripActivityResponse(
     val locationName: String? = null,
     val address: String? = null,
     val type: String? = null,
-    val orderIndex: Int? = null,
-    val estimatedCost: Double? = null
+    val orderIndex: Int? = null
 )
 
 // Trip Detail APIs

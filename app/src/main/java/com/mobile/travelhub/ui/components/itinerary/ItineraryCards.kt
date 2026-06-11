@@ -465,24 +465,8 @@ fun DayEventCard(
                     exit = shrinkVertically() + fadeOut()
                 ) {
                     Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            MetaPill(
-                                icon = {
-                                    Icon(
-                                        Icons.Default.Schedule,
-                                        null,
-                                        tint = OnSurfaceVariant,
-                                        modifier = Modifier.size(14.dp)
-                                    )
-                                }
-                            ) {
-                                Text(
-                                    event.estimatedCost.ifBlank { "No cost" },
-                                    fontSize = 12.sp,
-                                    color = OnSurfaceVariant
-                                )
-                            }
-                            if (event.transportToNext.isNotBlank()) {
+                        if (event.transportToNext.isNotBlank()) {
+                            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                                 MetaPill {
                                     Text(event.transportToNext, fontSize = 12.sp, color = OnSurfaceVariant)
                                 }

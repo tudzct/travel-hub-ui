@@ -217,7 +217,6 @@ class ItineraryRepository @Inject constructor(
             placeName = locationName.orEmpty(),
             note = description.orEmpty(),
             transportToNext = address.orEmpty(),
-            estimatedCost = estimatedCost?.toCostText().orEmpty(),
             colorHex = colorForType(type),
             iconName = iconForType(type),
             dayId = dayId,
@@ -235,8 +234,7 @@ class ItineraryRepository @Inject constructor(
             locationName = placeName,
             address = transportToNext,
             type = iconName.toActivityType(),
-            orderIndex = orderIndex,
-            estimatedCost = estimatedCost.toDoubleOrNull() ?: 0.0
+            orderIndex = orderIndex
         )
     }
 
@@ -288,10 +286,6 @@ class ItineraryRepository @Inject constructor(
             "ShoppingBag" -> "SHOPPING"
             else -> "PLACE"
         }
-    }
-
-    private fun Double.toCostText(): String {
-        return if (rem(1.0) == 0.0) toLong().toString() else toString()
     }
 
     private fun iconForType(type: String?): String {

@@ -304,10 +304,7 @@ class GroupDetailViewModel @Inject constructor(
         viewModelScope.launch {
             tripRepository.approveJoinRequest(tripId, userId)
                 .onSuccess {
-                    loadJoinRequests(tripId)
-                    tripRepository.getTripDetail(tripId).onSuccess { detail ->
-                        _uiState.update { it.mergeTripDetail(detail) }
-                    }
+                    removeJoinRequestLocally(userId)
                 }
                 .onFailure { throwable ->
                     _uiState.update { state ->
@@ -327,7 +324,7 @@ class GroupDetailViewModel @Inject constructor(
         viewModelScope.launch {
             tripRepository.rejectJoinRequest(tripId, userId)
                 .onSuccess {
-                    loadJoinRequests(tripId)
+                    removeJoinRequestLocally(userId)
                 }
                 .onFailure { throwable ->
                     _uiState.update { state ->
@@ -337,6 +334,15 @@ class GroupDetailViewModel @Inject constructor(
                         )
                     }
                 }
+        }
+    }
+
+    private fun removeJoinRequestLocally(userId: Long) {
+        _uiState.update { state ->
+            state.copy(
+                joinRequests = state.joinRequests.filterNot { request -> request.userId == userId },
+                isJoinRequestsLoading = false
+            )
         }
     }
 

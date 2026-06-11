@@ -44,9 +44,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -102,7 +100,6 @@ fun ItineraryEventEditorDialog(
     var placeName by remember(event.eventId) { mutableStateOf(event.placeName) }
     var note by remember(event.eventId) { mutableStateOf(event.note) }
     var transport by remember(event.eventId) { mutableStateOf(event.transportToNext) }
-    var cost by remember(event.eventId) { mutableStateOf(event.estimatedCost) }
     val timeOptions = remember { buildTimeOptions() }
     val canSave = title.isNotBlank() && selectedDayOption != null
 
@@ -225,21 +222,11 @@ fun ItineraryEventEditorDialog(
                     label = stringResource(R.string.ui_f91b97aefb)
                 )
 
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    ItineraryEditorField(
-                        value = placeName,
-                        onValueChange = { placeName = it },
-                        label = stringResource(R.string.ui_c9805922f7),
-                        modifier = Modifier.weight(1f)
-                    )
-                    ItineraryEditorField(
-                        value = cost,
-                        onValueChange = { cost = it },
-                        label = stringResource(R.string.ui_3c4531105c),
-                        modifier = Modifier.weight(1f),
-                        keyboardType = KeyboardType.Decimal
-                    )
-                }
+                ItineraryEditorField(
+                    value = placeName,
+                    onValueChange = { placeName = it },
+                    label = stringResource(R.string.ui_c9805922f7)
+                )
 
                 ItineraryEditorField(
                     value = transport,
@@ -288,7 +275,6 @@ fun ItineraryEventEditorDialog(
                                     placeName = placeName.trim(),
                                     note = note.trim(),
                                     transportToNext = transport.trim(),
-                                    estimatedCost = cost.trim(),
                                     colorHex = event.colorHex,
                                     iconName = event.iconName
                                 )
@@ -320,8 +306,7 @@ private fun ItineraryEditorField(
     onValueChange: (String) -> Unit,
     label: String,
     modifier: Modifier = Modifier,
-    minLines: Int = 1,
-    keyboardType: KeyboardType = KeyboardType.Text
+    minLines: Int = 1
 ) {
     SimpleFormTextField(
         value = value,
@@ -330,8 +315,7 @@ private fun ItineraryEditorField(
         modifier = modifier.fillMaxWidth(),
         singleLine = minLines == 1,
         minLines = minLines,
-        maxLines = if (minLines == 1) 1 else 6,
-        keyboardOptions = KeyboardOptions(keyboardType = keyboardType)
+        maxLines = if (minLines == 1) 1 else 6
     )
 }
 

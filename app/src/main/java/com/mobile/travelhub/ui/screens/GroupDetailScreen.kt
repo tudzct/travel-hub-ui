@@ -105,6 +105,7 @@ fun GroupDetailScreen(
     var showFinishTripConfirm by remember { mutableStateOf(false) }
     var showItinerarySheet by remember { mutableStateOf(false) }
     var showManageMembersDialog by remember { mutableStateOf(false) }
+    var showJoinRequestsDialog by remember { mutableStateOf(false) }
     var memberToDelete by remember { mutableStateOf<com.mobile.travelhub.viewmodels.GroupMemberUiModel?>(null) }
     val isLeader = uiState.myRole.equals("LEADER", ignoreCase = true)
     val isCompleted = uiState.isCompleted
@@ -482,23 +483,7 @@ fun GroupDetailScreen(
                         isLeader = isLeader,
                         isCompleted = isCompleted,
                         pendingRequestCount = pendingRequestCount,
-                        onApproveJoinRequest = { userId, name ->
-                            viewModel.approveJoinRequest(userId)
-                            Toast.makeText(
-                                context,
-                                context.getString(R.string.join_request_accepted, name),
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        },
-                        onRejectJoinRequest = { userId, name ->
-                            viewModel.rejectJoinRequest(userId)
-                            Toast.makeText(
-                                context,
-                                context.getString(R.string.join_request_rejected, name),
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        },
-                        onNavigateToProfile = onNavigateToProfile,
+                        onOpenJoinRequests = { showJoinRequestsDialog = true },
                         onLeaveGroupClick = { showLeaveConfirm = true },
                         onDeleteGroupClick = { showDeleteConfirm = true }
                     )
@@ -644,6 +629,33 @@ fun GroupDetailScreen(
                 }
             },
             onMemberClick = { userId -> onNavigateToProfile(userId) }
+        )
+
+        JoinRequestsDialog(
+            visible = showJoinRequestsDialog,
+            requests = uiState.joinRequests,
+            isLoading = uiState.isJoinRequestsLoading,
+            onDismiss = { showJoinRequestsDialog = false },
+            onApproveJoinRequest = { userId, name ->
+                viewModel.approveJoinRequest(userId)
+                Toast.makeText(
+                    context,
+                    context.getString(R.string.join_request_accepted, name),
+                    Toast.LENGTH_SHORT
+                ).show()
+            },
+            onRejectJoinRequest = { userId, name ->
+                viewModel.rejectJoinRequest(userId)
+                Toast.makeText(
+                    context,
+                    context.getString(R.string.join_request_rejected, name),
+                    Toast.LENGTH_SHORT
+                ).show()
+            },
+            onNavigateToProfile = { userId ->
+                showJoinRequestsDialog = false
+                onNavigateToProfile(userId)
+            }
         )
     }
 }
