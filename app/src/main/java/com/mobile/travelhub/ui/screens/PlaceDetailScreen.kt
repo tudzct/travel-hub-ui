@@ -228,7 +228,8 @@ fun PlaceDetailScreen(
                             FlatSection {
                                 ExpandableDescription(
                                     description = detail.description.orEmpty().ifBlank { "Chưa có mô tả." },
-                                    title = null
+                                    title = null,
+                                    collapseOnExpandedTextClick = true
                                 )
                             }
                         }
