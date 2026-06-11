@@ -3,6 +3,7 @@ package com.mobile.travelhub.viewmodels
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mobile.travelhub.data.PlaceRepository
+import com.mobile.travelhub.data.AuthRepository
 import com.mobile.travelhub.data.httpStatusCode
 import com.mobile.travelhub.data.userMessage
 import com.mobile.travelhub.data.model.ProvinceResponse
@@ -43,12 +44,14 @@ data class PlaceDetailUiState(
     val reviewPreviewLoading: Boolean = false,
     val errorMessage: String? = null,
     val reviewErrorMessage: String? = null,
-    val relatedPlacesErrorMessage: String? = null
+    val relatedPlacesErrorMessage: String? = null,
+    val currentUserId: Long? = null
 )
 
 @HiltViewModel
 class PlaceDetailViewModel @Inject constructor(
-    private val placeRepository: PlaceRepository
+    private val placeRepository: PlaceRepository,
+    private val authRepository: AuthRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(PlaceDetailUiState())
@@ -62,6 +65,7 @@ class PlaceDetailViewModel @Inject constructor(
             return
         }
         loadedPlaceId = place.id
+        val userId = authRepository.getSavedSession()?.userId?.toLong()
         viewModelScope.launch {
             _uiState.update {
                 it.copy(
@@ -73,7 +77,8 @@ class PlaceDetailViewModel @Inject constructor(
                     relatedPlacesErrorMessage = null,
                     reviewErrorMessage = null,
                     reviewPreview = emptyList(),
-                    reviewPreviewLoading = true
+                    reviewPreviewLoading = true,
+                    currentUserId = userId
                 )
             }
             runCatching {
@@ -114,6 +119,7 @@ class PlaceDetailViewModel @Inject constructor(
             return
         }
         loadedPlaceId = placeId
+        val userId = authRepository.getSavedSession()?.userId?.toLong()
         viewModelScope.launch {
             _uiState.update {
                 it.copy(
@@ -125,7 +131,8 @@ class PlaceDetailViewModel @Inject constructor(
                     relatedPlacesErrorMessage = null,
                     reviewErrorMessage = null,
                     reviewPreview = emptyList(),
-                    reviewPreviewLoading = false
+                    reviewPreviewLoading = false,
+                    currentUserId = userId
                 )
             }
             runCatching {
@@ -159,6 +166,38 @@ class PlaceDetailViewModel @Inject constructor(
 
     fun refreshReviewPreview() {
         loadedPlaceId?.let(::loadReviewPreview)
+    }
+
+    fun deleteReview(placeId: Long) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+            runCatching {
+                placeRepository.deleteReview(placeId)
+            }.onSuccess {
+                runCatching {
+                    placeRepository.getPlaceDetail(placeId)
+                }.onSuccess { response ->
+                    val detail = response.toDetailUiModel()
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            detail = detail,
+                            errorMessage = null
+                        )
+                    }
+                    loadReviewPreview(placeId)
+                }.onFailure {
+                    loadPlaceById(placeId)
+                }
+            }.onFailure { throwable ->
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        errorMessage = throwable.userMessage("Không thể xóa đánh giá")
+                    )
+                }
+            }
+        }
     }
 
     private fun loadRelatedPlaces(placeId: Long, provinceId: Long) {

@@ -29,9 +29,11 @@ fun ExpandableDescription(
     collapsedMaxLines: Int = 4,
     textStyle: TextStyle = MaterialTheme.typography.bodyLarge,
     textColor: Color = MaterialTheme.colorScheme.onSurfaceVariant,
+    collapseOnExpandedTextClick: Boolean = false,
 ) {
     var expanded by remember(description) { mutableStateOf(false) }
     var canExpand by remember(description) { mutableStateOf(false) }
+    val textInteractionSource = remember { MutableInteractionSource() }
 
     Column(
         modifier = modifier.fillMaxWidth(),
@@ -48,6 +50,13 @@ fun ExpandableDescription(
 
         Text(
             text = description,
+            modifier = Modifier.clickable(
+                enabled = expanded && collapseOnExpandedTextClick,
+                interactionSource = textInteractionSource,
+                indication = null
+            ) {
+                expanded = false
+            },
             style = textStyle,
             color = textColor,
             maxLines = if (expanded) Int.MAX_VALUE else collapsedMaxLines,

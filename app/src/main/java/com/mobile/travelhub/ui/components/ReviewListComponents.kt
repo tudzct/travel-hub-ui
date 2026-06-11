@@ -93,6 +93,7 @@ fun ReviewListScreenContent(
                     contentColor = MaterialTheme.colorScheme.onPrimary
                 )
             ) {
+                val hasReviewed = uiState.myReview != null
                 Icon(
                     imageVector = Icons.Filled.Create,
                     contentDescription = null,
@@ -100,7 +101,7 @@ fun ReviewListScreenContent(
                 )
                 Spacer(modifier = Modifier.width(10.dp))
                 Text(
-                    text = "Viết đánh giá",
+                    text = if (hasReviewed) "Sửa đánh giá của bạn" else "Viết đánh giá",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
@@ -177,7 +178,36 @@ private fun ReviewListBody(
             )
         }
 
-        if (uiState.items.isEmpty() && !uiState.isLoading) {
+        if (uiState.myReview != null && (uiState.selectedRating == null || uiState.myReview.rating == uiState.selectedRating)) {
+            item {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 10.dp)
+                ) {
+                    Text(
+                        text = "Đánh giá của bạn",
+                        modifier = Modifier.padding(start = 24.dp, end = 24.dp, bottom = 8.dp),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    TravelPlaceReviewCard(
+                        review = uiState.myReview,
+                        onAuthorClick = { onAuthorClick(uiState.myReview.user.id) }
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    androidx.compose.material3.HorizontalDivider(
+                        modifier = Modifier.padding(horizontal = 24.dp),
+                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                    )
+                }
+            }
+        }
+
+        val filteredItems = uiState.items.filter { it.id != uiState.myReview?.id }
+
+        if (filteredItems.isEmpty() && uiState.myReview == null && !uiState.isLoading) {
             item {
                 Text(
                     text = "Chưa có đánh giá phù hợp",
@@ -191,7 +221,7 @@ private fun ReviewListBody(
                 TravelPlaceReviewCardSkeleton()
             }
         } else {
-            items(uiState.items, key = { it.id }) { review ->
+            items(filteredItems, key = { it.id }) { review ->
                 TravelPlaceReviewCard(
                     review = review,
                     onAuthorClick = { onAuthorClick(review.user.id) }
@@ -773,7 +803,7 @@ private fun RatingStars(
             Icon(
                 imageVector = Icons.Filled.Star,
                 contentDescription = null,
-                tint = if (index < roundedRating) Color(0xFFFFB300) else Color(0xFFD6D9DF),
+                tint = if (index < roundedRating) Color(0xFFFFB300) else MaterialTheme.colorScheme.outlineVariant,
                 modifier = Modifier.size(starSize.dp)
             )
         }

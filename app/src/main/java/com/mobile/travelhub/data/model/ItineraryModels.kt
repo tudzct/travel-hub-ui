@@ -33,7 +33,6 @@ data class ItineraryEvent(
     val placeName: String,
     val note: String,
     val transportToNext: String,
-    val estimatedCost: String,
     val colorHex: Long = ItineraryEventColors.Default,
     val iconName: String = "Place",
     val dayId: Long? = null,

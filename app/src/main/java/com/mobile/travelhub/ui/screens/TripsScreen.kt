@@ -48,6 +48,7 @@ import java.time.LocalDate
 import java.time.temporal.ChronoUnit
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import java.time.temporal.ChronoUnit
 
 
 
@@ -154,7 +155,7 @@ fun TripsScreen(
                 ),
                 modifier = Modifier
                     .height(66.dp)
-                    .padding(end = 4.dp, bottom = 4.dp)
+                    .padding(end = 4.dp, bottom = 20.dp)
             ) {
                 Icon(
                     Icons.Default.FlightTakeoff,
@@ -399,7 +400,7 @@ fun TripsScreen(
         if (bankAccountPromptMessage != null) {
             AlertDialog(
                 onDismissRequest = { bankAccountPromptMessage = null },
-                containerColor = Color.White,
+                containerColor = MaterialTheme.colorScheme.surface,
                 titleContentColor = OnSurface,
                 textContentColor = OnSurfaceVariant,
                 title = {
@@ -482,6 +483,57 @@ fun ActiveJourneyCardV2(
                         .clip(CircleShape)
                         .background(Color.White),
                     contentAlignment = Alignment.Center
+                Text(
+                    text = trip?.name ?: "Chưa có chuyến đi diễn ra",
+                    fontWeight = FontWeight.ExtraBold,
+                    color = Color.White,
+                    style = MaterialTheme.typography.headlineSmall
+                )
+                Spacer(modifier = Modifier.height(10.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.LocationOn, null, tint = Color.White, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        trip?.location?.takeIf { it.isNotBlank() }
+                            ?: "Hãy lên kế hoạch cho chuyến đi tiếp theo của bạn!",
+                        color = Color.White,
+                        fontWeight = FontWeight.Medium,
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+                }
+                activeTripProgressLabel(trip)?.let { label ->
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Surface(
+                        shape = RoundedCornerShape(999.dp),
+                        color = Color.White.copy(alpha = 0.16f)
+                    ) {
+                        Text(
+                            text = label,
+                            color = Color.White,
+                            fontWeight = FontWeight.ExtraBold,
+                            style = MaterialTheme.typography.labelLarge,
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+                        )
+                    }
+                }
+            }
+
+            Surface(
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(end = 18.dp, bottom = 18.dp)
+                    .height(56.dp)
+                    .clickable(enabled = trip != null) {
+                        trip?.let { onNavigateToGroupDetail(it.tripId, it.name) }
+                    },
+                shape = RoundedCornerShape(28.dp),
+                color = SurfaceContainerLowest,
+                shadowElevation = 4.dp
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 20.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     Icon(
                         imageVector = Icons.Default.LocationOn,
@@ -588,6 +640,18 @@ fun ActiveJourneyCardV2(
             }
         }
     }
+}
+
+private fun activeTripProgressLabel(trip: com.mobile.travelhub.viewmodels.UpcomingTripUiModel?): String? {
+    val start = trip?.startDate?.substringBefore("T")?.let { runCatching { LocalDate.parse(it) }.getOrNull() } ?: return null
+    val end = trip.endDate?.substringBefore("T")?.let { runCatching { LocalDate.parse(it) }.getOrNull() } ?: return null
+    val today = LocalDate.now()
+    if (today.isBefore(start) || today.isAfter(end)) {
+        return null
+    }
+    val currentDay = ChronoUnit.DAYS.between(start, today) + 1
+    val totalDays = ChronoUnit.DAYS.between(start, end) + 1
+    return "Hôm nay là ngày $currentDay/$totalDays"
 }
 
 @Composable

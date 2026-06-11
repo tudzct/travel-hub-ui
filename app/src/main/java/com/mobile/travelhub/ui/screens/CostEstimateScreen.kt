@@ -114,6 +114,7 @@ import com.mobile.travelhub.ui.theme.SurfaceBg
 import com.mobile.travelhub.ui.theme.SurfaceContainerLow
 import com.mobile.travelhub.ui.theme.SurfaceContainerLowest
 import com.mobile.travelhub.ui.theme.SunsetOrange
+import com.mobile.travelhub.ui.theme.isDarkTheme
 import com.mobile.travelhub.utils.NumberUtils
 import com.mobile.travelhub.viewmodels.CostEstimateViewModel
 import com.mobile.travelhub.viewmodels.ExpenseTransactionUiModel
@@ -131,10 +132,25 @@ private val ExpenseOrange = Color(0xFFFF941A)
 private val ExpenseGreen = Color(0xFF38C779)
 private val ExpensePurple = Color(0xFF9458E8)
 private val ExpenseSlate = Color(0xFF98A4BC)
-private val ExpenseInk = Color(0xFF0B1020)
-private val ExpenseMuted = Color(0xFF586174)
-private val ExpenseBorder = Color(0xFFE8ECF4)
-private val ExpenseSoftBlue = Color(0xFFEAF4FF)
+private val ExpenseInk: Color
+    @Composable
+    get() = MaterialTheme.colorScheme.onSurface
+
+private val ExpenseMuted: Color
+    @Composable
+    get() = MaterialTheme.colorScheme.onSurfaceVariant
+
+private val ExpenseBorder: Color
+    @Composable
+    get() = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f)
+
+private val ExpenseSoftBlue: Color
+    @Composable
+    get() = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+
+private val ExpenseItemBg: Color
+    @Composable
+    get() = if (isDarkTheme) Color(0xFF22252A) else Color(0xFFF7F9FC)
 private const val SPLIT_EQUAL = "EQUAL"
 private const val SPLIT_CUSTOM = "CUSTOM"
 
@@ -241,7 +257,8 @@ fun CostEstimateScreen(
                 item {
                     SectionHeader(
                         title = "Chi tiêu gần đây",
-                        action = if (uiState.transactions.isNotEmpty()) "Xem tất cả" else null
+                        action = if (uiState.transactions.isNotEmpty()) "Xem tất cả" else null,
+                        onActionClick = { selectedTab = 1 }
                     )
                 }
 
@@ -254,6 +271,7 @@ fun CostEstimateScreen(
                     ModernExpenseRow(
                         expense = expense,
                         onClick = {
+                            viewModel.clearErrorMessage()
                             editingExpense = expense
                         }
                     )
@@ -271,6 +289,7 @@ fun CostEstimateScreen(
                         ModernExpenseRow(
                             expense = expense,
                             onClick = {
+                                viewModel.clearErrorMessage()
                                 editingExpense = expense
                             }
                         )
@@ -289,8 +308,8 @@ fun CostEstimateScreen(
                 AddExpenseContent(
                     members = uiState.members,
                     isSaving = uiState.isAddingExpense,
-                    onSave = { title, amountText, category, splitType, splitUserIds, splitShares, proofImageUri ->
-                        viewModel.addExpense(title, amountText, category, splitType, splitUserIds, splitShares, proofImageUri)
+                    onSave = { title, amountText, category, splitType, splitUserIds, splitShares, proofImageUri, onResult ->
+                        viewModel.addExpense(title, amountText, category, splitType, splitUserIds, splitShares, proofImageUri, onResult)
                     },
                     onDismiss = { showAddExpense = false }
                 )
@@ -310,7 +329,7 @@ fun CostEstimateScreen(
                     members = uiState.members,
                     canEdit = uiState.canManageExpenses,
                     isSaving = uiState.isAddingExpense,
-                    onSave = { title, amountText, category, splitType, splitUserIds, splitShares, proofImageUri ->
+                    onSave = { title, amountText, category, splitType, splitUserIds, splitShares, proofImageUri, onResult ->
                         viewModel.editExpense(
                             expense.id,
                             title,
@@ -321,7 +340,8 @@ fun CostEstimateScreen(
                             splitType,
                             splitUserIds,
                             splitShares,
-                            proofImageUri
+                            proofImageUri,
+                            onResult
                         )
                     },
                     onDelete = {
@@ -436,7 +456,7 @@ private fun ExpenseOverviewCard(
 ) {
     Card(
         shape = RoundedCornerShape(18.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = SurfaceContainerLowest),
         modifier = Modifier
             .fillMaxWidth()
             .shadow(10.dp, RoundedCornerShape(18.dp), ambientColor = Color.Black.copy(alpha = 0.05f), spotColor = Color.Black.copy(alpha = 0.08f))
@@ -515,7 +535,7 @@ private fun TripSettlementPanel(
 
     Card(
         shape = RoundedCornerShape(18.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = SurfaceContainerLowest),
         modifier = Modifier
             .fillMaxWidth()
             .shadow(8.dp, RoundedCornerShape(18.dp), ambientColor = Color.Black.copy(alpha = 0.04f), spotColor = Color.Black.copy(alpha = 0.06f))
@@ -592,7 +612,7 @@ private fun PayableSettlementItem(settlement: SettlementUiModel) {
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
-            .background(Color(0xFFF7FAFF))
+            .background(ExpenseItemBg)
             .padding(14.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
@@ -664,6 +684,7 @@ private fun PayableSettlementItem(settlement: SettlementUiModel) {
 @Composable
 private fun ExpenseDonutChart(categories: List<CategoryAmount>) {
     val total = categories.sumOf { it.amount }.toFloat()
+    val borderColor = ExpenseBorder
     Canvas(modifier = Modifier.fillMaxSize()) {
         val strokeWidth = 28.dp.toPx()
         val chartSize = Size(size.minDimension - strokeWidth, size.minDimension - strokeWidth)
@@ -674,7 +695,7 @@ private fun ExpenseDonutChart(categories: List<CategoryAmount>) {
 
         if (total <= 0f) {
             drawArc(
-                color = ExpenseBorder,
+                color = borderColor,
                 startAngle = -90f,
                 sweepAngle = 360f,
                 useCenter = false,
@@ -749,7 +770,7 @@ private fun CategoryLegend(categories: List<CategoryAmount>) {
 private fun ExpenseFilterPanel() {
     Card(
         shape = RoundedCornerShape(18.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = SurfaceContainerLowest),
         modifier = Modifier
             .fillMaxWidth()
             .shadow(8.dp, RoundedCornerShape(18.dp), ambientColor = Color.Black.copy(alpha = 0.04f), spotColor = Color.Black.copy(alpha = 0.06f))
@@ -810,7 +831,7 @@ private fun FilterPill(
     Surface(
         modifier = modifier.height(44.dp),
         shape = RoundedCornerShape(18.dp),
-        color = if (selected) ExpenseSoftBlue else Color.White,
+        color = if (selected) ExpenseSoftBlue else SurfaceContainerLowest,
         border = if (selected) null else androidx.compose.foundation.BorderStroke(1.dp, ExpenseBorder)
     ) {
         Row(
@@ -857,7 +878,7 @@ private fun InvoiceOcrBanner(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
-            .background(Color(0xFFF7FBFF))
+            .background(ExpenseItemBg)
             .padding(10.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -870,9 +891,9 @@ private fun InvoiceOcrBanner(
                 .height(64.dp),
             shape = RoundedCornerShape(14.dp),
             colors = ButtonDefaults.buttonColors(
-                containerColor = Color(0xFF4D7CFF),
+                containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = Color.White,
-                disabledContainerColor = Color(0xFF4D7CFF).copy(alpha = 0.35f),
+                disabledContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.35f),
                 disabledContentColor = Color.White
             ),
             contentPadding = PaddingValues(horizontal = 8.dp, vertical = 10.dp)
@@ -914,10 +935,10 @@ private fun InvoiceOcrBanner(
                 .height(64.dp),
             shape = RoundedCornerShape(14.dp),
             colors = ButtonDefaults.buttonColors(
-                containerColor = Color(0xFFEAF8F0),
-                contentColor = Color(0xFF145C3C),
-                disabledContainerColor = Color(0xFFEAF8F0).copy(alpha = 0.5f),
-                disabledContentColor = Color(0xFF145C3C).copy(alpha = 0.5f)
+                containerColor = if (isDarkTheme) Color(0xFF1B3D2B) else Color(0xFFEAF8F0),
+                contentColor = if (isDarkTheme) Color(0xFF5EDAA0) else Color(0xFF145C3C),
+                disabledContainerColor = (if (isDarkTheme) Color(0xFF1B3D2B) else Color(0xFFEAF8F0)).copy(alpha = 0.5f),
+                disabledContentColor = (if (isDarkTheme) Color(0xFF5EDAA0) else Color(0xFF145C3C)).copy(alpha = 0.5f)
             ),
             contentPadding = PaddingValues(horizontal = 8.dp, vertical = 10.dp)
         ) {
@@ -935,7 +956,7 @@ private fun InvoiceOcrBanner(
                     "Nhập tay từng khoản",
                     fontWeight = FontWeight.Medium,
                     fontSize = 12.sp,
-                    color = Color(0xFF145C3C).copy(alpha = 0.76f),
+                    color = (if (isDarkTheme) Color(0xFF5EDAA0) else Color(0xFF145C3C)).copy(alpha = 0.76f),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -945,7 +966,11 @@ private fun InvoiceOcrBanner(
 }
 
 @Composable
-private fun SectionHeader(title: String, action: String?) {
+private fun SectionHeader(
+    title: String,
+    action: String?,
+    onActionClick: (() -> Unit)? = null
+) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -962,7 +987,11 @@ private fun SectionHeader(title: String, action: String?) {
                 text = action,
                 color = PrimaryBlue,
                 fontSize = 16.sp,
-                fontWeight = FontWeight.ExtraBold
+                fontWeight = FontWeight.ExtraBold,
+                modifier = Modifier.clickable(
+                    enabled = onActionClick != null,
+                    onClick = { onActionClick?.invoke() }
+                )
             )
         }
     }
@@ -972,7 +1001,7 @@ private fun SectionHeader(title: String, action: String?) {
 private fun EmptyExpensesCard() {
     Card(
         shape = RoundedCornerShape(18.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = SurfaceContainerLowest),
         modifier = Modifier.fillMaxWidth()
     ) {
         Text(
@@ -995,7 +1024,7 @@ private fun ModernExpenseRow(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(18.dp))
-            .background(Color.White)
+            .background(SurfaceContainerLowest)
             .clickable(enabled = !isPending, onClick = onClick)
             .padding(horizontal = 14.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -1164,7 +1193,7 @@ private fun ReceiptOcrConfirmContent(
                 .height(180.dp)
                 .clip(RoundedCornerShape(18.dp))
                 .clickable { showReceiptImageFullScreen = true }
-                .background(Color(0xFFF2F4F8)),
+                .background(ExpenseItemBg),
             contentScale = ContentScale.Crop
         )
 
@@ -1364,7 +1393,7 @@ private fun SplitOptionEditor(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(16.dp))
-                    .background(Color(0xFFF7F9FC))
+                    .background(ExpenseItemBg)
                     .padding(14.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
@@ -1419,7 +1448,7 @@ private fun SplitTypeChip(
     Row(
         modifier = modifier
             .clip(RoundedCornerShape(14.dp))
-            .background(if (selected) ExpenseSoftBlue else Color(0xFFF7F9FC))
+            .background(if (selected) ExpenseSoftBlue else ExpenseItemBg)
             .clickable(enabled = enabled, onClick = onClick)
             .padding(horizontal = 10.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -1447,7 +1476,7 @@ private fun CustomSplitAmountRow(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(14.dp))
-            .background(Color.White)
+            .background(SurfaceContainerLowest)
             .padding(start = 12.dp, top = 8.dp, end = 8.dp, bottom = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -1624,7 +1653,7 @@ private fun SplitMemberSelector(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(14.dp))
-                    .background(Color(0xFFF7F9FC))
+                    .background(ExpenseItemBg)
                     .padding(14.dp)
             )
         } else {
@@ -1635,7 +1664,7 @@ private fun SplitMemberSelector(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(14.dp))
-                        .background(Color(0xFFF7F9FC))
+                        .background(ExpenseItemBg)
                         .clickable(enabled = enabled) {
                             onSelectedUserIdsChange(
                                 if (checked) {
@@ -1705,7 +1734,7 @@ private fun SplitMemberSelector(
 fun AddExpenseContent(
     members: List<TripExpenseMemberUiModel>,
     isSaving: Boolean,
-    onSave: (String, String, String, String, List<Long>, List<ExpenseSplitShareUiModel>, android.net.Uri?) -> Unit,
+    onSave: (String, String, String, String, List<Long>, List<ExpenseSplitShareUiModel>, android.net.Uri?, (Boolean, String?) -> Unit) -> Unit,
     onDismiss: () -> Unit
 ) {
     val initialSplitUserIds = remember(members) {
@@ -1719,6 +1748,7 @@ fun AddExpenseContent(
     var splitUserIds by remember(initialSplitUserIds) { mutableStateOf(initialSplitUserIds) }
     var splitType by remember { mutableStateOf(SPLIT_EQUAL) }
     var customSplitValues by remember { mutableStateOf<Map<Long, TextFieldValue>>(emptyMap()) }
+    var localErrorMsg by remember { mutableStateOf<String?>(null) }
     val proofPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia()
     ) { uri ->
@@ -1800,9 +1830,20 @@ fun AddExpenseContent(
 
         Spacer(modifier = Modifier.height(24.dp))
 
+        if (localErrorMsg != null) {
+            Text(
+                text = localErrorMsg.orEmpty(),
+                color = SunsetOrange,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.padding(bottom = 12.dp)
+            )
+        }
+
         Button(
             onClick = {
                 if (!isSaving) {
+                    localErrorMsg = null
                     onSave(
                         expenseTitle,
                         expenseAmountValue.text,
@@ -1811,8 +1852,13 @@ fun AddExpenseContent(
                         splitUserIds.toList(),
                         buildSplitShares(splitUserIds, customSplitValues),
                         proofImageUri
-                    )
-                    onDismiss()
+                    ) { success, error ->
+                        if (success) {
+                            onDismiss()
+                        } else {
+                            localErrorMsg = error ?: "Không lưu được chi phí"
+                        }
+                    }
                 }
             },
             modifier = Modifier
@@ -1837,7 +1883,7 @@ fun EditExpenseContent(
     members: List<TripExpenseMemberUiModel>,
     canEdit: Boolean,
     isSaving: Boolean,
-    onSave: (String, String, String, String, List<Long>, List<ExpenseSplitShareUiModel>, android.net.Uri?) -> Unit,
+    onSave: (String, String, String, String, List<Long>, List<ExpenseSplitShareUiModel>, android.net.Uri?, (Boolean, String?) -> Unit) -> Unit,
     onDelete: () -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -1866,6 +1912,7 @@ fun EditExpenseContent(
             }
         )
     }
+    var localErrorMsg by remember(expense.id) { mutableStateOf<String?>(null) }
     val proofPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia()
     ) { uri ->
@@ -1914,17 +1961,18 @@ fun EditExpenseContent(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = stringResource(R.string.ui_c8eff87563),
+                text = if (canEdit) stringResource(R.string.ui_c8eff87563) else "Chi tiết khoản chi",
                 fontWeight = FontWeight.ExtraBold,
                 fontSize = 20.sp,
                 color = OnSurface
             )
             if (canEdit) {
                 IconButton(onClick = { showDeleteConfirm = true }) {
-                Icon(
-                    imageVector = Icons.Default.Delete,
-                    contentDescription = stringResource(R.string.ui_1816483d8a)
-                )
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = stringResource(R.string.ui_1816483d8a),
+                        tint = MaterialTheme.colorScheme.error
+                    )
                 }
             }
         }
@@ -1957,7 +2005,8 @@ fun EditExpenseContent(
             selectedCategory = selectedCategory,
             expanded = expanded,
             onExpandedChange = { expanded = it },
-            onCategorySelected = { selectedCategory = it }
+            onCategorySelected = { selectedCategory = it },
+            enabled = canEdit && !isSaving
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -1993,9 +2042,20 @@ fun EditExpenseContent(
         Spacer(modifier = Modifier.height(24.dp))
 
         if (canEdit) {
+            if (localErrorMsg != null) {
+                Text(
+                    text = localErrorMsg.orEmpty(),
+                    color = SunsetOrange,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.padding(bottom = 12.dp)
+                )
+            }
+
             Button(
                 onClick = {
                     if (!isSaving) {
+                        localErrorMsg = null
                         onSave(
                             expenseTitle,
                             expenseAmountValue.text,
@@ -2004,8 +2064,13 @@ fun EditExpenseContent(
                             splitUserIds.toList(),
                             buildSplitShares(splitUserIds, customSplitValues),
                             replacementProofImageUri
-                        )
-                        onDismiss()
+                        ) { success, error ->
+                            if (success) {
+                                onDismiss()
+                            } else {
+                                localErrorMsg = error ?: "Không cập nhật được chi phí"
+                            }
+                        }
                     }
                 },
                 modifier = Modifier
@@ -2059,7 +2124,7 @@ private fun ExpenseProofImagePicker(
                     .height(190.dp)
                     .clip(RoundedCornerShape(18.dp))
                     .clickable { fullScreenImageModel = imageModel }
-                    .background(Color(0xFFF2F4F8)),
+                    .background(ExpenseItemBg),
                 contentScale = ContentScale.Crop
             )
         } else {
@@ -2067,7 +2132,7 @@ private fun ExpenseProofImagePicker(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(16.dp))
-                    .background(Color(0xFFF7F9FC))
+                    .background(ExpenseItemBg)
                     .padding(14.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -2159,38 +2224,42 @@ private fun ExpenseCategoryDropdown(
     selectedCategory: String,
     expanded: Boolean,
     onExpandedChange: (Boolean) -> Unit,
-    onCategorySelected: (String) -> Unit
+    onCategorySelected: (String) -> Unit,
+    enabled: Boolean = true
 ) {
     ExposedDropdownMenuBox(
-        expanded = expanded,
-        onExpandedChange = { onExpandedChange(!expanded) }
+        expanded = if (enabled) expanded else false,
+        onExpandedChange = { if (enabled) onExpandedChange(!expanded) }
     ) {
         SimpleFormTextField(
             value = categoryVisual(selectedCategory).label,
             onValueChange = {},
             readOnly = true,
+            enabled = enabled,
             placeholder = stringResource(R.string.ui_fc7b5ce028),
-            trailingIcon = {
-                Icon(Icons.Default.ArrowDropDown, contentDescription = null)
-            },
+            trailingIcon = if (enabled) {
+                { Icon(Icons.Default.ArrowDropDown, contentDescription = null) }
+            } else null,
             modifier = Modifier
                 .menuAnchor()
                 .fillMaxWidth()
         )
-        ExposedDropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { onExpandedChange(false) },
-            containerColor = MaterialTheme.colorScheme.surface,
-            tonalElevation = 0.dp
-        ) {
-            listOf("FOOD", "STAY", "TRANSPORT", "ENTRY").forEach { category ->
-                DropdownMenuItem(
-                    text = { Text(categoryVisual(category).label) },
-                    onClick = {
-                        onCategorySelected(category)
-                        onExpandedChange(false)
-                    }
-                )
+        if (enabled) {
+            ExposedDropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { onExpandedChange(false) },
+                containerColor = MaterialTheme.colorScheme.surface,
+                tonalElevation = 0.dp
+            ) {
+                listOf("FOOD", "STAY", "TRANSPORT", "ENTRY").forEach { category ->
+                    DropdownMenuItem(
+                        text = { Text(categoryVisual(category).label) },
+                        onClick = {
+                            onCategorySelected(category)
+                            onExpandedChange(false)
+                        }
+                    )
+                }
             }
         }
     }

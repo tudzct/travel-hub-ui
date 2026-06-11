@@ -42,8 +42,7 @@ data class CreateTripActivityRequestDto(
     val locationName: String,
     val address: String,
     val type: String,
-    val orderIndex: Int,
-    val estimatedCost: Double
+    val orderIndex: Int
 )
 
 typealias UpdateTripActivityRequestDto = CreateTripActivityRequestDto

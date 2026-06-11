@@ -30,6 +30,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Article
 import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.PhotoLibrary
+import androidx.compose.material.icons.filled.FiberManualRecord
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Payments
@@ -67,6 +68,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.mobile.travelhub.R
 import com.mobile.travelhub.ui.components.*
 import com.mobile.travelhub.ui.theme.*
+import com.mobile.travelhub.viewmodels.GroupActivityLogUiModel
 import com.mobile.travelhub.viewmodels.GroupDetailViewModel
 import com.mobile.travelhub.viewmodels.TripPhotoUiModel
 import androidx.compose.runtime.LaunchedEffect
@@ -115,6 +117,7 @@ fun GroupDetailScreen(
     var showPublishPostDialog by remember { mutableStateOf(false) }
     var tripPostDescription by remember { mutableStateOf("") }
     var selectedTripPhotoUrl by remember { mutableStateOf<String?>(null) }
+    var showJoinRequestsDialog by remember { mutableStateOf(false) }
     var memberToDelete by remember { mutableStateOf<com.mobile.travelhub.viewmodels.GroupMemberUiModel?>(null) }
     val isLeader = uiState.myRole.equals("LEADER", ignoreCase = true)
     val isCompleted = uiState.isCompleted
@@ -292,8 +295,8 @@ fun GroupDetailScreen(
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     if (isInitialLoading) {
-                        FeatureCardSkeleton()
-                        FeatureCardSkeleton()
+                        FeatureCardSkeleton(modifier = Modifier.weight(1f))
+                        FeatureCardSkeleton(modifier = Modifier.weight(1f))
                     } else {
                         FeatureCard(
                             icon = Icons.Default.CalendarMonth,
@@ -327,9 +330,9 @@ fun GroupDetailScreen(
                 Column(modifier = Modifier.fillMaxWidth()) {
                     if (isInitialLoading) {
                         TripDetailRowSkeleton()
-                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant, modifier = Modifier.padding(vertical = 10.dp))
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant, modifier = Modifier.padding(vertical = 8.dp))
                         TripDetailRowSkeleton()
-                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant, modifier = Modifier.padding(vertical = 10.dp))
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant, modifier = Modifier.padding(vertical = 8.dp))
                         TripDetailRowSkeleton()
                     } else {
                         TripDetailRow(
@@ -349,9 +352,30 @@ fun GroupDetailScreen(
                             value = uiState.statusLabel.ifBlank { "Chưa xác định" },
                             icon = Icons.Default.CardTravel,
                             pillText = displayTripStatus(uiState.statusLabel),
-                            trailingText = daysUntilStartLabel(uiState.startDate)
+                            trailingText = tripProgressLabel(uiState.startDate, uiState.endDate)
                         )
                     }
+                }
+
+                Spacer(modifier = Modifier.height(30.dp))
+
+                Text(
+                    text = "NHẬT KÝ HÀNH TRÌNH",
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 13.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    letterSpacing = 0.8.sp
+                )
+
+                Spacer(modifier = Modifier.height(18.dp))
+
+                if (isInitialLoading) {
+                    TimelineLogSectionSkeleton()
+                } else {
+                    JourneyLogTimeline(
+                        activities = uiState.recentActivities,
+                        progressLabel = ongoingTripDayLabel(uiState.startDate, uiState.endDate)
+                    )
                 }
 
                 Spacer(modifier = Modifier.height(30.dp))
@@ -555,23 +579,7 @@ fun GroupDetailScreen(
                         isLeader = isLeader,
                         isCompleted = isCompleted,
                         pendingRequestCount = pendingRequestCount,
-                        onApproveJoinRequest = { userId, name ->
-                            viewModel.approveJoinRequest(userId)
-                            Toast.makeText(
-                                context,
-                                context.getString(R.string.join_request_accepted, name),
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        },
-                        onRejectJoinRequest = { userId, name ->
-                            viewModel.rejectJoinRequest(userId)
-                            Toast.makeText(
-                                context,
-                                context.getString(R.string.join_request_rejected, name),
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        },
-                        onNavigateToProfile = onNavigateToProfile,
+                        onOpenJoinRequests = { showJoinRequestsDialog = true },
                         onLeaveGroupClick = { showLeaveConfirm = true },
                         onDeleteGroupClick = { showDeleteConfirm = true }
                     )
@@ -608,7 +616,7 @@ fun GroupDetailScreen(
                                     }
                                 }
                             ) {
-                                Text(text = stringResource(R.string.ui_aa1d94fc16), color = SunsetOrange)
+                                Text(text = stringResource(R.string.ui_aa1d94fc16), color = MaterialTheme.colorScheme.error)
                             }
                         },
                         dismissButton = {
@@ -637,7 +645,7 @@ fun GroupDetailScreen(
                                         }
                                     }
                                 }
-                            ) { Text(text = stringResource(R.string.ui_d354717258), color = SunsetOrange) }
+                            ) { Text(text = stringResource(R.string.ui_d354717258), color = MaterialTheme.colorScheme.error) }
                         },
                         dismissButton = {
                             TextButton(onClick = { showLeaveConfirm = false }) { Text(text = stringResource(R.string.ui_34ca764caf)) }
@@ -652,6 +660,9 @@ fun GroupDetailScreen(
                                 showFinishTripConfirm = false
                             }
                         },
+                        containerColor = MaterialTheme.colorScheme.surface,
+                        titleContentColor = MaterialTheme.colorScheme.onSurface,
+                        textContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
                         title = { Text(text = "Kết thúc chuyến đi?") },
                         text = {
                             Text(
@@ -744,6 +755,32 @@ fun GroupDetailScreen(
                 }
             )
         }
+        JoinRequestsDialog(
+            visible = showJoinRequestsDialog,
+            requests = uiState.joinRequests,
+            isLoading = uiState.isJoinRequestsLoading,
+            onDismiss = { showJoinRequestsDialog = false },
+            onApproveJoinRequest = { userId, name ->
+                viewModel.approveJoinRequest(userId)
+                Toast.makeText(
+                    context,
+                    context.getString(R.string.join_request_accepted, name),
+                    Toast.LENGTH_SHORT
+                ).show()
+            },
+            onRejectJoinRequest = { userId, name ->
+                viewModel.rejectJoinRequest(userId)
+                Toast.makeText(
+                    context,
+                    context.getString(R.string.join_request_rejected, name),
+                    Toast.LENGTH_SHORT
+                ).show()
+            },
+            onNavigateToProfile = { userId ->
+                showJoinRequestsDialog = false
+                onNavigateToProfile(userId)
+            }
+        )
     }
 }
 
@@ -762,6 +799,22 @@ private fun daysUntilStartLabel(startDate: String): String? {
         days == 0L -> "Hôm nay"
         else -> null
     }
+}
+
+private fun tripProgressLabel(startDate: String, endDate: String): String? {
+    return ongoingTripDayLabel(startDate, endDate) ?: daysUntilStartLabel(startDate)
+}
+
+private fun ongoingTripDayLabel(startDate: String, endDate: String): String? {
+    val start = runCatching { LocalDate.parse(startDate.substringBefore("T")) }.getOrNull() ?: return null
+    val end = runCatching { LocalDate.parse(endDate.substringBefore("T")) }.getOrNull() ?: return null
+    val today = LocalDate.now()
+    if (today.isBefore(start) || today.isAfter(end)) {
+        return null
+    }
+    val currentDay = ChronoUnit.DAYS.between(start, today) + 1
+    val totalDays = ChronoUnit.DAYS.between(start, end) + 1
+    return "Hôm nay là ngày $currentDay/$totalDays"
 }
 
 private fun displayTripStatus(statusLabel: String): String {
@@ -1096,4 +1149,137 @@ private fun defaultTripPostDescription(groupName: String, location: String): Str
 private fun String.toVietnameseDate(): String {
     val date = runCatching { LocalDate.parse(this) }.getOrNull() ?: return this
     return "%02d/%02d/%04d".format(date.dayOfMonth, date.monthValue, date.year)
+}
+
+@Composable
+private fun JourneyLogTimeline(
+    activities: List<GroupActivityLogUiModel>,
+    progressLabel: String?
+) {
+    if (activities.isEmpty()) {
+        Text(
+            text = "Chưa có nhật ký hành trình.",
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            fontSize = 13.sp
+        )
+        return
+    }
+
+    Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+        progressLabel?.let { label ->
+            Surface(
+                shape = RoundedCornerShape(16.dp),
+                color = PrimaryBlue.copy(alpha = 0.10f)
+            ) {
+                Text(
+                    text = label,
+                    color = PrimaryBlue,
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 13.sp,
+                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)
+                )
+            }
+        }
+
+        activities.forEachIndexed { index, activity ->
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.Top
+            ) {
+                Column(
+                    modifier = Modifier.width(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.FiberManualRecord,
+                        contentDescription = null,
+                        tint = PrimaryBlue,
+                        modifier = Modifier.size(14.dp)
+                    )
+                    if (index < activities.lastIndex) {
+                        Box(
+                            modifier = Modifier
+                                .width(2.dp)
+                                .height(64.dp)
+                                .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f))
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.width(12.dp))
+
+                Surface(
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(20.dp),
+                    color = SurfaceContainerLowest
+                ) {
+                    Column(
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Text(
+                            text = activity.actorName.ifBlank { "Thành viên trong chuyến đi" },
+                            fontWeight = FontWeight.ExtraBold,
+                            fontSize = 14.sp,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = activity.description.ifBlank { "Có cập nhật mới trong hành trình" },
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontSize = 13.sp,
+                            lineHeight = 18.sp
+                        )
+                        Text(
+                            text = activity.createdAt.toTimelineTimestamp(),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.78f),
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun TimelineLogSectionSkeleton() {
+    Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+        repeat(3) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.Top
+            ) {
+                Box(
+                    modifier = Modifier
+                        .padding(top = 8.dp)
+                        .size(14.dp)
+                        .background(PrimaryBlue.copy(alpha = 0.25f), CircleShape)
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(88.dp)
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(SurfaceContainerLow)
+                )
+            }
+        }
+    }
+}
+
+private fun String.toTimelineTimestamp(): String {
+    val normalized = substringBeforeLast("Z").ifBlank { this }
+    val parsed = runCatching { java.time.Instant.parse(this) }.getOrNull()
+        ?: runCatching { java.time.LocalDateTime.parse(normalized) }.getOrNull()?.atZone(java.time.ZoneId.systemDefault())?.toInstant()
+        ?: return this
+    val dateTime = parsed.atZone(java.time.ZoneId.systemDefault())
+    return "%02d/%02d/%04d %02d:%02d".format(
+        dateTime.dayOfMonth,
+        dateTime.monthValue,
+        dateTime.year,
+        dateTime.hour,
+        dateTime.minute
+    )
 }

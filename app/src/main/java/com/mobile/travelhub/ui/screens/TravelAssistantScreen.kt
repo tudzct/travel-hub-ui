@@ -1,14 +1,24 @@
 package com.mobile.travelhub.ui.screens
 
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.Image as ComposeImage
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -28,8 +38,15 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.CalendarToday
+import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.RemoveRedEye
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -44,17 +61,23 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.clipRect
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import coil.compose.AsyncImage
 import com.mobile.travelhub.data.model.TravelAssistantPlaceReference
 import com.mobile.travelhub.ui.components.ChatMarkdownMessage
-import com.mobile.travelhub.ui.components.SkeletonBlock
+import com.mobile.travelhub.ui.components.RetryButton
 import com.mobile.travelhub.ui.components.SimpleFormTextField
 import com.mobile.travelhub.ui.theme.OnSurface
 import com.mobile.travelhub.ui.theme.OnSurfaceVariant
@@ -66,6 +89,7 @@ import com.mobile.travelhub.viewmodels.TravelAssistantMessageUi
 import com.mobile.travelhub.viewmodels.TravelAssistantRole
 import com.mobile.travelhub.viewmodels.TravelAssistantViewModel
 import com.mobile.travelhub.R
+import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -137,58 +161,53 @@ fun TravelAssistantScreen(
             )
         }
     ) { paddingValues ->
-        LazyColumn(
-            state = listState,
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues),
-            contentPadding = androidx.compose.foundation.layout.PaddingValues(
-                start = 16.dp,
-                end = 16.dp,
-                top = 12.dp,
-                bottom = 18.dp
-            ),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            items(
-                items = state.messages,
-                key = { it.id }
-            ) { message ->
-                ChatMessageBubble(
-                    message = message,
-                    onPlaceClick = onPlaceClick
-                )
-            }
-
-            if (state.messages.size == 1 && state.quickPrompts.isNotEmpty()) {
-                item(key = "quick-prompts") {
-                    QuickPromptRow(
-                        prompts = state.quickPrompts,
-                        onPromptClick = viewModel::sendMessage
+            LazyColumn(
+                state = listState,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues),
+                contentPadding = androidx.compose.foundation.layout.PaddingValues(
+                    start = 16.dp,
+                    end = 16.dp,
+                    top = 18.dp,
+                    bottom = 18.dp
+                ),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                items(
+                    items = state.messages,
+                    key = { it.id }
+                ) { message ->
+                    ChatMessageBubble(
+                        message = message,
+                        onPlaceClick = onPlaceClick
                     )
                 }
-            }
 
-            if (state.isSending) {
-                item(key = "typing") {
-                    AssistantTypingBubble()
+                if (state.messages.size == 1 && state.quickPrompts.isNotEmpty()) {
+                    item(key = "quick-prompts") {
+                        QuickPromptRow(
+                            prompts = state.quickPrompts,
+                            onPromptClick = viewModel::sendMessage
+                        )
+                    }
                 }
-            }
 
-            state.errorMessage?.let { error ->
-                item(key = "error") {
-                    Surface(
-                        color = Color(0xFFFFEDEA),
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable(onClick = viewModel::clearError)
-                    ) {
-                        Text(
-                            text = error,
-                            modifier = Modifier.padding(12.dp),
-                            color = Color(0xFF9B2C21),
-                            style = MaterialTheme.typography.bodySmall
+                if (state.isSending) {
+                    item(key = "typing") {
+                        AssistantTypingBubble()
+                    }
+                }
+
+                state.errorMessage?.let { error ->
+                    item(key = "error") {
+                        AssistantErrorCard(
+                            message = error,
+                            onRetry = viewModel::retryLastMessage
                         )
                     }
                 }
@@ -212,31 +231,13 @@ private fun ChatMessageBubble(
             horizontalArrangement = if (isUser) Arrangement.End else Arrangement.Start,
             verticalAlignment = Alignment.Top
         ) {
-            if (!isUser) {
-                Surface(
-                    color = PrimaryBlue,
-                    shape = CircleShape,
-                    modifier = Modifier.size(34.dp)
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            imageVector = Icons.Default.AutoAwesome,
-                            contentDescription = null,
-                            tint = Color.White,
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
-                }
-                Spacer(modifier = Modifier.width(8.dp))
-            }
-
             Surface(
                 color = if (isUser) PrimaryBlue else SurfaceContainerLowest,
                 shape = RoundedCornerShape(
-                    topStart = 18.dp,
-                    topEnd = 18.dp,
-                    bottomStart = if (isUser) 18.dp else 4.dp,
-                    bottomEnd = if (isUser) 4.dp else 18.dp
+                    topStart = if (isUser) 18.dp else 4.dp,
+                    topEnd = if (isUser) 4.dp else 18.dp,
+                    bottomStart = 18.dp,
+                    bottomEnd = 16.dp
                 ),
                 shadowElevation = if (isUser) 0.dp else 1.dp,
                 modifier = Modifier.fillMaxWidth(if (isUser) 0.82f else 0.88f)
@@ -259,15 +260,29 @@ private fun ChatMessageBubble(
             Spacer(modifier = Modifier.height(8.dp))
             Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = 42.dp),
+                    .fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(7.dp)
             ) {
-                message.places.forEach { place ->
-                    PlaceReferenceCard(
-                        place = place,
-                        onClick = { onPlaceClick(place.id) }
-                    )
+                Text(
+                    text = stringResource(R.string.assistant_suggested_places),
+                    color = OnSurfaceVariant,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(IntrinsicSize.Min)
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    message.places.forEach { place ->
+                        PlaceReferenceCard(
+                            place = place,
+                            onClick = { onPlaceClick(place.id) },
+                            modifier = Modifier.fillMaxHeight()
+                        )
+                    }
                 }
             }
         }
@@ -277,61 +292,217 @@ private fun ChatMessageBubble(
 @Composable
 private fun PlaceReferenceCard(
     place: TravelAssistantPlaceReference,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     Surface(
-        color = SurfaceContainerLow,
-        shape = RoundedCornerShape(12.dp),
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
+        color = SurfaceContainerLowest,
+        shape = RoundedCornerShape(24.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        shadowElevation = 2.dp,
+        modifier = modifier
+            .width(200.dp)
+            .fillMaxHeight()
     ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
-            verticalAlignment = Alignment.CenterVertically
+        Column(
+            modifier = Modifier.padding(8.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            Icon(
-                imageVector = Icons.Default.LocationOn,
-                contentDescription = null,
-                tint = PrimaryBlue,
-                modifier = Modifier.size(20.dp)
-            )
-            Column(
+            Box(
                 modifier = Modifier
-                    .weight(1f)
-                    .padding(start = 9.dp)
+                    .fillMaxWidth()
+                    .height(168.dp)
+                    .clip(RoundedCornerShape(18.dp))
+                    .background(SurfaceContainerLow)
+            ) {
+                val imageUrl = place.mainImage?.takeIf { it.isNotBlank() }
+                if (imageUrl != null) {
+                    AsyncImage(
+                        model = imageUrl,
+                        contentDescription = place.name,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                } else {
+                    ComposeImage(
+                        painter = painterResource(id = R.drawable.ic_launcher_foreground),
+                        contentDescription = place.name,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(SurfaceContainerLow)
+                    )
+                }
+            }
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Text(
                     text = place.name,
                     color = OnSurface,
                     fontWeight = FontWeight.Bold,
-                    fontSize = 13.sp,
-                    maxLines = 1,
+                    style = MaterialTheme.typography.titleMedium,
+                    maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
-                val detail = buildList {
-                    place.province?.takeIf { it.isNotBlank() }?.let(::add)
-                    place.averageRating?.let { add(String.format("%.1f/5", it)) }
-                    if (place.reviewCount > 0) add("${place.reviewCount} review")
-                }.joinToString(" • ")
-                if (detail.isNotBlank()) {
+
+                place.province?.takeIf { it.isNotBlank() }?.let { province ->
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.LocationOn,
+                            contentDescription = null,
+                            tint = OnSurfaceVariant,
+                            modifier = Modifier.size(17.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = province,
+                            color = OnSurfaceVariant,
+                            style = MaterialTheme.typography.bodySmall,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
+
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+
+                PlaceRatingRow(
+                    averageRating = place.averageRating,
+                    reviewCount = place.reviewCount
+                )
+
+                Button(
+                    onClick = onClick,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(44.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = PrimaryBlue,
+                        contentColor = Color.White
+                    ),
+                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.RemoveRedEye,
+                        contentDescription = null,
+                        modifier = Modifier.size(19.dp)
+                    )
+                    Spacer(modifier = Modifier.width(7.dp))
                     Text(
-                        text = detail,
-                        color = OnSurfaceVariant,
-                        fontSize = 11.sp
+                        text = stringResource(R.string.assistant_view_place_detail),
+                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.bodyMedium
                     )
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun AssistantErrorCard(
+    message: String,
+    onRetry: () -> Unit
+) {
+    Surface(
+        color = MaterialTheme.colorScheme.errorContainer,
+        shape = RoundedCornerShape(16.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
             Text(
-                text = stringResource(R.string.ui_c088a919fc),
-                color = PrimaryBlue,
-                fontWeight = FontWeight.Bold,
-                fontSize = 12.sp
+                text = message,
+                color = MaterialTheme.colorScheme.onErrorContainer,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.SemiBold
+            )
+            RetryButton(
+                onClick = onRetry,
+                modifier = Modifier.align(Alignment.End)
             )
         }
     }
 }
 
+@Composable
+private fun PlaceRatingRow(
+    averageRating: Double?,
+    reviewCount: Long
+) {
+    val hasRating = averageRating != null && reviewCount > 0
+    if (hasRating) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(7.dp)
+        ) {
+            RatingStars(
+                rating = averageRating ?: 0.0,
+                starSize = 17
+            )
+            Text(
+                text = String.format("%.1f", averageRating).replace('.', ','),
+                color = OnSurface,
+                fontWeight = FontWeight.Bold,
+                style = MaterialTheme.typography.bodyMedium
+            )
+            Spacer(modifier = Modifier.weight(1f))
+            Text(
+                text = stringResource(R.string.review_count, reviewCount),
+                color = OnSurfaceVariant,
+                style = MaterialTheme.typography.bodySmall
+            )
+        }
+    } else {
+        Text(
+            text = stringResource(R.string.ui_faac2d3623),
+            color = OnSurfaceVariant,
+            style = MaterialTheme.typography.bodyMedium
+        )
+    }
+}
+
+@Composable
+private fun RatingStars(
+    rating: Double,
+    starSize: Int
+) {
+    val fillFraction = (rating / 5.0)
+        .coerceIn(0.0, 1.0)
+        .toFloat()
+
+    Box(
+        modifier = Modifier.size(starSize.dp)
+    ) {
+        Icon(
+            imageVector = Icons.Filled.Star,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.outlineVariant,
+            modifier = Modifier.matchParentSize()
+        )
+
+        Icon(
+            imageVector = Icons.Filled.Star,
+            contentDescription = null,
+            tint = Color(0xFFFFB300),
+            modifier = Modifier
+                .matchParentSize()
+                .drawWithContent {
+                    clipRect(
+                        right = size.width * fillFraction
+                    ) {
+                        this@drawWithContent.drawContent()
+                    }
+                }
+        )
+    }
+}
 @Composable
 private fun QuickPromptRow(
     prompts: List<String>,
@@ -341,7 +512,7 @@ private fun QuickPromptRow(
         modifier = Modifier
             .fillMaxWidth()
             .horizontalScroll(rememberScrollState())
-            .padding(start = 42.dp),
+            .padding(end = 32.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         prompts.forEach { prompt ->
@@ -364,46 +535,70 @@ private fun QuickPromptRow(
 
 @Composable
 private fun AssistantTypingBubble() {
-    Row(
-        verticalAlignment = Alignment.CenterVertically
+    Surface(
+        color = SurfaceContainerLowest,
+        shape = RoundedCornerShape(18.dp)
     ) {
-        Surface(
-            color = PrimaryBlue,
-            shape = CircleShape,
-            modifier = Modifier.size(34.dp)
+        Row(
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Box(contentAlignment = Alignment.Center) {
-                Icon(
-                    imageVector = Icons.Default.AutoAwesome,
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(18.dp)
-                )
-            }
-        }
-        Spacer(modifier = Modifier.width(8.dp))
-        Surface(
-            color = SurfaceContainerLowest,
-            shape = RoundedCornerShape(18.dp)
-        ) {
-            Row(
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                SkeletonBlock(
-                    modifier = Modifier
-                        .width(42.dp)
-                        .height(10.dp)
-                )
-                Text(
-                    text = stringResource(R.string.ui_f160dc891e),
-                    modifier = Modifier.padding(start = 9.dp),
-                    color = OnSurfaceVariant,
-                    fontSize = 12.sp
-                )
-            }
+            AssistantTypingDots()
         }
     }
+}
+
+@Composable
+private fun AssistantTypingDots() {
+    val transition = rememberInfiniteTransition(label = "assistant-typing")
+    val dot1 = transition.animateFloat(
+        initialValue = 0.35f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 700, easing = FastOutSlowInEasing, delayMillis = 0),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "dot1"
+    )
+    val dot2 = transition.animateFloat(
+        initialValue = 0.35f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 700, easing = FastOutSlowInEasing, delayMillis = 120),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "dot2"
+    )
+    val dot3 = transition.animateFloat(
+        initialValue = 0.35f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 700, easing = FastOutSlowInEasing, delayMillis = 240),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "dot3"
+    )
+
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        TypingDot(alpha = dot1.value)
+        TypingDot(alpha = dot2.value)
+        TypingDot(alpha = dot3.value)
+    }
+}
+
+@Composable
+private fun TypingDot(alpha: Float) {
+    Box(
+        modifier = Modifier
+            .size(8.dp)
+            .background(
+                color = OnSurfaceVariant.copy(alpha = alpha),
+                shape = CircleShape
+            )
+    )
 }
 
 @Composable
@@ -452,7 +647,7 @@ private fun ChatInputBar(
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
-                        imageVector = Icons.AutoMirrored.Filled.Send,
+                        painter = painterResource(R.drawable.paper_plane_right),
                         contentDescription = stringResource(R.string.ui_bbc4e7f57f),
                         tint = if (value.isBlank() || isSending) OnSurfaceVariant else Color.White,
                         modifier = Modifier.size(21.dp)

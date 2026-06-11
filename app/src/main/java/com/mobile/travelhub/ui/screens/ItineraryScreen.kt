@@ -322,13 +322,6 @@ private fun ItineraryPopupContent(
                 if (state.isLeader && !state.isCompleted) {
                     ItineraryAddButton(onAddItinerary = onAddItinerary)
                 }
-                IconButton(onClick = onDismiss) {
-                    Icon(
-                        imageVector = Icons.Default.Close,
-                        contentDescription = stringResource(R.string.ui_baf6432815),
-                        tint = OnSurface
-                    )
-                }
             }
         }
     ) { paddingValues ->
@@ -381,7 +374,6 @@ private fun previewItineraryState(): ItineraryUiState {
                         placeName = stringResource(R.string.preview_ha_noi),
                         note = "",
                         transportToNext = "",
-                        estimatedCost = "",
                         colorHex = ItineraryEventColors.Default
                     )
                 )
@@ -400,7 +392,6 @@ private fun previewItineraryState(): ItineraryUiState {
                         placeName = stringResource(R.string.preview_old_quarter),
                         note = "",
                         transportToNext = "",
-                        estimatedCost = "",
                         colorHex = ItineraryEventColors.Default
                     )
                 )

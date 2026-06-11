@@ -44,6 +44,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -103,6 +105,7 @@ fun PlaceDetailScreen(
     val reviewUiState by reviewViewModel.uiState.collectAsState()
     val context = LocalContext.current
     var showReviewSheet by remember { mutableStateOf(false) }
+    var reviewToDelete by remember { mutableStateOf<TravelPlaceReviewResponse?>(null) }
 
     LaunchedEffect(placeId, initialPlace?.id) {
         if (initialPlace != null) {
@@ -133,11 +136,13 @@ fun PlaceDetailScreen(
         }
     }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+    Surface(
+        modifier = Modifier.fillMaxSize(),
+        color = MaterialTheme.colorScheme.background
     ) {
+        Box(
+            modifier = Modifier.fillMaxSize()
+        ) {
         when {
             uiState.isLoading && uiState.detail == null -> {
                 PlaceDetailLoadingSkeleton()
@@ -193,8 +198,9 @@ fun PlaceDetailScreen(
             }
 
             uiState.detail != null -> {
-                val detail = uiState.detail ?: return
-                LazyColumn(
+                val detail = uiState.detail
+                if (detail != null) {
+                    LazyColumn(
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(bottom = 24.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -225,7 +231,8 @@ fun PlaceDetailScreen(
                             FlatSection {
                                 ExpandableDescription(
                                     description = detail.description.orEmpty().ifBlank { "Chưa có mô tả." },
-                                    title = null
+                                    title = null,
+                                    collapseOnExpandedTextClick = true
                                 )
                             }
                         }
@@ -285,12 +292,16 @@ fun PlaceDetailScreen(
                         Spacer(modifier = Modifier.height(18.dp))
                     }
                 }
-
-                PinnedBackButton(onBack = onBack)
+                }
             }
         }
 
-        if (showReviewSheet && uiState.detail != null) {
+        if (uiState.errorMessage == null) {
+            PinnedBackButton(onBack = onBack)
+        }
+
+        val detail = uiState.detail
+        if (showReviewSheet && detail != null) {
             ReviewWriteSheet(
                 uiState = reviewUiState,
                 titleResId = R.string.ui_b19c813eda,
@@ -299,10 +310,40 @@ fun PlaceDetailScreen(
                 onDismiss = { showReviewSheet = false },
                 onRatingChange = reviewViewModel::updateRating,
                 onContentChange = reviewViewModel::updateContent,
-                onSubmit = { reviewViewModel.submit(uiState.detail!!.id) }
+                onSubmit = { reviewViewModel.submit(detail.id) },
+                onDelete = if (detail.myReview != null) { {
+                    showReviewSheet = false
+                    reviewToDelete = detail.myReview
+                } } else null
+            )
+        }
+
+        if (reviewToDelete != null) {
+            AlertDialog(
+                onDismissRequest = { reviewToDelete = null },
+                title = { Text(text = "Xóa đánh giá") },
+                text = { Text(text = "Bạn có chắc chắn muốn xóa đánh giá này không? Thao tác này không thể hoàn tác.") },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            reviewToDelete = null
+                            placeDetailViewModel.deleteReview(placeId)
+                        }
+                    ) {
+                        Text(text = "Xóa", color = MaterialTheme.colorScheme.error)
+                    }
+                },
+                dismissButton = {
+                    TextButton(
+                        onClick = { reviewToDelete = null }
+                    ) {
+                        Text(text = "Hủy")
+                    }
+                }
             )
         }
     }
+}
 }
 
 @Composable
@@ -485,13 +526,6 @@ private fun PlaceDetailLoadingSkeleton() {
                 SkeletonBlock(
                     modifier = Modifier.fillMaxSize(),
                     shape = RoundedCornerShape(0.dp)
-                )
-                SkeletonBlock(
-                    modifier = Modifier
-                        .align(Alignment.TopStart)
-                        .padding(start = 16.dp, top = 48.dp)
-                        .size(48.dp),
-                    shape = CircleShape
                 )
                 Column(
                     modifier = Modifier

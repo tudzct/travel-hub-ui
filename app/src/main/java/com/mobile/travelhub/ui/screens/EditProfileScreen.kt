@@ -88,7 +88,6 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.mobile.travelhub.R
 import com.mobile.travelhub.data.userMessage
 import com.mobile.travelhub.ui.components.DestinationPlacePicker
-import com.mobile.travelhub.ui.components.InlineLoadingSkeleton
 import com.mobile.travelhub.ui.components.EditProfileLoadingSkeleton
 import com.mobile.travelhub.ui.theme.PrimaryBlue
 import com.mobile.travelhub.viewmodels.ProfileViewModel
@@ -316,22 +315,29 @@ fun EditProfileScreen(
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold
                 )
-                if (isSaving) {
-                    InlineLoadingSkeleton(
-                        modifier = Modifier
-                            .align(Alignment.CenterEnd)
-                            .size(24.dp)
-                    )
-                } else {
+                TextButton(
+                    onClick = { saveProfile() },
+                    enabled = !isSaving,
+                    modifier = Modifier.align(Alignment.CenterEnd)
+                ) {
                     Text(
                         text = "Lưu",
-                        color = MaterialTheme.colorScheme.primary,
+                        color = if (isSaving) {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        } else {
+                            MaterialTheme.colorScheme.primary
+                        },
                         style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier
-                            .align(Alignment.CenterEnd)
-                            .clickable { saveProfile() }
+                        fontWeight = FontWeight.Bold
                     )
+                    if (isSaving) {
+                        Spacer(modifier = Modifier.width(8.dp))
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(16.dp),
+                            strokeWidth = 2.dp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
             }
         }
@@ -373,7 +379,8 @@ fun EditProfileScreen(
                 icon = Icons.Outlined.Person,
                 label = "Họ và tên",
                 value = name,
-                onValueChange = { name = it }
+                onValueChange = { name = it },
+                iconInCircle = true
             )
 
             Spacer(modifier = Modifier.height(14.dp))
@@ -382,7 +389,8 @@ fun EditProfileScreen(
                 icon = Icons.Outlined.AlternateEmail,
                 label = "Tên người dùng",
                 value = handle,
-                onValueChange = { handle = it }
+                onValueChange = { handle = it },
+                iconInCircle = true
             )
 
             Spacer(modifier = Modifier.height(14.dp))
@@ -394,7 +402,8 @@ fun EditProfileScreen(
                 onValueChange = { bio = it.take(120) },
                 placeholder = "Giới thiệu về bạn...",
                 maxLength = 120,
-                minHeight = 82.dp
+                minHeight = 82.dp,
+                iconInCircle = true
             )
 
             Spacer(modifier = Modifier.height(34.dp))
@@ -881,7 +890,7 @@ private fun EditProfileInputCard(
                     enabled = enabled,
                     singleLine = maxLength == null,
                     textStyle = MaterialTheme.typography.bodyLarge.copy(
-                        color = if (enabled) Color.Black else Color.Black,
+                        color = if (enabled) EditProfileInk else EditProfileMuted,
                         fontWeight = FontWeight.Normal
                     ),
                     modifier = Modifier.fillMaxWidth(),
@@ -941,12 +950,29 @@ private fun EditProfileFieldIcon(
     }
 }
 
-private val EditProfileBackground = Color(0xFFFFFFFF)
-private val EditProfileInk = Color(0xFF111827)
-private val EditProfileMuted = Color(0xFF5F6B7A)
-private val EditProfileIcon = Color(0xFF3F4A59)
-private val EditProfileBorder = Color(0xFFE8ECF2)
-private val EditProfileSoftBlue = Color(0xFFEAF3FF)
+private val EditProfileBackground: Color
+    @Composable
+    get() = MaterialTheme.colorScheme.surface
+
+private val EditProfileInk: Color
+    @Composable
+    get() = MaterialTheme.colorScheme.onSurface
+
+private val EditProfileMuted: Color
+    @Composable
+    get() = MaterialTheme.colorScheme.onSurfaceVariant
+
+private val EditProfileIcon: Color
+    @Composable
+    get() = MaterialTheme.colorScheme.onSurfaceVariant
+
+private val EditProfileBorder: Color
+    @Composable
+    get() = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f)
+
+private val EditProfileSoftBlue: Color
+    @Composable
+    get() = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
 
 private const val AVATAR_OUTPUT_SIZE = 500
 private const val AVATAR_JPEG_QUALITY = 85

@@ -70,6 +70,7 @@ import com.mobile.travelhub.ui.theme.PrimaryBlue
 import com.mobile.travelhub.viewmodels.ExploreViewModel
 import com.mobile.travelhub.viewmodels.TopTravelersUiState
 import com.mobile.travelhub.viewmodels.TopTravelersViewModel
+import com.mobile.travelhub.viewmodels.SearchViewModel
 import com.mobile.travelhub.R
 
 @Composable
@@ -83,7 +84,8 @@ fun ExploreScreen(
     onSeeAllTopTravelers: (TopTravelerPeriod) -> Unit = {},
     onAssistantClick: () -> Unit = {},
     topTravelersViewModel: TopTravelersViewModel = hiltViewModel(),
-    exploreViewModel: ExploreViewModel = hiltViewModel()
+    exploreViewModel: ExploreViewModel = hiltViewModel(),
+    searchViewModel: SearchViewModel = hiltViewModel()
 ) {
     val topTravelersState by topTravelersViewModel.uiState.collectAsState()
     val uiState by exploreViewModel.uiState.collectAsState()
@@ -95,6 +97,7 @@ fun ExploreScreen(
 
     LaunchedEffect(activateSearch) {
         if (activateSearch) {
+            searchViewModel.updateQuery("")
             isSearchExpanded = true
         }
     }
@@ -133,7 +136,8 @@ fun ExploreScreen(
                 SearchPage(
                     onBack = { isSearchExpanded = false },
                     onUserClick = onSearchUserClick,
-                    onPlaceClick = onPlaceClick
+                    onPlaceClick = onPlaceClick,
+                    viewModel = searchViewModel
                 )
             } else {
                 Column(
@@ -141,7 +145,7 @@ fun ExploreScreen(
                         .fillMaxSize()
                         .background(MaterialTheme.colorScheme.background)
                         .verticalScroll(rememberScrollState())
-                        .padding(top = 10.dp, bottom = 24.dp)
+                        .padding(top = 10.dp, bottom = 68.dp)
                 ) {
                     Row(
                         modifier = Modifier
@@ -158,7 +162,10 @@ fun ExploreScreen(
                         )
                     }
 
-                    SearchField(onClick = { isSearchExpanded = true })
+                    SearchField(onClick = {
+                        searchViewModel.updateQuery("")
+                        isSearchExpanded = true
+                    })
 
 //        if (uiState.recentSearches.isNotEmpty()) {
 //            SectionLabel(text = stringResource(R.string.ui_5820a93677), topPadding = 18.dp)
@@ -197,7 +204,7 @@ fun ExploreScreen(
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
                     .navigationBarsPadding()
-                    .padding(end = 16.dp, bottom = 24.dp)
+                    .padding(end = 16.dp, bottom = 84.dp)
             )
         }
     }

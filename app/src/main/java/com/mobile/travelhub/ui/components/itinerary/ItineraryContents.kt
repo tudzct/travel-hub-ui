@@ -18,6 +18,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
@@ -70,6 +71,7 @@ fun ItineraryOverviewContent(
                     day = day,
                     index = index,
                     isLast = index == state.days.lastIndex,
+                    isCompleted = state.isCompleted,
                     onOpenDayDetail = { onOpenDayDetail(day.dayIndex) },
                     onEditEvent = onEditEvent
                 )
@@ -97,7 +99,7 @@ fun ItineraryOverviewContent(
                                 modifier = Modifier.size(14.dp)
                             )
                             Text(
-                                text = if (state.isCompleted) "Chuyến đi đã hoàn thành (Chế độ chỉ xem)" else "Long press a place to edit",
+                                text = if (state.isCompleted) "Chuyến đi đã hoàn thành (Chế độ chỉ xem)" else "Nhấn giữ để chỉnh sửa",
                                 color = OnSurfaceVariant.copy(alpha = if (state.isCompleted) 0.5f else 0.72f),
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Medium
@@ -289,13 +291,14 @@ private fun ItineraryTimelineDay(
     day: ItineraryDay,
     index: Int,
     isLast: Boolean,
+    isCompleted: Boolean,
     onOpenDayDetail: () -> Unit,
     onEditEvent: (ItineraryEvent) -> Unit
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(28.dp),
-        color = Color(0xFFF3EEF9),
+        color = itineraryDayContainerColor(),
         shadowElevation = 0.dp
     ) {
         Column(
@@ -340,7 +343,7 @@ private fun ItineraryTimelineDay(
                 Surface(
                     modifier = Modifier.clickable(onClick = onOpenDayDetail),
                     shape = RoundedCornerShape(14.dp),
-                    color = Color(0xFFE6F1FB)
+                    color = itineraryMapButtonContainerColor()
                 ) {
                     Icon(
                         imageVector = Icons.Default.Map,
@@ -368,7 +371,7 @@ private fun ItineraryTimelineDay(
                         placeName = event.placeName,
                         badge = eventIndex + 1,
                         onClick = onOpenDayDetail,
-                        onLongClick = { onEditEvent(event) }
+                        onLongClick = if (isCompleted) null else { { onEditEvent(event) } }
                     )
                 }
             }
@@ -441,7 +444,7 @@ private fun ItineraryTimelineEventCard(
                     }
                 ),
             shape = RoundedCornerShape(24.dp),
-            color = Color.White,
+            color = itineraryEventContainerColor(),
             shadowElevation = 0.dp
         ) {
             Column(
@@ -493,6 +496,7 @@ fun ItineraryDayDetailContent(
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
+            .background(SurfaceBg)
             .padding(paddingValues),
         state = lazyListState,
         contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 120.dp),
@@ -678,4 +682,22 @@ private fun ItineraryDayDetailSkeleton() {
             }
         }
     }
+}
+
+@Composable
+private fun itineraryDayContainerColor(): Color {
+    return PrimaryBlue.copy(alpha = if (isDarkTheme) 0.14f else 0.06f)
+        .compositeOver(SurfaceContainerLow)
+}
+
+@Composable
+private fun itineraryMapButtonContainerColor(): Color {
+    return PrimaryBlue.copy(alpha = if (isDarkTheme) 0.18f else 0.10f)
+        .compositeOver(SurfaceContainerLowest)
+}
+
+@Composable
+private fun itineraryEventContainerColor(): Color {
+    return PrimaryBlue.copy(alpha = if (isDarkTheme) 0.08f else 0.03f)
+        .compositeOver(SurfaceContainerLowest)
 }

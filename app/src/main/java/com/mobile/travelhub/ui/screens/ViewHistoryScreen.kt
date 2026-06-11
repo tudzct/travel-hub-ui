@@ -42,6 +42,7 @@ import com.mobile.travelhub.ui.theme.OnSurface
 import com.mobile.travelhub.ui.theme.OnSurfaceVariant
 import com.mobile.travelhub.ui.theme.PrimaryBlue
 import com.mobile.travelhub.ui.theme.SurfaceBg
+import com.mobile.travelhub.ui.theme.isDarkTheme
 import com.mobile.travelhub.viewmodels.HistoryViewModel
 import java.time.Instant
 import java.time.ZoneId
@@ -79,7 +80,7 @@ fun ViewHistoryScreen(
                 modifier = Modifier
                     .size(44.dp)
                     .background(
-                        color = Color(0xFFF2F4F7),
+                        color = MaterialTheme.colorScheme.surfaceVariant,
                         shape = CircleShape
                     )
             ) {
@@ -105,7 +106,7 @@ fun ViewHistoryScreen(
             uiState.errorMessage != null && uiState.items.isEmpty() -> {
                 Text(
                     text = uiState.errorMessage.orEmpty(),
-                    color = Color(0xFFC93C3C)
+                    color = MaterialTheme.colorScheme.error
                 )
             }
 
@@ -122,12 +123,14 @@ fun ViewHistoryScreen(
                     verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
                     items(uiState.items, key = { "${it.placeId}-${it.viewedAt}" }) { item ->
+                        val titleLine = historyPlaceTitle(item.placeName, item.provinceName)
+                        val provinceLine = historyProvinceLabel(item.placeName, item.provinceName)
                         Surface(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clickable { onPlaceClick(item.placeId) },
                             shape = RoundedCornerShape(28.dp),
-                            color = Color(0xFFF3EEF9),
+                            color = if (isDarkTheme) Color(0xFF231E2A) else Color(0xFFF3EEF9),
                             shadowElevation = 0.dp
                         ) {
                             Row(
@@ -149,18 +152,22 @@ fun ViewHistoryScreen(
                                     verticalArrangement = Arrangement.spacedBy(8.dp)
                                 ) {
                                     Text(
-                                        text = item.placeName,
+                                        text = titleLine,
                                         style = MaterialTheme.typography.titleMedium,
                                         fontWeight = FontWeight.SemiBold,
-                                        maxLines = 2,
+                                        maxLines = if (provinceLine != null) 1 else 2,
                                         overflow = TextOverflow.Ellipsis,
                                         color = OnSurface
                                     )
-                                    Text(
-                                        text = item.provinceName,
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = PrimaryBlue
-                                    )
+                                    provinceLine?.let {
+                                        Text(
+                                            text = it,
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis,
+                                            color = PrimaryBlue
+                                        )
+                                    }
                                     Spacer(modifier = Modifier.weight(1f))
                                     Text(
                                         text = formatViewedAt(item.viewedAt),
@@ -175,6 +182,29 @@ fun ViewHistoryScreen(
             }
         }
     }
+}
+
+private fun historyPlaceTitle(placeName: String, provinceName: String): String {
+    val trimmedPlace = placeName.trim()
+    val trimmedProvince = provinceName.trim()
+    if (trimmedPlace.isBlank()) return trimmedProvince
+    if (trimmedProvince.isBlank()) return trimmedPlace
+
+    val normalizedPlace = trimmedPlace.lowercase()
+    val normalizedProvince = trimmedProvince.lowercase()
+    val suffix = ", $normalizedProvince"
+    return if (normalizedPlace.endsWith(suffix)) {
+        trimmedPlace.dropLast(suffix.length).trim().trimEnd(',')
+    } else {
+        trimmedPlace
+    }
+}
+
+private fun historyProvinceLabel(placeName: String, provinceName: String): String? {
+    val trimmedProvince = provinceName.trim()
+    if (trimmedProvince.isBlank()) return null
+    val trimmedPlace = placeName.trim()
+    return if (trimmedPlace.equals(trimmedProvince, ignoreCase = true)) null else trimmedProvince
 }
 
 private fun formatViewedAt(raw: String?): String {

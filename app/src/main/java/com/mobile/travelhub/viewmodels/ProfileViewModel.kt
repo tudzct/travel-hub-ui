@@ -67,6 +67,7 @@ class ProfileViewModel @Inject constructor(
 
     private val _profilePostsState = MutableStateFlow(ProfilePostsUiState(isLoading = true))
     val profilePostsState: StateFlow<ProfilePostsUiState> = _profilePostsState.asStateFlow()
+    private var profilePostsRequestVersion = 0L
 
     private val _unauthorized = MutableStateFlow(false)
     val unauthorized: StateFlow<Boolean> = _unauthorized.asStateFlow()
@@ -134,7 +135,10 @@ class ProfileViewModel @Inject constructor(
     }
 
     private fun loadProfilePosts(userId: Long, tab: ProfilePostsTab) {
+        val requestVersion = ++profilePostsRequestVersion
         viewModelScope.launch {
+            if (requestVersion != profilePostsRequestVersion) return@launch
+
             if (userId <= 0L) {
                 _profilePostsState.value = ProfilePostsUiState(
                     isLoading = false,
@@ -153,6 +157,7 @@ class ProfileViewModel @Inject constructor(
             }
             result
                 .onSuccess { posts ->
+                    if (requestVersion != profilePostsRequestVersion) return@onSuccess
                     _profilePostsState.value = ProfilePostsUiState(
                         isLoading = false,
                         selectedTab = tab,
@@ -163,6 +168,7 @@ class ProfileViewModel @Inject constructor(
                     )
                 }
                 .onFailure { throwable ->
+                    if (requestVersion != profilePostsRequestVersion) return@onFailure
                     _profilePostsState.value = ProfilePostsUiState(
                         isLoading = false,
                         selectedTab = tab,

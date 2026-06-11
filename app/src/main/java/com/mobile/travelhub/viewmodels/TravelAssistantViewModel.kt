@@ -50,6 +50,7 @@ class TravelAssistantViewModel @Inject constructor(
     private var initializedKey: String? = null
     private var itineraryContext: String = ""
     private var nextMessageId = 1L
+    private var lastFailedMessage: String? = null
 
     fun initialize(tripId: Long?, groupName: String) {
         val normalizedTripId = tripId?.takeIf { it > 0L }
@@ -112,16 +113,34 @@ class TravelAssistantViewModel @Inject constructor(
 
     fun updateInput(value: String) {
         if (value.length <= 2000) {
-            _uiState.update { it.copy(input = value, errorMessage = null) }
+            _uiState.update { it.copy(input = value) }
         }
     }
 
     fun sendMessage(message: String = _uiState.value.input) {
+        sendMessageInternal(message = message, appendUserMessage = true)
+    }
+
+    fun retryLastMessage() {
+        val message = lastFailedMessage ?: return
+        sendMessageInternal(message = message, appendUserMessage = false)
+    }
+
+    private fun sendMessageInternal(
+        message: String,
+        appendUserMessage: Boolean
+    ) {
         val text = message.trim()
         val state = _uiState.value
         if (text.isBlank() || state.isSending) return
 
-        val history = state.messages
+        val messageHistory = if (appendUserMessage) {
+            state.messages
+        } else {
+            state.messages.dropLastWhile { it.role == TravelAssistantRole.USER && it.content == text }
+        }
+
+        val history = messageHistory
             .filterNot { it.isLocalIntro }
             .takeLast(20)
             .map {
@@ -134,14 +153,18 @@ class TravelAssistantViewModel @Inject constructor(
 
         _uiState.update {
             it.copy(
-                input = "",
+                input = if (appendUserMessage) "" else it.input,
                 isSending = true,
                 errorMessage = null,
-                messages = it.messages + TravelAssistantMessageUi(
-                    id = nextId(),
-                    role = TravelAssistantRole.USER,
-                    content = text
-                )
+                messages = if (appendUserMessage) {
+                    it.messages + TravelAssistantMessageUi(
+                        id = nextId(),
+                        role = TravelAssistantRole.USER,
+                        content = text
+                    )
+                } else {
+                    it.messages
+                }
             )
         }
 
@@ -154,6 +177,7 @@ class TravelAssistantViewModel @Inject constructor(
                     )
                 )
             }.onSuccess { response ->
+                lastFailedMessage = null
                 _uiState.update {
                     it.copy(
                         isSending = false,
@@ -168,19 +192,15 @@ class TravelAssistantViewModel @Inject constructor(
                     )
                 }
             }.onFailure { throwable ->
+                lastFailedMessage = text
                 _uiState.update {
                     it.copy(
                         isSending = false,
-                        errorMessage = throwable.message
-                            ?: "Không thể kết nối trợ lý du lịch. Vui lòng thử lại."
+                        errorMessage = "Có lỗi xảy ra. Vui lòng thử lại."
                     )
                 }
             }
         }
-    }
-
-    fun clearError() {
-        _uiState.update { it.copy(errorMessage = null) }
     }
 
     private fun contextualMessage(message: String): String {

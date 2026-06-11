@@ -3,6 +3,7 @@ package com.mobile.travelhub.viewmodels
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mobile.travelhub.data.PlaceRepository
+import com.mobile.travelhub.data.AuthRepository
 import com.mobile.travelhub.data.httpStatusCode
 import com.mobile.travelhub.data.userMessage
 import com.mobile.travelhub.data.model.TravelPlaceReviewListSummaryResponse
@@ -26,7 +27,9 @@ data class ReviewListUiState(
     val page: Int = 0,
     val selectedRating: Int? = null,
     val sort: String = "NEWEST",
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
+    val currentUserId: Long? = null,
+    val myReview: TravelPlaceReviewResponse? = null
 ) {
     val hasMore: Boolean
         get() = page + 1 < totalPages
@@ -34,7 +37,8 @@ data class ReviewListUiState(
 
 @HiltViewModel
 class ReviewListViewModel @Inject constructor(
-    private val placeRepository: PlaceRepository
+    private val placeRepository: PlaceRepository,
+    private val authRepository: AuthRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ReviewListUiState(isLoading = true))
@@ -48,12 +52,31 @@ class ReviewListViewModel @Inject constructor(
             return
         }
         loadedPlaceId = placeId
-        _uiState.value = ReviewListUiState(isLoading = true)
+        val userId = authRepository.getSavedSession()?.userId?.toLong()
+        _uiState.value = ReviewListUiState(isLoading = true, currentUserId = userId)
         loadFirstPage()
     }
 
     fun refresh() {
         loadFirstPage()
+    }
+
+    fun deleteReview(placeId: Long) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+            runCatching {
+                placeRepository.deleteReview(placeId)
+            }.onSuccess {
+                refresh()
+            }.onFailure { throwable ->
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        errorMessage = throwable.userMessage("Không thể xóa đánh giá")
+                    )
+                }
+            }
+        }
     }
 
     fun selectRating(rating: Int?) {
@@ -121,6 +144,7 @@ class ReviewListViewModel @Inject constructor(
             runCatching {
                 retryTransientServerError {
                     val summary = placeRepository.getReviewSummary(placeId)
+                    val detail = runCatching { placeRepository.getPlaceDetail(placeId) }.getOrNull()
                     val response = placeRepository.getReviews(
                         placeId = placeId,
                         page = 0,
@@ -128,14 +152,15 @@ class ReviewListViewModel @Inject constructor(
                         rating = _uiState.value.selectedRating,
                         sort = _uiState.value.sort
                     )
-                    summary to response
+                    Triple(summary, detail, response)
                 }
             }
-                .onSuccess { (summary, response) ->
+                .onSuccess { (summary, detail, response) ->
                     _uiState.update {
                         it.copy(
                             isLoading = false,
                             summary = summary,
+                            myReview = detail?.myReview,
                             items = response.data,
                             page = response.pageNumber,
                             totalPages = response.totalPages,

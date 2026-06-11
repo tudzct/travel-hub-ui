@@ -132,7 +132,6 @@ class ItineraryViewModel @Inject constructor(
             placeName = "",
             note = "",
             transportToNext = "",
-            estimatedCost = "",
             colorHex = ItineraryEventColors.Palette[eventCount % ItineraryEventColors.Palette.size],
             iconName = "Place",
             dayId = selectedDay?.dayId

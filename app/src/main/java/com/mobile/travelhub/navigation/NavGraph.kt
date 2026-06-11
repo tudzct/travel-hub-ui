@@ -3,8 +3,10 @@ package com.mobile.travelhub.navigation
 import android.net.Uri
 import androidx.compose.animation.AnimatedContentTransitionScope.SlideDirection
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
@@ -166,6 +168,19 @@ sealed class Screen(
                 else -> null
             }
         }
+    }
+}
+
+@Composable
+private fun BottomBarContent(
+    content: @Composable () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(bottom = 44.dp)
+    ) {
+        content()
     }
 }
 
@@ -534,34 +549,40 @@ fun NavGraph(
             backStackEntry.savedStateHandle.remove<Long>("created_trip_id")
             backStackEntry.savedStateHandle.remove<String>("created_group_name")
 
-            TripsScreen(
-                createdTripId = createdTripId,
-                createdGroupName = createdGroupName,
-                onNavigateToGroupDetail = { tripId, groupName ->
-                    navController.navigate(Screen.GroupDetail.createRoute(tripId, groupName)) { launchSingleTop = true }
-                },
-                onNavigateToUpcomingTrips = {
-                    navController.navigate(Screen.UpcomingTrips.route) { launchSingleTop = true }
-                },
-                onNavigateToCreateGroup = {
-                    navController.navigate(Screen.CreateGroup.route) { launchSingleTop = true }
-                },
-                onNavigateToEditProfile = {
-                    navController.navigate(Screen.EditProfile.route) { launchSingleTop = true }
-                }
-            )
+            BottomBarContent {
+                TripsScreen(
+                    createdTripId = createdTripId,
+                    createdGroupName = createdGroupName,
+                    onNavigateToGroupDetail = { tripId, groupName ->
+                        navController.navigate(Screen.GroupDetail.createRoute(tripId, groupName)) { launchSingleTop = true }
+                    },
+                    onNavigateToUpcomingTrips = {
+                        navController.navigate(Screen.UpcomingTrips.route) { launchSingleTop = true }
+                    },
+                    onNavigateToCreateGroup = {
+                        navController.navigate(Screen.CreateGroup.route) { launchSingleTop = true }
+                    },
+                    onNavigateToEditProfile = {
+                        navController.navigate(Screen.EditProfile.route) { launchSingleTop = true }
+                    }
+                )
+            }
         }
 
         composable(Screen.UpcomingTrips.route) {
-            UpcomingTripsScreen(
-                onBack = { navController.popBackStack() },
-                onNavigateToGroupDetail = { tripId, groupName ->
-                    navController.navigate(Screen.GroupDetail.createRoute(tripId, groupName)) { launchSingleTop = true }
-                }
-            )
+            BottomBarContent {
+                UpcomingTripsScreen(
+                    onBack = { navController.popBackStack() },
+                    onNavigateToGroupDetail = { tripId, groupName ->
+                        navController.navigate(Screen.GroupDetail.createRoute(tripId, groupName)) { launchSingleTop = true }
+                    }
+                )
+            }
         }
         composable(Screen.CreatePost.route) {
-            CreatePostScreen()
+            BottomBarContent {
+                CreatePostScreen()
+            }
         }
         composable(
             route = Screen.PostDetail.route,
@@ -593,53 +614,55 @@ fun NavGraph(
                 previousRoute != Screen.Chat.route &&
                 previousRoute != Screen.Profile.route
 
-            ProfileScreen(
-                onNavigateToEditProfile = { navController.navigate(Screen.EditProfile.route) { launchSingleTop = true } },
-                onNavigateToFollowers = { navController.navigate(Screen.FollowersFollowing.createRoute(0, null)) { launchSingleTop = true } },
-                onNavigateToFollowing = { navController.navigate(Screen.FollowersFollowing.createRoute(1, null)) { launchSingleTop = true } },
-                onNavigateToHistory = { navController.navigate(Screen.ViewHistory.route) { launchSingleTop = true } },
-                onNavigateToChat = { navController.navigate(Screen.Chat.route) { launchSingleTop = true } },
-                onPostNotificationClick = { postId ->
-                    navController.navigate(Screen.PostDetail.createRoute(postId)) {
-                        launchSingleTop = true
-                    }
-                },
-                onFollowNotificationClick = { userId ->
-                    navigateToUserProfile(userId)
-                },
-                onNavigateToUserProfile = ::navigateToUserProfile,
-                onNavigateToCreatePost = {
-                    navController.navigate(Screen.CreatePost.route) {
-                        popUpTo(navController.graph.findStartDestination().id) {
-                            saveState = true
+            BottomBarContent {
+                ProfileScreen(
+                    onNavigateToEditProfile = { navController.navigate(Screen.EditProfile.route) { launchSingleTop = true } },
+                    onNavigateToFollowers = { navController.navigate(Screen.FollowersFollowing.createRoute(0, null)) { launchSingleTop = true } },
+                    onNavigateToFollowing = { navController.navigate(Screen.FollowersFollowing.createRoute(1, null)) { launchSingleTop = true } },
+                    onNavigateToHistory = { navController.navigate(Screen.ViewHistory.route) { launchSingleTop = true } },
+                    onNavigateToChat = { navController.navigate(Screen.Chat.route) { launchSingleTop = true } },
+                    onPostNotificationClick = { postId ->
+                        navController.navigate(Screen.PostDetail.createRoute(postId)) {
+                            launchSingleTop = true
                         }
-                        launchSingleTop = true
-                        restoreState = true
-                    }
-                },
-                onLogout = {
-                    onLogout()
-                    navController.navigate(Screen.Login.route) {
-                        popUpTo(navController.graph.findStartDestination().id) { inclusive = false }
-                        launchSingleTop = true
-                    }
-                },
-                onRequireLogin = {
-                    onLogout()
-                    navController.navigate(Screen.Login.route) {
-                        popUpTo(navController.graph.findStartDestination().id) { inclusive = false }
-                        launchSingleTop = true
-                    }
-                },
-                onBack = if (isFromDeepScreen) {
-                    { navController.popBackStack() }
-                } else {
-                    null
-                },
-                viewModel = profileViewModel,
-                isDarkThemeEnabled = isDarkThemeEnabled,
-                onDarkThemeChange = onDarkThemeChange
-            )
+                    },
+                    onFollowNotificationClick = { userId ->
+                        navigateToUserProfile(userId)
+                    },
+                    onNavigateToUserProfile = ::navigateToUserProfile,
+                    onNavigateToCreatePost = {
+                        navController.navigate(Screen.CreatePost.route) {
+                            popUpTo(navController.graph.findStartDestination().id) {
+                                saveState = true
+                            }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    },
+                    onLogout = {
+                        onLogout()
+                        navController.navigate(Screen.Login.route) {
+                            popUpTo(navController.graph.findStartDestination().id) { inclusive = false }
+                            launchSingleTop = true
+                        }
+                    },
+                    onRequireLogin = {
+                        onLogout()
+                        navController.navigate(Screen.Login.route) {
+                            popUpTo(navController.graph.findStartDestination().id) { inclusive = false }
+                            launchSingleTop = true
+                        }
+                    },
+                    onBack = if (isFromDeepScreen) {
+                        { navController.popBackStack() }
+                    } else {
+                        null
+                    },
+                    viewModel = profileViewModel,
+                    isDarkThemeEnabled = isDarkThemeEnabled,
+                    onDarkThemeChange = onDarkThemeChange
+                )
+            }
         }
 //        composable(Screen.Notifications.route) {
 //            NotificationsScreen(

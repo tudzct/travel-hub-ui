@@ -21,6 +21,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material.icons.rounded.WorkOutline
@@ -45,6 +46,7 @@ import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import coil.compose.AsyncImage
 import com.mobile.travelhub.R
 import com.mobile.travelhub.ui.components.modifiers.shimmerEffect
@@ -342,6 +344,40 @@ fun JoinRequestActionItem(
 }
 
 @Composable
+fun JoinRequestActionItemSkeleton() {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        SkeletonBlock(
+            modifier = Modifier.size(44.dp),
+            shape = CircleShape
+        )
+
+        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            SkeletonBlock(
+                modifier = Modifier
+                    .width(156.dp)
+                    .height(16.dp),
+                shape = RoundedCornerShape(8.dp)
+            )
+        }
+
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            SkeletonBlock(
+                modifier = Modifier.size(40.dp),
+                shape = CircleShape
+            )
+            SkeletonBlock(
+                modifier = Modifier.size(40.dp),
+                shape = CircleShape
+            )
+        }
+    }
+}
+
+@Composable
 fun MemberAvatarItem(
     member: GroupMemberUiModel,
     onClick: () -> Unit = {}
@@ -559,6 +595,122 @@ fun ManageMembersDialog(
 }
 
 @Composable
+fun JoinRequestsDialog(
+    visible: Boolean,
+    requests: List<GroupJoinRequestUiModel>,
+    isLoading: Boolean,
+    onDismiss: () -> Unit,
+    onApproveJoinRequest: (Long, String) -> Unit,
+    onRejectJoinRequest: (Long, String) -> Unit,
+    onNavigateToProfile: (Long) -> Unit
+) {
+    if (!visible) return
+
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        Card(
+            modifier = Modifier
+                .width(360.dp)
+                .heightIn(max = 620.dp),
+            shape = RoundedCornerShape(32.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surface
+            )
+        ) {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 24.dp, top = 20.dp, end = 12.dp, bottom = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = stringResource(R.string.join_request_approval_title),
+                            fontWeight = FontWeight.ExtraBold,
+                            fontSize = 20.sp,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        if (!isLoading && requests.isNotEmpty()) {
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = stringResource(
+                                    R.string.pending_join_request_count,
+                                    requests.size
+                                ),
+                                fontSize = 13.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+
+                    IconButton(onClick = onDismiss) {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = stringResource(R.string.ui_d2b73ab2ad)
+                        )
+                    }
+                }
+
+                HorizontalDivider(color = SurfaceContainerLow)
+
+                when {
+                    isLoading -> {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 20.dp, vertical = 20.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            repeat(3) {
+                                JoinRequestActionItemSkeleton()
+                            }
+                        }
+                    }
+
+                    requests.isEmpty() -> {
+                        Text(
+                            text = stringResource(R.string.ui_f193b502d6),
+                            modifier = Modifier.padding(24.dp),
+                            fontSize = 14.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+
+                    else -> {
+                        LazyColumn(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .heightIn(max = 480.dp),
+                            contentPadding = PaddingValues(20.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            items(
+                                items = requests,
+                                key = { request -> request.userId }
+                            ) { request ->
+                                JoinRequestActionItem(
+                                    request = request,
+                                    onApprove = {
+                                        onApproveJoinRequest(request.userId, request.name)
+                                    },
+                                    onReject = {
+                                        onRejectJoinRequest(request.userId, request.name)
+                                    },
+                                    onProfileClick = onNavigateToProfile
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
 fun GroupDetailMoreMenu(
     expanded: Boolean,
     onDismiss: () -> Unit,
@@ -566,9 +718,7 @@ fun GroupDetailMoreMenu(
     isLeader: Boolean,
     isCompleted: Boolean,
     pendingRequestCount: Int,
-    onApproveJoinRequest: (Long, String) -> Unit,
-    onRejectJoinRequest: (Long, String) -> Unit,
-    onNavigateToProfile: (Long) -> Unit,
+    onOpenJoinRequests: () -> Unit,
     onLeaveGroupClick: () -> Unit,
     onDeleteGroupClick: () -> Unit
 ) {
@@ -639,58 +789,35 @@ fun GroupDetailMoreMenu(
             if (isLeader) {
                 Spacer(modifier = Modifier.height(12.dp))
                 HorizontalDivider(color = SurfaceContainerLow)
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Text(
-                    text = stringResource(R.string.ui_7b208e75d2),
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 12.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    letterSpacing = 0.6.sp
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-
-                when {
-                    uiState.isJoinRequestsLoading -> {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            InlineLoadingSkeleton(modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = stringResource(R.string.ui_438eeb013a),
-                                fontSize = 14.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-
-                    uiState.joinRequests.isEmpty() -> {
+                DropdownMenuItem(
+                    text = {
                         Text(
-                            text = stringResource(R.string.ui_f193b502d6),
-                            fontSize = 14.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            text = stringResource(R.string.join_request_approval_title),
+                            fontWeight = FontWeight.SemiBold
                         )
-                    }
-
-                    else -> {
-                        Column(modifier = Modifier.fillMaxWidth()) {
-                            uiState.joinRequests.forEach { request ->
-                                JoinRequestActionItem(
-                                    request = request,
-                                    onApprove = {
-                                        onApproveJoinRequest(request.userId, request.name)
-                                    },
-                                    onReject = {
-                                        onRejectJoinRequest(request.userId, request.name)
-                                    },
-                                    onProfileClick = onNavigateToProfile
-                                )
-                                Spacer(modifier = Modifier.height(8.dp))
+                    },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Default.PersonAdd,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    },
+                    trailingIcon = {
+                        if (pendingRequestCount > 0) {
+                            Badge(
+                                containerColor = MaterialTheme.colorScheme.error,
+                                contentColor = MaterialTheme.colorScheme.onError
+                            ) {
+                                Text(text = pendingRequestCount.toString())
                             }
                         }
+                    },
+                    onClick = {
+                        onDismiss()
+                        onOpenJoinRequests()
                     }
-                }
-
-                Spacer(modifier = Modifier.height(12.dp))
+                )
                 HorizontalDivider(color = SurfaceContainerLow)
             }
 
@@ -698,8 +825,9 @@ fun GroupDetailMoreMenu(
             val canLeave = !isLeader && role.isNotBlank() && role != "NON_MEMBER" && role != "PENDING"
             if (canLeave) {
                 DropdownMenuItem(
-                    text = { Text(stringResource(R.string.ui_4bb91c8b42), color = MaterialTheme.colorScheme.error) },
-                    leadingIcon = { Icon(Icons.Default.ExitToApp, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
+                    text = { Text(stringResource(R.string.ui_4bb91c8b42), color = if (isCompleted) MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f) else MaterialTheme.colorScheme.error) },
+                    leadingIcon = { Icon(Icons.Default.ExitToApp, contentDescription = null, tint = if (isCompleted) MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f) else MaterialTheme.colorScheme.error) },
+                    enabled = !isCompleted,
                     onClick = {
                         onDismiss()
                         onLeaveGroupClick()

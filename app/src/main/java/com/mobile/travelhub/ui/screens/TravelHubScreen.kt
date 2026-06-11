@@ -1,6 +1,7 @@
 package com.mobile.travelhub.ui.screens
 
 import androidx.compose.ui.res.stringResource
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -19,6 +20,7 @@ import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.PostAdd
 import androidx.compose.material.icons.outlined.TravelExplore
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -106,24 +108,15 @@ fun TravelHubScreen(
         ?.substringBefore("/") == Screen.Explore.route
     val showBottomBar = Screen.fromRoute(currentRoute)?.showBottomBar == true &&
         !(isExploreRoute && isExploreSearchExpanded)
-    val currentBaseRoute = currentRoute
-        ?.substringBefore("?")
-        ?.substringBefore("/")
-    val effectiveBaseRoute = currentBaseRoute
-        ?: startDestination.substringBefore("?").substringBefore("/")
-    val bottomOverlayPadding = if (showBottomBar && effectiveBaseRoute != Screen.Home.route) 44.dp else 0.dp
-    val contentModifier = when {
-        effectiveBaseRoute == Screen.Home.route -> Modifier.fillMaxSize()
-        bottomOverlayPadding > 0.dp -> Modifier
-            .fillMaxSize()
-            .statusBarsPadding()
-            .padding(bottom = bottomOverlayPadding)
-        else -> Modifier
-            .fillMaxSize()
-            .statusBarsPadding()
-    }
+    val contentModifier = Modifier
+        .fillMaxSize()
+        .statusBarsPadding()
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+    ) {
         Box(modifier = contentModifier) {
             NavGraph(
                 navController = navController,
