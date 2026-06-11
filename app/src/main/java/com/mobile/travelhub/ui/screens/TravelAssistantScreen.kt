@@ -10,7 +10,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.Image
+import androidx.compose.foundation.Image as ComposeImage
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -36,9 +37,13 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.CalendarToday
+import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -53,6 +58,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalFocusManager
@@ -162,7 +168,7 @@ fun TravelAssistantScreen(
                 contentPadding = androidx.compose.foundation.layout.PaddingValues(
                     start = 16.dp,
                     end = 16.dp,
-                    top = 56.dp,
+                    top = 18.dp,
                     bottom = 18.dp
                 ),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -283,19 +289,22 @@ private fun PlaceReferenceCard(
 ) {
     Surface(
         color = SurfaceContainerLowest,
-        shape = RoundedCornerShape(18.dp),
-        shadowElevation = 4.dp,
+        shape = RoundedCornerShape(24.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        shadowElevation = 2.dp,
         modifier = Modifier
-            .width(180.dp)
-            .clickable(onClick = onClick)
+            .width(300.dp)
     ) {
         Column(
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(126.dp)
+                    .height(210.dp)
+                    .clip(RoundedCornerShape(18.dp))
+                    .background(SurfaceContainerLow)
             ) {
                 val imageUrl = place.mainImage?.takeIf { it.isNotBlank() }
                 if (imageUrl != null) {
@@ -306,7 +315,7 @@ private fun PlaceReferenceCard(
                         modifier = Modifier.fillMaxSize()
                     )
                 } else {
-                    Image(
+                    ComposeImage(
                         painter = painterResource(id = R.drawable.ic_launcher_foreground),
                         contentDescription = place.name,
                         contentScale = ContentScale.Crop,
@@ -315,18 +324,34 @@ private fun PlaceReferenceCard(
                             .background(SurfaceContainerLow)
                     )
                 }
+
+                Surface(
+                    color = SurfaceContainerLowest.copy(alpha = 0.9f),
+                    shape = CircleShape,
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .padding(12.dp)
+                        .size(36.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = Icons.Default.Image,
+                            contentDescription = null,
+                            tint = OnSurfaceVariant,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
             }
             Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(14.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Text(
                     text = place.name,
                     color = OnSurface,
                     fontWeight = FontWeight.ExtraBold,
-                    style = MaterialTheme.typography.titleSmall,
+                    style = MaterialTheme.typography.titleLarge,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -337,37 +362,48 @@ private fun PlaceReferenceCard(
                             imageVector = Icons.Default.LocationOn,
                             contentDescription = null,
                             tint = OnSurfaceVariant,
-                            modifier = Modifier.size(16.dp)
+                            modifier = Modifier.size(20.dp)
                         )
-                        Spacer(modifier = Modifier.width(8.dp))
+                        Spacer(modifier = Modifier.width(10.dp))
                         Text(
                             text = province,
                             color = OnSurfaceVariant,
-                            style = MaterialTheme.typography.bodyMedium,
+                            style = MaterialTheme.typography.bodyLarge,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
                     }
                 }
 
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+
                 PlaceRatingRow(
                     averageRating = place.averageRating,
                     reviewCount = place.reviewCount
                 )
 
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Button(
+                    onClick = onClick,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(52.dp),
+                    shape = RoundedCornerShape(14.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = PrimaryBlue,
+                        contentColor = Color.White
+                    ),
+                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp)
+                ) {
                     Icon(
                         imageVector = Icons.Default.CalendarToday,
                         contentDescription = null,
-                        tint = PrimaryBlue,
-                        modifier = Modifier.size(16.dp)
+                        modifier = Modifier.size(22.dp)
                     )
-                    Spacer(modifier = Modifier.width(8.dp))
+                    Spacer(modifier = Modifier.width(10.dp))
                     Text(
                         text = stringResource(R.string.assistant_view_place_detail),
-                        color = PrimaryBlue,
                         fontWeight = FontWeight.Bold,
-                        style = MaterialTheme.typography.bodyMedium
+                        style = MaterialTheme.typography.titleMedium
                     )
                 }
             }
@@ -411,23 +447,25 @@ private fun PlaceRatingRow(
     val hasRating = averageRating != null && reviewCount > 0
     if (hasRating) {
         Row(
+            modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             RatingStars(
                 rating = averageRating ?: 0.0,
-                starSize = 14
+                starSize = 20
             )
             Text(
-                text = String.format("%.1f", averageRating),
+                text = String.format("%.1f", averageRating).replace('.', ','),
                 color = OnSurface,
-                fontWeight = FontWeight.Bold,
-                style = MaterialTheme.typography.bodyMedium
+                fontWeight = FontWeight.ExtraBold,
+                style = MaterialTheme.typography.titleMedium
             )
+            Spacer(modifier = Modifier.weight(1f))
             Text(
                 text = stringResource(R.string.review_count, reviewCount),
                 color = OnSurfaceVariant,
-                style = MaterialTheme.typography.bodySmall
+                style = MaterialTheme.typography.bodyMedium
             )
         }
     } else {
