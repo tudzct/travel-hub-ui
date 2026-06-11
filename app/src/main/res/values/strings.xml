@@ -283,4 +283,5 @@
     <string name="top_travelers_month">Tháng</string>
     <string name="assistant_suggested_places">Địa điểm gợi ý</string>
     <string name="assistant_view_place_detail">Xem chi tiết</string>
+    <string name="assistant_generic_error">Có lỗi xảy ra. Vui lòng thử lại.</string>
 </resources>

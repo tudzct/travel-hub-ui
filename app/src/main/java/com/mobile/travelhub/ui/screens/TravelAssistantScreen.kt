@@ -10,6 +10,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -34,7 +35,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -51,6 +54,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -59,8 +63,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import coil.compose.AsyncImage
 import com.mobile.travelhub.data.model.TravelAssistantPlaceReference
 import com.mobile.travelhub.ui.components.ChatMarkdownMessage
+import com.mobile.travelhub.ui.components.RetryButton
 import com.mobile.travelhub.ui.components.SimpleFormTextField
 import com.mobile.travelhub.ui.theme.OnSurface
 import com.mobile.travelhub.ui.theme.OnSurfaceVariant
@@ -72,6 +78,7 @@ import com.mobile.travelhub.viewmodels.TravelAssistantMessageUi
 import com.mobile.travelhub.viewmodels.TravelAssistantRole
 import com.mobile.travelhub.viewmodels.TravelAssistantViewModel
 import com.mobile.travelhub.R
+import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -147,13 +154,6 @@ fun TravelAssistantScreen(
             modifier = Modifier
                 .fillMaxSize()
         ) {
-            AssistantScreenBadge(
-                modifier = Modifier
-                    .align(Alignment.TopStart)
-                    .padding(paddingValues)
-                    .padding(start = 16.dp, top = 12.dp)
-            )
-
             LazyColumn(
                 state = listState,
                 modifier = Modifier
@@ -194,60 +194,13 @@ fun TravelAssistantScreen(
 
                 state.errorMessage?.let { error ->
                     item(key = "error") {
-                        Surface(
-                            color = MaterialTheme.colorScheme.errorContainer,
-                            shape = RoundedCornerShape(12.dp),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable(onClick = viewModel::clearError)
-                        ) {
-                            Text(
-                                text = error,
-                                modifier = Modifier.padding(12.dp),
-                                color = MaterialTheme.colorScheme.onErrorContainer,
-                                style = MaterialTheme.typography.bodySmall
-                            )
-                        }
+                        AssistantErrorCard(
+                            message = error,
+                            onRetry = viewModel::retryLastMessage
+                        )
                     }
                 }
             }
-        }
-    }
-}
-
-@Composable
-private fun AssistantScreenBadge(modifier: Modifier = Modifier) {
-    Surface(
-        color = SurfaceContainerLowest,
-        shape = RoundedCornerShape(20.dp),
-        shadowElevation = 1.dp,
-        modifier = modifier
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Surface(
-                color = PrimaryBlue,
-                shape = CircleShape,
-                modifier = Modifier.size(28.dp)
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        imageVector = Icons.Default.AutoAwesome,
-                        contentDescription = null,
-                        tint = Color.White,
-                        modifier = Modifier.size(14.dp)
-                    )
-                }
-            }
-            Text(
-                text = stringResource(R.string.ui_62894af0b2),
-                color = OnSurface,
-                fontWeight = FontWeight.Bold,
-                fontSize = 12.sp
-            )
         }
     }
 }
@@ -305,11 +258,18 @@ private fun ChatMessageBubble(
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold
                 )
-                message.places.forEach { place ->
-                    PlaceReferenceCard(
-                        place = place,
-                        onClick = { onPlaceClick(place.id) }
-                    )
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    message.places.forEach { place ->
+                        PlaceReferenceCard(
+                            place = place,
+                            onClick = { onPlaceClick(place.id) }
+                        )
+                    }
                 }
             }
         }
@@ -322,53 +282,176 @@ private fun PlaceReferenceCard(
     onClick: () -> Unit
 ) {
     Surface(
-        color = SurfaceContainerLow,
-        shape = RoundedCornerShape(12.dp),
+        color = SurfaceContainerLowest,
+        shape = RoundedCornerShape(18.dp),
+        shadowElevation = 4.dp,
         modifier = Modifier
-            .fillMaxWidth()
+            .width(180.dp)
             .clickable(onClick = onClick)
     ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
-            verticalAlignment = Alignment.CenterVertically
+        Column(
+            modifier = Modifier.fillMaxWidth()
         ) {
-            Icon(
-                imageVector = Icons.Default.LocationOn,
-                contentDescription = null,
-                tint = PrimaryBlue,
-                modifier = Modifier.size(20.dp)
-            )
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(126.dp)
+            ) {
+                val imageUrl = place.mainImage?.takeIf { it.isNotBlank() }
+                if (imageUrl != null) {
+                    AsyncImage(
+                        model = imageUrl,
+                        contentDescription = place.name,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                } else {
+                    Image(
+                        painter = painterResource(id = R.drawable.ic_launcher_foreground),
+                        contentDescription = place.name,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(SurfaceContainerLow)
+                    )
+                }
+            }
             Column(
                 modifier = Modifier
-                    .weight(1f)
-                    .padding(start = 9.dp)
+                    .fillMaxWidth()
+                    .padding(14.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Text(
                     text = place.name,
                     color = OnSurface,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 13.sp,
-                    maxLines = 1,
+                    fontWeight = FontWeight.ExtraBold,
+                    style = MaterialTheme.typography.titleSmall,
+                    maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
-                val detail = buildList {
-                    place.province?.takeIf { it.isNotBlank() }?.let(::add)
-                    place.averageRating?.let { add(String.format("%.1f/5", it)) }
-                    if (place.reviewCount > 0) add("${place.reviewCount} đánh giá")
-                }.joinToString(" • ")
-                if (detail.isNotBlank()) {
+
+                place.province?.takeIf { it.isNotBlank() }?.let { province ->
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.LocationOn,
+                            contentDescription = null,
+                            tint = OnSurfaceVariant,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = province,
+                            color = OnSurfaceVariant,
+                            style = MaterialTheme.typography.bodyMedium,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
+
+                PlaceRatingRow(
+                    averageRating = place.averageRating,
+                    reviewCount = place.reviewCount
+                )
+
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.CalendarToday,
+                        contentDescription = null,
+                        tint = PrimaryBlue,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = detail,
-                        color = OnSurfaceVariant,
-                        fontSize = 11.sp
+                        text = stringResource(R.string.assistant_view_place_detail),
+                        color = PrimaryBlue,
+                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.bodyMedium
                     )
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun AssistantErrorCard(
+    message: String,
+    onRetry: () -> Unit
+) {
+    Surface(
+        color = MaterialTheme.colorScheme.errorContainer,
+        shape = RoundedCornerShape(16.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
             Text(
-                text = stringResource(R.string.assistant_view_place_detail),
-                color = PrimaryBlue,
+                text = message,
+                color = MaterialTheme.colorScheme.onErrorContainer,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.SemiBold
+            )
+            RetryButton(
+                onClick = onRetry,
+                modifier = Modifier.align(Alignment.End)
+            )
+        }
+    }
+}
+
+@Composable
+private fun PlaceRatingRow(
+    averageRating: Double?,
+    reviewCount: Long
+) {
+    val hasRating = averageRating != null && reviewCount > 0
+    if (hasRating) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            RatingStars(
+                rating = averageRating ?: 0.0,
+                starSize = 14
+            )
+            Text(
+                text = String.format("%.1f", averageRating),
+                color = OnSurface,
                 fontWeight = FontWeight.Bold,
-                fontSize = 12.sp
+                style = MaterialTheme.typography.bodyMedium
+            )
+            Text(
+                text = stringResource(R.string.review_count, reviewCount),
+                color = OnSurfaceVariant,
+                style = MaterialTheme.typography.bodySmall
+            )
+        }
+    } else {
+        Text(
+            text = stringResource(R.string.ui_faac2d3623),
+            color = OnSurfaceVariant,
+            style = MaterialTheme.typography.bodyMedium
+        )
+    }
+}
+
+@Composable
+private fun RatingStars(
+    rating: Double,
+    starSize: Int
+) {
+    val roundedRating = rating.roundToInt().coerceIn(0, 5)
+    Row(horizontalArrangement = Arrangement.spacedBy(1.dp)) {
+        repeat(5) { index ->
+            Icon(
+                imageVector = Icons.Filled.Star,
+                contentDescription = null,
+                tint = if (index < roundedRating) Color(0xFFFFB300) else MaterialTheme.colorScheme.outlineVariant,
+                modifier = Modifier.size(starSize.dp)
             )
         }
     }
