@@ -503,11 +503,17 @@ private fun ProfileScreenContent(
                                         )
                                     }
 
+                                    HorizontalDivider(
+                                        modifier = Modifier.padding(horizontal = 22.dp),
+                                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f),
+                                        thickness = 1.dp
+                                    )
+
                                     // Posts Section
                                     Column(
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .padding(top = if (isViewingOwnProfile) 2.dp else 12.dp)
+                                            .padding(top = 12.dp)
                                     ) {
                                         when {
                                             profilePostsState.isLoading -> {

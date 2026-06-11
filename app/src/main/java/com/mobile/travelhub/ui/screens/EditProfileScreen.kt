@@ -88,7 +88,6 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.mobile.travelhub.R
 import com.mobile.travelhub.data.userMessage
 import com.mobile.travelhub.ui.components.DestinationPlacePicker
-import com.mobile.travelhub.ui.components.InlineLoadingSkeleton
 import com.mobile.travelhub.ui.components.EditProfileLoadingSkeleton
 import com.mobile.travelhub.ui.theme.PrimaryBlue
 import com.mobile.travelhub.viewmodels.ProfileViewModel
@@ -316,22 +315,29 @@ fun EditProfileScreen(
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold
                 )
-                if (isSaving) {
-                    InlineLoadingSkeleton(
-                        modifier = Modifier
-                            .align(Alignment.CenterEnd)
-                            .size(24.dp)
-                    )
-                } else {
+                TextButton(
+                    onClick = { saveProfile() },
+                    enabled = !isSaving,
+                    modifier = Modifier.align(Alignment.CenterEnd)
+                ) {
                     Text(
                         text = "Lưu",
-                        color = MaterialTheme.colorScheme.primary,
+                        color = if (isSaving) {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        } else {
+                            MaterialTheme.colorScheme.primary
+                        },
                         style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier
-                            .align(Alignment.CenterEnd)
-                            .clickable { saveProfile() }
+                        fontWeight = FontWeight.Bold
                     )
+                    if (isSaving) {
+                        Spacer(modifier = Modifier.width(8.dp))
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(16.dp),
+                            strokeWidth = 2.dp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
             }
         }

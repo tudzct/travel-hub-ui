@@ -288,10 +288,12 @@ fun PlaceDetailScreen(
                         Spacer(modifier = Modifier.height(18.dp))
                     }
                 }
-
-                PinnedBackButton(onBack = onBack)
                 }
             }
+        }
+
+        if (uiState.errorMessage == null) {
+            PinnedBackButton(onBack = onBack)
         }
 
         if (showReviewSheet && uiState.detail != null) {
@@ -490,13 +492,6 @@ private fun PlaceDetailLoadingSkeleton() {
                 SkeletonBlock(
                     modifier = Modifier.fillMaxSize(),
                     shape = RoundedCornerShape(0.dp)
-                )
-                SkeletonBlock(
-                    modifier = Modifier
-                        .align(Alignment.TopStart)
-                        .padding(start = 16.dp, top = 48.dp)
-                        .size(48.dp),
-                    shape = CircleShape
                 )
                 Column(
                     modifier = Modifier

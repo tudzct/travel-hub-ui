@@ -129,7 +129,7 @@ fun TripsScreen(
                 ),
                 modifier = Modifier
                     .height(66.dp)
-                    .padding(end = 4.dp, bottom = 4.dp)
+                    .padding(end = 4.dp, bottom = 20.dp)
             ) {
                 Icon(
                     Icons.Default.FlightTakeoff,

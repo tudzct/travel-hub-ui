@@ -204,7 +204,7 @@ fun ExploreScreen(
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
                     .navigationBarsPadding()
-                    .padding(end = 16.dp, bottom = 24.dp)
+                    .padding(end = 16.dp, bottom = 40.dp)
             )
         }
     }

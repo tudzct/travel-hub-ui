@@ -123,6 +123,8 @@ fun ViewHistoryScreen(
                     verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
                     items(uiState.items, key = { "${it.placeId}-${it.viewedAt}" }) { item ->
+                        val titleLine = historyPlaceTitle(item.placeName, item.provinceName)
+                        val provinceLine = historyProvinceLabel(item.placeName, item.provinceName)
                         Surface(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -150,18 +152,22 @@ fun ViewHistoryScreen(
                                     verticalArrangement = Arrangement.spacedBy(8.dp)
                                 ) {
                                     Text(
-                                        text = item.placeName,
+                                        text = titleLine,
                                         style = MaterialTheme.typography.titleMedium,
                                         fontWeight = FontWeight.SemiBold,
-                                        maxLines = 2,
+                                        maxLines = if (provinceLine != null) 1 else 2,
                                         overflow = TextOverflow.Ellipsis,
                                         color = OnSurface
                                     )
-                                    Text(
-                                        text = item.provinceName,
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = PrimaryBlue
-                                    )
+                                    provinceLine?.let {
+                                        Text(
+                                            text = it,
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis,
+                                            color = PrimaryBlue
+                                        )
+                                    }
                                     Spacer(modifier = Modifier.weight(1f))
                                     Text(
                                         text = formatViewedAt(item.viewedAt),
@@ -176,6 +182,29 @@ fun ViewHistoryScreen(
             }
         }
     }
+}
+
+private fun historyPlaceTitle(placeName: String, provinceName: String): String {
+    val trimmedPlace = placeName.trim()
+    val trimmedProvince = provinceName.trim()
+    if (trimmedPlace.isBlank()) return trimmedProvince
+    if (trimmedProvince.isBlank()) return trimmedPlace
+
+    val normalizedPlace = trimmedPlace.lowercase()
+    val normalizedProvince = trimmedProvince.lowercase()
+    val suffix = ", $normalizedProvince"
+    return if (normalizedPlace.endsWith(suffix)) {
+        trimmedPlace.dropLast(suffix.length).trim().trimEnd(',')
+    } else {
+        trimmedPlace
+    }
+}
+
+private fun historyProvinceLabel(placeName: String, provinceName: String): String? {
+    val trimmedProvince = provinceName.trim()
+    if (trimmedProvince.isBlank()) return null
+    val trimmedPlace = placeName.trim()
+    return if (trimmedPlace.equals(trimmedProvince, ignoreCase = true)) null else trimmedProvince
 }
 
 private fun formatViewedAt(raw: String?): String {
