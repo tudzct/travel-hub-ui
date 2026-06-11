@@ -39,6 +39,7 @@ import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.RemoveRedEye
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -59,7 +60,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
@@ -229,10 +232,10 @@ private fun ChatMessageBubble(
             Surface(
                 color = if (isUser) PrimaryBlue else SurfaceContainerLowest,
                 shape = RoundedCornerShape(
-                    topStart = 18.dp,
-                    topEnd = 18.dp,
-                    bottomStart = if (isUser) 18.dp else 4.dp,
-                    bottomEnd = if (isUser) 4.dp else 18.dp
+                    topStart = if (isUser) 18.dp else 4.dp,
+                    topEnd = if (isUser) 4.dp else 18.dp,
+                    bottomStart = 18.dp,
+                    bottomEnd = 16.dp
                 ),
                 shadowElevation = if (isUser) 0.dp else 1.dp,
                 modifier = Modifier.fillMaxWidth(if (isUser) 0.82f else 0.88f)
@@ -293,16 +296,16 @@ private fun PlaceReferenceCard(
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
         shadowElevation = 2.dp,
         modifier = Modifier
-            .width(300.dp)
+            .width(200.dp)
     ) {
         Column(
-            modifier = Modifier.padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
+            modifier = Modifier.padding(8.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(210.dp)
+                    .height(168.dp)
                     .clip(RoundedCornerShape(18.dp))
                     .background(SurfaceContainerLow)
             ) {
@@ -324,34 +327,16 @@ private fun PlaceReferenceCard(
                             .background(SurfaceContainerLow)
                     )
                 }
-
-                Surface(
-                    color = SurfaceContainerLowest.copy(alpha = 0.9f),
-                    shape = CircleShape,
-                    modifier = Modifier
-                        .align(Alignment.TopStart)
-                        .padding(12.dp)
-                        .size(36.dp)
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            imageVector = Icons.Default.Image,
-                            contentDescription = null,
-                            tint = OnSurfaceVariant,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-                }
             }
             Column(
                 modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Text(
                     text = place.name,
                     color = OnSurface,
-                    fontWeight = FontWeight.ExtraBold,
-                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.titleMedium,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -362,13 +347,13 @@ private fun PlaceReferenceCard(
                             imageVector = Icons.Default.LocationOn,
                             contentDescription = null,
                             tint = OnSurfaceVariant,
-                            modifier = Modifier.size(20.dp)
+                            modifier = Modifier.size(17.dp)
                         )
-                        Spacer(modifier = Modifier.width(10.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
                         Text(
                             text = province,
                             color = OnSurfaceVariant,
-                            style = MaterialTheme.typography.bodyLarge,
+                            style = MaterialTheme.typography.bodySmall,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
@@ -386,8 +371,8 @@ private fun PlaceReferenceCard(
                     onClick = onClick,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(52.dp),
-                    shape = RoundedCornerShape(14.dp),
+                        .height(44.dp),
+                    shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = PrimaryBlue,
                         contentColor = Color.White
@@ -395,15 +380,15 @@ private fun PlaceReferenceCard(
                     elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp)
                 ) {
                     Icon(
-                        imageVector = Icons.Default.CalendarToday,
+                        imageVector = Icons.Default.RemoveRedEye,
                         contentDescription = null,
-                        modifier = Modifier.size(22.dp)
+                        modifier = Modifier.size(19.dp)
                     )
-                    Spacer(modifier = Modifier.width(10.dp))
+                    Spacer(modifier = Modifier.width(7.dp))
                     Text(
                         text = stringResource(R.string.assistant_view_place_detail),
                         fontWeight = FontWeight.Bold,
-                        style = MaterialTheme.typography.titleMedium
+                        style = MaterialTheme.typography.bodyMedium
                     )
                 }
             }
@@ -449,23 +434,23 @@ private fun PlaceRatingRow(
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
+            horizontalArrangement = Arrangement.spacedBy(7.dp)
         ) {
             RatingStars(
                 rating = averageRating ?: 0.0,
-                starSize = 20
+                starSize = 17
             )
             Text(
                 text = String.format("%.1f", averageRating).replace('.', ','),
                 color = OnSurface,
-                fontWeight = FontWeight.ExtraBold,
-                style = MaterialTheme.typography.titleMedium
+                fontWeight = FontWeight.Bold,
+                style = MaterialTheme.typography.bodyMedium
             )
             Spacer(modifier = Modifier.weight(1f))
             Text(
                 text = stringResource(R.string.review_count, reviewCount),
                 color = OnSurfaceVariant,
-                style = MaterialTheme.typography.bodyMedium
+                style = MaterialTheme.typography.bodySmall
             )
         }
     } else {
@@ -482,19 +467,36 @@ private fun RatingStars(
     rating: Double,
     starSize: Int
 ) {
-    val roundedRating = rating.roundToInt().coerceIn(0, 5)
-    Row(horizontalArrangement = Arrangement.spacedBy(1.dp)) {
-        repeat(5) { index ->
-            Icon(
-                imageVector = Icons.Filled.Star,
-                contentDescription = null,
-                tint = if (index < roundedRating) Color(0xFFFFB300) else MaterialTheme.colorScheme.outlineVariant,
-                modifier = Modifier.size(starSize.dp)
-            )
-        }
+    val fillFraction = (rating / 5.0)
+        .coerceIn(0.0, 1.0)
+        .toFloat()
+
+    Box(
+        modifier = Modifier.size(starSize.dp)
+    ) {
+        Icon(
+            imageVector = Icons.Filled.Star,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.outlineVariant,
+            modifier = Modifier.matchParentSize()
+        )
+
+        Icon(
+            imageVector = Icons.Filled.Star,
+            contentDescription = null,
+            tint = Color(0xFFFFB300),
+            modifier = Modifier
+                .matchParentSize()
+                .drawWithContent {
+                    clipRect(
+                        right = size.width * fillFraction
+                    ) {
+                        this@drawWithContent.drawContent()
+                    }
+                }
+        )
     }
 }
-
 @Composable
 private fun QuickPromptRow(
     prompts: List<String>,
