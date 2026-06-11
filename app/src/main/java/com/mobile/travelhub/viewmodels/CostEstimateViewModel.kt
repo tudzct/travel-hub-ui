@@ -270,7 +270,8 @@ class CostEstimateViewModel @Inject constructor(
         splitType: String,
         splitUserIds: List<Long>,
         splitShares: List<ExpenseSplitShareUiModel>,
-        proofImageUri: Uri? = null
+        proofImageUri: Uri? = null,
+        onResult: ((Boolean, String?) -> Unit)? = null
     ) {
         val state = _uiState.value
         val tripId = state.tripId
@@ -279,27 +280,37 @@ class CostEstimateViewModel @Inject constructor(
         val sessionUserId = authRepository.getSavedSession()?.userId?.toLong() ?: -1L
 
         if (tripId <= 0L) {
-            _uiState.update { it.copy(errorMessage = "Không xác định được chuyến đi") }
+            val err = "Không xác định được chuyến đi"
+            onResult?.invoke(false, err)
             return
         }
         if (state.isCompleted) {
-            _uiState.update { it.copy(errorMessage = "Không thể thêm chi phí cho chuyến đi đã hoàn thành") }
+            val err = "Không thể thêm chi phí cho chuyến đi đã hoàn thành"
+            onResult?.invoke(false, err)
             return
         }
         if (title.trim().isBlank() || parsedAmount == null || parsedAmount <= 0.0) {
-            _uiState.update { it.copy(errorMessage = "Vui lòng nhập tên và số tiền hợp lệ") }
+            val err = "Vui lòng nhập tên và số tiền hợp lệ"
+            onResult?.invoke(false, err)
             return
         }
         if (sessionUserId <= 0L) {
-            _uiState.update { it.copy(errorMessage = "Bạn cần đăng nhập để thêm chi phí") }
+            val err = "Bạn cần đăng nhập để thêm chi phí"
+            onResult?.invoke(false, err)
             return
         }
         val effectiveSplitUserIds = splitUserIds.distinct().filter { it > 0L }
         if (effectiveSplitUserIds.isEmpty()) {
-            _uiState.update { it.copy(errorMessage = "Vui lòng chọn ít nhất một người cùng chia") }
+            val err = "Vui lòng chọn ít nhất một người cùng chia"
+            onResult?.invoke(false, err)
             return
         }
-        val effectiveSplitShares = normalizeSplitShares(splitType, parsedAmount, effectiveSplitUserIds, splitShares) ?: return
+        val (effectiveSplitShares, splitSharesError) = normalizeSplitShares(splitType, parsedAmount, effectiveSplitUserIds, splitShares)
+        if (effectiveSplitShares == null) {
+            val err = splitSharesError ?: "Cấu hình chia tiền không hợp lệ"
+            onResult?.invoke(false, err)
+            return
+        }
 
         viewModelScope.launch {
             val pendingId = -System.currentTimeMillis()
@@ -318,11 +329,14 @@ class CostEstimateViewModel @Inject constructor(
             val proofObjectName = if (proofImageUri != null) {
                 expenseProofRepository.uploadProof(proofImageUri)
                     .getOrElse { throwable ->
+                        val err = throwable.userMessage("Không tải được ảnh minh chứng")
                         removePendingExpense(
                             pendingId = pendingId,
                             amount = parsedAmount,
-                            errorMessage = throwable.userMessage("Không tải được ảnh minh chứng")
+                            errorMessage = err,
+                            updateGlobalError = false
                         )
+                        onResult?.invoke(false, err)
                         return@launch
                     }
             } else {
@@ -344,12 +358,16 @@ class CostEstimateViewModel @Inject constructor(
             ).onSuccess { savedExpense ->
                 replacePendingExpense(pendingId, savedExpense.toUiModel())
                 loadExpenseSummary(tripId, groupName)
+                onResult?.invoke(true, null)
             }.onFailure { throwable ->
+                val err = throwable.userMessage("Không thêm được chi phí")
                 removePendingExpense(
                     pendingId = pendingId,
                     amount = parsedAmount,
-                    errorMessage = throwable.userMessage("Không thêm được chi phí")
+                    errorMessage = err,
+                    updateGlobalError = false
                 )
+                onResult?.invoke(false, err)
             }
         }
     }
@@ -364,7 +382,8 @@ class CostEstimateViewModel @Inject constructor(
         splitType: String,
         splitUserIds: List<Long>,
         splitShares: List<ExpenseSplitShareUiModel>,
-        proofImageUri: Uri? = null
+        proofImageUri: Uri? = null,
+        onResult: ((Boolean, String?) -> Unit)? = null
     ) {
         val state = _uiState.value
         val tripId = state.tripId
@@ -372,39 +391,50 @@ class CostEstimateViewModel @Inject constructor(
         val parsedAmount = amountText.replace(".", "").trim().toDoubleOrNull()
 
         if (tripId <= 0L) {
-            _uiState.update { it.copy(errorMessage = "Không xác định được chuyến đi") }
+            val err = "Không xác định được chuyến đi"
+            onResult?.invoke(false, err)
             return
         }
         if (state.isCompleted) {
-            _uiState.update { it.copy(errorMessage = "Không thể chỉnh sửa chi phí cho chuyến đi đã hoàn thành") }
+            val err = "Không thể chỉnh sửa chi phí cho chuyến đi đã hoàn thành"
+            onResult?.invoke(false, err)
             return
         }
         if (title.trim().isBlank() || parsedAmount == null || parsedAmount <= 0.0) {
-            _uiState.update { it.copy(errorMessage = "Vui lòng nhập tên và số tiền hợp lệ") }
+            val err = "Vui lòng nhập tên và số tiền hợp lệ"
+            onResult?.invoke(false, err)
             return
         }
         if (paidByUserId <= 0L) {
-            _uiState.update { it.copy(errorMessage = "Không xác định được người thanh toán") }
+            val err = "Không xác định được người thanh toán"
+            onResult?.invoke(false, err)
             return
         }
         val effectiveSplitUserIds = splitUserIds.distinct().filter { it > 0L }
         if (effectiveSplitUserIds.isEmpty()) {
-            _uiState.update { it.copy(errorMessage = "Vui lòng chọn ít nhất một người cùng chia") }
+            val err = "Vui lòng chọn ít nhất một người cùng chia"
+            onResult?.invoke(false, err)
             return
         }
-        val effectiveSplitShares = normalizeSplitShares(splitType, parsedAmount, effectiveSplitUserIds, splitShares) ?: return
+        val (effectiveSplitShares, splitSharesError) = normalizeSplitShares(splitType, parsedAmount, effectiveSplitUserIds, splitShares)
+        if (effectiveSplitShares == null) {
+            val err = splitSharesError ?: "Cấu hình chia tiền không hợp lệ"
+            onResult?.invoke(false, err)
+            return
+        }
 
         viewModelScope.launch {
             _uiState.update { it.copy(isAddingExpense = true, errorMessage = null) }
             val proofImageValue = if (proofImageUri != null) {
                 expenseProofRepository.uploadProof(proofImageUri)
                     .getOrElse { throwable ->
+                        val err = throwable.userMessage("Không tải được ảnh minh chứng")
                         _uiState.update {
                             it.copy(
-                                isAddingExpense = false,
-                                errorMessage = throwable.userMessage("Không tải được ảnh minh chứng")
+                                isAddingExpense = false
                             )
                         }
+                        onResult?.invoke(false, err)
                         return@launch
                     }
             } else {
@@ -427,13 +457,15 @@ class CostEstimateViewModel @Inject constructor(
             ).onSuccess {
                 _uiState.update { it.copy(isAddingExpense = false) }
                 loadExpenseSummary(tripId, groupName)
+                onResult?.invoke(true, null)
             }.onFailure { throwable ->
+                val err = throwable.userMessage("Không cập nhật được chi phí")
                 _uiState.update {
                     it.copy(
-                        isAddingExpense = false,
-                        errorMessage = throwable.userMessage("Không cập nhật được chi phí")
+                        isAddingExpense = false
                     )
                 }
+                onResult?.invoke(false, err)
             }
         }
     }
@@ -513,7 +545,11 @@ class CostEstimateViewModel @Inject constructor(
             _uiState.update { it.copy(errorMessage = "Vui lòng chọn ít nhất một người cùng chia") }
             return
         }
-        val effectiveSplitShares = normalizeSplitShares(splitType, parsedAmount, effectiveSplitUserIds, splitShares) ?: return
+        val (effectiveSplitShares, splitSharesError) = normalizeSplitShares(splitType, parsedAmount, effectiveSplitUserIds, splitShares)
+        if (effectiveSplitShares == null) {
+            _uiState.update { it.copy(errorMessage = splitSharesError ?: "Cấu hình chia tiền không hợp lệ") }
+            return
+        }
 
         viewModelScope.launch {
             val pendingId = -System.currentTimeMillis()
@@ -718,9 +754,9 @@ class CostEstimateViewModel @Inject constructor(
         totalAmount: Double,
         splitUserIds: List<Long>,
         splitShares: List<ExpenseSplitShareUiModel>
-    ): List<ExpenseSplitShareUiModel>? {
+    ): Pair<List<ExpenseSplitShareUiModel>?, String?> {
         if (!splitType.equals("CUSTOM", ignoreCase = true)) {
-            return emptyList()
+            return Pair(emptyList(), null)
         }
         val selectedUserIds = splitUserIds.toSet()
         val effectiveShares = splitShares
@@ -730,19 +766,16 @@ class CostEstimateViewModel @Inject constructor(
                 ExpenseSplitShareUiModel(userId = userId, amount = shares.sumOf { it.amount })
             }
         if (effectiveShares.size != selectedUserIds.size) {
-            _uiState.update { it.copy(errorMessage = "Vui lòng nhập số tiền cho từng người cùng chia") }
-            return null
+            return Pair(null, "Vui lòng nhập số tiền cho từng người cùng chia")
         }
         val totalSplitAmount = effectiveShares.sumOf { it.amount }
         if (kotlin.math.abs(totalSplitAmount - totalAmount) > 0.5) {
-            _uiState.update { it.copy(errorMessage = "Tổng tiền chia phải bằng tổng tiền hóa đơn") }
-            return null
+            return Pair(null, "Tổng tiền chia phải bằng tổng tiền hóa đơn")
         }
         if (effectiveShares.any { it.amount > totalAmount }) {
-            _uiState.update { it.copy(errorMessage = "Số tiền chia của một người không được vượt quá tổng tiền") }
-            return null
+            return Pair(null, "Số tiền chia của một người không được vượt quá tổng tiền")
         }
-        return effectiveShares
+        return Pair(effectiveShares, null)
     }
 
     private fun addPendingExpense(
@@ -774,15 +807,20 @@ class CostEstimateViewModel @Inject constructor(
     private fun removePendingExpense(
         pendingId: Long,
         amount: Double,
-        errorMessage: String
+        errorMessage: String,
+        updateGlobalError: Boolean = true
     ) {
         _uiState.update { state ->
             state.copy(
                 isAddingExpense = false,
-                errorMessage = errorMessage,
+                errorMessage = if (updateGlobalError) errorMessage else state.errorMessage,
                 totalSpent = (state.totalSpent - amount).coerceAtLeast(0.0),
                 transactions = state.transactions.filterNot { it.id == pendingId }
             )
         }
+    }
+
+    fun clearErrorMessage() {
+        _uiState.update { it.copy(errorMessage = null) }
     }
 }

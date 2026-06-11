@@ -245,7 +245,10 @@ fun CostEstimateScreen(
                                 PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
                             )
                         },
-                        onManualClick = { showAddExpense = true }
+                        onManualClick = {
+                            viewModel.clearErrorMessage()
+                            showAddExpense = true
+                        }
                     )
                 }
 
@@ -266,6 +269,7 @@ fun CostEstimateScreen(
                     ModernExpenseRow(
                         expense = expense,
                         onClick = {
+                            viewModel.clearErrorMessage()
                             editingExpense = expense
                         }
                     )
@@ -283,6 +287,7 @@ fun CostEstimateScreen(
                         ModernExpenseRow(
                             expense = expense,
                             onClick = {
+                                viewModel.clearErrorMessage()
                                 editingExpense = expense
                             }
                         )
@@ -301,8 +306,8 @@ fun CostEstimateScreen(
                 AddExpenseContent(
                     members = uiState.members,
                     isSaving = uiState.isAddingExpense,
-                    onSave = { title, amountText, category, splitType, splitUserIds, splitShares, proofImageUri ->
-                        viewModel.addExpense(title, amountText, category, splitType, splitUserIds, splitShares, proofImageUri)
+                    onSave = { title, amountText, category, splitType, splitUserIds, splitShares, proofImageUri, onResult ->
+                        viewModel.addExpense(title, amountText, category, splitType, splitUserIds, splitShares, proofImageUri, onResult)
                     },
                     onDismiss = { showAddExpense = false }
                 )
@@ -322,7 +327,7 @@ fun CostEstimateScreen(
                     members = uiState.members,
                     canEdit = !uiState.isCompleted,
                     isSaving = uiState.isAddingExpense,
-                    onSave = { title, amountText, category, splitType, splitUserIds, splitShares, proofImageUri ->
+                    onSave = { title, amountText, category, splitType, splitUserIds, splitShares, proofImageUri, onResult ->
                         viewModel.editExpense(
                             expense.id,
                             title,
@@ -333,7 +338,8 @@ fun CostEstimateScreen(
                             splitType,
                             splitUserIds,
                             splitShares,
-                            proofImageUri
+                            proofImageUri,
+                            onResult
                         )
                     },
                     onDelete = {
@@ -1749,7 +1755,7 @@ private fun SplitMemberSelector(
 fun AddExpenseContent(
     members: List<TripExpenseMemberUiModel>,
     isSaving: Boolean,
-    onSave: (String, String, String, String, List<Long>, List<ExpenseSplitShareUiModel>, android.net.Uri?) -> Unit,
+    onSave: (String, String, String, String, List<Long>, List<ExpenseSplitShareUiModel>, android.net.Uri?, (Boolean, String?) -> Unit) -> Unit,
     onDismiss: () -> Unit
 ) {
     val initialSplitUserIds = remember(members) {
@@ -1763,6 +1769,7 @@ fun AddExpenseContent(
     var splitUserIds by remember(initialSplitUserIds) { mutableStateOf(initialSplitUserIds) }
     var splitType by remember { mutableStateOf(SPLIT_EQUAL) }
     var customSplitValues by remember { mutableStateOf<Map<Long, TextFieldValue>>(emptyMap()) }
+    var localErrorMsg by remember { mutableStateOf<String?>(null) }
     val proofPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia()
     ) { uri ->
@@ -1844,9 +1851,20 @@ fun AddExpenseContent(
 
         Spacer(modifier = Modifier.height(24.dp))
 
+        if (localErrorMsg != null) {
+            Text(
+                text = localErrorMsg.orEmpty(),
+                color = SunsetOrange,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.padding(bottom = 12.dp)
+            )
+        }
+
         Button(
             onClick = {
                 if (!isSaving) {
+                    localErrorMsg = null
                     onSave(
                         expenseTitle,
                         expenseAmountValue.text,
@@ -1855,8 +1873,13 @@ fun AddExpenseContent(
                         splitUserIds.toList(),
                         buildSplitShares(splitUserIds, customSplitValues),
                         proofImageUri
-                    )
-                    onDismiss()
+                    ) { success, error ->
+                        if (success) {
+                            onDismiss()
+                        } else {
+                            localErrorMsg = error ?: "Không lưu được chi phí"
+                        }
+                    }
                 }
             },
             modifier = Modifier
@@ -1881,7 +1904,7 @@ fun EditExpenseContent(
     members: List<TripExpenseMemberUiModel>,
     canEdit: Boolean,
     isSaving: Boolean,
-    onSave: (String, String, String, String, List<Long>, List<ExpenseSplitShareUiModel>, android.net.Uri?) -> Unit,
+    onSave: (String, String, String, String, List<Long>, List<ExpenseSplitShareUiModel>, android.net.Uri?, (Boolean, String?) -> Unit) -> Unit,
     onDelete: () -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -1910,6 +1933,7 @@ fun EditExpenseContent(
             }
         )
     }
+    var localErrorMsg by remember(expense.id) { mutableStateOf<String?>(null) }
     val proofPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia()
     ) { uri ->
@@ -2039,9 +2063,20 @@ fun EditExpenseContent(
         Spacer(modifier = Modifier.height(24.dp))
 
         if (canEdit) {
+            if (localErrorMsg != null) {
+                Text(
+                    text = localErrorMsg.orEmpty(),
+                    color = SunsetOrange,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.padding(bottom = 12.dp)
+                )
+            }
+
             Button(
                 onClick = {
                     if (!isSaving) {
+                        localErrorMsg = null
                         onSave(
                             expenseTitle,
                             expenseAmountValue.text,
@@ -2050,8 +2085,13 @@ fun EditExpenseContent(
                             splitUserIds.toList(),
                             buildSplitShares(splitUserIds, customSplitValues),
                             replacementProofImageUri
-                        )
-                        onDismiss()
+                        ) { success, error ->
+                            if (success) {
+                                onDismiss()
+                            } else {
+                                localErrorMsg = error ?: "Không cập nhật được chi phí"
+                            }
+                        }
                     }
                 },
                 modifier = Modifier
