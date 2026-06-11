@@ -488,10 +488,6 @@ private fun ProfileScreenContent(
                                             profile = profile,
                                             onClick = onNavigateToEditProfile
                                         )
-
-                                        Spacer(modifier = Modifier.height(14.dp))
-
-                                        ProfileEditRow(onClick = onNavigateToEditProfile)
                                     } else {
                                         ProfileFollowButton(
                                             isFollowing = profile.isFollowing,
@@ -866,46 +862,7 @@ private fun ProfileBankAccountCard(
     }
 }
 
-@Composable
-private fun ProfileEditRow(onClick: () -> Unit) {
-    Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 22.dp)
-            .height(50.dp)
-            .clickable(onClick = onClick),
-        shape = RoundedCornerShape(14.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 18.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                imageVector = Icons.Outlined.Settings,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(23.dp)
-            )
-            Spacer(modifier = Modifier.width(14.dp))
-            Text(
-                text = "Chỉnh sửa hồ sơ",
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Medium,
-                color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.weight(1f)
-            )
-            Icon(
-                imageVector = Icons.Outlined.ChevronRight,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(23.dp)
-            )
-        }
-    }
-}
+
 
 @Composable
 private fun ProfileFollowButton(

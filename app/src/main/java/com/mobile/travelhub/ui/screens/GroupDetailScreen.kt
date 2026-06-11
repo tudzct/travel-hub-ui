@@ -273,8 +273,8 @@ fun GroupDetailScreen(
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     if (isInitialLoading) {
-                        FeatureCardSkeleton()
-                        FeatureCardSkeleton()
+                        FeatureCardSkeleton(modifier = Modifier.weight(1f))
+                        FeatureCardSkeleton(modifier = Modifier.weight(1f))
                     } else {
                         FeatureCard(
                             icon = Icons.Default.CalendarMonth,
@@ -308,9 +308,9 @@ fun GroupDetailScreen(
                 Column(modifier = Modifier.fillMaxWidth()) {
                     if (isInitialLoading) {
                         TripDetailRowSkeleton()
-                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant, modifier = Modifier.padding(vertical = 10.dp))
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant, modifier = Modifier.padding(vertical = 8.dp))
                         TripDetailRowSkeleton()
-                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant, modifier = Modifier.padding(vertical = 10.dp))
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant, modifier = Modifier.padding(vertical = 8.dp))
                         TripDetailRowSkeleton()
                     } else {
                         TripDetailRow(
