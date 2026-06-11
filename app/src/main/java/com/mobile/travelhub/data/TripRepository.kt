@@ -5,7 +5,11 @@ import com.mobile.travelhub.data.api.TripMemberApiService
 import com.mobile.travelhub.data.api.ItineraryApiService
 import com.mobile.travelhub.data.api.TripApiService
 import com.mobile.travelhub.data.model.CreateTripRequest
+import com.mobile.travelhub.data.model.AddTripPhotosRequest
+import com.mobile.travelhub.data.model.CreateTripPostRequest
 import com.mobile.travelhub.data.model.CreateTripExpenseRequest
+import com.mobile.travelhub.data.model.PostResponse
+import com.mobile.travelhub.data.model.PastTripsPageResponse
 import com.mobile.travelhub.data.model.TripExpenseResponse
 import com.mobile.travelhub.data.model.TripDashboardResponse
 import com.mobile.travelhub.data.model.TripDayResponse
@@ -13,6 +17,7 @@ import com.mobile.travelhub.data.model.TripDetailResponse
 import com.mobile.travelhub.data.model.TripExpenseTransactionResponse
 import com.mobile.travelhub.data.model.TripJoinRequestResponse
 import com.mobile.travelhub.data.model.TripMemberResponse
+import com.mobile.travelhub.data.model.TripPhotoResponse
 import com.mobile.travelhub.data.model.UpdateTripMemberRoleRequest
 import com.mobile.travelhub.data.model.UpdateTripRequest
 import com.mobile.travelhub.data.model.JoinTripRequest
@@ -50,6 +55,10 @@ class TripRepository @Inject constructor(
 
     suspend fun getDashboard(): Result<TripDashboardResponse> {
         return runCatching { tripApiService.getDashboard() }
+    }
+
+    suspend fun getPastTrips(page: Int, pageSize: Int = 5): Result<PastTripsPageResponse> {
+        return runCatching { tripApiService.getPastTrips(page = page, pageSize = pageSize) }
     }
 
     suspend fun createTrip(request: CreateTripRequest): Result<TripDetailResponse> {
@@ -111,6 +120,36 @@ class TripRepository @Inject constructor(
             settlementCache[tripId] = response
             detailCache.remove(tripId)
             response
+        }
+    }
+
+    suspend fun getTripPhotos(tripId: Long): Result<List<TripPhotoResponse>> {
+        return runCatching { tripApiService.getTripPhotos(tripId) }
+    }
+
+    suspend fun addTripPhotos(
+        tripId: Long,
+        imageUrls: List<String>
+    ): Result<List<TripPhotoResponse>> {
+        return runCatching {
+            val response = tripApiService.addTripPhotos(
+                tripId = tripId,
+                request = AddTripPhotosRequest(imageUrls = imageUrls)
+            )
+            detailCache.remove(tripId)
+            response
+        }
+    }
+
+    suspend fun publishTripPost(
+        tripId: Long,
+        description: String? = null
+    ): Result<PostResponse> {
+        return runCatching {
+            tripApiService.publishTripPost(
+                tripId = tripId,
+                request = CreateTripPostRequest(description = description)
+            )
         }
     }
 

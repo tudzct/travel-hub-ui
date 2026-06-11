@@ -25,6 +25,10 @@ data class TripsUiState(
     val activeTrip: UpcomingTripUiModel? = null,
     val upcomingTrips: List<UpcomingTripUiModel> = emptyList(),
     val pastTrips: List<PastTripUiModel> = emptyList(),
+    val isPastTripsLoading: Boolean = false,
+    val isPastTripsLoadingMore: Boolean = false,
+    val pastTripsPage: Int = 0,
+    val pastTripsHasMore: Boolean = true,
     val errorMessage: String? = null
 )
 
@@ -50,6 +54,9 @@ data class PastTripUiModel(
 class TripsViewModel @Inject constructor(
     private val tripRepository: TripRepository
 ) : ViewModel() {
+    private companion object {
+        const val PAST_TRIPS_PAGE_SIZE = 5
+    }
 
     private val _uiState = MutableStateFlow(TripsUiState())
     val uiState: StateFlow<TripsUiState> = _uiState.asStateFlow()
@@ -71,9 +78,11 @@ class TripsViewModel @Inject constructor(
                             isLoading = false,
                             activeTrip = dashboard.activeTrip?.toUiModel(),
                             upcomingTrips = dashboard.upcomingTrips.map { it.toUiModel() },
-                            pastTrips = dashboard.pastTrips.map { it.toUiModel() },
                             errorMessage = null
                         )
+                    }
+                    if (!isSilent && _uiState.value.pastTrips.isEmpty() && !_uiState.value.isPastTripsLoading) {
+                        refreshPastTrips()
                     }
                 }
                 .onFailure { throwable ->
@@ -85,6 +94,63 @@ class TripsViewModel @Inject constructor(
                     }
                 }
         }
+    }
+
+    fun refreshPastTrips() {
+        viewModelScope.launch {
+            _uiState.update {
+                it.copy(
+                    pastTrips = emptyList(),
+                    pastTripsPage = 0,
+                    pastTripsHasMore = true,
+                    isPastTripsLoading = true,
+                    isPastTripsLoadingMore = false
+                )
+            }
+            loadPastTripsPage(page = 0, append = false)
+        }
+    }
+
+    fun loadMorePastTrips() {
+        val state = _uiState.value
+        if (state.isPastTripsLoading || state.isPastTripsLoadingMore || !state.pastTripsHasMore) {
+            return
+        }
+        viewModelScope.launch {
+            _uiState.update { it.copy(isPastTripsLoadingMore = true) }
+            loadPastTripsPage(page = state.pastTripsPage + 1, append = true)
+        }
+    }
+
+    private suspend fun loadPastTripsPage(page: Int, append: Boolean) {
+        tripRepository.getPastTrips(page = page, pageSize = PAST_TRIPS_PAGE_SIZE)
+            .onSuccess { response ->
+                val newItems = response.data.map { it.toUiModel() }
+                _uiState.update { state ->
+                    val mergedItems = if (append) {
+                        (state.pastTrips + newItems).distinctBy { it.tripId }
+                    } else {
+                        newItems
+                    }
+                    state.copy(
+                        pastTrips = mergedItems,
+                        pastTripsPage = response.pageNumber,
+                        pastTripsHasMore = response.pageNumber + 1 < response.totalPages,
+                        isPastTripsLoading = false,
+                        isPastTripsLoadingMore = false,
+                        errorMessage = null
+                    )
+                }
+            }
+            .onFailure { throwable ->
+                _uiState.update {
+                    it.copy(
+                        isPastTripsLoading = false,
+                        isPastTripsLoadingMore = false,
+                        errorMessage = throwable.userMessage("Không tải được nhật ký hành trình")
+                    )
+                }
+            }
     }
 
     fun joinTrip(inviteCode: String, onResult: (Boolean, String) -> Unit = { _, _ -> }) {
@@ -116,8 +182,7 @@ class TripsViewModel @Inject constructor(
                             _uiState.update {
                                 it.copy(
                                     activeTrip = dashboard.activeTrip?.toUiModel(),
-                                    upcomingTrips = dashboard.upcomingTrips.map { it.toUiModel() },
-                                    pastTrips = dashboard.pastTrips.map { it.toUiModel() }
+                                    upcomingTrips = dashboard.upcomingTrips.map { it.toUiModel() }
                                 )
                             }
                             alreadyJoinedLatestDashboard = dashboard.hasJoinedTrip(tripInfo.id)

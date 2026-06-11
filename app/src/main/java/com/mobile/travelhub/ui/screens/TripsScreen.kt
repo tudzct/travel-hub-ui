@@ -8,6 +8,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -94,6 +95,30 @@ fun TripsScreen(
         }
     }
     val listState = rememberLazyListState()
+    val shouldLoadMorePastTrips by remember {
+        derivedStateOf {
+            val layoutInfo = listState.layoutInfo
+            val lastVisibleIndex = layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
+            val totalItems = layoutInfo.totalItemsCount
+            totalItems > 0 && lastVisibleIndex >= totalItems - 2
+        }
+    }
+    LaunchedEffect(
+        shouldLoadMorePastTrips,
+        state.pastTrips.size,
+        state.pastTripsHasMore,
+        state.isPastTripsLoading,
+        state.isPastTripsLoadingMore
+    ) {
+        if (
+            shouldLoadMorePastTrips &&
+            state.pastTripsHasMore &&
+            !state.isPastTripsLoading &&
+            !state.isPastTripsLoadingMore
+        ) {
+            viewModel.loadMorePastTrips()
+        }
+    }
     LaunchedEffect(state.upcomingTrips, state.activeTrip, createdTripId) {
         if (createdTripId != null) {
             val tripsList = state.upcomingTrips.ifEmpty { listOfNotNull(state.activeTrip) }
@@ -267,31 +292,59 @@ fun TripsScreen(
             }
             item { Spacer(modifier = Modifier.height(32.dp)) }
 
-            // Past Memories Section
             item {
-                Column {
+                Column(modifier = Modifier.padding(horizontal = 24.dp)) {
                     Text(
                         text = stringResource(R.string.ui_f593bb6075),
                         fontWeight = FontWeight.ExtraBold,
                         color = OnSurface,
-                        style = MaterialTheme.typography.titleMedium,
-                        modifier = Modifier.padding(horizontal = 24.dp)
+                        style = MaterialTheme.typography.titleMedium
                     )
                     Spacer(modifier = Modifier.height(16.dp))
-                    if (state.isLoading && state.pastTrips.isEmpty()) {
-                        PastMemoriesSkeleton()
-                    } else if (state.pastTrips.isEmpty()) {
-                        EmptyJourneyJournalCard(
-                            modifier = Modifier.padding(horizontal = 24.dp)
-                        )
-                    } else {
-                        JourneyJournalList(
-                            trips = state.pastTrips,
-                            modifier = Modifier.padding(horizontal = 24.dp),
-                            onTripClick = { trip ->
-                                onNavigateToGroupDetail(trip.tripId, trip.locationName)
-                            }
-                        )
+                }
+            }
+            if (state.isPastTripsLoading && state.pastTrips.isEmpty()) {
+                item {
+                    PastMemoriesSkeleton()
+                }
+            } else if (state.pastTrips.isEmpty()) {
+                item {
+                    EmptyJourneyJournalCard(
+                        modifier = Modifier.padding(horizontal = 24.dp)
+                    )
+                }
+            } else {
+                itemsIndexed(
+                    items = state.pastTrips,
+                    key = { _, trip -> trip.tripId }
+                ) { index, trip ->
+                    JourneyJournalCardItem(
+                        trip = trip,
+                        modifier = Modifier.padding(
+                            start = 24.dp,
+                            end = 24.dp,
+                            bottom = if (index == state.pastTrips.lastIndex) 0.dp else 10.dp
+                        ),
+                        onClick = {
+                            onNavigateToGroupDetail(trip.tripId, trip.locationName)
+                        }
+                    )
+                }
+                if (state.isPastTripsLoadingMore) {
+                    item {
+                        Spacer(modifier = Modifier.height(14.dp))
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 24.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(22.dp),
+                                strokeWidth = 2.dp,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
                     }
                 }
             }
@@ -502,32 +555,34 @@ fun ActiveJourneyCardV2(
                         )
                     }
                 }
-                Surface(
-                    modifier = Modifier
-                        .height(48.dp)
-                        .clickable(enabled = trip != null) {
-                            trip?.let { onNavigateToGroupDetail(it.tripId, it.name) }
-                        },
-                    shape = RoundedCornerShape(16.dp),
-                    color = SurfaceContainerLowest
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 18.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                if (trip != null) {
+                    Surface(
+                        modifier = Modifier
+                            .height(48.dp)
+                            .clickable {
+                                onNavigateToGroupDetail(trip.tripId, trip.name)
+                            },
+                        shape = RoundedCornerShape(16.dp),
+                        color = SurfaceContainerLowest
                     ) {
-                        Text(
-                            text = "Xem chi tiết",
-                            color = primary,
-                            fontWeight = FontWeight.ExtraBold,
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                        Icon(
-                            imageVector = Icons.Default.KeyboardArrowRight,
-                            contentDescription = null,
-                            tint = primary,
-                            modifier = Modifier.size(22.dp)
-                        )
+                        Row(
+                            modifier = Modifier.padding(horizontal = 18.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Text(
+                                text = "Xem chi tiết",
+                                color = primary,
+                                fontWeight = FontWeight.ExtraBold,
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                            Icon(
+                                imageVector = Icons.Default.KeyboardArrowRight,
+                                contentDescription = null,
+                                tint = primary,
+                                modifier = Modifier.size(22.dp)
+                            )
+                        }
                     }
                 }
             }

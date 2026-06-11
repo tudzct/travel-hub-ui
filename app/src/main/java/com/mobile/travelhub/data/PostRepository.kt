@@ -61,6 +61,15 @@ class PostRepository @Inject constructor(
         }
     }
 
+    suspend fun uploadImages(imageUris: List<Uri>): Result<List<String>> {
+        return withContext(Dispatchers.IO) {
+            runCatching {
+                require(imageUris.isNotEmpty()) { "Vui lòng chọn ít nhất một ảnh" }
+                imageUris.map { uri -> uploadToSupabase(uri) }
+            }
+        }
+    }
+
     suspend fun getAllPosts(page: Int = 0, pageSize: Int = 10): Result<List<FeedPostResponse>> {
         return getPostsPage(page = page, pageSize = pageSize).map { it.data }
     }

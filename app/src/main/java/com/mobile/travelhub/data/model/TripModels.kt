@@ -17,6 +17,14 @@ data class TripDashboardResponse(
     val pastTrips: List<PastTripResponse> = emptyList()
 )
 
+data class PastTripsPageResponse(
+    val pageNumber: Int = 0,
+    val pageSize: Int = 0,
+    val totalPages: Int = 0,
+    val totalElements: Long = 0,
+    val data: List<PastTripResponse> = emptyList()
+)
+
 data class ActiveTripResponse(
     val tripId: Long,
     val name: String,
@@ -117,7 +125,24 @@ data class TripInfoResponse(
     val status: String? = null,
     val inviteCode: String? = null,
     val maxMembers: Int? = null,
-    val imageUrls: List<String> = emptyList()
+    val imageUrls: List<String> = emptyList(),
+    val tripPhotoUrls: List<String> = emptyList()
+)
+
+data class AddTripPhotosRequest(
+    val imageUrls: List<String>
+)
+
+data class CreateTripPostRequest(
+    val description: String? = null
+)
+
+data class TripPhotoResponse(
+    val id: Long,
+    val imageUrl: String,
+    val uploadedByUserId: Long? = null,
+    val uploadedByName: String? = null,
+    val uploadedAt: String? = null
 )
 
 data class TripMemberResponse(
