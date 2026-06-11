@@ -6,6 +6,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -30,6 +31,7 @@ import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.SelectableDates
+import androidx.compose.material3.DatePickerState
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -76,7 +78,9 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
+import java.util.Locale
 import com.mobile.travelhub.R
+import com.mobile.travelhub.ui.theme.PrimaryBlue
 
 private enum class TripDateSelectionStep {
     START,
@@ -295,6 +299,31 @@ fun CreateGroupScreen(
 
         DatePickerDialog(
             onDismissRequest = { dateSelectionStep = null },
+            colors = DatePickerDefaults.colors(
+                containerColor = MaterialTheme.colorScheme.surface,
+                titleContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                headlineContentColor = MaterialTheme.colorScheme.onSurface,
+                weekdayContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                subheadContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                navigationContentColor = MaterialTheme.colorScheme.onSurface,
+                yearContentColor = MaterialTheme.colorScheme.onSurface,
+                disabledYearContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
+                currentYearContentColor = PrimaryBlue,
+                selectedYearContentColor = MaterialTheme.colorScheme.onPrimary,
+                disabledSelectedYearContentColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.38f),
+                selectedYearContainerColor = PrimaryBlue,
+                disabledSelectedYearContainerColor = PrimaryBlue.copy(alpha = 0.28f),
+                dayContentColor = MaterialTheme.colorScheme.onSurface,
+                disabledDayContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
+                selectedDayContentColor = MaterialTheme.colorScheme.onPrimary,
+                disabledSelectedDayContentColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.38f),
+                selectedDayContainerColor = PrimaryBlue,
+                disabledSelectedDayContainerColor = PrimaryBlue.copy(alpha = 0.28f),
+                todayContentColor = PrimaryBlue,
+                todayDateBorderColor = PrimaryBlue,
+                dayInSelectionRangeContentColor = MaterialTheme.colorScheme.onSurface,
+                dayInSelectionRangeContainerColor = PrimaryBlue.copy(alpha = 0.12f)
+            ),
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -374,10 +403,9 @@ fun CreateGroupScreen(
                     color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f),
                     thickness = 1.dp
                 )
-
                 key(selectedStep, startDateObj) {
-                    val datePickerState = rememberDatePickerState(
-                        initialSelectedDateMillis = initialMillis,
+                    val datePickerState = rememberVietnameseDatePickerState(
+                        initialMillis = initialMillis,
                         yearRange = today.year..today.year + 1,
                         selectableDates = selectableDates
                     )
@@ -392,12 +420,29 @@ fun CreateGroupScreen(
                         headline = null,
                         showModeToggle = false,
                         colors = DatePickerDefaults.colors(
-                            todayDateBorderColor = Color.Transparent,
-                            todayContentColor = if (currentStep == TripDateSelectionStep.START) {
-                                MaterialTheme.colorScheme.primary
-                            } else {
-                                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
-                            }
+                            containerColor = MaterialTheme.colorScheme.surface,
+                            titleContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                            headlineContentColor = MaterialTheme.colorScheme.onSurface,
+                            weekdayContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                            subheadContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                            navigationContentColor = MaterialTheme.colorScheme.onSurface,
+                            dayContentColor = MaterialTheme.colorScheme.onSurface,
+                            disabledDayContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
+                            selectedDayContentColor = MaterialTheme.colorScheme.onPrimary,
+                            selectedDayContainerColor = PrimaryBlue,
+                            disabledSelectedDayContentColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.38f),
+                            disabledSelectedDayContainerColor = PrimaryBlue.copy(alpha = 0.28f),
+                            todayDateBorderColor = if (currentStep == TripDateSelectionStep.START) PrimaryBlue else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.7f),
+                            todayContentColor = if (currentStep == TripDateSelectionStep.START) PrimaryBlue else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.72f),
+                            yearContentColor = MaterialTheme.colorScheme.onSurface,
+                            disabledYearContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
+                            currentYearContentColor = PrimaryBlue,
+                            selectedYearContentColor = MaterialTheme.colorScheme.onPrimary,
+                            disabledSelectedYearContentColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.38f),
+                            selectedYearContainerColor = PrimaryBlue,
+                            disabledSelectedYearContainerColor = PrimaryBlue.copy(alpha = 0.28f),
+                            dayInSelectionRangeContentColor = MaterialTheme.colorScheme.onSurface,
+                            dayInSelectionRangeContainerColor = PrimaryBlue.copy(alpha = 0.12f)
                         )
                     )
                 }
@@ -414,6 +459,25 @@ fun CreateGroupScreen(
     }
 
 }
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun rememberVietnameseDatePickerState(
+    initialMillis: Long,
+    yearRange: IntRange,
+    selectableDates: SelectableDates
+): DatePickerState {
+    return remember {
+        DatePickerState(
+            locale = Locale("vi", "VN"),
+            initialSelectedDateMillis = initialMillis,
+            initialDisplayedMonthMillis = initialMillis,
+            yearRange = yearRange,
+            selectableDates = selectableDates
+        )
+    }
+}
+
 
 @Composable
 private fun CreateTripTextField(

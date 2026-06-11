@@ -11,6 +11,7 @@ import com.mobile.travelhub.data.model.PastTripResponse
 import com.mobile.travelhub.data.model.TripDashboardResponse
 import com.mobile.travelhub.data.model.TripDayResponse
 import com.mobile.travelhub.data.model.TripDetailResponse
+import com.mobile.travelhub.data.model.TripActivityItemResponse
 import com.mobile.travelhub.data.model.TripJoinRequestResponse
 import com.mobile.travelhub.data.model.TripInviteCodeResponse
 import com.mobile.travelhub.data.model.UpcomingTripResponse
@@ -48,6 +49,13 @@ data class GroupJoinRequestUiModel(
     val requestedAt: String? = null
 )
 
+data class GroupActivityLogUiModel(
+    val type: String,
+    val description: String,
+    val actorName: String,
+    val createdAt: String
+)
+
 data class GroupDetailUiState(
     val isLoading: Boolean = true,
     val tripId: Long = -1L,
@@ -70,6 +78,7 @@ data class GroupDetailUiState(
     val joinRequests: List<GroupJoinRequestUiModel> = emptyList(),
     val isJoinRequestsLoading: Boolean = false,
     val members: List<GroupMemberUiModel> = emptyList(),
+    val recentActivities: List<GroupActivityLogUiModel> = emptyList(),
     val errorMessage: String? = null,
     val isCompleted: Boolean = false,
     val isKickedOut: Boolean = false,
@@ -523,8 +532,18 @@ class GroupDetailViewModel @Inject constructor(
                     role = member.role
                 )
             },
+            recentActivities = detail.recentActivities.map { activity -> activity.toUiModel() },
             memberInfoLabel = "${detail.members.size} thành viên",
             isCompleted = completed
+        )
+    }
+
+    private fun TripActivityItemResponse.toUiModel(): GroupActivityLogUiModel {
+        return GroupActivityLogUiModel(
+            type = type.orEmpty(),
+            description = description.orEmpty(),
+            actorName = actorName.orEmpty(),
+            createdAt = createdAt.orEmpty()
         )
     }
 

@@ -24,6 +24,7 @@ import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.CardTravel
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.FiberManualRecord
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Payments
@@ -61,6 +62,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.mobile.travelhub.R
 import com.mobile.travelhub.ui.components.*
 import com.mobile.travelhub.ui.theme.*
+import com.mobile.travelhub.viewmodels.GroupActivityLogUiModel
 import com.mobile.travelhub.viewmodels.GroupDetailViewModel
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -331,9 +333,30 @@ fun GroupDetailScreen(
                             value = uiState.statusLabel.ifBlank { "Chưa xác định" },
                             icon = Icons.Default.CardTravel,
                             pillText = displayTripStatus(uiState.statusLabel),
-                            trailingText = daysUntilStartLabel(uiState.startDate)
+                            trailingText = tripProgressLabel(uiState.startDate, uiState.endDate)
                         )
                     }
+                }
+
+                Spacer(modifier = Modifier.height(30.dp))
+
+                Text(
+                    text = "NHẬT KÝ HÀNH TRÌNH",
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 13.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    letterSpacing = 0.8.sp
+                )
+
+                Spacer(modifier = Modifier.height(18.dp))
+
+                if (isInitialLoading) {
+                    TimelineLogSectionSkeleton()
+                } else {
+                    JourneyLogTimeline(
+                        activities = uiState.recentActivities,
+                        progressLabel = ongoingTripDayLabel(uiState.startDate, uiState.endDate)
+                    )
                 }
 
                 Spacer(modifier = Modifier.height(30.dp))
@@ -677,6 +700,22 @@ private fun daysUntilStartLabel(startDate: String): String? {
     }
 }
 
+private fun tripProgressLabel(startDate: String, endDate: String): String? {
+    return ongoingTripDayLabel(startDate, endDate) ?: daysUntilStartLabel(startDate)
+}
+
+private fun ongoingTripDayLabel(startDate: String, endDate: String): String? {
+    val start = runCatching { LocalDate.parse(startDate.substringBefore("T")) }.getOrNull() ?: return null
+    val end = runCatching { LocalDate.parse(endDate.substringBefore("T")) }.getOrNull() ?: return null
+    val today = LocalDate.now()
+    if (today.isBefore(start) || today.isAfter(end)) {
+        return null
+    }
+    val currentDay = ChronoUnit.DAYS.between(start, today) + 1
+    val totalDays = ChronoUnit.DAYS.between(start, end) + 1
+    return "Hôm nay là ngày $currentDay/$totalDays"
+}
+
 private fun displayTripStatus(statusLabel: String): String {
     return statusLabel
         .substringBefore("·")
@@ -687,4 +726,137 @@ private fun displayTripStatus(statusLabel: String): String {
 private fun String.toVietnameseDate(): String {
     val date = runCatching { LocalDate.parse(this) }.getOrNull() ?: return this
     return "%02d/%02d/%04d".format(date.dayOfMonth, date.monthValue, date.year)
+}
+
+@Composable
+private fun JourneyLogTimeline(
+    activities: List<GroupActivityLogUiModel>,
+    progressLabel: String?
+) {
+    if (activities.isEmpty()) {
+        Text(
+            text = "Chưa có nhật ký hành trình.",
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            fontSize = 13.sp
+        )
+        return
+    }
+
+    Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+        progressLabel?.let { label ->
+            Surface(
+                shape = RoundedCornerShape(16.dp),
+                color = PrimaryBlue.copy(alpha = 0.10f)
+            ) {
+                Text(
+                    text = label,
+                    color = PrimaryBlue,
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 13.sp,
+                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)
+                )
+            }
+        }
+
+        activities.forEachIndexed { index, activity ->
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.Top
+            ) {
+                Column(
+                    modifier = Modifier.width(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.FiberManualRecord,
+                        contentDescription = null,
+                        tint = PrimaryBlue,
+                        modifier = Modifier.size(14.dp)
+                    )
+                    if (index < activities.lastIndex) {
+                        Box(
+                            modifier = Modifier
+                                .width(2.dp)
+                                .height(64.dp)
+                                .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f))
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.width(12.dp))
+
+                Surface(
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(20.dp),
+                    color = SurfaceContainerLowest
+                ) {
+                    Column(
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Text(
+                            text = activity.actorName.ifBlank { "Thành viên trong chuyến đi" },
+                            fontWeight = FontWeight.ExtraBold,
+                            fontSize = 14.sp,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = activity.description.ifBlank { "Có cập nhật mới trong hành trình" },
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontSize = 13.sp,
+                            lineHeight = 18.sp
+                        )
+                        Text(
+                            text = activity.createdAt.toTimelineTimestamp(),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.78f),
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun TimelineLogSectionSkeleton() {
+    Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+        repeat(3) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.Top
+            ) {
+                Box(
+                    modifier = Modifier
+                        .padding(top = 8.dp)
+                        .size(14.dp)
+                        .background(PrimaryBlue.copy(alpha = 0.25f), CircleShape)
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(88.dp)
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(SurfaceContainerLow)
+                )
+            }
+        }
+    }
+}
+
+private fun String.toTimelineTimestamp(): String {
+    val normalized = substringBeforeLast("Z").ifBlank { this }
+    val parsed = runCatching { java.time.Instant.parse(this) }.getOrNull()
+        ?: runCatching { java.time.LocalDateTime.parse(normalized) }.getOrNull()?.atZone(java.time.ZoneId.systemDefault())?.toInstant()
+        ?: return this
+    val dateTime = parsed.atZone(java.time.ZoneId.systemDefault())
+    return "%02d/%02d/%04d %02d:%02d".format(
+        dateTime.dayOfMonth,
+        dateTime.monthValue,
+        dateTime.year,
+        dateTime.hour,
+        dateTime.minute
+    )
 }

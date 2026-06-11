@@ -47,6 +47,7 @@ import com.mobile.travelhub.ui.theme.*
 import com.mobile.travelhub.viewmodels.TripsViewModel
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import java.time.temporal.ChronoUnit
 
 
 
@@ -467,6 +468,21 @@ fun ActiveJourneyCardV2(
                         style = MaterialTheme.typography.bodyLarge
                     )
                 }
+                activeTripProgressLabel(trip)?.let { label ->
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Surface(
+                        shape = RoundedCornerShape(999.dp),
+                        color = Color.White.copy(alpha = 0.16f)
+                    ) {
+                        Text(
+                            text = label,
+                            color = Color.White,
+                            fontWeight = FontWeight.ExtraBold,
+                            style = MaterialTheme.typography.labelLarge,
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+                        )
+                    }
+                }
             }
 
             Surface(
@@ -502,6 +518,18 @@ fun ActiveJourneyCardV2(
             }
         }
     }
+}
+
+private fun activeTripProgressLabel(trip: com.mobile.travelhub.viewmodels.UpcomingTripUiModel?): String? {
+    val start = trip?.startDate?.substringBefore("T")?.let { runCatching { LocalDate.parse(it) }.getOrNull() } ?: return null
+    val end = trip.endDate?.substringBefore("T")?.let { runCatching { LocalDate.parse(it) }.getOrNull() } ?: return null
+    val today = LocalDate.now()
+    if (today.isBefore(start) || today.isAfter(end)) {
+        return null
+    }
+    val currentDay = ChronoUnit.DAYS.between(start, today) + 1
+    val totalDays = ChronoUnit.DAYS.between(start, end) + 1
+    return "Hôm nay là ngày $currentDay/$totalDays"
 }
 
 @Composable
