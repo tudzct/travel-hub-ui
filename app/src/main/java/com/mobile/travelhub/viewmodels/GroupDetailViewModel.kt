@@ -1,8 +1,10 @@
 package com.mobile.travelhub.viewmodels
 
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mobile.travelhub.data.TripRepository
+import com.mobile.travelhub.data.PostRepository
 import com.mobile.travelhub.data.PlaceRepository
 import com.mobile.travelhub.data.httpStatusCode
 import com.mobile.travelhub.data.userMessage
@@ -14,6 +16,7 @@ import com.mobile.travelhub.data.model.TripDetailResponse
 import com.mobile.travelhub.data.model.TripActivityItemResponse
 import com.mobile.travelhub.data.model.TripJoinRequestResponse
 import com.mobile.travelhub.data.model.TripInviteCodeResponse
+import com.mobile.travelhub.data.model.TripPhotoResponse
 import com.mobile.travelhub.data.model.UpcomingTripResponse
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -49,6 +52,13 @@ data class GroupJoinRequestUiModel(
     val requestedAt: String? = null
 )
 
+data class TripPhotoUiModel(
+    val id: Long,
+    val imageUrl: String,
+    val uploadedByName: String? = null,
+    val uploadedAt: String? = null
+)
+  
 data class GroupActivityLogUiModel(
     val type: String,
     val description: String,
@@ -83,12 +93,16 @@ data class GroupDetailUiState(
     val isCompleted: Boolean = false,
     val isKickedOut: Boolean = false,
     val isRemovingMember: Boolean = false,
-    val isFinishingTrip: Boolean = false
+    val isFinishingTrip: Boolean = false,
+    val tripPhotos: List<TripPhotoUiModel> = emptyList(),
+    val isUploadingTripPhotos: Boolean = false,
+    val isPublishingTripPost: Boolean = false
 )
 
 @HiltViewModel
 class GroupDetailViewModel @Inject constructor(
     private val tripRepository: TripRepository,
+    private val postRepository: PostRepository,
     private val placeRepository: PlaceRepository
 ) : ViewModel() {
 
@@ -247,6 +261,26 @@ class GroupDetailViewModel @Inject constructor(
                     )
                 }
             }
+            loadTripPhotos(tripId, isSilent)
+        }
+    }
+
+    private fun loadTripPhotos(tripId: Long, isSilent: Boolean = false) {
+        viewModelScope.launch {
+            if (!isSilent) {
+                _uiState.update { it.copy(errorMessage = null) }
+            }
+            tripRepository.getTripPhotos(tripId)
+                .onSuccess { photos ->
+                    _uiState.update { it.copy(tripPhotos = photos.map { photo -> photo.toUiModel() }) }
+                }
+                .onFailure { throwable ->
+                    if (!isSilent) {
+                        _uiState.update {
+                            it.copy(errorMessage = throwable.userMessage("Không tải được ảnh chuyến đi"))
+                        }
+                    }
+                }
         }
     }
 
@@ -416,6 +450,78 @@ class GroupDetailViewModel @Inject constructor(
         }
     }
 
+    fun uploadTripPhotos(imageUris: List<Uri>, onDone: (Boolean, String) -> Unit) {
+        val state = uiState.value
+        val tripId = state.tripId
+        if (tripId == -1L) return
+        if (imageUris.isEmpty()) {
+            onDone(false, "Vui lòng chọn ít nhất một ảnh")
+            return
+        }
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(isUploadingTripPhotos = true, errorMessage = null) }
+            postRepository.uploadImages(imageUris)
+                .fold(
+                    onSuccess = { imageUrls ->
+                        tripRepository.addTripPhotos(tripId, imageUrls)
+                            .onSuccess { photos ->
+                                _uiState.update {
+                                    it.copy(
+                                        tripPhotos = photos.map { photo -> photo.toUiModel() },
+                                        isUploadingTripPhotos = false
+                                    )
+                                }
+                                onDone(true, "Đã thêm ảnh chuyến đi")
+                            }
+                            .onFailure { throwable ->
+                                _uiState.update { it.copy(isUploadingTripPhotos = false) }
+                                onDone(false, throwable.userMessage("Không lưu được ảnh chuyến đi"))
+                            }
+                    },
+                    onFailure = { throwable ->
+                        _uiState.update { it.copy(isUploadingTripPhotos = false) }
+                        onDone(false, throwable.userMessage("Không tải ảnh lên được"))
+                    }
+                )
+        }
+    }
+
+    fun publishTripPost(description: String, onDone: (Boolean, String) -> Unit) {
+        val state = uiState.value
+        val tripId = state.tripId
+        if (tripId == -1L) return
+        if (!state.myRole.equals("LEADER", ignoreCase = true)) {
+            onDone(false, "Chỉ trưởng nhóm có thể đăng bài về chuyến đi")
+            return
+        }
+        if (!state.isCompleted) {
+            onDone(false, "Chỉ có thể đăng bài sau khi chuyến đi kết thúc")
+            return
+        }
+        if (state.tripPhotos.isEmpty()) {
+            onDone(false, "Chuyến đi chưa có ảnh để đăng bài")
+            return
+        }
+        if (description.isBlank()) {
+            onDone(false, "Vui lòng nhập mô tả bài viết")
+            return
+        }
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(isPublishingTripPost = true, errorMessage = null) }
+            tripRepository.publishTripPost(tripId = tripId, description = description.trim())
+                .onSuccess {
+                    _uiState.update { it.copy(isPublishingTripPost = false) }
+                    onDone(true, "Đã đăng bài viết về chuyến đi")
+                }
+                .onFailure { throwable ->
+                    _uiState.update { it.copy(isPublishingTripPost = false) }
+                    onDone(false, throwable.userMessage("Không đăng được bài viết"))
+                }
+        }
+    }
+
     fun removeMember(userId: Long, onDone: (Boolean, String) -> Unit) {
         val tripId = uiState.value.tripId
         if (tripId == -1L) return
@@ -521,6 +627,14 @@ class GroupDetailViewModel @Inject constructor(
             coverImageUrl = detail.tripInfo.coverImageUrl,
             placeId = detail.tripInfo.placeId,
             placeImages = detail.tripInfo.imageUrls,
+            tripPhotos = detail.tripInfo.tripPhotoUrls
+                .filter { it.isNotBlank() }
+                .mapIndexed { index, imageUrl ->
+                    TripPhotoUiModel(
+                        id = -(index + 1).toLong(),
+                        imageUrl = imageUrl
+                    )
+                },
             statusLabel = getTripStatusLabel(detail.tripInfo.status, detail.tripInfo.startDate, detail.tripInfo.endDate),
             myRole = detail.myRole,
             inviteCode = detail.tripInfo.inviteCode?.takeIf { it.isNotBlank() } ?: inviteCode,
@@ -550,5 +664,14 @@ class GroupDetailViewModel @Inject constructor(
     private fun isPastDate(dateText: String?): Boolean {
         val date = parseLocalDate(dateText) ?: return false
         return date.isBefore(LocalDate.now())
+    }
+
+    private fun TripPhotoResponse.toUiModel(): TripPhotoUiModel {
+        return TripPhotoUiModel(
+            id = id,
+            imageUrl = imageUrl,
+            uploadedByName = uploadedByName,
+            uploadedAt = uploadedAt
+        )
     }
 }

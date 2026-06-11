@@ -171,6 +171,9 @@ fun CostEstimateScreen(
     val categoryBreakdown = remember(uiState.transactions) {
         buildCategoryBreakdown(uiState.transactions)
     }
+    val leaderUserId = remember(uiState.members) {
+        uiState.members.firstOrNull { it.role.equals("LEADER", ignoreCase = true) }?.userId ?: -1L
+    }
     val receiptPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia()
     ) { uri ->
@@ -236,20 +239,19 @@ fun CostEstimateScreen(
                     )
                 }
 
-                item {
-                    InvoiceOcrBanner(
-                        enabled = !uiState.isCompleted,
-                        isScanning = uiState.isScanningReceipt,
-                        onScanClick = {
-                            receiptPickerLauncher.launch(
-                                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
-                            )
-                        },
-                        onManualClick = {
-                            viewModel.clearErrorMessage()
-                            showAddExpense = true
-                        }
-                    )
+                if (uiState.canManageExpenses) {
+                    item {
+                        InvoiceOcrBanner(
+                            enabled = true,
+                            isScanning = uiState.isScanningReceipt,
+                            onScanClick = {
+                                receiptPickerLauncher.launch(
+                                    PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                                )
+                            },
+                            onManualClick = { showAddExpense = true }
+                        )
+                    }
                 }
 
                 item {
@@ -325,7 +327,7 @@ fun CostEstimateScreen(
                 EditExpenseContent(
                     expense = expense,
                     members = uiState.members,
-                    canEdit = !uiState.isCompleted,
+                    canEdit = uiState.canManageExpenses,
                     isSaving = uiState.isAddingExpense,
                     onSave = { title, amountText, category, splitType, splitUserIds, splitShares, proofImageUri, onResult ->
                         viewModel.editExpense(
@@ -368,7 +370,7 @@ fun CostEstimateScreen(
                             category = category,
                             expenseDate = expenseDate,
                             note = note,
-                            paidByUserId = paidByUserId,
+                            paidByUserId = leaderUserId,
                             splitType = splitType,
                             splitUserIds = splitUserIds,
                             splitShares = splitShares
@@ -1140,10 +1142,13 @@ private fun ReceiptOcrConfirmContent(
     var note by remember(draft.imageUri) { mutableStateOf("") }
     var selectedCategory by remember(draft.imageUri) { mutableStateOf("FOOD") }
     var categoryExpanded by remember { mutableStateOf(false) }
-    var paidByExpanded by remember { mutableStateOf(false) }
     var showReceiptImageFullScreen by remember(draft.imageUri) { mutableStateOf(false) }
-    var paidByUserId by remember(draft.imageUri, effectiveMembers) {
-        mutableStateOf(effectiveMembers.firstOrNull { it.isCurrentUser }?.userId ?: effectiveMembers.first().userId)
+    val leaderMember = remember(effectiveMembers) {
+        effectiveMembers.firstOrNull { it.role.equals("LEADER", ignoreCase = true) } ?: effectiveMembers.first()
+    }
+    val paidByUserId = leaderMember.userId
+    val paidByName = remember(leaderMember) {
+        "Trưởng nhóm thanh toán: ${leaderMember.name}"
     }
     var splitUserIds by remember(draft.imageUri, effectiveMembers) {
         mutableStateOf(effectiveMembers.map { it.userId }.filter { it > 0L }.toSet())
@@ -1227,39 +1232,13 @@ private fun ReceiptOcrConfirmContent(
             onCategorySelected = { selectedCategory = it }
         )
 
-        ExposedDropdownMenuBox(
-            expanded = paidByExpanded,
-            onExpandedChange = { paidByExpanded = !paidByExpanded }
-        ) {
-            SimpleFormTextField(
-                value = effectiveMembers.firstOrNull { it.userId == paidByUserId }?.name.orEmpty(),
-                onValueChange = {},
-                readOnly = true,
-                placeholder = "Người đã trả",
-                trailingIcon = {
-                    Icon(Icons.Default.ArrowDropDown, contentDescription = null)
-                },
-                modifier = Modifier
-                    .menuAnchor()
-                    .fillMaxWidth()
-            )
-            ExposedDropdownMenu(
-                expanded = paidByExpanded,
-                onDismissRequest = { paidByExpanded = false },
-                containerColor = MaterialTheme.colorScheme.surface,
-                tonalElevation = 0.dp
-            ) {
-                effectiveMembers.forEach { member ->
-                    DropdownMenuItem(
-                        text = { Text(member.name) },
-                        onClick = {
-                            paidByUserId = member.userId
-                            paidByExpanded = false
-                        }
-                    )
-                }
-            }
-        }
+        SimpleFormTextField(
+            value = paidByName,
+            onValueChange = {},
+            readOnly = true,
+            placeholder = "Người đã trả",
+            modifier = Modifier.fillMaxWidth()
+        )
 
         SplitOptionEditor(
             members = effectiveMembers,

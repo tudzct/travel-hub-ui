@@ -42,6 +42,7 @@ data class CostEstimateUiState(
     val errorMessage: String? = null,
     val isCompleted: Boolean = false,
     val canFinishTrip: Boolean = false,
+    val canManageExpenses: Boolean = false,
     val isFinishingTrip: Boolean = false,
     val currentUserId: Long = -1L,
     val settlements: List<SettlementUiModel> = emptyList(),
@@ -80,7 +81,8 @@ data class TripExpenseMemberUiModel(
     val userId: Long,
     val name: String,
     val avatarUrl: String? = null,
-    val isCurrentUser: Boolean = false
+    val isCurrentUser: Boolean = false,
+    val role: String = "MEMBER"
 )
 
 data class ReceiptOcrDraft(
@@ -152,12 +154,14 @@ class CostEstimateViewModel @Inject constructor(
                     val finalState = if (cachedDetail != null) {
                         val statusCompleted = isBackendCompleted(cachedDetail.tripInfo.status)
                         val isCompleted = statusCompleted || isPastDate(cachedDetail.tripInfo.endDate)
+                        val isLeader = cachedDetail.myRole.equals("LEADER", ignoreCase = true)
                         stateWithExpenses.copy(
                             budgetMin = cachedDetail.tripInfo.budgetMin,
                             budgetMax = cachedDetail.tripInfo.budgetMax,
                             members = cachedDetail.members.map { it.toUiModel() },
                             isCompleted = isCompleted,
-                            canFinishTrip = !statusCompleted && cachedDetail.myRole.equals("LEADER", ignoreCase = true)
+                            canFinishTrip = !statusCompleted && isLeader,
+                            canManageExpenses = !isCompleted && isLeader
                         )
                     } else stateWithExpenses
 
@@ -180,6 +184,7 @@ class CostEstimateViewModel @Inject constructor(
                 .onSuccess { detail ->
                     val statusCompleted = isBackendCompleted(detail.tripInfo.status)
                     val isCompleted = statusCompleted || isPastDate(detail.tripInfo.endDate)
+                    val isLeader = detail.myRole.equals("LEADER", ignoreCase = true)
                     _uiState.update { state ->
                         state.copy(
                             budgetMin = detail.tripInfo.budgetMin,
@@ -187,7 +192,8 @@ class CostEstimateViewModel @Inject constructor(
                             groupName = detail.tripInfo.name.ifBlank { state.groupName },
                             members = detail.members.map { it.toUiModel() },
                             isCompleted = isCompleted,
-                            canFinishTrip = !statusCompleted && detail.myRole.equals("LEADER", ignoreCase = true),
+                            canFinishTrip = !statusCompleted && isLeader,
+                            canManageExpenses = !isCompleted && isLeader,
                             currentUserId = currentUserId
                         )
                     }
@@ -247,6 +253,7 @@ class CostEstimateViewModel @Inject constructor(
                             isFinishingTrip = false,
                             isCompleted = true,
                             canFinishTrip = false,
+                            canManageExpenses = false,
                             settlements = settlements.map { settlement -> settlement.toUiModel() }
                         )
                     }
@@ -289,14 +296,18 @@ class CostEstimateViewModel @Inject constructor(
             onResult?.invoke(false, err)
             return
         }
+        if (!state.canManageExpenses) {
+            _uiState.update { it.copy(errorMessage = "Chỉ trưởng nhóm có thể thêm chi phí") }
+            return
+        }
         if (title.trim().isBlank() || parsedAmount == null || parsedAmount <= 0.0) {
             val err = "Vui lòng nhập tên và số tiền hợp lệ"
             onResult?.invoke(false, err)
             return
         }
-        if (sessionUserId <= 0L) {
-            val err = "Bạn cần đăng nhập để thêm chi phí"
-            onResult?.invoke(false, err)
+        val leaderUserId = state.leaderUserId()
+        if (sessionUserId <= 0L || leaderUserId <= 0L) {
+            _uiState.update { it.copy(errorMessage = "Bạn cần đăng nhập để thêm chi phí") }
             return
         }
         val effectiveSplitUserIds = splitUserIds.distinct().filter { it > 0L }
@@ -318,7 +329,7 @@ class CostEstimateViewModel @Inject constructor(
                 id = pendingId,
                 title = title.trim(),
                 category = category,
-                paidByUserId = sessionUserId,
+                paidByUserId = leaderUserId,
                 amount = parsedAmount,
                 proofImageUrl = proofImageUri?.toString(),
                 splitUserIds = effectiveSplitUserIds,
@@ -349,7 +360,7 @@ class CostEstimateViewModel @Inject constructor(
                     amount = parsedAmount,
                     totalAmount = parsedAmount,
                     category = category,
-                    paidByUserId = sessionUserId,
+                    paidByUserId = leaderUserId,
                     proofImageUrl = proofObjectName,
                     splitType = normalizeSplitType(splitType),
                     splitShares = effectiveSplitShares.map { TripExpenseSplitShareRequest(it.userId, it.amount) },
@@ -400,6 +411,10 @@ class CostEstimateViewModel @Inject constructor(
             onResult?.invoke(false, err)
             return
         }
+        if (!state.canManageExpenses) {
+            _uiState.update { it.copy(errorMessage = "Chỉ trưởng nhóm có thể chỉnh sửa chi phí") }
+            return
+        }
         if (title.trim().isBlank() || parsedAmount == null || parsedAmount <= 0.0) {
             val err = "Vui lòng nhập tên và số tiền hợp lệ"
             onResult?.invoke(false, err)
@@ -408,6 +423,11 @@ class CostEstimateViewModel @Inject constructor(
         if (paidByUserId <= 0L) {
             val err = "Không xác định được người thanh toán"
             onResult?.invoke(false, err)
+            return
+        }
+        val leaderUserId = state.leaderUserId()
+        if (leaderUserId <= 0L) {
+            _uiState.update { it.copy(errorMessage = "Không xác định được trưởng nhóm") }
             return
         }
         val effectiveSplitUserIds = splitUserIds.distinct().filter { it > 0L }
@@ -448,7 +468,7 @@ class CostEstimateViewModel @Inject constructor(
                     amount = parsedAmount,
                     totalAmount = parsedAmount,
                     category = category,
-                    paidByUserId = paidByUserId,
+                    paidByUserId = leaderUserId,
                     proofImageUrl = proofImageValue,
                     splitType = normalizeSplitType(splitType),
                     splitShares = effectiveSplitShares.map { TripExpenseSplitShareRequest(it.userId, it.amount) },
@@ -474,6 +494,10 @@ class CostEstimateViewModel @Inject constructor(
         val state = _uiState.value
         if (state.isCompleted) {
             _uiState.update { it.copy(errorMessage = "Không thể thêm chi phí cho chuyến đi đã hoàn thành") }
+            return
+        }
+        if (!state.canManageExpenses) {
+            _uiState.update { it.copy(errorMessage = "Chỉ trưởng nhóm có thể thêm chi phí") }
             return
         }
 
@@ -532,12 +556,21 @@ class CostEstimateViewModel @Inject constructor(
             _uiState.update { it.copy(errorMessage = "Không thể thêm chi phí cho chuyến đi đã hoàn thành") }
             return
         }
+        if (!state.canManageExpenses) {
+            _uiState.update { it.copy(errorMessage = "Chỉ trưởng nhóm có thể thêm chi phí") }
+            return
+        }
         if (title.trim().isBlank() || parsedAmount == null || parsedAmount <= 0.0) {
             _uiState.update { it.copy(errorMessage = "Vui lòng nhập tên và số tiền hợp lệ") }
             return
         }
         if (paidByUserId <= 0L) {
             _uiState.update { it.copy(errorMessage = "Vui lòng chọn người đã trả") }
+            return
+        }
+        val leaderUserId = state.leaderUserId()
+        if (leaderUserId <= 0L) {
+            _uiState.update { it.copy(errorMessage = "Không xác định được trưởng nhóm") }
             return
         }
         val effectiveSplitUserIds = splitUserIds.distinct().filter { it > 0L }
@@ -558,7 +591,7 @@ class CostEstimateViewModel @Inject constructor(
                 id = pendingId,
                 title = title.trim(),
                 category = category,
-                paidByUserId = paidByUserId,
+                paidByUserId = leaderUserId,
                 amount = parsedAmount,
                 proofImageUrl = draft.imageUri.toString(),
                 splitUserIds = effectiveSplitUserIds,
@@ -583,7 +616,7 @@ class CostEstimateViewModel @Inject constructor(
                     amount = parsedAmount,
                     totalAmount = parsedAmount,
                     category = category,
-                    paidByUserId = paidByUserId,
+                    paidByUserId = leaderUserId,
                     expenseDate = effectiveExpenseDate,
                     note = note?.trim()?.ifBlank { null },
                     source = "OCR",
@@ -617,6 +650,10 @@ class CostEstimateViewModel @Inject constructor(
         }
         if (state.isCompleted) {
             _uiState.update { it.copy(errorMessage = "Không thể xóa chi phí cho chuyến đi đã hoàn thành") }
+            return
+        }
+        if (!state.canManageExpenses) {
+            _uiState.update { it.copy(errorMessage = "Chỉ trưởng nhóm có thể xóa chi phí") }
             return
         }
 
@@ -653,8 +690,13 @@ class CostEstimateViewModel @Inject constructor(
             userId = userId,
             name = name,
             avatarUrl = avatarUrl,
-            isCurrentUser = currentUserId == userId
+            isCurrentUser = currentUserId == userId,
+            role = role
         )
+    }
+
+    private fun CostEstimateUiState.leaderUserId(): Long {
+        return members.firstOrNull { it.role.equals("LEADER", ignoreCase = true) }?.userId ?: -1L
     }
 
     private fun SettlementResponse.toUiModel(): SettlementUiModel {

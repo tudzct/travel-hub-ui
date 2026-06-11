@@ -1,8 +1,13 @@
 package com.mobile.travelhub.data.api
 
 import com.mobile.travelhub.data.model.CreateTripRequest
+import com.mobile.travelhub.data.model.AddTripPhotosRequest
+import com.mobile.travelhub.data.model.CreateTripPostRequest
+import com.mobile.travelhub.data.model.PostResponse
+import com.mobile.travelhub.data.model.PastTripsPageResponse
 import com.mobile.travelhub.data.model.TripDashboardResponse
 import com.mobile.travelhub.data.model.TripDetailResponse
+import com.mobile.travelhub.data.model.TripPhotoResponse
 import com.mobile.travelhub.data.model.UpdateTripRequest
 import com.mobile.travelhub.data.model.JoinTripRequest
 import com.mobile.travelhub.data.model.JoinTripResultResponse
@@ -14,10 +19,17 @@ import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.PUT
 import retrofit2.http.Path
+import retrofit2.http.Query
 
 interface TripApiService {
     @GET("api/users/me/dashboard")
     suspend fun getDashboard(): TripDashboardResponse
+
+    @GET("api/users/me/past-trips")
+    suspend fun getPastTrips(
+        @Query("page") page: Int = 0,
+        @Query("pageSize") pageSize: Int = 5
+    ): PastTripsPageResponse
 
     @POST("api/trips")
     suspend fun createTrip(
@@ -69,4 +81,21 @@ interface TripApiService {
     suspend fun listSettlements(
         @Path("tripId") tripId: Long
     ): List<SettlementResponse>
+
+    @GET("api/trips/{tripId}/photos")
+    suspend fun getTripPhotos(
+        @Path("tripId") tripId: Long
+    ): List<TripPhotoResponse>
+
+    @POST("api/trips/{tripId}/photos")
+    suspend fun addTripPhotos(
+        @Path("tripId") tripId: Long,
+        @Body request: AddTripPhotosRequest
+    ): List<TripPhotoResponse>
+
+    @POST("api/trips/{tripId}/publish-post")
+    suspend fun publishTripPost(
+        @Path("tripId") tripId: Long,
+        @Body request: CreateTripPostRequest
+    ): PostResponse
 }

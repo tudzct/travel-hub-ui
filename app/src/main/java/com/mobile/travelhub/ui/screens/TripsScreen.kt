@@ -8,8 +8,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -46,7 +45,9 @@ import com.mobile.travelhub.R
 import com.mobile.travelhub.ui.theme.*
 import com.mobile.travelhub.viewmodels.TripsViewModel
 import java.time.LocalDate
+import java.time.temporal.ChronoUnit
 import java.time.format.DateTimeFormatter
+import java.util.Locale
 import java.time.temporal.ChronoUnit
 
 
@@ -95,6 +96,30 @@ fun TripsScreen(
         }
     }
     val listState = rememberLazyListState()
+    val shouldLoadMorePastTrips by remember {
+        derivedStateOf {
+            val layoutInfo = listState.layoutInfo
+            val lastVisibleIndex = layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
+            val totalItems = layoutInfo.totalItemsCount
+            totalItems > 0 && lastVisibleIndex >= totalItems - 2
+        }
+    }
+    LaunchedEffect(
+        shouldLoadMorePastTrips,
+        state.pastTrips.size,
+        state.pastTripsHasMore,
+        state.isPastTripsLoading,
+        state.isPastTripsLoadingMore
+    ) {
+        if (
+            shouldLoadMorePastTrips &&
+            state.pastTripsHasMore &&
+            !state.isPastTripsLoading &&
+            !state.isPastTripsLoadingMore
+        ) {
+            viewModel.loadMorePastTrips()
+        }
+    }
     LaunchedEffect(state.upcomingTrips, state.activeTrip, createdTripId) {
         if (createdTripId != null) {
             val tripsList = state.upcomingTrips.ifEmpty { listOfNotNull(state.activeTrip) }
@@ -173,7 +198,7 @@ fun TripsScreen(
                     Text(
                         text = stringResource(R.string.ui_8f23352824),
                         color = OnSurface,
-                        style = MaterialTheme.typography.titleLarge
+                        style = MaterialTheme.typography.titleMedium
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -181,13 +206,13 @@ fun TripsScreen(
                             text = stringResource(R.string.ui_5a3d42db37),
                             fontWeight = FontWeight.ExtraBold,
                             color = OnSurface,
-                            style = MaterialTheme.typography.displayMedium
+                            style = MaterialTheme.typography.headlineMedium
                         )
                         Spacer(modifier = Modifier.width(10.dp))
                         Text(
                             text = "✦",
                             color = MaterialTheme.colorScheme.primary,
-                            style = MaterialTheme.typography.headlineLarge
+                            style = MaterialTheme.typography.headlineSmall
                         )
                     }
                 }
@@ -200,7 +225,7 @@ fun TripsScreen(
                         stringResource(R.string.ui_0811963e56),
                         fontWeight = FontWeight.ExtraBold,
                         color = OnSurface,
-                        style = MaterialTheme.typography.titleLarge
+                        style = MaterialTheme.typography.titleMedium
                     )
                     Spacer(modifier = Modifier.height(14.dp))
                     if (state.isLoading && state.activeTrip == null) {
@@ -226,7 +251,7 @@ fun TripsScreen(
                             text = stringResource(R.string.ui_9183bdeb31),
                             fontWeight = FontWeight.ExtraBold,
                             color = OnSurface,
-                            style = MaterialTheme.typography.titleLarge
+                            style = MaterialTheme.typography.titleMedium
                         )
                         Row(
                             modifier = Modifier.clickable(onClick = onNavigateToUpcomingTrips),
@@ -236,7 +261,7 @@ fun TripsScreen(
                                 text = stringResource(R.string.ui_7e04025452),
                                 color = MaterialTheme.colorScheme.primary,
                                 fontWeight = FontWeight.Bold,
-                                style = MaterialTheme.typography.titleSmall
+                                style = MaterialTheme.typography.bodyMedium
                             )
                             Icon(
                                 imageVector = Icons.Default.KeyboardArrowRight,
@@ -257,53 +282,69 @@ fun TripsScreen(
                     } else if (state.upcomingTrips.isEmpty()) {
                         EmptyUpcomingTripCard(onClick = { showAddTripSheet = true })
                     } else {
-                        state.upcomingTrips.forEachIndexed { index, trip ->
-                            UpcomingTripItem(
-                                trip = trip,
-                                onClick = { onNavigateToGroupDetail(trip.tripId, trip.name) }
-                            )
-                            if (index < state.upcomingTrips.lastIndex) {
-                                Spacer(modifier = Modifier.height(12.dp))
+                        UpcomingTripPreviewList(
+                            trips = nearestUpcomingTrips(state.upcomingTrips),
+                            onTripClick = { trip ->
+                                onNavigateToGroupDetail(trip.tripId, trip.name)
                             }
-                        }
+                        )
                     }
                 }
             }
             item { Spacer(modifier = Modifier.height(32.dp)) }
 
-            // Past Memories Section
             item {
-                Column {
+                Column(modifier = Modifier.padding(horizontal = 24.dp)) {
                     Text(
                         text = stringResource(R.string.ui_f593bb6075),
                         fontWeight = FontWeight.ExtraBold,
                         color = OnSurface,
-                        style = MaterialTheme.typography.titleLarge,
-                        modifier = Modifier.padding(horizontal = 24.dp)
+                        style = MaterialTheme.typography.titleMedium
                     )
                     Spacer(modifier = Modifier.height(16.dp))
-                    if (state.isLoading && state.pastTrips.isEmpty()) {
-                        PastMemoriesSkeleton()
-                    } else if (state.pastTrips.isEmpty()) {
-                        EmptyJourneyJournalCard(
-                            modifier = Modifier.padding(horizontal = 24.dp)
-                        )
-                    } else {
-                        LazyRow(
-                            contentPadding = PaddingValues(horizontal = 24.dp),
-                            horizontalArrangement = Arrangement.spacedBy(18.dp)
+                }
+            }
+            if (state.isPastTripsLoading && state.pastTrips.isEmpty()) {
+                item {
+                    PastMemoriesSkeleton()
+                }
+            } else if (state.pastTrips.isEmpty()) {
+                item {
+                    EmptyJourneyJournalCard(
+                        modifier = Modifier.padding(horizontal = 24.dp)
+                    )
+                }
+            } else {
+                itemsIndexed(
+                    items = state.pastTrips,
+                    key = { _, trip -> trip.tripId }
+                ) { index, trip ->
+                    JourneyJournalCardItem(
+                        trip = trip,
+                        modifier = Modifier.padding(
+                            start = 24.dp,
+                            end = 24.dp,
+                            bottom = if (index == state.pastTrips.lastIndex) 0.dp else 10.dp
+                        ),
+                        onClick = {
+                            onNavigateToGroupDetail(trip.tripId, trip.locationName)
+                        }
+                    )
+                }
+                if (state.isPastTripsLoadingMore) {
+                    item {
+                        Spacer(modifier = Modifier.height(14.dp))
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 24.dp),
+                            contentAlignment = Alignment.Center
                         ) {
-                            items(
-                                items = state.pastTrips,
-                                key = { it.tripId }
-                            ) { trip ->
-                                PastMemoryCard(
-                                    place = trip.locationName,
-                                    date = trip.dateString,
-                                    imageUrl = trip.imageUrl,
-                                    onClick = { onNavigateToGroupDetail(trip.tripId, trip.locationName) }
-                                )
-                            }
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(22.dp),
+                                strokeWidth = 2.dp,
+                                color = MaterialTheme.colorScheme.primary
+                            )
                         }
                     }
                 }
@@ -404,10 +445,13 @@ fun ActiveJourneyCardV2(
     onNavigateToGroupDetail: (Long, String) -> Unit
 ) {
     val primary = MaterialTheme.colorScheme.primary
-    Card(
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = primary),
-        elevation = CardDefaults.cardElevation(defaultElevation = 10.dp),
+    val progress = remember(trip?.startDate, trip?.endDate) {
+        calculateTripProgress(trip?.startDate, trip?.endDate)
+    }
+    ElevatedCard(
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.elevatedCardColors(containerColor = primary),
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 6.dp),
         modifier = Modifier
             .fillMaxWidth()
             .clickable(enabled = trip != null) {
@@ -417,39 +461,28 @@ fun ActiveJourneyCardV2(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(248.dp)
+                .height(170.dp)
+                .background(primary)
+                .padding(18.dp)
         ) {
-            val coverImageUrl = trip?.coverImageUrl?.takeIf { it.isNotBlank() }
-            if (coverImageUrl != null) {
-                AsyncImage(
-                    model = coverImageUrl,
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize()
-                )
-            } else {
-                PrimaryMountainIllustration(modifier = Modifier.fillMaxSize())
-            }
-
-            Box(
+            Icon(
+                imageVector = Icons.Default.FlightTakeoff,
+                contentDescription = null,
+                tint = Color.White.copy(alpha = 0.16f),
                 modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        brush = Brush.verticalGradient(
-                            colors = listOf(
-                                primary.copy(alpha = 0.08f),
-                                primary.copy(alpha = 0.28f),
-                                primary.copy(alpha = 0.84f)
-                            )
-                        )
-                    )
+                    .align(Alignment.TopEnd)
+                    .size(86.dp)
             )
-
-            Column(
-                modifier = Modifier
-                    .align(Alignment.TopStart)
-                    .padding(start = 20.dp, top = 24.dp, end = 20.dp)
+            Row(
+                verticalAlignment = Alignment.Top,
+                horizontalArrangement = Arrangement.spacedBy(14.dp)
             ) {
+                Box(
+                    modifier = Modifier
+                        .size(52.dp)
+                        .clip(CircleShape)
+                        .background(Color.White),
+                    contentAlignment = Alignment.Center
                 Text(
                     text = trip?.name ?: "Chưa có chuyến đi diễn ra",
                     fontWeight = FontWeight.ExtraBold,
@@ -503,17 +536,106 @@ fun ActiveJourneyCardV2(
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     Icon(
-                        imageVector = Icons.Default.CalendarToday,
+                        imageVector = Icons.Default.LocationOn,
                         contentDescription = null,
                         tint = primary,
-                        modifier = Modifier.size(22.dp)
+                        modifier = Modifier.size(28.dp)
                     )
+                }
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "Xem chi tiết",
-                        color = primary,
+                        text = trip?.name ?: "Chưa có chuyến đi diễn ra",
                         fontWeight = FontWeight.ExtraBold,
+                        color = Color.White,
                         style = MaterialTheme.typography.titleMedium
                     )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.LocationOn, null, tint = Color.White, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            trip?.location?.takeIf { it.isNotBlank() }
+                                ?: "Hãy lên kế hoạch cho chuyến đi tiếp theo của bạn!",
+                            color = Color.White,
+                            fontWeight = FontWeight.Medium,
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+                }
+            }
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .align(Alignment.BottomStart),
+                verticalAlignment = Alignment.Bottom,
+                horizontalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.CalendarToday,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = progress.dayLabel,
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(14.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        LinearProgressIndicator(
+                            progress = progress.fraction,
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(8.dp)
+                                .clip(RoundedCornerShape(50)),
+                            color = Color.White,
+                            trackColor = Color.White.copy(alpha = 0.2f)
+                        )
+                        Spacer(modifier = Modifier.width(14.dp))
+                        Text(
+                            text = "${(progress.fraction * 100).toInt()}%",
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+                }
+                if (trip != null) {
+                    Surface(
+                        modifier = Modifier
+                            .height(48.dp)
+                            .clickable {
+                                onNavigateToGroupDetail(trip.tripId, trip.name)
+                            },
+                        shape = RoundedCornerShape(16.dp),
+                        color = SurfaceContainerLowest
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 18.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Text(
+                                text = "Xem chi tiết",
+                                color = primary,
+                                fontWeight = FontWeight.ExtraBold,
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                            Icon(
+                                imageVector = Icons.Default.KeyboardArrowRight,
+                                contentDescription = null,
+                                tint = primary,
+                                modifier = Modifier.size(22.dp)
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -955,6 +1077,232 @@ fun UpcomingTripItem(
 }
 
 @Composable
+private fun UpcomingTripPreviewList(
+    trips: List<com.mobile.travelhub.viewmodels.UpcomingTripUiModel>,
+    onTripClick: (com.mobile.travelhub.viewmodels.UpcomingTripUiModel) -> Unit
+) {
+    ElevatedCard(
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.elevatedCardColors(containerColor = SurfaceContainerLowest),
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 4.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            trips.forEachIndexed { index, trip ->
+                UpcomingTripCompactItem(
+                    trip = trip,
+                    onClick = { onTripClick(trip) }
+                )
+                if (index < trips.lastIndex) {
+                    HorizontalDivider(color = SurfaceContainerLow)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun UpcomingTripCompactItem(
+    trip: com.mobile.travelhub.viewmodels.UpcomingTripUiModel,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 14.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        DateTile(dateText = trip.startDate)
+        Spacer(modifier = Modifier.width(16.dp))
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Text(
+                text = trip.name,
+                color = OnSurface,
+                fontWeight = FontWeight.ExtraBold,
+                style = MaterialTheme.typography.titleSmall
+            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Default.Timer,
+                    contentDescription = null,
+                    tint = OnSurfaceVariant,
+                    modifier = Modifier.size(16.dp)
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = if (trip.daysLeft > 0) {
+                        "Còn ${trip.daysLeft} ngày"
+                    } else {
+                        trip.startDate?.let { "Bắt đầu ${formatShortDate(it)}" }
+                            ?: "Đang chờ ngày khởi hành"
+                    },
+                    color = OnSurfaceVariant,
+                    fontWeight = FontWeight.Medium,
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+        }
+        Icon(
+            imageVector = Icons.Default.KeyboardArrowRight,
+            contentDescription = null,
+            tint = OnSurfaceVariant,
+            modifier = Modifier.size(28.dp)
+        )
+    }
+}
+
+@Composable
+private fun DateTile(dateText: String?) {
+    val date = remember(dateText) { parseLocalDate(dateText) }
+    Box(
+        modifier = Modifier
+            .width(116.dp)
+            .height(72.dp)
+            .clip(RoundedCornerShape(14.dp))
+            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.08f)),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(5.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Default.CalendarToday,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(24.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = date?.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))
+                        ?: "--/--/----",
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.ExtraBold,
+                    style = MaterialTheme.typography.labelMedium
+                )
+            }
+            Text(
+                text = date?.let { "(${weekdayLabel(it)})" } ?: "",
+                color = OnSurfaceVariant,
+                style = MaterialTheme.typography.bodySmall
+            )
+        }
+    }
+}
+
+@Composable
+private fun JourneyJournalList(
+    trips: List<com.mobile.travelhub.viewmodels.PastTripUiModel>,
+    modifier: Modifier = Modifier,
+    onTripClick: (com.mobile.travelhub.viewmodels.PastTripUiModel) -> Unit
+) {
+    ElevatedCard(
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.elevatedCardColors(containerColor = SurfaceContainerLowest),
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 4.dp),
+        modifier = modifier.fillMaxWidth()
+    ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            trips.forEachIndexed { index, trip ->
+                JourneyJournalItem(
+                    trip = trip,
+                    onClick = { onTripClick(trip) }
+                )
+                if (index < trips.lastIndex) {
+                    HorizontalDivider(
+                        color = SurfaceContainerLow,
+                        modifier = Modifier.padding(start = 116.dp)
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun JourneyJournalItem(
+    trip: com.mobile.travelhub.viewmodels.PastTripUiModel,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 14.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        val imageUrl = trip.imageUrl?.takeIf { it.isNotBlank() }
+        if (imageUrl != null) {
+            AsyncImage(
+                model = imageUrl,
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .size(width = 88.dp, height = 70.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(SurfaceContainerLow)
+            )
+        } else {
+            Image(
+                painter = painterResource(id = R.drawable.ic_launcher_background),
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .size(width = 88.dp, height = 70.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(SurfaceContainerLow)
+            )
+        }
+        Spacer(modifier = Modifier.width(14.dp))
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Default.LocationOn,
+                    contentDescription = null,
+                    tint = OnSurfaceVariant,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = trip.locationName,
+                    color = OnSurface,
+                    fontWeight = FontWeight.ExtraBold,
+                    style = MaterialTheme.typography.titleSmall
+                )
+            }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Default.CalendarToday,
+                    contentDescription = null,
+                    tint = OnSurfaceVariant,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = formatPastTripEndDate(trip.dateString),
+                    color = OnSurfaceVariant,
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+        }
+        Icon(
+            imageVector = Icons.Default.KeyboardArrowRight,
+            contentDescription = null,
+            tint = OnSurfaceVariant,
+            modifier = Modifier.size(28.dp)
+        )
+    }
+}
+
+@Composable
 private fun EmptyJourneyJournalCard(modifier: Modifier = Modifier) {
     EmptyTripSectionCard(
         title = "Chưa có nhật ký hành trình.",
@@ -962,6 +1310,83 @@ private fun EmptyJourneyJournalCard(modifier: Modifier = Modifier) {
         modifier = modifier
             .fillMaxWidth()
     )
+}
+
+private data class TripProgress(
+    val dayLabel: String,
+    val fraction: Float
+)
+
+private fun calculateTripProgress(startText: String?, endText: String?): TripProgress {
+    val start = parseLocalDate(startText)
+    val end = parseLocalDate(endText)
+    if (start == null || end == null || end.isBefore(start)) {
+        return TripProgress(dayLabel = "Chưa có lịch", fraction = 0f)
+    }
+
+    val totalDays = (ChronoUnit.DAYS.between(start, end) + 1).toInt().coerceAtLeast(1)
+    val currentDay = (ChronoUnit.DAYS.between(start, LocalDate.now()) + 1)
+        .toInt()
+        .coerceIn(1, totalDays)
+    return TripProgress(
+        dayLabel = "Ngày $currentDay / $totalDays",
+        fraction = currentDay.toFloat() / totalDays.toFloat()
+    )
+}
+
+private fun parseLocalDate(dateText: String?): LocalDate? {
+    if (dateText.isNullOrBlank()) return null
+    val normalized = dateText.substringBefore("T").trim()
+    val patterns = listOf(
+        DateTimeFormatter.ISO_LOCAL_DATE,
+        DateTimeFormatter.ofPattern("dd/MM/yyyy", Locale.getDefault()),
+        DateTimeFormatter.ofPattern("d/M/yyyy", Locale.getDefault())
+    )
+    return patterns.firstNotNullOfOrNull { formatter ->
+        runCatching { LocalDate.parse(normalized, formatter) }.getOrNull()
+    }
+}
+
+private fun formatShortDate(dateText: String): String {
+    return parseLocalDate(dateText)?.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))
+        ?: dateText.substringBefore("T")
+}
+
+private fun weekdayLabel(date: LocalDate): String {
+    return when (date.dayOfWeek.value) {
+        1 -> "Thứ 2"
+        2 -> "Thứ 3"
+        3 -> "Thứ 4"
+        4 -> "Thứ 5"
+        5 -> "Thứ 6"
+        6 -> "Thứ 7"
+        else -> "CN"
+    }
+}
+
+private fun formatPastTripEndDate(dateString: String): String {
+    val parts = dateString
+        .split(" - ", " – ", " to ")
+        .map { it.trim() }
+        .filter { it.isNotBlank() }
+    val end = parseLocalDate(parts.lastOrNull())
+    return if (end != null) {
+        end.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))
+    } else {
+        dateString
+    }
+}
+
+private fun nearestUpcomingTrips(
+    trips: List<com.mobile.travelhub.viewmodels.UpcomingTripUiModel>
+): List<com.mobile.travelhub.viewmodels.UpcomingTripUiModel> {
+    return trips
+        .sortedWith(
+            compareBy<com.mobile.travelhub.viewmodels.UpcomingTripUiModel> {
+                parseLocalDate(it.startDate) ?: LocalDate.MAX
+            }.thenBy { it.tripId }
+        )
+        .take(3)
 }
 
 private fun String.requiresBankAccountUpdate(): Boolean {

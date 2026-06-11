@@ -1,5 +1,8 @@
 package com.mobile.travelhub.ui.screens
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.ui.res.stringResource
 import android.widget.Toast
 import androidx.compose.foundation.Image
@@ -24,6 +27,9 @@ import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.CardTravel
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Article
+import androidx.compose.material.icons.filled.CloudUpload
+import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.FiberManualRecord
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.MoreVert
@@ -64,6 +70,7 @@ import com.mobile.travelhub.ui.components.*
 import com.mobile.travelhub.ui.theme.*
 import com.mobile.travelhub.viewmodels.GroupActivityLogUiModel
 import com.mobile.travelhub.viewmodels.GroupDetailViewModel
+import com.mobile.travelhub.viewmodels.TripPhotoUiModel
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -107,6 +114,9 @@ fun GroupDetailScreen(
     var showFinishTripConfirm by remember { mutableStateOf(false) }
     var showItinerarySheet by remember { mutableStateOf(false) }
     var showManageMembersDialog by remember { mutableStateOf(false) }
+    var showPublishPostDialog by remember { mutableStateOf(false) }
+    var tripPostDescription by remember { mutableStateOf("") }
+    var selectedTripPhotoUrl by remember { mutableStateOf<String?>(null) }
     var showJoinRequestsDialog by remember { mutableStateOf(false) }
     var memberToDelete by remember { mutableStateOf<com.mobile.travelhub.viewmodels.GroupMemberUiModel?>(null) }
     val isLeader = uiState.myRole.equals("LEADER", ignoreCase = true)
@@ -114,6 +124,15 @@ fun GroupDetailScreen(
     val pendingRequestCount = uiState.joinRequests.size
     val isInitialLoading = uiState.isLoading && uiState.groupName.isBlank()
     val showInitialError = !uiState.isLoading && uiState.groupName.isBlank() && uiState.errorMessage != null
+    val tripPhotoPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickMultipleVisualMedia(maxItems = 10)
+    ) { uris ->
+        if (uris.isNotEmpty()) {
+            viewModel.uploadTripPhotos(uris) { success, message ->
+                Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
 
     LaunchedEffect(tripId, groupName) {
         viewModel.loadGroup(tripId = tripId, groupName = groupName, isSilent = false)
@@ -411,6 +430,60 @@ fun GroupDetailScreen(
                     )
                 }
 
+                if (!isInitialLoading) {
+                    Spacer(modifier = Modifier.height(28.dp))
+                    TripPhotosSection(
+                        photos = uiState.tripPhotos,
+                        isUploading = uiState.isUploadingTripPhotos,
+                        onUploadClick = {
+                            tripPhotoPickerLauncher.launch(
+                                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                            )
+                        },
+                        onPhotoClick = { imageUrl -> selectedTripPhotoUrl = imageUrl }
+                    )
+                }
+
+                if (!isInitialLoading && isLeader && isCompleted) {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Button(
+                        onClick = {
+                            tripPostDescription = defaultTripPostDescription(uiState.groupName, uiState.location)
+                            showPublishPostDialog = true
+                        },
+                        enabled = !uiState.isPublishingTripPost && uiState.tripPhotos.isNotEmpty(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(52.dp),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary,
+                            disabledContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.32f),
+                            disabledContentColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.72f)
+                        )
+                    ) {
+                        if (uiState.isPublishingTripPost) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(18.dp),
+                                strokeWidth = 2.dp,
+                                color = MaterialTheme.colorScheme.onPrimary
+                            )
+                        } else {
+                            Icon(
+                                imageVector = Icons.Default.Article,
+                                contentDescription = null,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = if (uiState.isPublishingTripPost) "Đang đăng bài..." else "Đăng bài về chuyến đi",
+                            fontWeight = FontWeight.ExtraBold
+                        )
+                    }
+                }
+
                 if (!isInitialLoading && isLeader && !isCompleted) {
                     Spacer(modifier = Modifier.height(28.dp))
                     Button(
@@ -654,6 +727,34 @@ fun GroupDetailScreen(
             onMemberClick = { userId -> onNavigateToProfile(userId) }
         )
 
+        selectedTripPhotoUrl?.let { imageUrl ->
+            FullTripPhotoDialog(
+                imageUrl = imageUrl,
+                onDismiss = { selectedTripPhotoUrl = null }
+            )
+        }
+
+        if (showPublishPostDialog) {
+            PublishTripPostDialog(
+                description = tripPostDescription,
+                isPublishing = uiState.isPublishingTripPost,
+                onDescriptionChange = { tripPostDescription = it },
+                onDismiss = {
+                    if (!uiState.isPublishingTripPost) {
+                        showPublishPostDialog = false
+                    }
+                },
+                onConfirm = {
+                    viewModel.publishTripPost(tripPostDescription) { success, message ->
+                        if (success) {
+                            showPublishPostDialog = false
+                        } else {
+                            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                }
+            )
+        }
         JoinRequestsDialog(
             visible = showJoinRequestsDialog,
             requests = uiState.joinRequests,
@@ -721,6 +822,328 @@ private fun displayTripStatus(statusLabel: String): String {
         .substringBefore("·")
         .trim()
         .ifBlank { "Chưa xác định" }
+}
+
+@Composable
+private fun TripPhotosSection(
+    photos: List<TripPhotoUiModel>,
+    isUploading: Boolean,
+    onUploadClick: () -> Unit,
+    onPhotoClick: (String) -> Unit
+) {
+    val storageService = stringResource(R.string.storage_service)
+        .trim()
+        .trim('"')
+        .trimEnd('/')
+
+    fun toDisplayUrl(rawUrl: String): String {
+        val value = rawUrl.trim()
+        if (value.startsWith("http://", true) || value.startsWith("https://", true)) {
+            return value
+        }
+        return "$storageService/${value.trimStart('/')}"
+    }
+
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.PhotoLibrary,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(20.dp)
+                )
+                Text(
+                    text = "Ảnh chuyến đi",
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 14.sp,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = "(${photos.size})",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+            TextButton(
+                onClick = onUploadClick,
+                enabled = !isUploading
+            ) {
+                if (isUploading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(16.dp),
+                        strokeWidth = 2.dp
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                } else {
+                    Icon(
+                        imageVector = Icons.Default.CloudUpload,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                }
+                Text(
+                    text = if (isUploading) "Đang tải..." else "Thêm ảnh",
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        if (photos.isEmpty()) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f))
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Default.PhotoLibrary,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(22.dp)
+                )
+                Spacer(modifier = Modifier.width(10.dp))
+                Text(
+                    text = "Mọi thành viên có thể thêm ảnh kỷ niệm cho chuyến đi.",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = 13.sp
+                )
+            }
+        } else {
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                items(
+                    items = photos,
+                    key = { it.id }
+                ) { photo ->
+                    val resolvedUrl = toDisplayUrl(photo.imageUrl)
+                    AsyncImage(
+                        model = resolvedUrl,
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                            .size(width = 112.dp, height = 88.dp)
+                            .clip(RoundedCornerShape(14.dp))
+                            .clickable { onPhotoClick(resolvedUrl) }
+                            .background(MaterialTheme.colorScheme.surfaceVariant)
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun FullTripPhotoDialog(
+    imageUrl: String,
+    onDismiss: () -> Unit
+) {
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black)
+        ) {
+            AsyncImage(
+                model = imageUrl,
+                contentDescription = null,
+                contentScale = ContentScale.Fit,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp)
+            )
+            IconButton(
+                onClick = onDismiss,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(20.dp)
+                    .size(42.dp)
+                    .clip(CircleShape)
+                    .background(Color.Black.copy(alpha = 0.55f))
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Close,
+                    contentDescription = "Đóng",
+                    tint = Color.White
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun PublishTripPostDialog(
+    description: String,
+    isPublishing: Boolean,
+    onDescriptionChange: (String) -> Unit,
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit
+) {
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp),
+            shape = RoundedCornerShape(28.dp),
+            color = MaterialTheme.colorScheme.surface,
+            tonalElevation = 6.dp
+        ) {
+            Column(
+                modifier = Modifier.padding(20.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(44.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Article,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(22.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Đăng bài về chuyến đi",
+                            fontWeight = FontWeight.ExtraBold,
+                            fontSize = 18.sp,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = "Mô tả sẽ hiển thị cùng album ảnh chuyến đi.",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontSize = 12.sp
+                        )
+                    }
+                    IconButton(
+                        onClick = onDismiss,
+                        enabled = !isPublishing,
+                        modifier = Modifier
+                            .size(38.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f))
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = "Đóng",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
+
+                OutlinedTextField(
+                    value = description,
+                    onValueChange = onDescriptionChange,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 132.dp),
+                    enabled = !isPublishing,
+                    minLines = 5,
+                    maxLines = 8,
+                    shape = RoundedCornerShape(18.dp),
+                    placeholder = {
+                        Text(
+                            text = "Bạn muốn kể gì về chuyến đi này?",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.72f)
+                        )
+                    },
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
+                        focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.28f),
+                        unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.28f)
+                    )
+                )
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    OutlinedButton(
+                        onClick = onDismiss,
+                        enabled = !isPublishing,
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight(),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    ) {
+                        Text("Hủy", fontWeight = FontWeight.Bold)
+                    }
+                    Button(
+                        onClick = onConfirm,
+                        enabled = !isPublishing && description.isNotBlank(),
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight(),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary,
+                            disabledContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.34f),
+                            disabledContentColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.72f)
+                        )
+                    ) {
+                        if (isPublishing) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(16.dp),
+                                strokeWidth = 2.dp,
+                                color = MaterialTheme.colorScheme.onPrimary
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                        }
+                        Text(
+                            text = if (isPublishing) "Đang đăng" else "Đăng bài",
+                            fontWeight = FontWeight.ExtraBold
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+private fun defaultTripPostDescription(groupName: String, location: String): String {
+    return listOf(
+        "Nhìn lại chuyến đi",
+        groupName.takeIf { it.isNotBlank() },
+        location.takeIf { it.isNotBlank() }?.let { "tại $it" }
+    ).filterNotNull().joinToString(" ") + "."
 }
 
 private fun String.toVietnameseDate(): String {
