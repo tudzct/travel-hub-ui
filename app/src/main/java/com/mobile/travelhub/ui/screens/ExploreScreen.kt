@@ -145,7 +145,7 @@ fun ExploreScreen(
                         .fillMaxSize()
                         .background(MaterialTheme.colorScheme.background)
                         .verticalScroll(rememberScrollState())
-                        .padding(top = 10.dp, bottom = 24.dp)
+                        .padding(top = 10.dp, bottom = 68.dp)
                 ) {
                     Row(
                         modifier = Modifier
@@ -204,7 +204,7 @@ fun ExploreScreen(
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
                     .navigationBarsPadding()
-                    .padding(end = 16.dp, bottom = 40.dp)
+                    .padding(end = 16.dp, bottom = 84.dp)
             )
         }
     }
