@@ -27,7 +27,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.AlternateEmail
-import androidx.compose.material.icons.outlined.AccountBalance
 import androidx.compose.material.icons.outlined.Badge
 import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material.icons.outlined.CreditCard
@@ -88,6 +87,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.mobile.travelhub.R
 import com.mobile.travelhub.data.userMessage
 import com.mobile.travelhub.ui.components.DestinationPlacePicker
+import com.mobile.travelhub.ui.components.BankPicker
 import com.mobile.travelhub.ui.components.EditProfileLoadingSkeleton
 import com.mobile.travelhub.ui.theme.PrimaryBlue
 import com.mobile.travelhub.viewmodels.ProfileViewModel
@@ -106,6 +106,7 @@ fun EditProfileScreen(
 ) {
     val profileState by viewModel.profileState.collectAsState()
     val provincePickerState by viewModel.provincePickerState.collectAsState()
+    val bankPickerState by viewModel.bankPickerState.collectAsState()
     val context = LocalContext.current
     val imageUploadFailedMessage = stringResource(R.string.image_upload_failed)
     val coroutineScope = rememberCoroutineScope()
@@ -224,6 +225,7 @@ fun EditProfileScreen(
 
     LaunchedEffect(Unit) {
         viewModel.loadUserProfile()
+        viewModel.loadBanks()
     }
 
     LaunchedEffect(profileState) {
@@ -269,6 +271,9 @@ fun EditProfileScreen(
 
     val selectedProvince = provincePickerState.provinces.firstOrNull {
         it.id == provincePickerState.selectedProvinceId
+    }
+    val selectedBank = bankPickerState.banks.firstOrNull {
+        it.code.equals(bankCode, ignoreCase = true)
     }
 
     val hasChanges = name != originalName || handle != originalHandle || bio != originalBio ||
@@ -462,24 +467,20 @@ fun EditProfileScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            EditProfileInputCard(
-                icon = Icons.Outlined.AccountBalance,
-                label = "Mã ngân hàng",
-                value = bankCode,
-                onValueChange = { bankCode = it.uppercase().take(30) },
-                placeholder = "VD: VCB, BIDV, MBBANK",
-                iconInCircle = true
-            )
-
-            Spacer(modifier = Modifier.height(14.dp))
-
-            EditProfileInputCard(
-                icon = Icons.Outlined.AccountBalance,
-                label = "Tên ngân hàng",
-                value = bankName,
-                onValueChange = { bankName = it },
-                placeholder = "VD: Vietcombank",
-                iconInCircle = true
+            BankPicker(
+                selectedBank = selectedBank,
+                currentBankCode = bankCode,
+                currentBankName = bankName,
+                banks = bankPickerState.banks,
+                isLoading = bankPickerState.isLoading,
+                errorMessage = bankPickerState.errorMessage,
+                enabled = !isSaving && !bankPickerState.isLoading,
+                borderColor = EditProfileBorder,
+                onBankSelected = { bank ->
+                    bankCode = bank.code
+                    bankName = bank.shortName.ifBlank { bank.name }
+                },
+                onRetry = viewModel::retryLoadBanks
             )
 
             Spacer(modifier = Modifier.height(14.dp))

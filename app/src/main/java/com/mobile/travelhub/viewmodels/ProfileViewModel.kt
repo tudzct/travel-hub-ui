@@ -4,6 +4,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mobile.travelhub.data.LocationRepository
+import com.mobile.travelhub.data.BankRepository
 import com.mobile.travelhub.data.AvatarRepository
 import com.mobile.travelhub.data.AuthRepository
 import com.mobile.travelhub.data.PostRepository
@@ -18,6 +19,7 @@ import com.mobile.travelhub.data.model.PostCommentResponse
 import com.mobile.travelhub.data.model.ProfileUpdateRequest
 import com.mobile.travelhub.data.model.UserProfileResponse
 import com.mobile.travelhub.data.model.UserSummaryResponse
+import com.mobile.travelhub.data.model.VietQrBank
 import com.mobile.travelhub.utils.PostsUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.text.SimpleDateFormat
@@ -39,7 +41,8 @@ class ProfileViewModel @Inject constructor(
     private val userApiService: UserApiService,
     private val postRepository: PostRepository,
     private val avatarRepository: AvatarRepository,
-    private val locationRepository: LocationRepository
+    private val locationRepository: LocationRepository,
+    private val bankRepository: BankRepository
 ) : ViewModel() {
     private val sessionUserId: Long
         get() = authRepository.getSavedSession()?.userId?.toLong() ?: -1L
@@ -64,6 +67,9 @@ class ProfileViewModel @Inject constructor(
 
     private val _provincePickerState = MutableStateFlow(ProvincePickerUiState())
     val provincePickerState: StateFlow<ProvincePickerUiState> = _provincePickerState.asStateFlow()
+
+    private val _bankPickerState = MutableStateFlow(BankPickerUiState())
+    val bankPickerState: StateFlow<BankPickerUiState> = _bankPickerState.asStateFlow()
 
     private val _profilePostsState = MutableStateFlow(ProfilePostsUiState(isLoading = true))
     val profilePostsState: StateFlow<ProfilePostsUiState> = _profilePostsState.asStateFlow()
@@ -115,6 +121,10 @@ class ProfileViewModel @Inject constructor(
 
     fun retryLoadProfileProvinces() {
         loadProvinces()
+    }
+
+    fun retryLoadBanks() {
+        loadBanks()
     }
 
     fun loadUserPosts(userId: Long = sessionUserId) {
@@ -555,6 +565,27 @@ class ProfileViewModel @Inject constructor(
         }
     }
 
+    fun loadBanks() {
+        if (_bankPickerState.value.isLoading || _bankPickerState.value.banks.isNotEmpty()) return
+        viewModelScope.launch {
+            _bankPickerState.update { it.copy(isLoading = true, errorMessage = null) }
+            runCatching { bankRepository.getBanks() }
+                .onSuccess { banks ->
+                    _bankPickerState.value = BankPickerUiState(
+                        banks = banks.sortedBy { it.shortName.lowercase(Locale.getDefault()) }
+                    )
+                }
+                .onFailure { throwable ->
+                    _bankPickerState.update {
+                        it.copy(
+                            isLoading = false,
+                            errorMessage = throwable.userMessage("Không thể tải danh sách ngân hàng")
+                        )
+                    }
+                }
+        }
+    }
+
     fun changePassword(
         currentPassword: String,
         newPassword: String,
@@ -784,6 +815,12 @@ sealed class UiState<out T> {
 data class ProvincePickerUiState(
     val provinces: List<AdminProvinceResponse> = emptyList(),
     val selectedProvinceId: Long? = null,
+    val isLoading: Boolean = false,
+    val errorMessage: String? = null
+)
+
+data class BankPickerUiState(
+    val banks: List<VietQrBank> = emptyList(),
     val isLoading: Boolean = false,
     val errorMessage: String? = null
 )

@@ -20,6 +20,7 @@ import com.mobile.travelhub.data.api.TravelAssistantApiService
 import com.mobile.travelhub.data.api.TokenAuthenticator
 import com.mobile.travelhub.data.api.UploadApiService
 import com.mobile.travelhub.data.api.UserApiService
+import com.mobile.travelhub.data.api.VietQrApiService
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -39,6 +40,7 @@ import java.util.concurrent.TimeUnit
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
     private const val BASE_URL = ApiConfig.BASE_URL
+    private const val VIET_QR_BASE_URL = "https://api.vietqr.io/"
     private val logging = HttpLoggingInterceptor().apply {
         redactHeader("Authorization")
         level = HttpLoggingInterceptor.Level.BODY
@@ -89,6 +91,19 @@ object NetworkModule {
     @Named("public")
     fun providePublicRetrofit(): Retrofit {
         return RetrofitFactory.create(baseUrl = BASE_URL)
+    }
+
+    @Provides
+    @Singleton
+    @Named("vietqr")
+    fun provideVietQrRetrofit(): Retrofit {
+        return RetrofitFactory.create(baseUrl = VIET_QR_BASE_URL)
+    }
+
+    @Provides
+    @Singleton
+    fun provideVietQrApiService(@Named("vietqr") retrofit: Retrofit): VietQrApiService {
+        return retrofit.create(VietQrApiService::class.java)
     }
 
     @Provides
