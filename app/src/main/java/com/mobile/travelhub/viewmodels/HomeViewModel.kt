@@ -107,6 +107,9 @@ class HomeViewModel @Inject constructor(
 
     init {
         collectPostInteractionEvents()
+        if (cachedInitialState != null) {
+            updateState { applyInteractionSnapshots(it) }
+        }
         if (cachedInitialState == null) {
             refreshPosts()
         }
@@ -477,7 +480,8 @@ class HomeViewModel @Inject constructor(
         val safeCreatedAt = runCatching { post.createdAt }.getOrNull()
             ?: runCatching { post.updatedAt }.getOrNull()
 
-        return HomePostUiModel(
+        return applyInteractionSnapshots(
+            HomePostUiModel(
             id = safeId,
             ownerId = runCatching { post.owner.id }.getOrDefault(0L),
             username = safeUsername,
@@ -493,6 +497,7 @@ class HomeViewModel @Inject constructor(
             isSaved = post.savedByCurrentUser == true,
             isSaveLoading = false,
             timeAgoLabel = PostsUtils.formatTimeAgo(safeCreatedAt)
+            )
         )
     }
 
@@ -510,6 +515,40 @@ class HomeViewModel @Inject constructor(
                 }
             )
         }
+    }
+
+    private fun applyInteractionSnapshots(state: HomeUiState): HomeUiState {
+        return state.copy(
+            posts = state.posts.map(::applyInteractionSnapshots),
+            commentsByPostId = state.commentsByPostId.mapValues { (_, comments) ->
+                comments.map { comment ->
+                    postInteractionEventBus.latestProfile(comment.ownerId)?.let { event ->
+                        val username = event.username.takeIf { it.isNotBlank() }
+                        comment.copy(
+                            username = username ?: comment.username,
+                            avatarUrl = event.avatarUrl?.takeIf { it.isNotBlank() }
+                        )
+                    } ?: comment
+                }
+            }
+        )
+    }
+
+    private fun applyInteractionSnapshots(post: HomePostUiModel): HomePostUiModel {
+        val likeEvent = postInteractionEventBus.latestLike(post.id)
+        val saveEvent = postInteractionEventBus.latestSave(post.id)
+        val profileEvent = postInteractionEventBus.latestProfile(post.ownerId)
+        val username = profileEvent?.username?.takeIf { it.isNotBlank() }
+        return post.copy(
+            username = username ?: post.username,
+            ownerAvatarUrl = profileEvent?.avatarUrl?.takeIf { it.isNotBlank() } ?: post.ownerAvatarUrl,
+            isLiked = likeEvent?.liked ?: post.isLiked,
+            likeCount = likeEvent?.likeCount?.coerceAtLeast(0) ?: post.likeCount,
+            isSaved = saveEvent?.saved ?: post.isSaved,
+            saveCount = saveEvent?.saveCount?.coerceAtLeast(0) ?: post.saveCount,
+            isLikeLoading = false,
+            isSaveLoading = false
+        )
     }
 
     private fun collectPostInteractionEvents() {
