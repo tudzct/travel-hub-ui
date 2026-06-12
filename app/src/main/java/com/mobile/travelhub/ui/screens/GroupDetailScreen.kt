@@ -915,19 +915,25 @@ private fun TripPhotosSection(
                                 .clickable { onPhotoClick(resolvedUrl) }
                                 .background(MaterialTheme.colorScheme.surfaceVariant)
                         )
-                        IconButton(
-                            onClick = { onDeletePhotoClick(photo) },
-                            enabled = deletingPhotoId != photo.id,
+                        Box(
                             modifier = Modifier
                                 .align(Alignment.TopEnd)
-                                .padding(6.dp)
-                                .size(28.dp)
+                                .padding(5.dp)
+                                .size(22.dp)
                                 .clip(CircleShape)
                                 .background(Color(0xE61D2430))
+                                .then(
+                                    if (deletingPhotoId == photo.id) {
+                                        Modifier
+                                    } else {
+                                        Modifier.clickable { onDeletePhotoClick(photo) }
+                                    }
+                                ),
+                            contentAlignment = Alignment.Center
                         ) {
                             if (deletingPhotoId == photo.id) {
                                 CircularProgressIndicator(
-                                    modifier = Modifier.size(14.dp),
+                                    modifier = Modifier.size(12.dp),
                                     strokeWidth = 2.dp,
                                     color = Color.White
                                 )
@@ -936,7 +942,7 @@ private fun TripPhotosSection(
                                     imageVector = Icons.Default.Close,
                                     contentDescription = "Xóa ảnh",
                                     tint = Color.White,
-                                    modifier = Modifier.size(16.dp)
+                                    modifier = Modifier.size(13.dp)
                                 )
                             }
                         }
@@ -997,7 +1003,7 @@ private fun ConfirmDeleteTripPhotoDialog(
                         .weight(1f)
                         .height(46.dp)
                         .clip(RoundedCornerShape(14.dp))
-                        .background(Color(0xFFE5484D))
+                        .background(PrimaryBlue)
                 ) {
                     Text(
                         text = "Xóa",
