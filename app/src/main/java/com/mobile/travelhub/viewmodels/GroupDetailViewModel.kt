@@ -96,6 +96,7 @@ data class GroupDetailUiState(
     val isFinishingTrip: Boolean = false,
     val tripPhotos: List<TripPhotoUiModel> = emptyList(),
     val isUploadingTripPhotos: Boolean = false,
+    val deletingTripPhotoId: Long? = null,
     val isPublishingTripPost: Boolean = false
 )
 
@@ -484,6 +485,34 @@ class GroupDetailViewModel @Inject constructor(
                         onDone(false, throwable.userMessage("Không tải ảnh lên được"))
                     }
                 )
+        }
+    }
+
+    fun deleteTripPhoto(photoId: Long, onDone: (Boolean, String) -> Unit) {
+        val state = uiState.value
+        val tripId = state.tripId
+        if (tripId == -1L || photoId <= 0L) {
+            onDone(false, "Không xác định được ảnh cần xóa")
+            return
+        }
+        if (state.deletingTripPhotoId != null) return
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(deletingTripPhotoId = photoId, errorMessage = null) }
+            tripRepository.deleteTripPhoto(tripId = tripId, photoId = photoId)
+                .onSuccess {
+                    _uiState.update { current ->
+                        current.copy(
+                            tripPhotos = current.tripPhotos.filterNot { photo -> photo.id == photoId },
+                            deletingTripPhotoId = null
+                        )
+                    }
+                    onDone(true, "Đã xóa ảnh chuyến đi")
+                }
+                .onFailure { throwable ->
+                    _uiState.update { it.copy(deletingTripPhotoId = null) }
+                    onDone(false, throwable.userMessage("Không xóa được ảnh chuyến đi"))
+                }
         }
     }
 

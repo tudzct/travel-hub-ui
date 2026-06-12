@@ -114,6 +114,7 @@ fun GroupDetailScreen(
     var showPublishPostDialog by remember { mutableStateOf(false) }
     var tripPostDescription by remember { mutableStateOf("") }
     var selectedTripPhotoUrl by remember { mutableStateOf<String?>(null) }
+    var pendingDeletePhoto by remember { mutableStateOf<TripPhotoUiModel?>(null) }
     var showJoinRequestsDialog by remember { mutableStateOf(false) }
     var memberToDelete by remember { mutableStateOf<com.mobile.travelhub.viewmodels.GroupMemberUiModel?>(null) }
     val isLeader = uiState.myRole.equals("LEADER", ignoreCase = true)
@@ -126,7 +127,9 @@ fun GroupDetailScreen(
     ) { uris ->
         if (uris.isNotEmpty()) {
             viewModel.uploadTripPhotos(uris) { success, message ->
-                Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                if (!success) {
+                    Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                }
             }
         }
     }
@@ -410,12 +413,14 @@ fun GroupDetailScreen(
                     TripPhotosSection(
                         photos = uiState.tripPhotos,
                         isUploading = uiState.isUploadingTripPhotos,
+                        deletingPhotoId = uiState.deletingTripPhotoId,
                         onUploadClick = {
                             tripPhotoPickerLauncher.launch(
                                 PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
                             )
                         },
-                        onPhotoClick = { imageUrl -> selectedTripPhotoUrl = imageUrl }
+                        onPhotoClick = { imageUrl -> selectedTripPhotoUrl = imageUrl },
+                        onDeletePhotoClick = { photo -> pendingDeletePhoto = photo }
                     )
                 }
 
@@ -709,6 +714,20 @@ fun GroupDetailScreen(
             )
         }
 
+        pendingDeletePhoto?.let { photo ->
+            ConfirmDeleteTripPhotoDialog(
+                onDismiss = { pendingDeletePhoto = null },
+                onConfirm = {
+                    pendingDeletePhoto = null
+                    viewModel.deleteTripPhoto(photo.id) { success, message ->
+                        if (!success) {
+                            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                }
+            )
+        }
+
         if (showPublishPostDialog) {
             PublishTripPostDialog(
                 description = tripPostDescription,
@@ -777,8 +796,10 @@ private fun displayTripStatus(statusLabel: String): String {
 private fun TripPhotosSection(
     photos: List<TripPhotoUiModel>,
     isUploading: Boolean,
+    deletingPhotoId: Long?,
     onUploadClick: () -> Unit,
-    onPhotoClick: (String) -> Unit
+    onPhotoClick: (String) -> Unit,
+    onDeletePhotoClick: (TripPhotoUiModel) -> Unit
 ) {
     val storageService = stringResource(R.string.storage_service)
         .trim()
@@ -880,15 +901,108 @@ private fun TripPhotosSection(
                     key = { it.id }
                 ) { photo ->
                     val resolvedUrl = toDisplayUrl(photo.imageUrl)
-                    AsyncImage(
-                        model = resolvedUrl,
-                        contentDescription = null,
-                        contentScale = ContentScale.Crop,
+                    Box(
                         modifier = Modifier
                             .size(width = 112.dp, height = 88.dp)
-                            .clip(RoundedCornerShape(14.dp))
-                            .clickable { onPhotoClick(resolvedUrl) }
-                            .background(MaterialTheme.colorScheme.surfaceVariant)
+                    ) {
+                        AsyncImage(
+                            model = resolvedUrl,
+                            contentDescription = null,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier
+                                .matchParentSize()
+                                .clip(RoundedCornerShape(14.dp))
+                                .clickable { onPhotoClick(resolvedUrl) }
+                                .background(MaterialTheme.colorScheme.surfaceVariant)
+                        )
+                        IconButton(
+                            onClick = { onDeletePhotoClick(photo) },
+                            enabled = deletingPhotoId != photo.id,
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .padding(6.dp)
+                                .size(28.dp)
+                                .clip(CircleShape)
+                                .background(Color(0xE61D2430))
+                        ) {
+                            if (deletingPhotoId == photo.id) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(14.dp),
+                                    strokeWidth = 2.dp,
+                                    color = Color.White
+                                )
+                            } else {
+                                Icon(
+                                    imageVector = Icons.Default.Close,
+                                    contentDescription = "Xóa ảnh",
+                                    tint = Color.White,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ConfirmDeleteTripPhotoDialog(
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit
+) {
+    Dialog(onDismissRequest = onDismiss) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(22.dp))
+                .background(Color(0xFFFFFFFF))
+                .padding(22.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Text(
+                text = "Xóa ảnh chuyến đi?",
+                color = Color(0xFF161A22),
+                fontSize = 20.sp,
+                fontWeight = FontWeight.ExtraBold
+            )
+            Text(
+                text = "Ảnh này sẽ bị xóa khỏi album chuyến đi. Bạn có chắc chắn muốn tiếp tục?",
+                color = Color(0xFF5E6675),
+                fontSize = 14.sp,
+                lineHeight = 20.sp
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                TextButton(
+                    onClick = onDismiss,
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(46.dp)
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(Color(0xFFF1F4F8))
+                ) {
+                    Text(
+                        text = "Hủy",
+                        color = Color(0xFF293241),
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+                TextButton(
+                    onClick = onConfirm,
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(46.dp)
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(Color(0xFFE5484D))
+                ) {
+                    Text(
+                        text = "Xóa",
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold
                     )
                 }
             }

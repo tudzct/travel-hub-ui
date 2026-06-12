@@ -141,6 +141,13 @@ class TripRepository @Inject constructor(
         }
     }
 
+    suspend fun deleteTripPhoto(tripId: Long, photoId: Long): Result<Unit> {
+        return runCatching {
+            tripApiService.deleteTripPhoto(tripId = tripId, photoId = photoId)
+            detailCache.remove(tripId)
+        }
+    }
+
     suspend fun publishTripPost(
         tripId: Long,
         description: String? = null

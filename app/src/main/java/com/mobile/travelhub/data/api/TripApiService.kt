@@ -93,6 +93,12 @@ interface TripApiService {
         @Body request: AddTripPhotosRequest
     ): List<TripPhotoResponse>
 
+    @DELETE("api/trips/{tripId}/photos/{photoId}")
+    suspend fun deleteTripPhoto(
+        @Path("tripId") tripId: Long,
+        @Path("photoId") photoId: Long
+    ): Unit
+
     @POST("api/trips/{tripId}/publish-post")
     suspend fun publishTripPost(
         @Path("tripId") tripId: Long,
