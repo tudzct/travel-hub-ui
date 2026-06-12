@@ -42,7 +42,8 @@ class ProfileViewModel @Inject constructor(
     private val postRepository: PostRepository,
     private val avatarRepository: AvatarRepository,
     private val locationRepository: LocationRepository,
-    private val bankRepository: BankRepository
+    private val bankRepository: BankRepository,
+    private val postInteractionEventBus: PostInteractionEventBus
 ) : ViewModel() {
     private val sessionUserId: Long
         get() = authRepository.getSavedSession()?.userId?.toLong() ?: -1L
@@ -79,6 +80,7 @@ class ProfileViewModel @Inject constructor(
     val unauthorized: StateFlow<Boolean> = _unauthorized.asStateFlow()
 
     init {
+        collectPostInteractionEvents()
         loadUserProfile()
         loadProvinces()
     }
@@ -211,6 +213,7 @@ class ProfileViewModel @Inject constructor(
 
             result
                 .onSuccess { response ->
+                    val likeCount = response.likeCount.coerceAtLeast(0)
                     if (!response.liked && _profilePostsState.value.selectedTab == ProfilePostsTab.LIKED) {
                         _profilePostsState.update { state ->
                             state.copy(posts = state.posts.filterNot { it.id == postId })
@@ -219,11 +222,18 @@ class ProfileViewModel @Inject constructor(
                         updatePost(postId) {
                             it.copy(
                                 isLiked = response.liked,
-                                likeCount = response.likeCount.coerceAtLeast(0),
+                                likeCount = likeCount,
                                 isLikeLoading = false
                             )
                         }
                     }
+                    postInteractionEventBus.publish(
+                        PostInteractionEvent.LikeChanged(
+                            postId = postId,
+                            liked = response.liked,
+                            likeCount = likeCount
+                        )
+                    )
                 }
                 .onFailure { throwable ->
                     updatePost(postId) {
@@ -257,6 +267,7 @@ class ProfileViewModel @Inject constructor(
         viewModelScope.launch {
             postRepository.toggleSavedPost(postId, currentlySaved = currentPost.isSaved)
                 .onSuccess { response ->
+                    val saveCount = response.saveCount.coerceAtLeast(0)
                     if (!response.saved && _profilePostsState.value.selectedTab == ProfilePostsTab.SAVED) {
                         _profilePostsState.update { state ->
                             state.copy(posts = state.posts.filterNot { it.id == postId })
@@ -265,11 +276,18 @@ class ProfileViewModel @Inject constructor(
                         updatePost(postId) {
                             it.copy(
                                 isSaved = response.saved,
-                                saveCount = response.saveCount.coerceAtLeast(0),
+                                saveCount = saveCount,
                                 isSaveLoading = false
                             )
                         }
                     }
+                    postInteractionEventBus.publish(
+                        PostInteractionEvent.SaveChanged(
+                            postId = postId,
+                            saved = response.saved,
+                            saveCount = saveCount
+                        )
+                    )
                 }
                 .onFailure { throwable ->
                     updatePost(postId) {
@@ -338,6 +356,7 @@ class ProfileViewModel @Inject constructor(
             postRepository.addComment(postId = postId, content = content)
                 .onSuccess { response ->
                     val commentUiModel = toCommentUiModel(response)
+                    var updatedCommentCount: Int? = null
                     _profilePostsState.update { state ->
                         val currentComments = state.commentsByPostId[postId].orEmpty()
                         state.copy(
@@ -348,11 +367,21 @@ class ProfileViewModel @Inject constructor(
                             commentsByPostId = state.commentsByPostId + (postId to (currentComments + commentUiModel)),
                             posts = state.posts.map { post ->
                                 if (post.id == postId) {
-                                    post.copy(commentCount = (post.commentCount + 1).coerceAtLeast(0))
+                                    val nextCommentCount = (post.commentCount + 1).coerceAtLeast(0)
+                                    updatedCommentCount = nextCommentCount
+                                    post.copy(commentCount = nextCommentCount)
                                 } else {
                                     post
                                 }
                             }
+                        )
+                    }
+                    updatedCommentCount?.let { commentCount ->
+                        postInteractionEventBus.publish(
+                            PostInteractionEvent.CommentCountChanged(
+                                postId = postId,
+                                commentCount = commentCount
+                            )
                         )
                     }
                 }
@@ -371,6 +400,7 @@ class ProfileViewModel @Inject constructor(
         viewModelScope.launch {
             postRepository.getPostComments(postId = postId, page = 0, pageSize = 50)
                 .onSuccess { response ->
+                    val commentCount = response.totalElements.toSafeCount()
                     _profilePostsState.update { state ->
                         state.copy(
                             isCommentsLoading = false,
@@ -380,13 +410,19 @@ class ProfileViewModel @Inject constructor(
                             ),
                             posts = state.posts.map { post ->
                                 if (post.id == postId) {
-                                    post.copy(commentCount = response.totalElements.toSafeCount())
+                                    post.copy(commentCount = commentCount)
                                 } else {
                                     post
                                 }
                             }
                         )
                     }
+                    postInteractionEventBus.publish(
+                        PostInteractionEvent.CommentCountChanged(
+                            postId = postId,
+                            commentCount = commentCount
+                        )
+                    )
                 }
                 .onFailure { throwable ->
                     _profilePostsState.update {
@@ -407,6 +443,182 @@ class ProfileViewModel @Inject constructor(
                 }
             )
         }
+    }
+
+    private fun collectPostInteractionEvents() {
+        viewModelScope.launch {
+            postInteractionEventBus.events.collect { event ->
+                when (event) {
+                    is PostInteractionEvent.LikeChanged -> applyLikeEvent(event)
+                    is PostInteractionEvent.SaveChanged -> applySaveEvent(event)
+                    is PostInteractionEvent.CommentCountChanged -> updatePost(event.postId) {
+                        it.copy(commentCount = event.commentCount.coerceAtLeast(0))
+                    }
+                    is PostInteractionEvent.UserProfileChanged -> updateUserProfile(event)
+                }
+            }
+        }
+    }
+
+    private fun applyLikeEvent(event: PostInteractionEvent.LikeChanged) {
+        if (!event.liked && _profilePostsState.value.selectedTab == ProfilePostsTab.LIKED) {
+            _profilePostsState.update { state ->
+                state.copy(posts = state.posts.filterNot { it.id == event.postId })
+            }
+            return
+        }
+
+        updatePost(event.postId) {
+            it.copy(
+                isLiked = event.liked,
+                likeCount = event.likeCount.coerceAtLeast(0),
+                isLikeLoading = false
+            )
+        }
+    }
+
+    private fun applySaveEvent(event: PostInteractionEvent.SaveChanged) {
+        if (!event.saved && _profilePostsState.value.selectedTab == ProfilePostsTab.SAVED) {
+            _profilePostsState.update { state ->
+                state.copy(posts = state.posts.filterNot { it.id == event.postId })
+            }
+            return
+        }
+
+        updatePost(event.postId) {
+            it.copy(
+                isSaved = event.saved,
+                saveCount = event.saveCount.coerceAtLeast(0),
+                isSaveLoading = false
+            )
+        }
+    }
+
+    private fun updateUserProfile(event: PostInteractionEvent.UserProfileChanged) {
+        val username = event.username.takeIf { it.isNotBlank() }
+        val name = event.name.takeIf { it.isNotBlank() }
+        val avatarUrl = event.avatarUrl?.takeIf { it.isNotBlank() }
+
+        _profileState.update { state ->
+            if (state is UiState.Success && state.data.id == event.userId) {
+                state.copy(
+                    data = state.data.copy(
+                        username = username ?: state.data.username,
+                        name = name ?: state.data.name,
+                        avatarUrl = avatarUrl
+                    )
+                )
+            } else {
+                state
+            }
+        }
+        _otherUserProfileState.update { state ->
+            if (state is UiState.Success && state.data.id == event.userId) {
+                state.copy(
+                    data = state.data.copy(
+                        username = username ?: state.data.username,
+                        name = name ?: state.data.name,
+                        avatarUrl = avatarUrl
+                    )
+                )
+            } else {
+                state
+            }
+        }
+        _followersState.update { state ->
+            if (state is UiState.Success) {
+                state.copy(
+                    data = state.data.map { user ->
+                        if (user.id == event.userId) {
+                            user.copy(
+                                username = username ?: user.username,
+                                name = name ?: user.name,
+                                avatarUrl = avatarUrl
+                            )
+                        } else {
+                            user
+                        }
+                    }
+                )
+            } else {
+                state
+            }
+        }
+        _followingState.update { state ->
+            if (state is UiState.Success) {
+                state.copy(
+                    data = state.data.map { user ->
+                        if (user.id == event.userId) {
+                            user.copy(
+                                username = username ?: user.username,
+                                name = name ?: user.name,
+                                avatarUrl = avatarUrl
+                            )
+                        } else {
+                            user
+                        }
+                    }
+                )
+            } else {
+                state
+            }
+        }
+        _profilePostsState.update { state ->
+            applyUserProfileToPostState(
+                state = state,
+                userId = event.userId,
+                username = username,
+                avatarUrl = avatarUrl
+            )
+        }
+    }
+
+    private fun applyUserProfileToVisiblePosts(
+        userId: Long,
+        username: String?,
+        avatarUrl: String?
+    ) {
+        _profilePostsState.update { state ->
+            applyUserProfileToPostState(
+                state = state,
+                userId = userId,
+                username = username?.takeIf { it.isNotBlank() },
+                avatarUrl = avatarUrl?.takeIf { it.isNotBlank() }
+            )
+        }
+    }
+
+    private fun applyUserProfileToPostState(
+        state: ProfilePostsUiState,
+        userId: Long,
+        username: String?,
+        avatarUrl: String?
+    ): ProfilePostsUiState {
+        val updateAllOwnProfilePosts = userId == sessionUserId && state.selectedTab == ProfilePostsTab.POSTS
+        return state.copy(
+            posts = state.posts.map { post ->
+                if (post.ownerId == userId || updateAllOwnProfilePosts) {
+                    post.copy(
+                        username = username ?: post.username,
+                        ownerAvatarUrl = avatarUrl
+                    )
+                } else {
+                    post
+                }
+            },
+            commentsByPostId = state.commentsByPostId.mapValues { (_, comments) ->
+                comments.map { comment ->
+                    if (comment.ownerId == userId) {
+                        comment.copy(
+                            username = username ?: comment.username,
+                            avatarUrl = avatarUrl
+                        )
+                    } else {
+                        comment
+                    }
+                }
+            }
+        )
     }
 
     fun loadOtherUserProfile(userId: Long) {
@@ -530,7 +742,20 @@ class ProfileViewModel @Inject constructor(
                 userApiService.getMyProfile()
             }
             _profileState.value = UiState.Success(refreshedProfile)
+            applyUserProfileToVisiblePosts(
+                userId = refreshedProfile.id,
+                username = refreshedProfile.username,
+                avatarUrl = refreshedProfile.avatarUrl
+            )
             _updateStatus.value = UiState.Success(true)
+            postInteractionEventBus.publish(
+                PostInteractionEvent.UserProfileChanged(
+                    userId = refreshedProfile.id,
+                    username = refreshedProfile.username,
+                    name = refreshedProfile.name,
+                    avatarUrl = refreshedProfile.avatarUrl
+                )
+            )
             Log.d("API_SUCCESS", "Cập nhật Profile thành công!")
             return refreshedProfile
         } catch (e: Exception) {

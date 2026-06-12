@@ -96,7 +96,8 @@ class HomeViewModel @Inject constructor(
     private val savePostUseCase: SavePostUseCase,
     private val addCommentUseCase: AddCommentUseCase,
     private val getPostCommentsUseCase: GetPostCommentsUseCase,
-    private val homeFeedMemoryCache: HomeFeedMemoryCache
+    private val homeFeedMemoryCache: HomeFeedMemoryCache,
+    private val postInteractionEventBus: PostInteractionEventBus
 ) : ViewModel() {
 
     private val cachedInitialState = homeFeedMemoryCache.get()
@@ -105,6 +106,7 @@ class HomeViewModel @Inject constructor(
     private var feedGeneration = 0
 
     init {
+        collectPostInteractionEvents()
         if (cachedInitialState == null) {
             refreshPosts()
         }
@@ -253,6 +255,13 @@ class HomeViewModel @Inject constructor(
                             isLikeLoading = false
                         )
                     }
+                    postInteractionEventBus.publish(
+                        PostInteractionEvent.LikeChanged(
+                            postId = postId,
+                            liked = response.liked,
+                            likeCount = response.likeCount.coerceAtLeast(0)
+                        )
+                    )
                 }
                 .onFailure { throwable ->
                     updatePost(postId) {
@@ -293,6 +302,13 @@ class HomeViewModel @Inject constructor(
                             isSaveLoading = false
                         )
                     }
+                    postInteractionEventBus.publish(
+                        PostInteractionEvent.SaveChanged(
+                            postId = postId,
+                            saved = response.saved,
+                            saveCount = response.saveCount.coerceAtLeast(0)
+                        )
+                    )
                 }
                 .onFailure { throwable ->
                     updatePost(postId) {
@@ -361,6 +377,7 @@ class HomeViewModel @Inject constructor(
             addCommentUseCase(postId = postId, content = content)
                 .onSuccess { response ->
                     val commentUiModel = toCommentUiModel(response)
+                    var updatedCommentCount: Int? = null
                     updateState { state ->
                         val currentComments = state.commentsByPostId[postId].orEmpty()
                         state.copy(
@@ -371,11 +388,21 @@ class HomeViewModel @Inject constructor(
                             commentsByPostId = state.commentsByPostId + (postId to (currentComments + commentUiModel)),
                             posts = state.posts.map { post ->
                                 if (post.id == postId) {
-                                    post.copy(commentCount = (post.commentCount + 1).coerceAtLeast(0))
+                                    val nextCommentCount = (post.commentCount + 1).coerceAtLeast(0)
+                                    updatedCommentCount = nextCommentCount
+                                    post.copy(commentCount = nextCommentCount)
                                 } else {
                                     post
                                 }
                             }
+                        )
+                    }
+                    updatedCommentCount?.let { commentCount ->
+                        postInteractionEventBus.publish(
+                            PostInteractionEvent.CommentCountChanged(
+                                postId = postId,
+                                commentCount = commentCount
+                            )
                         )
                     }
                 }
@@ -394,6 +421,7 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch {
             getPostCommentsUseCase(postId = postId, page = 0, pageSize = 50)
                 .onSuccess { response ->
+                    val commentCount = response.totalElements.toSafeCount()
                     updateState { state ->
                         state.copy(
                             isCommentsLoading = false,
@@ -403,13 +431,19 @@ class HomeViewModel @Inject constructor(
                             ),
                             posts = state.posts.map { post ->
                                 if (post.id == postId) {
-                                    post.copy(commentCount = response.totalElements.toSafeCount())
+                                    post.copy(commentCount = commentCount)
                                 } else {
                                     post
                                 }
                             }
                         )
                     }
+                    postInteractionEventBus.publish(
+                        PostInteractionEvent.CommentCountChanged(
+                            postId = postId,
+                            commentCount = commentCount
+                        )
+                    )
                 }
                 .onFailure { throwable ->
                     updateState {
@@ -473,6 +507,67 @@ class HomeViewModel @Inject constructor(
             state.copy(
                 posts = state.posts.map { post ->
                     if (post.id == postId) transform(post) else post
+                }
+            )
+        }
+    }
+
+    private fun collectPostInteractionEvents() {
+        viewModelScope.launch {
+            postInteractionEventBus.events.collect { event ->
+                when (event) {
+                    is PostInteractionEvent.LikeChanged -> updatePost(event.postId) {
+                        it.copy(
+                            isLiked = event.liked,
+                            likeCount = event.likeCount.coerceAtLeast(0),
+                            isLikeLoading = false
+                        )
+                    }
+
+                    is PostInteractionEvent.SaveChanged -> updatePost(event.postId) {
+                        it.copy(
+                            isSaved = event.saved,
+                            saveCount = event.saveCount.coerceAtLeast(0),
+                            isSaveLoading = false
+                        )
+                    }
+
+                    is PostInteractionEvent.CommentCountChanged -> updatePost(event.postId) {
+                        it.copy(commentCount = event.commentCount.coerceAtLeast(0))
+                    }
+
+                    is PostInteractionEvent.UserProfileChanged -> updateUserProfile(event)
+                }
+            }
+        }
+    }
+
+    private fun updateUserProfile(event: PostInteractionEvent.UserProfileChanged) {
+        val username = event.username.takeIf { it.isNotBlank() }
+        val avatarUrl = event.avatarUrl?.takeIf { it.isNotBlank() }
+        updateState { state ->
+            state.copy(
+                posts = state.posts.map { post ->
+                    if (post.ownerId == event.userId) {
+                        post.copy(
+                            username = username ?: post.username,
+                            ownerAvatarUrl = avatarUrl
+                        )
+                    } else {
+                        post
+                    }
+                },
+                commentsByPostId = state.commentsByPostId.mapValues { (_, comments) ->
+                    comments.map { comment ->
+                        if (comment.ownerId == event.userId) {
+                            comment.copy(
+                                username = username ?: comment.username,
+                                avatarUrl = avatarUrl
+                            )
+                        } else {
+                            comment
+                        }
+                    }
                 }
             )
         }

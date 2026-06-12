@@ -65,7 +65,8 @@ class CreatePostViewModel @Inject constructor(
     private val createPostUseCase: CreatePostUseCase,
     private val locationRepository: LocationRepository,
     private val placeRepository: PlaceRepository,
-    private val userApiService: UserApiService
+    private val userApiService: UserApiService,
+    private val postInteractionEventBus: PostInteractionEventBus
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(CreatePostUiState())
@@ -74,6 +75,7 @@ class CreatePostViewModel @Inject constructor(
     private var placesRequestId = 0
 
     init {
+        collectPostInteractionEvents()
         loadProvinces()
         loadUserProfile()
     }
@@ -367,6 +369,21 @@ class CreatePostViewModel @Inject constructor(
                         )
                     }
                 }
+        }
+    }
+
+    private fun collectPostInteractionEvents() {
+        viewModelScope.launch {
+            postInteractionEventBus.events.collect { event ->
+                if (event is PostInteractionEvent.UserProfileChanged) {
+                    _uiState.update {
+                        it.copy(
+                            userName = event.name.takeIf { name -> name.isNotBlank() } ?: it.userName,
+                            userAvatarUrl = event.avatarUrl?.takeIf { avatarUrl -> avatarUrl.isNotBlank() }
+                        )
+                    }
+                }
+            }
         }
     }
 
