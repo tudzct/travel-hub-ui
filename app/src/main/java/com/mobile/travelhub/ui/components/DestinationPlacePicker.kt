@@ -18,18 +18,22 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.WarningAmber
+import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
 import androidx.compose.material.icons.rounded.Place
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Surface
@@ -37,6 +41,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -58,6 +64,7 @@ import com.mobile.travelhub.data.model.ProvinceResponse
 import com.mobile.travelhub.data.model.TravelPlaceListItemResponse
 import com.mobile.travelhub.ui.theme.TravelHubTheme
 import com.mobile.travelhub.R
+import java.text.Normalizer
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -68,6 +75,7 @@ fun DestinationPlacePicker(
     provinces: List<AdminProvinceResponse>,
     places: List<TravelPlaceListItemResponse>,
     isLoading: Boolean,
+    isLoadingMorePlaces: Boolean = false,
     enabled: Boolean,
     modifier: Modifier = Modifier,
     placeholder: String = "Chọn địa điểm",
@@ -83,8 +91,12 @@ fun DestinationPlacePicker(
     showCompactIconBackground: Boolean = true,
     onProvinceSelected: (Long) -> Unit,
     onPlaceSelected: (Long) -> Unit = {},
+    placeQuery: String = "",
+    onPlaceQueryChange: (String) -> Unit = {},
+    onLoadMorePlaces: () -> Unit = {},
     provinceErrorMessage: String? = null,
     placesErrorMessage: String? = null,
+    placesLoadMoreErrorMessage: String? = null,
     onRetryProvinces: () -> Unit = {},
     onRetryPlaces: () -> Unit = {}
 ) {
@@ -152,6 +164,7 @@ fun DestinationPlacePicker(
                 provinces = provinces,
                 places = places,
                 isLoading = isLoading,
+                isLoadingMorePlaces = isLoadingMorePlaces,
                 isChoosingProvince = !allowPlaceSelection || isChoosingProvince || selectedProvince == null,
                 allowPlaceSelection = allowPlaceSelection,
                 onChooseProvince = { isChoosingProvince = true },
@@ -167,8 +180,12 @@ fun DestinationPlacePicker(
                     onPlaceSelected(placeId)
                     isSheetOpen = false
                 },
+                placeQuery = placeQuery,
+                onPlaceQueryChange = onPlaceQueryChange,
+                onLoadMorePlaces = onLoadMorePlaces,
                 provinceErrorMessage = provinceErrorMessage,
                 placesErrorMessage = placesErrorMessage,
+                placesLoadMoreErrorMessage = placesLoadMoreErrorMessage,
                 onRetryProvinces = onRetryProvinces,
                 onRetryPlaces = onRetryPlaces
             )
@@ -338,16 +355,35 @@ private fun DestinationPickerSheet(
     provinces: List<AdminProvinceResponse>,
     places: List<TravelPlaceListItemResponse>,
     isLoading: Boolean,
+    isLoadingMorePlaces: Boolean = false,
     isChoosingProvince: Boolean,
     allowPlaceSelection: Boolean = true,
     onChooseProvince: () -> Unit,
     onProvinceSelected: (Long) -> Unit,
     onPlaceSelected: (Long) -> Unit,
+    placeQuery: String = "",
+    onPlaceQueryChange: (String) -> Unit = {},
+    onLoadMorePlaces: () -> Unit = {},
     provinceErrorMessage: String? = null,
     placesErrorMessage: String? = null,
+    placesLoadMoreErrorMessage: String? = null,
     onRetryProvinces: () -> Unit = {},
     onRetryPlaces: () -> Unit = {}
 ) {
+    var provinceQuery by remember { mutableStateOf("") }
+    val normalizedProvinceQuery = remember(provinceQuery) {
+        provinceQuery.normalizedSearchText()
+    }
+    val filteredProvinces = remember(provinces, normalizedProvinceQuery) {
+        if (normalizedProvinceQuery.isBlank()) {
+            provinces
+        } else {
+            provinces.filter { province ->
+                province.name.normalizedSearchText().contains(normalizedProvinceQuery)
+            }
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -383,6 +419,23 @@ private fun DestinationPickerSheet(
         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
         Spacer(modifier = Modifier.height(8.dp))
 
+        DestinationSearchBar(
+            value = if (isChoosingProvince || !allowPlaceSelection) provinceQuery else placeQuery,
+            placeholder = stringResource(
+                if (isChoosingProvince || !allowPlaceSelection) {
+                    R.string.search_province_hint
+                } else {
+                    R.string.search_place_hint
+                }
+            ),
+            onValueChange = if (isChoosingProvince || !allowPlaceSelection) {
+                { value -> provinceQuery = value }
+            } else {
+                onPlaceQueryChange
+            }
+        )
+        Spacer(modifier = Modifier.height(10.dp))
+
         if (isChoosingProvince || !allowPlaceSelection) {
             when {
                 isLoading && provinces.isEmpty() -> LoadingPlaceList()
@@ -391,11 +444,14 @@ private fun DestinationPickerSheet(
                     message = provinceErrorMessage,
                     onRetry = onRetryProvinces
                 )
+                filteredProvinces.isEmpty() -> EmptySearchResults(
+                    message = stringResource(R.string.no_province_search_results)
+                )
                 else -> LazyColumn(
                     modifier = Modifier.heightIn(max = 520.dp),
                     verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    items(provinces, key = { it.id }) { province ->
+                    items(filteredProvinces, key = { it.id }) { province ->
                         ProvinceOptionRow(
                             province = province,
                             selected = province.id == selectedProvince?.id,
@@ -407,29 +463,160 @@ private fun DestinationPickerSheet(
             }
         } else {
             when {
-                isLoading -> LoadingPlaceList()
-                placesErrorMessage != null -> DestinationLoadError(
+                isLoading && places.isEmpty() -> LoadingPlaceList()
+                placesErrorMessage != null && places.isEmpty() -> DestinationLoadError(
                     title = stringResource(R.string.ui_230aa1c612),
                     message = placesErrorMessage,
                     onRetry = onRetryPlaces
                 )
+                places.isEmpty() && placeQuery.isNotBlank() -> EmptySearchResults(
+                    message = stringResource(R.string.no_place_search_results)
+                )
                 places.isEmpty() -> EmptyPlaceList()
-                else -> LazyColumn(
-                    modifier = Modifier.heightIn(max = 520.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    items(places, key = { it.id }) { place ->
-                        PlaceOptionRow(
-                            place = place,
-                            selected = place.id == selectedPlace?.id,
-                            onClick = { onPlaceSelected(place.id) }
-                        )
-                    }
-                    item { Spacer(modifier = Modifier.height(20.dp)) }
-                }
+                else -> PlaceOptionsList(
+                    places = places,
+                    selectedPlaceId = selectedPlace?.id,
+                    isLoadingMore = isLoadingMorePlaces,
+                    loadMoreErrorMessage = placesLoadMoreErrorMessage,
+                    onPlaceSelected = onPlaceSelected,
+                    onLoadMore = onLoadMorePlaces
+                )
             }
         }
     }
+}
+
+@Composable
+private fun DestinationSearchBar(
+    value: String,
+    placeholder: String,
+    onValueChange: (String) -> Unit
+) {
+    SearchBar(
+        value = value,
+        placeholder = placeholder,
+        onValueChange = onValueChange,
+        trailingContent = {
+            if (value.isNotEmpty()) {
+                IconButton(
+                    onClick = { onValueChange("") },
+                    modifier = Modifier.size(34.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.Close,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        }
+    )
+}
+
+@Composable
+private fun PlaceOptionsList(
+    places: List<TravelPlaceListItemResponse>,
+    selectedPlaceId: Long?,
+    isLoadingMore: Boolean,
+    loadMoreErrorMessage: String?,
+    onPlaceSelected: (Long) -> Unit,
+    onLoadMore: () -> Unit
+) {
+    val listState = rememberLazyListState()
+    val shouldLoadMore by remember(places) {
+        derivedStateOf {
+            val lastVisibleIndex = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
+            places.isNotEmpty() && lastVisibleIndex >= places.lastIndex - 3
+        }
+    }
+
+    LaunchedEffect(shouldLoadMore, places.size) {
+        if (shouldLoadMore) {
+            onLoadMore()
+        }
+    }
+
+    LazyColumn(
+        state = listState,
+        modifier = Modifier.heightIn(max = 520.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        items(places, key = { it.id }) { place ->
+            PlaceOptionRow(
+                place = place,
+                selected = place.id == selectedPlaceId,
+                onClick = { onPlaceSelected(place.id) }
+            )
+        }
+        when {
+            isLoadingMore -> item(key = "places-loading-more") {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 14.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(24.dp),
+                        strokeWidth = 2.dp
+                    )
+                }
+            }
+            loadMoreErrorMessage != null -> item(key = "places-load-more-error") {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = loadMoreErrorMessage,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                    TextButton(onClick = onLoadMore) {
+                        Text(stringResource(R.string.retry))
+                    }
+                }
+            }
+            else -> item(key = "places-list-bottom") {
+                Spacer(modifier = Modifier.height(20.dp))
+            }
+        }
+    }
+}
+
+@Composable
+private fun EmptySearchResults(message: String) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(180.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Icon(
+            imageVector = Icons.Rounded.Place,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f),
+            modifier = Modifier.size(34.dp)
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = message,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+private fun String.normalizedSearchText(): String {
+    return Normalizer.normalize(trim(), Normalizer.Form.NFD)
+        .replace("\\p{M}+".toRegex(), "")
+        .replace('đ', 'd')
+        .replace('Đ', 'D')
+        .lowercase()
 }
 
 @Composable

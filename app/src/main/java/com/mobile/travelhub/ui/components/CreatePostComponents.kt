@@ -65,6 +65,8 @@ fun CreatePostScreenContent(
     onClose: () -> Unit,
     onSelectProvince: (Long) -> Unit,
     onSelectPlace: (Long?) -> Unit,
+    onPlaceQueryChange: (String) -> Unit,
+    onLoadMorePlaces: () -> Unit,
     onRetryProvinces: () -> Unit,
     onRetryPlaces: () -> Unit,
     onOpenImagePicker: () -> Unit,
@@ -111,6 +113,8 @@ fun CreatePostScreenContent(
             uiState = uiState,
             onSelectProvince = onSelectProvince,
             onSelectPlace = onSelectPlace,
+            onPlaceQueryChange = onPlaceQueryChange,
+            onLoadMorePlaces = onLoadMorePlaces,
             onRetryProvinces = onRetryProvinces,
             onRetryPlaces = onRetryPlaces
         )
@@ -327,6 +331,8 @@ private fun TravelPlaceSection(
     uiState: CreatePostUiState,
     onSelectProvince: (Long) -> Unit,
     onSelectPlace: (Long?) -> Unit,
+    onPlaceQueryChange: (String) -> Unit,
+    onLoadMorePlaces: () -> Unit,
     onRetryProvinces: () -> Unit,
     onRetryPlaces: () -> Unit
 ) {
@@ -338,6 +344,7 @@ private fun TravelPlaceSection(
             provinces = uiState.provinces,
             places = uiState.places,
             isLoading = uiState.isLoadingLocations,
+            isLoadingMorePlaces = uiState.isLoadingMorePlaces,
             enabled = !uiState.isSubmitting &&
                 (uiState.provinces.isNotEmpty() || uiState.provinceErrorMessage != null),
             placeholder = stringResource(R.string.ui_9433146e77),
@@ -348,8 +355,12 @@ private fun TravelPlaceSection(
             anchorBorderColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.65f),
             onProvinceSelected = onSelectProvince,
             onPlaceSelected = onSelectPlace,
+            placeQuery = uiState.placeQuery,
+            onPlaceQueryChange = onPlaceQueryChange,
+            onLoadMorePlaces = onLoadMorePlaces,
             provinceErrorMessage = uiState.provinceErrorMessage,
             placesErrorMessage = uiState.placesErrorMessage,
+            placesLoadMoreErrorMessage = uiState.placesLoadMoreErrorMessage,
             onRetryProvinces = onRetryProvinces,
             onRetryPlaces = onRetryPlaces
         )

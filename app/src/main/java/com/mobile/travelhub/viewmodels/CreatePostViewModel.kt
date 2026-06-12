@@ -12,6 +12,8 @@ import com.mobile.travelhub.data.model.TravelPlaceListItemResponse
 import com.mobile.travelhub.usecase.CreatePostUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -26,8 +28,13 @@ data class CreatePostUiState(
     val selectedProvinceId: Long? = null,
     val selectedPlaceId: Long? = null,
     val isLoadingLocations: Boolean = false,
+    val isLoadingMorePlaces: Boolean = false,
     val provinceErrorMessage: String? = null,
     val placesErrorMessage: String? = null,
+    val placesLoadMoreErrorMessage: String? = null,
+    val placeQuery: String = "",
+    val placesPage: Int = 0,
+    val placesTotalPages: Int = 0,
     val isSubmitting: Boolean = false,
     val errorMessage: String? = null,
     val isPostCreated: Boolean = false,
@@ -63,6 +70,8 @@ class CreatePostViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow(CreatePostUiState())
     val uiState: StateFlow<CreatePostUiState> = _uiState.asStateFlow()
+    private var placeSearchJob: Job? = null
+    private var placesRequestId = 0
 
     init {
         loadProvinces()
@@ -98,16 +107,21 @@ class CreatePostViewModel @Inject constructor(
     }
 
     fun selectProvince(provinceId: Long) {
+        placeSearchJob?.cancel()
         _uiState.update {
             it.copy(
                 selectedProvinceId = provinceId,
                 selectedPlaceId = null,
                 places = emptyList(),
+                placeQuery = "",
+                placesPage = 0,
+                placesTotalPages = 0,
                 placesErrorMessage = null,
+                placesLoadMoreErrorMessage = null,
                 errorMessage = null
             )
         }
-        loadPlaces(provinceId)
+        loadPlaces(provinceId = provinceId)
     }
 
     fun selectPlace(placeId: Long?) {
@@ -119,7 +133,86 @@ class CreatePostViewModel @Inject constructor(
     }
 
     fun retryLoadPlaces() {
-        _uiState.value.selectedProvinceId?.let(::loadPlaces)
+        placeSearchJob?.cancel()
+        val state = _uiState.value
+        state.selectedProvinceId?.let {
+            loadPlaces(provinceId = it, query = state.placeQuery)
+        }
+    }
+
+    fun updatePlaceQuery(value: String) {
+        val provinceId = _uiState.value.selectedProvinceId ?: return
+        placesRequestId++
+        _uiState.update {
+            it.copy(
+                placeQuery = value,
+                selectedPlaceId = null,
+                places = emptyList(),
+                isLoadingLocations = true,
+                isLoadingMorePlaces = false,
+                placesPage = 0,
+                placesTotalPages = 0,
+                placesErrorMessage = null,
+                placesLoadMoreErrorMessage = null
+            )
+        }
+        placeSearchJob?.cancel()
+        placeSearchJob = viewModelScope.launch {
+            delay(PLACE_SEARCH_DEBOUNCE_MS)
+            loadPlaces(provinceId = provinceId, query = value)
+        }
+    }
+
+    fun loadMorePlaces() {
+        val state = _uiState.value
+        val provinceId = state.selectedProvinceId ?: return
+        if (
+            state.isLoadingLocations ||
+            state.isLoadingMorePlaces ||
+            state.placesPage + 1 >= state.placesTotalPages
+        ) {
+            return
+        }
+
+        val nextPage = state.placesPage + 1
+        val query = state.placeQuery
+        val requestId = placesRequestId
+        viewModelScope.launch {
+            _uiState.update {
+                it.copy(
+                    isLoadingMorePlaces = true,
+                    placesLoadMoreErrorMessage = null
+                )
+            }
+            runCatching {
+                placeRepository.getPlaces(
+                    page = nextPage,
+                    pageSize = PLACES_PAGE_SIZE,
+                    provinceId = provinceId,
+                    keyword = query.trim().takeIf(String::isNotEmpty)
+                )
+            }.onSuccess { response ->
+                if (requestId != placesRequestId || _uiState.value.placeQuery != query) return@onSuccess
+                val existingIds = _uiState.value.places.mapTo(hashSetOf()) { it.id }
+                _uiState.update {
+                    it.copy(
+                        places = it.places + response.data.filterNot { place -> place.id in existingIds },
+                        isLoadingMorePlaces = false,
+                        placesLoadMoreErrorMessage = null,
+                        placesPage = response.pageNumber,
+                        placesTotalPages = response.totalPages
+                    )
+                }
+            }.onFailure { throwable ->
+                if (requestId != placesRequestId || _uiState.value.placeQuery != query) return@onFailure
+                _uiState.update {
+                    it.copy(
+                        isLoadingMorePlaces = false,
+                        placesLoadMoreErrorMessage = throwable.userMessage("Không thể tải thêm địa điểm")
+                    )
+                }
+            }
+        }
     }
 
     fun submitPost() {
@@ -155,12 +248,15 @@ class CreatePostViewModel @Inject constructor(
                         selectedImages = emptyList(),
                         selectedPlaceId = null,
                         places = emptyList(),
+                        placeQuery = "",
+                        placesPage = 0,
+                        placesTotalPages = 0,
                         isSubmitting = false,
                         isPostCreated = true,
                         errorMessage = null
                     )
                 }
-                _uiState.value.selectedProvinceId?.let(::loadPlaces)
+                _uiState.value.selectedProvinceId?.let { loadPlaces(provinceId = it) }
             }.onFailure { throwable ->
                 _uiState.update {
                     it.copy(
@@ -202,32 +298,58 @@ class CreatePostViewModel @Inject constructor(
         }
     }
 
-    private fun loadPlaces(provinceId: Long) {
+    private fun loadPlaces(provinceId: Long, query: String = "") {
+        val requestId = ++placesRequestId
         viewModelScope.launch {
             _uiState.update {
                 it.copy(
                     isLoadingLocations = true,
-                    placesErrorMessage = null
+                    isLoadingMorePlaces = false,
+                    placesErrorMessage = null,
+                    placesLoadMoreErrorMessage = null
                 )
             }
 
             runCatching {
-                placeRepository.getPlaces(page = 0, pageSize = 100, provinceId = provinceId).data
-            }.onSuccess { places ->
+                placeRepository.getPlaces(
+                    page = 0,
+                    pageSize = PLACES_PAGE_SIZE,
+                    provinceId = provinceId,
+                    keyword = query.trim().takeIf(String::isNotEmpty)
+                )
+            }.onSuccess { response ->
+                if (
+                    requestId != placesRequestId ||
+                    _uiState.value.selectedProvinceId != provinceId ||
+                    _uiState.value.placeQuery != query
+                ) {
+                    return@onSuccess
+                }
                 _uiState.update {
                     it.copy(
-                        places = places,
+                        places = response.data,
                         selectedPlaceId = null,
                         isLoadingLocations = false,
-                        placesErrorMessage = null
+                        placesErrorMessage = null,
+                        placesPage = response.pageNumber,
+                        placesTotalPages = response.totalPages
                     )
                 }
             }.onFailure { throwable ->
+                if (
+                    requestId != placesRequestId ||
+                    _uiState.value.selectedProvinceId != provinceId ||
+                    _uiState.value.placeQuery != query
+                ) {
+                    return@onFailure
+                }
                 _uiState.update {
                     it.copy(
                         isLoadingLocations = false,
                         places = emptyList(),
-                        placesErrorMessage = throwable.userMessage("Không thể tải danh sách địa điểm")
+                        placesErrorMessage = throwable.userMessage("Không thể tải danh sách địa điểm"),
+                        placesPage = 0,
+                        placesTotalPages = 0
                     )
                 }
             }
@@ -250,5 +372,7 @@ class CreatePostViewModel @Inject constructor(
 
     companion object {
         const val MAX_IMAGE_COUNT = 5
+        private const val PLACES_PAGE_SIZE = 20
+        private const val PLACE_SEARCH_DEBOUNCE_MS = 350L
     }
 }

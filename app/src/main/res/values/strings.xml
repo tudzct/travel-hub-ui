@@ -286,4 +286,9 @@
     <string name="assistant_suggested_places">Địa điểm gợi ý</string>
     <string name="assistant_view_place_detail">Xem chi tiết</string>
     <string name="assistant_generic_error">Có lỗi xảy ra. Vui lòng thử lại.</string>
+    <string name="search_province_hint">Tìm tỉnh/thành phố</string>
+    <string name="search_place_hint">Tìm địa điểm</string>
+    <string name="no_province_search_results">Không tìm thấy tỉnh/thành phố phù hợp</string>
+    <string name="no_place_search_results">Không tìm thấy địa điểm phù hợp</string>
+    <string name="retry">Thử lại</string>
 </resources>

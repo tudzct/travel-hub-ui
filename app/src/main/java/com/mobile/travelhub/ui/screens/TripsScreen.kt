@@ -48,7 +48,6 @@ import java.time.LocalDate
 import java.time.temporal.ChronoUnit
 import java.time.format.DateTimeFormatter
 import java.util.Locale
-import java.time.temporal.ChronoUnit
 
 
 
@@ -483,37 +482,44 @@ fun ActiveJourneyCardV2(
                         .clip(CircleShape)
                         .background(Color.White),
                     contentAlignment = Alignment.Center
-                Text(
-                    text = trip?.name ?: "Chưa có chuyến đi diễn ra",
-                    fontWeight = FontWeight.ExtraBold,
-                    color = Color.White,
-                    style = MaterialTheme.typography.headlineSmall
-                )
-                Spacer(modifier = Modifier.height(10.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.LocationOn, null, tint = Color.White, modifier = Modifier.size(18.dp))
-                    Spacer(modifier = Modifier.width(8.dp))
+                ) {
                     Text(
-                        trip?.location?.takeIf { it.isNotBlank() }
-                            ?: "Hãy lên kế hoạch cho chuyến đi tiếp theo của bạn!",
+                        text = trip?.name ?: "Chưa có chuyến đi diễn ra",
+                        fontWeight = FontWeight.ExtraBold,
                         color = Color.White,
-                        fontWeight = FontWeight.Medium,
-                        style = MaterialTheme.typography.bodyLarge
+                        style = MaterialTheme.typography.headlineSmall
                     )
-                }
-                activeTripProgressLabel(trip)?.let { label ->
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Surface(
-                        shape = RoundedCornerShape(999.dp),
-                        color = Color.White.copy(alpha = 0.16f)
-                    ) {
-                        Text(
-                            text = label,
-                            color = Color.White,
-                            fontWeight = FontWeight.ExtraBold,
-                            style = MaterialTheme.typography.labelLarge,
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            Icons.Default.LocationOn,
+                            null,
+                            tint = Color.White,
+                            modifier = Modifier.size(18.dp)
                         )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            trip?.location?.takeIf { it.isNotBlank() }
+                                ?: "Hãy lên kế hoạch cho chuyến đi tiếp theo của bạn!",
+                            color = Color.White,
+                            fontWeight = FontWeight.Medium,
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                    }
+                    activeTripProgressLabel(trip)?.let { label ->
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Surface(
+                            shape = RoundedCornerShape(999.dp),
+                            color = Color.White.copy(alpha = 0.16f)
+                        ) {
+                            Text(
+                                text = label,
+                                color = Color.White,
+                                fontWeight = FontWeight.ExtraBold,
+                                style = MaterialTheme.typography.labelLarge,
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+                            )
+                        }
                     }
                 }
             }

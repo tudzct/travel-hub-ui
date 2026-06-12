@@ -56,6 +56,8 @@ fun CreatePostScreen(
         onClose = { backPressedDispatcher?.onBackPressed() },
         onSelectProvince = viewModel::selectProvince,
         onSelectPlace = viewModel::selectPlace,
+        onPlaceQueryChange = viewModel::updatePlaceQuery,
+        onLoadMorePlaces = viewModel::loadMorePlaces,
         onRetryProvinces = viewModel::retryLoadProvinces,
         onRetryPlaces = viewModel::retryLoadPlaces,
         onOpenImagePicker = {

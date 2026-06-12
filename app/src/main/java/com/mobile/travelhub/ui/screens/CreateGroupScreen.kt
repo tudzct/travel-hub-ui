@@ -186,6 +186,7 @@ fun CreateGroupScreen(
                 provinces = uiState.provinces,
                 places = uiState.places,
                 isLoading = uiState.isLoadingLocations,
+                isLoadingMorePlaces = uiState.isLoadingMorePlaces,
                 enabled = !uiState.isSaving &&
                     (uiState.provinces.isNotEmpty() || uiState.provinceErrorMessage != null),
                 placeholder = stringResource(R.string.ui_9433146e77),
@@ -198,8 +199,12 @@ fun CreateGroupScreen(
                 showCompactIconBackground = false,
                 onProvinceSelected = { viewModel.selectProvince(it) },
                 onPlaceSelected = { viewModel.selectPlace(it) },
+                placeQuery = uiState.placeQuery,
+                onPlaceQueryChange = viewModel::updatePlaceQuery,
+                onLoadMorePlaces = viewModel::loadMorePlaces,
                 provinceErrorMessage = uiState.provinceErrorMessage,
                 placesErrorMessage = uiState.placesErrorMessage,
+                placesLoadMoreErrorMessage = uiState.placesLoadMoreErrorMessage,
                 onRetryProvinces = viewModel::retryLoadProvinces,
                 onRetryPlaces = viewModel::retryLoadPlaces
             )
