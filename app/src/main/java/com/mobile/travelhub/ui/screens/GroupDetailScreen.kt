@@ -444,7 +444,7 @@ fun GroupDetailScreen(
                     )
                 }
 
-                if (!isInitialLoading && isLeader && isCompleted) {
+                if (!isInitialLoading && isCompleted) {
                     Spacer(modifier = Modifier.height(16.dp))
                     Button(
                         onClick = {

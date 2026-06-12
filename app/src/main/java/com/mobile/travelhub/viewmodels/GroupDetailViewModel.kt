@@ -491,10 +491,6 @@ class GroupDetailViewModel @Inject constructor(
         val state = uiState.value
         val tripId = state.tripId
         if (tripId == -1L) return
-        if (!state.myRole.equals("LEADER", ignoreCase = true)) {
-            onDone(false, "Chỉ trưởng nhóm có thể đăng bài về chuyến đi")
-            return
-        }
         if (!state.isCompleted) {
             onDone(false, "Chỉ có thể đăng bài sau khi chuyến đi kết thúc")
             return
