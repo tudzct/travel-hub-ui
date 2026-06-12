@@ -67,7 +67,8 @@ class SearchViewModel @Inject constructor(
     private val unlikePostUseCase: UnlikePostUseCase,
     private val savePostUseCase: SavePostUseCase,
     private val addCommentUseCase: AddCommentUseCase,
-    private val getPostCommentsUseCase: GetPostCommentsUseCase
+    private val getPostCommentsUseCase: GetPostCommentsUseCase,
+    private val postInteractionEventBus: PostInteractionEventBus
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(
@@ -81,6 +82,7 @@ class SearchViewModel @Inject constructor(
         get() = authRepository.getSavedSession()?.userId?.toLong() ?: -1L
 
     init {
+        collectPostInteractionEvents()
         searchHistoryRepository.refresh()
         viewModelScope.launch {
             searchHistoryRepository.recentSearches.collect { recentSearches ->
@@ -420,12 +422,20 @@ class SearchViewModel @Inject constructor(
 
             result
                 .onSuccess { response ->
+                    val likeCount = response.likeCount.coerceAtLeast(0)
                     updatePost(postId) { post ->
                         post.copy(
                             likedByCurrentUser = response.liked,
-                            likeCount = response.likeCount.coerceAtLeast(0)
+                            likeCount = likeCount
                         )
                     }
+                    postInteractionEventBus.publish(
+                        PostInteractionEvent.LikeChanged(
+                            postId = postId,
+                            liked = response.liked,
+                            likeCount = likeCount
+                        )
+                    )
                 }
                 .onFailure { throwable ->
                     updatePost(postId) { post ->
@@ -459,12 +469,20 @@ class SearchViewModel @Inject constructor(
 
             savePostUseCase(postId, currentlySaved = currentlySaved)
                 .onSuccess { response ->
+                    val saveCount = response.saveCount.coerceAtLeast(0)
                     updatePost(postId) {
                         post -> post.copy(
                             savedByCurrentUser = response.saved,
-                            saveCount = response.saveCount.coerceAtLeast(0)
+                            saveCount = saveCount
                         )
                     }
+                    postInteractionEventBus.publish(
+                        PostInteractionEvent.SaveChanged(
+                            postId = postId,
+                            saved = response.saved,
+                            saveCount = saveCount
+                        )
+                    )
                 }
                 .onFailure { throwable ->
                     updatePost(postId) {
@@ -529,6 +547,7 @@ class SearchViewModel @Inject constructor(
             addCommentUseCase(postId = postId, content = content)
                 .onSuccess { response ->
                     val commentUiModel = toCommentUiModel(response)
+                    var updatedCommentCount: Int? = null
                     _uiState.update { state ->
                         val currentComments = state.commentsByPostId[postId].orEmpty()
                         state.copy(
@@ -539,11 +558,21 @@ class SearchViewModel @Inject constructor(
                             commentsByPostId = state.commentsByPostId + (postId to (currentComments + commentUiModel)),
                             posts = state.posts.map { post ->
                                 if (post.id == postId) {
-                                    post.copy(commentCount = ((post.commentCount ?: 0) + 1).coerceAtLeast(0))
+                                    val nextCommentCount = ((post.commentCount ?: 0) + 1).coerceAtLeast(0)
+                                    updatedCommentCount = nextCommentCount
+                                    post.copy(commentCount = nextCommentCount)
                                 } else {
                                     post
                                 }
                             }
+                        )
+                    }
+                    updatedCommentCount?.let { commentCount ->
+                        postInteractionEventBus.publish(
+                            PostInteractionEvent.CommentCountChanged(
+                                postId = postId,
+                                commentCount = commentCount
+                            )
                         )
                     }
                 }
@@ -562,6 +591,7 @@ class SearchViewModel @Inject constructor(
         viewModelScope.launch {
             getPostCommentsUseCase(postId = postId, page = 0, pageSize = 50)
                 .onSuccess { response ->
+                    val commentCount = response.totalElements.toSafeCount()
                     _uiState.update { state ->
                         state.copy(
                             isCommentsLoading = false,
@@ -571,13 +601,19 @@ class SearchViewModel @Inject constructor(
                             ),
                             posts = state.posts.map { post ->
                                 if (post.id == postId) {
-                                    post.copy(commentCount = response.totalElements.toSafeCount())
+                                    post.copy(commentCount = commentCount)
                                 } else {
                                     post
                                 }
                             }
                         )
                     }
+                    postInteractionEventBus.publish(
+                        PostInteractionEvent.CommentCountChanged(
+                            postId = postId,
+                            commentCount = commentCount
+                        )
+                    )
                 }
                 .onFailure { throwable ->
                     _uiState.update {
@@ -617,6 +653,79 @@ class SearchViewModel @Inject constructor(
             state.copy(
                 posts = state.posts.map { post ->
                     if (post.id == postId) transform(post) else post
+                }
+            )
+        }
+    }
+
+    private fun collectPostInteractionEvents() {
+        viewModelScope.launch {
+            postInteractionEventBus.events.collect { event ->
+                when (event) {
+                    is PostInteractionEvent.LikeChanged -> updatePost(event.postId) { post ->
+                        post.copy(
+                            likedByCurrentUser = event.liked,
+                            likeCount = event.likeCount.coerceAtLeast(0)
+                        )
+                    }
+
+                    is PostInteractionEvent.SaveChanged -> updatePost(event.postId) { post ->
+                        post.copy(
+                            savedByCurrentUser = event.saved,
+                            saveCount = event.saveCount.coerceAtLeast(0)
+                        )
+                    }
+
+                    is PostInteractionEvent.CommentCountChanged -> updatePost(event.postId) { post ->
+                        post.copy(commentCount = event.commentCount.coerceAtLeast(0))
+                    }
+
+                    is PostInteractionEvent.UserProfileChanged -> updateUserProfile(event)
+                }
+            }
+        }
+    }
+
+    private fun updateUserProfile(event: PostInteractionEvent.UserProfileChanged) {
+        val username = event.username.takeIf { it.isNotBlank() }
+        val name = event.name.takeIf { it.isNotBlank() }
+        val avatarUrl = event.avatarUrl?.takeIf { it.isNotBlank() }
+        _uiState.update { state ->
+            state.copy(
+                posts = state.posts.map { post ->
+                    if (post.owner.id == event.userId) {
+                        post.copy(
+                            owner = post.owner.copy(
+                                username = username ?: post.owner.username,
+                                avatarUrl = avatarUrl
+                            )
+                        )
+                    } else {
+                        post
+                    }
+                },
+                users = state.users.map { user ->
+                    if (user.id == event.userId) {
+                        user.copy(
+                            username = username ?: user.username,
+                            name = name ?: user.name,
+                            avatarUrl = avatarUrl
+                        )
+                    } else {
+                        user
+                    }
+                },
+                commentsByPostId = state.commentsByPostId.mapValues { (_, comments) ->
+                    comments.map { comment ->
+                        if (comment.ownerId == event.userId) {
+                            comment.copy(
+                                username = username ?: comment.username,
+                                avatarUrl = avatarUrl
+                            )
+                        } else {
+                            comment
+                        }
+                    }
                 }
             )
         }

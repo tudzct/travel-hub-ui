@@ -42,7 +42,8 @@ class PostDetailViewModel @Inject constructor(
     private val unlikePostUseCase: UnlikePostUseCase,
     private val savePostUseCase: SavePostUseCase,
     private val addCommentUseCase: AddCommentUseCase,
-    private val getPostCommentsUseCase: GetPostCommentsUseCase
+    private val getPostCommentsUseCase: GetPostCommentsUseCase,
+    private val postInteractionEventBus: PostInteractionEventBus
 ) : ViewModel() {
     private val postId: Long = checkNotNull(savedStateHandle["postId"])
 
@@ -50,6 +51,7 @@ class PostDetailViewModel @Inject constructor(
     val uiState: StateFlow<PostDetailUiState> = _uiState.asStateFlow()
 
     init {
+        collectPostInteractionEvents()
         refreshPost()
     }
 
@@ -108,6 +110,13 @@ class PostDetailViewModel @Inject constructor(
                             isLikeLoading = false
                         )
                     }
+                    postInteractionEventBus.publish(
+                        PostInteractionEvent.LikeChanged(
+                            postId = postId,
+                            liked = response.liked,
+                            likeCount = response.likeCount.coerceAtLeast(0)
+                        )
+                    )
                 }
                 .onFailure { throwable ->
                     updatePost {
@@ -148,6 +157,13 @@ class PostDetailViewModel @Inject constructor(
                             isSaveLoading = false
                         )
                     }
+                    postInteractionEventBus.publish(
+                        PostInteractionEvent.SaveChanged(
+                            postId = postId,
+                            saved = response.saved,
+                            saveCount = response.saveCount.coerceAtLeast(0)
+                        )
+                    )
                 }
                 .onFailure { throwable ->
                     updatePost {
@@ -211,15 +227,28 @@ class PostDetailViewModel @Inject constructor(
             addCommentUseCase(postId = postId, content = content)
                 .onSuccess { response ->
                     val commentUiModel = toCommentUiModel(response)
+                    var updatedCommentCount: Int? = null
                     _uiState.update { state ->
+                        val nextCommentCount = state.post?.let {
+                            (it.commentCount + 1).coerceAtLeast(0)
+                        }
+                        updatedCommentCount = nextCommentCount
                         state.copy(
                             isCommentSubmitting = false,
                             commentInput = "",
                             commentsErrorMessage = null,
                             commentErrorMessage = null,
                             comments = state.comments + commentUiModel,
-                            post = state.post?.copy(
-                                commentCount = (state.post.commentCount + 1).coerceAtLeast(0)
+                            post = state.post?.let { post ->
+                                post.copy(commentCount = nextCommentCount ?: post.commentCount)
+                            }
+                        )
+                    }
+                    updatedCommentCount?.let { commentCount ->
+                        postInteractionEventBus.publish(
+                            PostInteractionEvent.CommentCountChanged(
+                                postId = postId,
+                                commentCount = commentCount
                             )
                         )
                     }
@@ -239,16 +268,23 @@ class PostDetailViewModel @Inject constructor(
         viewModelScope.launch {
             getPostCommentsUseCase(postId = postId, page = 0, pageSize = 50)
                 .onSuccess { response ->
+                    val commentCount = response.totalElements.toSafeCount()
                     _uiState.update {
                         it.copy(
                             isCommentsLoading = false,
                             commentsErrorMessage = null,
                             comments = response.data.map(::toCommentUiModel),
                             post = it.post?.copy(
-                                commentCount = response.totalElements.toSafeCount()
+                                commentCount = commentCount
                             )
                         )
                     }
+                    postInteractionEventBus.publish(
+                        PostInteractionEvent.CommentCountChanged(
+                            postId = postId,
+                            commentCount = commentCount
+                        )
+                    )
                 }
                 .onFailure { throwable ->
                     _uiState.update {
@@ -264,6 +300,75 @@ class PostDetailViewModel @Inject constructor(
     private fun updatePost(transform: (HomePostUiModel) -> HomePostUiModel) {
         _uiState.update { state ->
             state.copy(post = state.post?.let(transform))
+        }
+    }
+
+    private fun collectPostInteractionEvents() {
+        viewModelScope.launch {
+            postInteractionEventBus.events.collect { event ->
+                when (event) {
+                    is PostInteractionEvent.LikeChanged -> {
+                        if (event.postId == postId) {
+                            updatePost {
+                                it.copy(
+                                    isLiked = event.liked,
+                                    likeCount = event.likeCount.coerceAtLeast(0),
+                                    isLikeLoading = false
+                                )
+                            }
+                        }
+                    }
+
+                    is PostInteractionEvent.SaveChanged -> {
+                        if (event.postId == postId) {
+                            updatePost {
+                                it.copy(
+                                    isSaved = event.saved,
+                                    saveCount = event.saveCount.coerceAtLeast(0),
+                                    isSaveLoading = false
+                                )
+                            }
+                        }
+                    }
+
+                    is PostInteractionEvent.CommentCountChanged -> {
+                        if (event.postId == postId) {
+                            updatePost { it.copy(commentCount = event.commentCount.coerceAtLeast(0)) }
+                        }
+                    }
+
+                    is PostInteractionEvent.UserProfileChanged -> updateUserProfile(event)
+                }
+            }
+        }
+    }
+
+    private fun updateUserProfile(event: PostInteractionEvent.UserProfileChanged) {
+        val username = event.username.takeIf { it.isNotBlank() }
+        val avatarUrl = event.avatarUrl?.takeIf { it.isNotBlank() }
+        _uiState.update { state ->
+            state.copy(
+                post = state.post?.let { post ->
+                    if (post.ownerId == event.userId) {
+                        post.copy(
+                            username = username ?: post.username,
+                            ownerAvatarUrl = avatarUrl
+                        )
+                    } else {
+                        post
+                    }
+                },
+                comments = state.comments.map { comment ->
+                    if (comment.ownerId == event.userId) {
+                        comment.copy(
+                            username = username ?: comment.username,
+                            avatarUrl = avatarUrl
+                        )
+                    } else {
+                        comment
+                    }
+                }
+            )
         }
     }
 
