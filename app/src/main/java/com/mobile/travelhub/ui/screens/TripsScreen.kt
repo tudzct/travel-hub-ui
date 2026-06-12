@@ -34,6 +34,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil.compose.AsyncImage
@@ -483,64 +484,6 @@ fun ActiveJourneyCardV2(
                         .background(Color.White),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        text = trip?.name ?: "Chưa có chuyến đi diễn ra",
-                        fontWeight = FontWeight.ExtraBold,
-                        color = Color.White,
-                        style = MaterialTheme.typography.headlineSmall
-                    )
-                    Spacer(modifier = Modifier.height(10.dp))
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            Icons.Default.LocationOn,
-                            null,
-                            tint = Color.White,
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            trip?.location?.takeIf { it.isNotBlank() }
-                                ?: "Hãy lên kế hoạch cho chuyến đi tiếp theo của bạn!",
-                            color = Color.White,
-                            fontWeight = FontWeight.Medium,
-                            style = MaterialTheme.typography.bodyLarge
-                        )
-                    }
-                    activeTripProgressLabel(trip)?.let { label ->
-                        Spacer(modifier = Modifier.height(12.dp))
-                        Surface(
-                            shape = RoundedCornerShape(999.dp),
-                            color = Color.White.copy(alpha = 0.16f)
-                        ) {
-                            Text(
-                                text = label,
-                                color = Color.White,
-                                fontWeight = FontWeight.ExtraBold,
-                                style = MaterialTheme.typography.labelLarge,
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
-                            )
-                        }
-                    }
-                }
-            }
-
-            Surface(
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(end = 18.dp, bottom = 18.dp)
-                    .height(56.dp)
-                    .clickable(enabled = trip != null) {
-                        trip?.let { onNavigateToGroupDetail(it.tripId, it.name) }
-                    },
-                shape = RoundedCornerShape(28.dp),
-                color = SurfaceContainerLowest,
-                shadowElevation = 4.dp
-            ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 20.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
                     Icon(
                         imageVector = Icons.Default.LocationOn,
                         contentDescription = null,
@@ -553,18 +496,21 @@ fun ActiveJourneyCardV2(
                         text = trip?.name ?: "Chưa có chuyến đi diễn ra",
                         fontWeight = FontWeight.ExtraBold,
                         color = Color.White,
-                        style = MaterialTheme.typography.titleMedium
+                        style = MaterialTheme.typography.titleLarge,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
                     )
-                    Spacer(modifier = Modifier.height(6.dp))
+                    val subtitle = trip?.location?.takeIf { it.isNotBlank() }
+                        ?: "Hãy lên kế hoạch cho chuyến đi tiếp theo!"
+                    Spacer(modifier = Modifier.height(10.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.LocationOn, null, tint = Color.White, modifier = Modifier.size(18.dp))
-                        Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            trip?.location?.takeIf { it.isNotBlank() }
-                                ?: "Hãy lên kế hoạch cho chuyến đi tiếp theo của bạn!",
+                            text = subtitle,
                             color = Color.White,
                             fontWeight = FontWeight.Medium,
-                            style = MaterialTheme.typography.bodySmall
+                            style = MaterialTheme.typography.bodySmall,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
                 }
@@ -646,18 +592,6 @@ fun ActiveJourneyCardV2(
             }
         }
     }
-}
-
-private fun activeTripProgressLabel(trip: com.mobile.travelhub.viewmodels.UpcomingTripUiModel?): String? {
-    val start = trip?.startDate?.substringBefore("T")?.let { runCatching { LocalDate.parse(it) }.getOrNull() } ?: return null
-    val end = trip.endDate?.substringBefore("T")?.let { runCatching { LocalDate.parse(it) }.getOrNull() } ?: return null
-    val today = LocalDate.now()
-    if (today.isBefore(start) || today.isAfter(end)) {
-        return null
-    }
-    val currentDay = ChronoUnit.DAYS.between(start, today) + 1
-    val totalDays = ChronoUnit.DAYS.between(start, end) + 1
-    return "Hôm nay là ngày $currentDay/$totalDays"
 }
 
 @Composable
@@ -1235,6 +1169,10 @@ private fun JourneyJournalItem(
     trip: com.mobile.travelhub.viewmodels.PastTripUiModel,
     onClick: () -> Unit
 ) {
+    val storageService = stringResource(R.string.storage_service)
+        .trim()
+        .trim('"')
+        .trimEnd('/')
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -1242,7 +1180,9 @@ private fun JourneyJournalItem(
             .padding(horizontal = 14.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        val imageUrl = trip.imageUrl?.takeIf { it.isNotBlank() }
+        val imageUrl = trip.imageUrl
+            ?.takeIf { it.isNotBlank() }
+            ?.let { resolveTripImageUrl(it, storageService) }
         if (imageUrl != null) {
             AsyncImage(
                 model = imageUrl,
@@ -1281,7 +1221,9 @@ private fun JourneyJournalItem(
                     text = trip.locationName,
                     color = OnSurface,
                     fontWeight = FontWeight.ExtraBold,
-                    style = MaterialTheme.typography.titleSmall
+                    style = MaterialTheme.typography.titleSmall,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -1293,9 +1235,11 @@ private fun JourneyJournalItem(
                 )
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
-                    text = formatPastTripEndDate(trip.dateString),
+                    text = formatPastTripDateRange(trip.dateString),
                     color = OnSurfaceVariant,
-                    style = MaterialTheme.typography.bodySmall
+                    style = MaterialTheme.typography.bodySmall,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
         }
@@ -1304,6 +1248,25 @@ private fun JourneyJournalItem(
             contentDescription = null,
             tint = OnSurfaceVariant,
             modifier = Modifier.size(28.dp)
+        )
+    }
+}
+
+@Composable
+private fun JourneyJournalCardItem(
+    trip: com.mobile.travelhub.viewmodels.PastTripUiModel,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
+    ElevatedCard(
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.elevatedCardColors(containerColor = SurfaceContainerLowest),
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 4.dp),
+        modifier = modifier.fillMaxWidth()
+    ) {
+        JourneyJournalItem(
+            trip = trip,
+            onClick = onClick
         )
     }
 }
@@ -1370,17 +1333,31 @@ private fun weekdayLabel(date: LocalDate): String {
     }
 }
 
-private fun formatPastTripEndDate(dateString: String): String {
+private fun formatPastTripDateRange(dateString: String): String {
     val parts = dateString
         .split(" - ", " – ", " to ")
         .map { it.trim() }
         .filter { it.isNotBlank() }
-    val end = parseLocalDate(parts.lastOrNull())
-    return if (end != null) {
-        end.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))
-    } else {
-        dateString
+    if (parts.isEmpty()) {
+        return dateString
     }
+    return parts
+        .map { part ->
+            parseLocalDate(part)?.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))
+                ?: part.substringBefore("T")
+        }
+        .distinct()
+        .joinToString(" - ")
+}
+
+private fun resolveTripImageUrl(rawUrl: String, storageService: String): String {
+    val value = rawUrl.trim()
+    if (value.startsWith("http://", ignoreCase = true) ||
+        value.startsWith("https://", ignoreCase = true)
+    ) {
+        return value
+    }
+    return "$storageService/${value.trimStart('/')}"
 }
 
 private fun nearestUpcomingTrips(

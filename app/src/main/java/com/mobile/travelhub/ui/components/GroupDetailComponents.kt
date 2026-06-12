@@ -144,9 +144,9 @@ fun TripDetailRow(
                 text = pillText,
                 modifier = Modifier
                     .clip(RoundedCornerShape(50))
-                    .background(MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.7f))
+                    .background(MaterialTheme.colorScheme.primary)
                     .padding(horizontal = 6.dp, vertical = 1.dp),
-                color = MaterialTheme.colorScheme.onTertiaryContainer,
+                color = MaterialTheme.colorScheme.onPrimary,
                 fontSize = 12.sp
             )
             trailingText?.let {

@@ -113,9 +113,9 @@ fun PlaceListScreenContent(
     var previousScrollIndex by remember { mutableIntStateOf(0) }
     var previousScrollOffset by remember { mutableIntStateOf(0) }
     var isTopBarVisible by remember { mutableStateOf(true) }
-    val topBarContentHeight = 52.dp
-    val topBarTopPadding = 8.dp
-    val topBarContentGap = 16.dp
+    val topBarContentHeight = 44.dp
+    val topBarTopPadding = 4.dp
+    val topBarContentGap = 10.dp
 
     LaunchedEffect(listState) {
         snapshotFlow { listState.firstVisibleItemIndex to listState.firstVisibleItemScrollOffset }
@@ -400,13 +400,13 @@ private fun FeedTopBar(
     onSearchClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val topBarContentHeight = 52.dp
+    val topBarContentHeight = 44.dp
 
     Column(
         modifier = modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.surface)
-            .padding(top = 8.dp)
+            .padding(top = 4.dp)
     ) {
         Box(
             modifier = Modifier
@@ -428,16 +428,18 @@ private fun FeedTopBar(
 
             IconButton(
                 onClick = onSearchClick,
-                modifier = Modifier.align(Alignment.CenterEnd)
+                modifier = Modifier
+                    .align(Alignment.CenterEnd)
+                    .size(40.dp)
             ) {
                 Icon(
                     imageVector = Icons.Outlined.Search,
                     contentDescription = stringResource(R.string.ui_bce0641417),
-                    tint = MaterialTheme.colorScheme.onSurface
+                    tint = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.size(22.dp)
                 )
             }
         }
-        Spacer(modifier = Modifier.height(24.dp))
     }
 }
 

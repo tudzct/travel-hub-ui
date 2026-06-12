@@ -30,7 +30,6 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Article
 import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.PhotoLibrary
-import androidx.compose.material.icons.filled.FiberManualRecord
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Payments
@@ -68,7 +67,6 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.mobile.travelhub.R
 import com.mobile.travelhub.ui.components.*
 import com.mobile.travelhub.ui.theme.*
-import com.mobile.travelhub.viewmodels.GroupActivityLogUiModel
 import com.mobile.travelhub.viewmodels.GroupDetailViewModel
 import com.mobile.travelhub.viewmodels.TripPhotoUiModel
 import androidx.compose.runtime.LaunchedEffect
@@ -78,7 +76,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.zIndex
 import coil.compose.AsyncImage
 import java.time.LocalDate
-import java.time.temporal.ChronoUnit
 
 enum class GroupRole { LEADER, NON_MEMBER, PENDING }
 
@@ -351,31 +348,9 @@ fun GroupDetailScreen(
                             label = "Trạng thái",
                             value = uiState.statusLabel.ifBlank { "Chưa xác định" },
                             icon = Icons.Default.CardTravel,
-                            pillText = displayTripStatus(uiState.statusLabel),
-                            trailingText = tripProgressLabel(uiState.startDate, uiState.endDate)
+                            pillText = displayTripStatus(uiState.statusLabel)
                         )
                     }
-                }
-
-                Spacer(modifier = Modifier.height(30.dp))
-
-                Text(
-                    text = "NHẬT KÝ HÀNH TRÌNH",
-                    fontWeight = FontWeight.ExtraBold,
-                    fontSize = 13.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    letterSpacing = 0.8.sp
-                )
-
-                Spacer(modifier = Modifier.height(18.dp))
-
-                if (isInitialLoading) {
-                    TimelineLogSectionSkeleton()
-                } else {
-                    JourneyLogTimeline(
-                        activities = uiState.recentActivities,
-                        progressLabel = ongoingTripDayLabel(uiState.startDate, uiState.endDate)
-                    )
                 }
 
                 Spacer(modifier = Modifier.height(30.dp))
@@ -791,32 +766,6 @@ private fun displayTripDateRange(startDate: String, endDate: String): String {
         .ifBlank { "Chưa có từ API" }
 }
 
-private fun daysUntilStartLabel(startDate: String): String? {
-    val start = runCatching { LocalDate.parse(startDate) }.getOrNull() ?: return null
-    val days = ChronoUnit.DAYS.between(LocalDate.now(), start)
-    return when {
-        days > 0 -> "Còn $days ngày"
-        days == 0L -> "Hôm nay"
-        else -> null
-    }
-}
-
-private fun tripProgressLabel(startDate: String, endDate: String): String? {
-    return ongoingTripDayLabel(startDate, endDate) ?: daysUntilStartLabel(startDate)
-}
-
-private fun ongoingTripDayLabel(startDate: String, endDate: String): String? {
-    val start = runCatching { LocalDate.parse(startDate.substringBefore("T")) }.getOrNull() ?: return null
-    val end = runCatching { LocalDate.parse(endDate.substringBefore("T")) }.getOrNull() ?: return null
-    val today = LocalDate.now()
-    if (today.isBefore(start) || today.isAfter(end)) {
-        return null
-    }
-    val currentDay = ChronoUnit.DAYS.between(start, today) + 1
-    val totalDays = ChronoUnit.DAYS.between(start, end) + 1
-    return "Hôm nay là ngày $currentDay/$totalDays"
-}
-
 private fun displayTripStatus(statusLabel: String): String {
     return statusLabel
         .substringBefore("·")
@@ -988,6 +937,7 @@ private fun FullTripPhotoDialog(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun PublishTripPostDialog(
     description: String,
@@ -996,24 +946,21 @@ private fun PublishTripPostDialog(
     onDismiss: () -> Unit,
     onConfirm: () -> Unit
 ) {
-    Dialog(
+    val maxDescriptionLength = 500
+    ModalBottomSheet(
         onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false)
+        containerColor = SurfaceBg
     ) {
-        Surface(
+        Scaffold(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 20.dp),
-            shape = RoundedCornerShape(28.dp),
-            color = MaterialTheme.colorScheme.surface,
-            tonalElevation = 6.dp
-        ) {
-            Column(
-                modifier = Modifier.padding(20.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
+                .fillMaxHeight(0.72f),
+            containerColor = SurfaceBg,
+            topBar = {
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 16.dp, end = 12.dp, top = 4.dp, bottom = 8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Box(
@@ -1027,70 +974,87 @@ private fun PublishTripPostDialog(
                             imageVector = Icons.Default.Article,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(22.dp)
+                            modifier = Modifier.size(24.dp)
                         )
                     }
-                    Spacer(modifier = Modifier.width(12.dp))
+                    Spacer(modifier = Modifier.width(14.dp))
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
                             text = "Đăng bài về chuyến đi",
                             fontWeight = FontWeight.ExtraBold,
-                            fontSize = 18.sp,
-                            color = MaterialTheme.colorScheme.onSurface
+                            fontSize = 20.sp,
+                            color = OnSurface
                         )
-                        Spacer(modifier = Modifier.height(2.dp))
                         Text(
                             text = "Mô tả sẽ hiển thị cùng album ảnh chuyến đi.",
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            fontSize = 12.sp
+                            color = OnSurfaceVariant,
+                            fontSize = 13.sp
                         )
                     }
                     IconButton(
                         onClick = onDismiss,
-                        enabled = !isPublishing,
-                        modifier = Modifier
-                            .size(38.dp)
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f))
+                        enabled = !isPublishing
                     ) {
                         Icon(
                             imageVector = Icons.Default.Close,
                             contentDescription = "Đóng",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(20.dp)
+                            tint = OnSurfaceVariant
                         )
                     }
                 }
-
-                OutlinedTextField(
-                    value = description,
-                    onValueChange = onDescriptionChange,
+            }
+        ) { paddingValues ->
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .padding(horizontal = 20.dp, vertical = 12.dp)
+                    .navigationBarsPadding(),
+                verticalArrangement = Arrangement.spacedBy(18.dp)
+            ) {
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .heightIn(min = 132.dp),
-                    enabled = !isPublishing,
-                    minLines = 5,
-                    maxLines = 8,
-                    shape = RoundedCornerShape(18.dp),
-                    placeholder = {
-                        Text(
-                            text = "Bạn muốn kể gì về chuyến đi này?",
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.72f)
+                        .height(250.dp)
+                ) {
+                    OutlinedTextField(
+                        value = description,
+                        onValueChange = { onDescriptionChange(it.take(maxDescriptionLength)) },
+                        modifier = Modifier.fillMaxSize(),
+                        enabled = !isPublishing,
+                        minLines = 8,
+                        maxLines = 10,
+                        shape = RoundedCornerShape(20.dp),
+                        placeholder = {
+                            Text(
+                                text = "Bạn muốn kể gì về chuyến đi này?",
+                                color = OnSurfaceVariant.copy(alpha = 0.72f)
+                            )
+                        },
+                        textStyle = MaterialTheme.typography.bodyLarge,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = MaterialTheme.colorScheme.primary,
+                            unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
+                            focusedContainerColor = MaterialTheme.colorScheme.surface,
+                            unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                            disabledContainerColor = MaterialTheme.colorScheme.surface
                         )
-                    },
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = MaterialTheme.colorScheme.primary,
-                        unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
-                        focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.28f),
-                        unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.28f)
                     )
-                )
+                    Text(
+                        text = "${description.length}/$maxDescriptionLength",
+                        color = OnSurfaceVariant,
+                        fontSize = 13.sp,
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd)
+                            .padding(end = 16.dp, bottom = 14.dp)
+                    )
+                }
 
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(48.dp),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        .height(52.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     OutlinedButton(
                         onClick = onDismiss,
@@ -1100,10 +1064,13 @@ private fun PublishTripPostDialog(
                             .fillMaxHeight(),
                         shape = RoundedCornerShape(16.dp),
                         colors = ButtonDefaults.outlinedButtonColors(
-                            contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                            contentColor = OnSurfaceVariant
                         )
                     ) {
-                        Text("Hủy", fontWeight = FontWeight.Bold)
+                        Text(
+                            text = "Hủy",
+                            fontWeight = FontWeight.ExtraBold
+                        )
                     }
                     Button(
                         onClick = onConfirm,
@@ -1149,137 +1116,4 @@ private fun defaultTripPostDescription(groupName: String, location: String): Str
 private fun String.toVietnameseDate(): String {
     val date = runCatching { LocalDate.parse(this) }.getOrNull() ?: return this
     return "%02d/%02d/%04d".format(date.dayOfMonth, date.monthValue, date.year)
-}
-
-@Composable
-private fun JourneyLogTimeline(
-    activities: List<GroupActivityLogUiModel>,
-    progressLabel: String?
-) {
-    if (activities.isEmpty()) {
-        Text(
-            text = "Chưa có nhật ký hành trình.",
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            fontSize = 13.sp
-        )
-        return
-    }
-
-    Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-        progressLabel?.let { label ->
-            Surface(
-                shape = RoundedCornerShape(16.dp),
-                color = PrimaryBlue.copy(alpha = 0.10f)
-            ) {
-                Text(
-                    text = label,
-                    color = PrimaryBlue,
-                    fontWeight = FontWeight.ExtraBold,
-                    fontSize = 13.sp,
-                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)
-                )
-            }
-        }
-
-        activities.forEachIndexed { index, activity ->
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.Top
-            ) {
-                Column(
-                    modifier = Modifier.width(24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.FiberManualRecord,
-                        contentDescription = null,
-                        tint = PrimaryBlue,
-                        modifier = Modifier.size(14.dp)
-                    )
-                    if (index < activities.lastIndex) {
-                        Box(
-                            modifier = Modifier
-                                .width(2.dp)
-                                .height(64.dp)
-                                .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f))
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.width(12.dp))
-
-                Surface(
-                    modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(20.dp),
-                    color = SurfaceContainerLowest
-                ) {
-                    Column(
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
-                        verticalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        Text(
-                            text = activity.actorName.ifBlank { "Thành viên trong chuyến đi" },
-                            fontWeight = FontWeight.ExtraBold,
-                            fontSize = 14.sp,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Text(
-                            text = activity.description.ifBlank { "Có cập nhật mới trong hành trình" },
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            fontSize = 13.sp,
-                            lineHeight = 18.sp
-                        )
-                        Text(
-                            text = activity.createdAt.toTimelineTimestamp(),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.78f),
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun TimelineLogSectionSkeleton() {
-    Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-        repeat(3) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.Top
-            ) {
-                Box(
-                    modifier = Modifier
-                        .padding(top = 8.dp)
-                        .size(14.dp)
-                        .background(PrimaryBlue.copy(alpha = 0.25f), CircleShape)
-                )
-                Spacer(modifier = Modifier.width(12.dp))
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(88.dp)
-                        .clip(RoundedCornerShape(20.dp))
-                        .background(SurfaceContainerLow)
-                )
-            }
-        }
-    }
-}
-
-private fun String.toTimelineTimestamp(): String {
-    val normalized = substringBeforeLast("Z").ifBlank { this }
-    val parsed = runCatching { java.time.Instant.parse(this) }.getOrNull()
-        ?: runCatching { java.time.LocalDateTime.parse(normalized) }.getOrNull()?.atZone(java.time.ZoneId.systemDefault())?.toInstant()
-        ?: return this
-    val dateTime = parsed.atZone(java.time.ZoneId.systemDefault())
-    return "%02d/%02d/%04d %02d:%02d".format(
-        dateTime.dayOfMonth,
-        dateTime.monthValue,
-        dateTime.year,
-        dateTime.hour,
-        dateTime.minute
-    )
 }

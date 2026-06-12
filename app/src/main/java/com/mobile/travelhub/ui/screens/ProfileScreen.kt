@@ -15,9 +15,7 @@ import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.outlined.AddBox
-import androidx.compose.material.icons.outlined.AccountBalance
 import androidx.compose.material.icons.outlined.BookmarkBorder
-import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.GridView
 import androidx.compose.material.icons.outlined.Image
@@ -483,12 +481,7 @@ private fun ProfileScreenContent(
 
                                     Spacer(modifier = Modifier.height(14.dp))
 
-                                    if (isViewingOwnProfile) {
-                                        ProfileBankAccountCard(
-                                            profile = profile,
-                                            onClick = onNavigateToEditProfile
-                                        )
-                                    } else {
+                                    if (!isViewingOwnProfile) {
                                         ProfileFollowButton(
                                             isFollowing = profile.isFollowing,
                                             onClick = {
@@ -791,80 +784,6 @@ private fun ProfileStatDivider() {
 }
 
 @Composable
-private fun ProfileBankAccountCard(
-    profile: UserProfileResponse,
-    onClick: () -> Unit
-) {
-    val hasBankAccount = profile.hasBankAccount &&
-        !profile.bankName.isNullOrBlank() &&
-        !profile.accountNumber.isNullOrBlank()
-    Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 22.dp)
-            .clickable(onClick = onClick),
-        shape = RoundedCornerShape(14.dp),
-        color = if (hasBankAccount) {
-            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
-        } else {
-            BankCardWarningBg
-        },
-        border = BorderStroke(
-            1.dp,
-            if (hasBankAccount) {
-                MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f)
-            } else {
-                BankCardWarningBorder
-            }
-        )
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                imageVector = Icons.Outlined.AccountBalance,
-                contentDescription = null,
-                tint = if (hasBankAccount) MaterialTheme.colorScheme.primary else BankCardWarningIcon,
-                modifier = Modifier.size(24.dp)
-            )
-            Spacer(modifier = Modifier.width(14.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = if (hasBankAccount) profile.bankName.orEmpty() else "Chưa có thông tin ngân hàng",
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = if (hasBankAccount) {
-                        "${profile.accountNumber.orEmpty()} - ${profile.accountName.orEmpty()}"
-                    } else {
-                        "Cập nhật ngân hàng và số tài khoản để tham gia chuyến đi"
-                    },
-                    style = MaterialTheme.typography.bodySmall,
-                    fontWeight = FontWeight.Medium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
-            Icon(
-                imageVector = Icons.Outlined.ChevronRight,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(22.dp)
-            )
-        }
-    }
-}
-
-
-
-@Composable
 private fun ProfileFollowButton(
     isFollowing: Boolean,
     onClick: () -> Unit
@@ -974,18 +893,6 @@ private fun ProfileEmptyPostsState(
 private val ProfileBlue: Color
     @Composable
     get() = MaterialTheme.colorScheme.primary
-
-private val BankCardWarningBg: Color
-    @Composable
-    get() = if (isDarkTheme) Color(0xFF3E2D1D) else Color(0xFFFFF7ED)
-
-private val BankCardWarningBorder: Color
-    @Composable
-    get() = if (isDarkTheme) Color(0xFF8C5C26).copy(alpha = 0.45f) else Color(0xFFF59E0B).copy(alpha = 0.45f)
-
-private val BankCardWarningIcon: Color
-    @Composable
-    get() = if (isDarkTheme) Color(0xFFF59E0B) else Color(0xFFD97706)
 
 @Composable
 fun ChangePasswordDialog(
