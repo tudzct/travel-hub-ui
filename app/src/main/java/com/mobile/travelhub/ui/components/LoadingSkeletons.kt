@@ -23,7 +23,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.lazy.LazyListScope
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
@@ -455,16 +454,22 @@ fun UpcomingTripsSkeleton(
 fun PastMemoriesSkeleton(
     modifier: Modifier = Modifier
 ) {
-    LazyRow(
-        modifier = modifier.fillMaxWidth(),
-        contentPadding = PaddingValues(horizontal = 24.dp),
-        horizontalArrangement = Arrangement.spacedBy(16.dp)
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 24.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        items(3) {
-            CardWithTextsSkeleton(
-                cardSize = 130.dp,
-                textLines = listOf(90.dp, 60.dp),
-                modifier = Modifier.width(130.dp)
+        repeat(3) {
+            ImageTextRowSkeleton(
+                imageSize = 70.dp,
+                imageShape = RoundedCornerShape(12.dp),
+                textLines = listOf(160.dp, 120.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(18.dp))
+                    .background(SurfaceContainerLowest)
+                    .padding(horizontal = 14.dp, vertical = 14.dp)
             )
         }
     }

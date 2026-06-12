@@ -2,7 +2,6 @@ package com.mobile.travelhub.ui.components.itinerary
 
 import androidx.compose.ui.res.stringResource
 import androidx.compose.animation.*
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.*
 import androidx.compose.foundation.gestures.draggable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -39,9 +38,10 @@ fun DayContinuousTimelineCard(day: ItineraryDay) {
 
     Card(
         shape = RoundedCornerShape(28.dp),
-        colors = CardDefaults.cardColors(containerColor = SurfaceContainerLowest)
+        colors = CardDefaults.cardColors(containerColor = SurfaceContainerLowest),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
-        Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text(
                 text = stringResource(R.string.ui_dcc8e9cc22),
                 style = MaterialTheme.typography.titleMedium,
@@ -96,7 +96,7 @@ fun DayContinuousTimelineCard(day: ItineraryDay) {
                     day.events.sortedBy { parseTimeMinutes(it.startTime) }.forEach { event ->
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             Box(
                                 modifier = Modifier
@@ -178,7 +178,7 @@ fun ItineraryDayCard(
             Column(
                 modifier = Modifier
                     .clickable(onClick = onClick)
-                    .padding(20.dp)
+                    .padding(12.dp)
             ) {
                 // Header: "Day X - Date" + events chip
                 Row(
@@ -199,7 +199,7 @@ fun ItineraryDayCard(
                     )
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         if (day.events.isNotEmpty()) {
-                            Spacer(modifier = Modifier.width(8.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
                             Row(
                                 modifier = Modifier
                                     .border(
@@ -211,7 +211,7 @@ fun ItineraryDayCard(
                                         interactionSource = remember { MutableInteractionSource() },
                                         indication = null
                                     ) { showEvents = !showEvents }
-                                    .padding(horizontal = 12.dp, vertical = 6.dp),
+                                    .padding(horizontal = 10.dp, vertical = 5.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(4.dp)
                             ) {
@@ -246,7 +246,7 @@ fun ItineraryDayCard(
                     )
                 }
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(6.dp))
 
                 // Description — auto-generated from events
                 Text(
@@ -266,7 +266,7 @@ fun ItineraryDayCard(
                     enter = expandVertically() + fadeIn(),
                     exit = shrinkVertically() + fadeOut()
                 ) {
-                    Column(modifier = Modifier.padding(top = 16.dp)) {
+                    Column(modifier = Modifier.padding(top = 10.dp)) {
                         sortedEvents.forEachIndexed { index, event ->
                             Row(modifier = Modifier.height(IntrinsicSize.Min)) {
                                 // Left time column
@@ -309,7 +309,7 @@ fun ItineraryDayCard(
                                 Column(
                                     modifier = Modifier
                                         .weight(1f)
-                                        .padding(bottom = if (index < sortedEvents.size - 1) 16.dp else 0.dp)
+                                        .padding(bottom = if (index < sortedEvents.size - 1) 12.dp else 0.dp)
                                 ) {
                                     Text(
                                         text = event.title,
@@ -383,7 +383,6 @@ fun DayEventCard(
 ) {
     var isMenuExpanded by remember(event.eventId) { mutableStateOf(false) }
     var isDetailExpanded by remember(event.eventId) { mutableStateOf(false) }
-    val elevation by animateDpAsState(targetValue = if (isDragging) 10.dp else 0.dp, label = "eventCardElevation")
     val accent = event.displayColor()
 
     val dismissState = rememberSwipeToDismissBoxState(
@@ -406,11 +405,11 @@ fun DayEventCard(
                 .clickable { isDetailExpanded = !isDetailExpanded },
             shape = RoundedCornerShape(28.dp),
             colors = CardDefaults.cardColors(containerColor = SurfaceContainerLowest),
-            elevation = CardDefaults.cardElevation(defaultElevation = elevation)
+            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
         ) {
             Column(
-                modifier = Modifier.padding(18.dp),
-                verticalArrangement = Arrangement.spacedBy(14.dp)
+                modifier = Modifier.padding(12.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -464,7 +463,7 @@ fun DayEventCard(
                     enter = expandVertically() + fadeIn(),
                     exit = shrinkVertically() + fadeOut()
                 ) {
-                    Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         if (event.transportToNext.isNotBlank()) {
                             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                                 MetaPill {
@@ -525,7 +524,7 @@ fun MetaPill(
     Row(
         modifier = Modifier
             .background(color = SurfaceContainerLow, shape = RoundedCornerShape(999.dp))
-            .padding(horizontal = 10.dp, vertical = 8.dp),
+            .padding(horizontal = 9.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp)
     ) {
@@ -599,11 +598,12 @@ fun ActivityPlaceChip(
 fun EmptyOverviewCard() {
     Card(
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = SurfaceContainerLowest)
+        colors = CardDefaults.cardColors(containerColor = SurfaceContainerLowest),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Text(
             text = stringResource(R.string.ui_9e505d31d1),
-            modifier = Modifier.padding(20.dp),
+            modifier = Modifier.padding(12.dp),
             color = OnSurfaceVariant,
             lineHeight = 20.sp
         )
@@ -620,17 +620,18 @@ fun AddActionCard(
             .fillMaxWidth()
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = PrimaryBlue.copy(alpha = 0.08f))
+        colors = CardDefaults.cardColors(containerColor = PrimaryBlue.copy(alpha = 0.08f)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 18.dp, vertical = 20.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 12.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
                 modifier = Modifier
                     .background(if (isDarkTheme) Color.White.copy(alpha = 0.15f) else Color.White.copy(alpha = 0.85f), RoundedCornerShape(16.dp))
-                    .padding(10.dp)
+                    .padding(8.dp)
             ) {
                 Icon(Icons.Default.Add, contentDescription = null, tint = PrimaryBlue)
             }
@@ -650,11 +651,12 @@ fun AddActionCard(
 fun EmptyDayCard() {
     Card(
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = SurfaceContainerLowest)
+        colors = CardDefaults.cardColors(containerColor = SurfaceContainerLowest),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Text(
             text = stringResource(R.string.ui_c687c93a2b),
-            modifier = Modifier.padding(20.dp),
+            modifier = Modifier.padding(12.dp),
             color = OnSurfaceVariant,
             lineHeight = 20.sp
         )

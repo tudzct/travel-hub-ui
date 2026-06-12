@@ -55,6 +55,7 @@ fun TravelHubScreen(
     var showSplash by remember { mutableStateOf(true) }
     var homeReloadSignal by remember { mutableStateOf(0) }
     var isExploreSearchExpanded by remember { mutableStateOf(false) }
+    var isProfileAvatarCropActive by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         delay(1200)
@@ -107,7 +108,8 @@ fun TravelHubScreen(
         ?.substringBefore("?")
         ?.substringBefore("/") == Screen.Explore.route
     val showBottomBar = Screen.fromRoute(currentRoute)?.showBottomBar == true &&
-        !(isExploreRoute && isExploreSearchExpanded)
+        !(isExploreRoute && isExploreSearchExpanded) &&
+        !isProfileAvatarCropActive
     val contentModifier = Modifier
         .fillMaxSize()
         .statusBarsPadding()
@@ -125,6 +127,7 @@ fun TravelHubScreen(
                 authUiState = authUiState,
                 homeReloadSignal = homeReloadSignal,
                 onExploreSearchActiveChange = { isExploreSearchExpanded = it },
+                onProfileAvatarCropActiveChange = { isProfileAvatarCropActive = it },
                 onLogin = authViewModel::login,
                 onRegister = authViewModel::register,
                 onClearAuthError = authViewModel::clearError,

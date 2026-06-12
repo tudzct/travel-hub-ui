@@ -21,7 +21,6 @@ import androidx.compose.material.icons.outlined.GridView
 import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.outlined.PhotoCamera
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material.icons.outlined.VisibilityOff
@@ -43,6 +42,7 @@ import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -113,6 +113,7 @@ fun ProfileScreen(
     onNavigateToUserProfile: (Long) -> Unit = {},
     onNavigateToCreatePost: () -> Unit = {},
     onBack: (() -> Unit)? = null,
+    onAvatarCropActiveChange: (Boolean) -> Unit = {},
     isDarkThemeEnabled: Boolean,
     onDarkThemeChange: (Boolean) -> Unit,
     viewModel: ProfileViewModel = hiltViewModel()
@@ -230,6 +231,7 @@ fun ProfileScreen(
         onCommentInputChanged = viewModel::onCommentInputChanged,
         onCommentSubmit = viewModel::submitComment,
         onAvatarCropped = onAvatarCropped,
+        onAvatarCropActiveChange = onAvatarCropActiveChange,
         changePasswordState = changePasswordState,
         onChangePassword = viewModel::changePassword,
         onClearChangePasswordState = viewModel::clearChangePasswordState,
@@ -268,17 +270,20 @@ private fun ProfileScreenContent(
     onCommentInputChanged: (String) -> Unit,
     onCommentSubmit: () -> Unit,
     onAvatarCropped: (CroppedAvatar) -> Unit,
+    onAvatarCropActiveChange: (Boolean) -> Unit,
     changePasswordState: UiState<Boolean>,
     onChangePassword: (String, String, String) -> Unit,
     onClearChangePasswordState: () -> Unit,
     isDarkThemeEnabled: Boolean,
     onDarkThemeChange: (Boolean) -> Unit
 ) {
+
     val profileTitle = (profileState as? UiState.Success)
         ?.data
         ?.username
         ?.takeIf { it.isNotBlank() }
-        ?: "Profile"
+        ?.let { "@$it" }
+        ?: "Trang cá nhân"
     val scrollState = rememberScrollState()
     val activeDrawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val coroutineScope = rememberCoroutineScope()
@@ -298,6 +303,16 @@ private fun ProfileScreenContent(
     LaunchedEffect(changePasswordState) {
         if (changePasswordState is UiState.Success) {
             showChangePasswordDialog = false
+        }
+    }
+
+    LaunchedEffect(selectedAvatarUri) {
+        onAvatarCropActiveChange(selectedAvatarUri != null)
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            onAvatarCropActiveChange(false)
         }
     }
 
@@ -435,7 +450,7 @@ private fun ProfileScreenContent(
                                         }
                                     )
 
-                                    if (!profile.bio.isNullOrBlank() || !profile.location.isNullOrBlank()) {
+                                    if (!profile.bio.isNullOrBlank() || profile.username.isNotBlank()) {
                                         Spacer(modifier = Modifier.height(8.dp))
                                         Column(
                                             modifier = Modifier
@@ -449,24 +464,6 @@ private fun ProfileScreenContent(
                                                     style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
                                                     color = MaterialTheme.colorScheme.onSurface
                                                 )
-                                            }
-                                            if (!profile.location.isNullOrBlank()) {
-                                                Row(
-                                                    verticalAlignment = Alignment.CenterVertically,
-                                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                                                ) {
-                                                    Icon(
-                                                        imageVector = Icons.Default.LocationOn,
-                                                        contentDescription = null,
-                                                        tint = MaterialTheme.colorScheme.primary,
-                                                        modifier = Modifier.size(16.dp)
-                                                    )
-                                                    Text(
-                                                        text = profile.location,
-                                                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
-                                                        color = MaterialTheme.colorScheme.onSurface
-                                                    )
-                                                }
                                             }
                                         }
                                     }
@@ -635,13 +632,21 @@ private fun ProfileHeaderSection(
     isViewingOwnProfile: Boolean,
     onAvatarClick: () -> Unit
 ) {
+    val avatarModifier = if (isViewingOwnProfile) {
+        Modifier
+            .size(72.dp)
+            .clickable(onClick = onAvatarClick)
+    } else {
+        Modifier.size(72.dp)
+    }
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 22.dp, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Box(modifier = Modifier.size(72.dp)) {
+        Box(modifier = avatarModifier) {
             TravelHubAvatar(
                 avatarUrl = avatarUrl,
                 contentDescription = stringResource(R.string.ui_7631b26ea8),
@@ -686,14 +691,27 @@ private fun ProfileHeaderSection(
                 overflow = TextOverflow.Ellipsis
             )
             Spacer(modifier = Modifier.height(5.dp))
-            Text(
-                text = "@${profile.username}",
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Medium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
+            if (!profile.location.isNullOrBlank()) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.LocationOn,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Text(
+                        text = profile.location,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
         }
     }
 }

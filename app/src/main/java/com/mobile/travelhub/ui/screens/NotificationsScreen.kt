@@ -25,6 +25,7 @@ import androidx.compose.material.icons.outlined.ChatBubbleOutline
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.PersonAdd
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -80,12 +81,16 @@ fun NotificationsPopup(
         activeFilter = uiState.activeFilter,
         notifications = uiState.notifications,
         isLoading = uiState.isLoading,
+        isLoadingMore = uiState.isLoadingMore,
         isMarkingAllRead = uiState.isMarkingAllRead,
+        hasMore = uiState.hasMore,
+        loadMoreErrorMessage = uiState.loadMoreErrorMessage,
         onDismiss = onDismiss,
         onPostNotificationClick = onPostNotificationClick,
         onFollowNotificationClick = onFollowNotificationClick,
         onFilterSelected = viewModel::setFilter,
-        onMarkAllRead = viewModel::markAllRead
+        onMarkAllRead = viewModel::markAllRead,
+        onLoadMore = viewModel::loadMoreNotifications
     )
 }
 
@@ -95,12 +100,16 @@ private fun NotificationsPopupContent(
     activeFilter: NotificationFilter,
     notifications: List<NotificationModel>,
     isLoading: Boolean,
+    isLoadingMore: Boolean,
     isMarkingAllRead: Boolean,
+    hasMore: Boolean,
+    loadMoreErrorMessage: String?,
     onDismiss: () -> Unit,
     onPostNotificationClick: (Long) -> Unit,
     onFollowNotificationClick: (Long) -> Unit,
     onFilterSelected: (NotificationFilter) -> Unit,
-    onMarkAllRead: () -> Unit
+    onMarkAllRead: () -> Unit,
+    onLoadMore: () -> Unit
 ) {
     val filteredNotifications = notifications
         .filter { notification ->
@@ -197,6 +206,37 @@ private fun NotificationsPopupContent(
                                 )
                             }
                         }
+                        if (!loadMoreErrorMessage.isNullOrBlank()) {
+                            item(key = "notification-load-more-error") {
+                                Text(
+                                    text = loadMoreErrorMessage,
+                                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp),
+                                    color = MaterialTheme.colorScheme.error,
+                                    fontSize = 12.sp
+                                )
+                            }
+                        }
+                        if (hasMore) {
+                            item(key = "notification-load-more") {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 8.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    if (isLoadingMore) {
+                                        CircularProgressIndicator(
+                                            modifier = Modifier.size(24.dp),
+                                            strokeWidth = 2.dp
+                                        )
+                                    } else {
+                                        TextButton(onClick = onLoadMore) {
+                                            Text(stringResource(R.string.ui_dfe60ca92e))
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -277,12 +317,16 @@ private fun NotificationsScreenPreview() {
                 ),
             ),
             isLoading = false,
+            isLoadingMore = false,
+            hasMore = false,
+            loadMoreErrorMessage = null,
             onDismiss = {},
             onPostNotificationClick = {},
             onFollowNotificationClick = {},
             onFilterSelected = {},
             isMarkingAllRead = false,
-            onMarkAllRead = {}
+            onMarkAllRead = {},
+            onLoadMore = {}
         )
     }
 }

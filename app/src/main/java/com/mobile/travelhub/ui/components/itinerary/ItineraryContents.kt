@@ -47,8 +47,8 @@ fun ItineraryOverviewContent(
             .fillMaxSize()
             .background(SurfaceBg)
             .padding(paddingValues),
-        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 120.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp)
+        contentPadding = PaddingValues(start = 10.dp, end = 10.dp, top = 4.dp, bottom = 112.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         item {
             ItineraryTimelineHeader(
@@ -85,10 +85,10 @@ fun ItineraryOverviewContent(
                     Surface(
                         shape = RoundedCornerShape(999.dp),
                         color = SurfaceContainerLowest.copy(alpha = 0.86f),
-                        shadowElevation = 1.dp
+                        shadowElevation = 0.dp
                     ) {
                         Row(
-                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 9.dp),
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
                             horizontalArrangement = Arrangement.spacedBy(6.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
@@ -151,8 +151,7 @@ private fun ItineraryTimelineHeader(
 //            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
 //                Surface(
 //                    shape = RoundedCornerShape(999.dp),
-//                    color = SurfaceContainerLowest,
-//                    shadowElevation = 1.dp
+//                    color = SurfaceContainerLowest
 //                ) {
 //                    Row(
 //                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
@@ -176,8 +175,7 @@ private fun ItineraryTimelineHeader(
 //
 //                Surface(
 //                    shape = CircleShape,
-//                    color = SurfaceContainerLowest,
-//                    shadowElevation = 1.dp
+//                    color = SurfaceContainerLowest
 //                ) {
 //                    Icon(
 //                        imageVector = Icons.Default.MoreVert,
@@ -230,7 +228,7 @@ private fun ItineraryFilterChip(
     Surface(
         shape = RoundedCornerShape(999.dp),
         color = background,
-        shadowElevation = if (selected) 3.dp else 1.dp
+        shadowElevation = 0.dp
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
@@ -266,7 +264,7 @@ private fun ItineraryStatPill(
         color = background
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp),
+            modifier = Modifier.padding(horizontal = 9.dp, vertical = 6.dp),
             horizontalArrangement = Arrangement.spacedBy(5.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -302,8 +300,8 @@ private fun ItineraryTimelineDay(
         shadowElevation = 0.dp
     ) {
         Column(
-            modifier = Modifier.padding(horizontal = 14.dp, vertical = 14.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 10.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -324,7 +322,7 @@ private fun ItineraryTimelineDay(
                     )
                 }
 
-                Spacer(modifier = Modifier.width(12.dp))
+                Spacer(modifier = Modifier.width(10.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = day.dateLabel.ifBlank { day.label },
@@ -351,7 +349,7 @@ private fun ItineraryTimelineDay(
                         tint = PrimaryBlue,
                         modifier = Modifier
                             .size(34.dp)
-                            .padding(8.dp)
+                            .padding(7.dp)
                     )
                 }
             }
@@ -401,8 +399,7 @@ private fun ItineraryTimelineEventCard(
         ) {
 //            Surface(
 //                shape = CircleShape,
-//                color = SurfaceContainerLowest,
-//                shadowElevation = 3.dp
+//                color = SurfaceContainerLowest
 //            ) {
 //                Box(
 //                    modifier = Modifier
@@ -429,7 +426,7 @@ private fun ItineraryTimelineEventCard(
             }
         }
 
-        Spacer(modifier = Modifier.width(10.dp))
+        Spacer(modifier = Modifier.width(8.dp))
 
         Surface(
             modifier = Modifier
@@ -448,8 +445,8 @@ private fun ItineraryTimelineEventCard(
             shadowElevation = 0.dp
         ) {
             Column(
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 13.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
+                modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(3.dp)
             ) {
                 Text(
                     text = title,
@@ -499,8 +496,8 @@ fun ItineraryDayDetailContent(
             .background(SurfaceBg)
             .padding(paddingValues),
         state = lazyListState,
-        contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 120.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        contentPadding = PaddingValues(start = 10.dp, end = 10.dp, top = 6.dp, bottom = 112.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         if (isLoading) {
             item {
@@ -563,7 +560,7 @@ fun ItineraryDayDetailContent(
                             )
                         }
 
-                        Spacer(modifier = Modifier.width(12.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
 
                         DayEventCard(
                             event = event,

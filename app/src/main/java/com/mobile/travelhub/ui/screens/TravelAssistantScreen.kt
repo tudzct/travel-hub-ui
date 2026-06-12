@@ -344,60 +344,77 @@ private fun PlaceReferenceCard(
                     fontWeight = FontWeight.Bold,
                     style = MaterialTheme.typography.titleMedium,
                     maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.height(48.dp)
+                )
+
+                PlaceReferenceCardMeta(
+                    place = place,
+                    onClick = onClick
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun PlaceReferenceCardMeta(
+    place: TravelAssistantPlaceReference,
+    onClick: () -> Unit
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        place.province?.takeIf { it.isNotBlank() }?.let { province ->
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Default.LocationOn,
+                    contentDescription = null,
+                    tint = OnSurfaceVariant,
+                    modifier = Modifier.size(17.dp)
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = province,
+                    color = OnSurfaceVariant,
+                    style = MaterialTheme.typography.bodySmall,
+                    maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
-
-                place.province?.takeIf { it.isNotBlank() }?.let { province ->
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Default.LocationOn,
-                            contentDescription = null,
-                            tint = OnSurfaceVariant,
-                            modifier = Modifier.size(17.dp)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = province,
-                            color = OnSurfaceVariant,
-                            style = MaterialTheme.typography.bodySmall,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-                }
-
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-
-                PlaceRatingRow(
-                    averageRating = place.averageRating,
-                    reviewCount = place.reviewCount
-                )
-
-                Button(
-                    onClick = onClick,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(44.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = PrimaryBlue,
-                        contentColor = Color.White
-                    ),
-                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.RemoveRedEye,
-                        contentDescription = null,
-                        modifier = Modifier.size(19.dp)
-                    )
-                    Spacer(modifier = Modifier.width(7.dp))
-                    Text(
-                        text = stringResource(R.string.assistant_view_place_detail),
-                        fontWeight = FontWeight.Bold,
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                }
             }
+        }
+
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+
+        PlaceRatingRow(
+            averageRating = place.averageRating,
+            reviewCount = place.reviewCount
+        )
+
+        Button(
+            onClick = onClick,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(44.dp),
+            shape = RoundedCornerShape(12.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = PrimaryBlue,
+                contentColor = Color.White
+            ),
+            elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Default.RemoveRedEye,
+                contentDescription = null,
+                modifier = Modifier.size(19.dp)
+            )
+            Spacer(modifier = Modifier.width(7.dp))
+            Text(
+                text = stringResource(R.string.assistant_view_place_detail),
+                fontWeight = FontWeight.Bold,
+                style = MaterialTheme.typography.bodyMedium
+            )
         }
     }
 }

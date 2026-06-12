@@ -154,7 +154,7 @@ fun TripsScreen(
                     hoveredElevation = 0.dp
                 ),
                 modifier = Modifier
-                    .height(66.dp)
+                    .height(76.dp)
                     .padding(end = 4.dp, bottom = 20.dp)
             ) {
                 Icon(
@@ -304,7 +304,7 @@ fun TripsScreen(
                     Spacer(modifier = Modifier.height(16.dp))
                 }
             }
-            if (state.isPastTripsLoading && state.pastTrips.isEmpty()) {
+            if ((state.isLoading || state.isPastTripsLoading) && state.pastTrips.isEmpty()) {
                 item {
                     PastMemoriesSkeleton()
                 }

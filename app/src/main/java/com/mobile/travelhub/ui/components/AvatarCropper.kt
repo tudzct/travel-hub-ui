@@ -8,6 +8,7 @@ import android.net.Uri
 import android.os.Build
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectTransformGestures
@@ -40,6 +41,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
@@ -178,6 +181,22 @@ fun AvatarCropperScreen(
                         },
                     contentScale = ContentScale.Fit
                 )
+
+                Canvas(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .graphicsLayer {
+                            compositingStrategy = CompositingStrategy.Offscreen
+                        }
+                ) {
+                    drawRect(Color.Black.copy(alpha = 0.58f))
+                    drawCircle(
+                        color = Color.Transparent,
+                        radius = cropSizePx / 2f,
+                        center = Offset(size.width / 2f, size.height / 2f),
+                        blendMode = BlendMode.Clear
+                    )
+                }
 
                 Box(
                     modifier = Modifier

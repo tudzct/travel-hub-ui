@@ -391,6 +391,7 @@ fun HomeCommentsBottomSheet(
             )
         }
 
+        Spacer(modifier = Modifier.height(16.dp))
     }
 }
 
@@ -604,7 +605,8 @@ fun FeedPostCard(
     onSaveClick: () -> Unit,
     onCommentClick: () -> Unit,
     onAuthorClick: (() -> Unit)? = null,
-    actionsEnabled: Boolean = true
+    actionsEnabled: Boolean = true,
+    showBottomDivider: Boolean = true
 ) {
     val context = LocalContext.current
     val storageService = stringResource(R.string.storage_service)
@@ -844,12 +846,14 @@ fun FeedPostCard(
             }
         }
 
-        Spacer(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(4.dp)
-                .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f))
-        )
+        if (showBottomDivider) {
+            Spacer(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(4.dp)
+                    .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f))
+            )
+        }
     }
 }
 

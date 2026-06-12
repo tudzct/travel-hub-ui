@@ -407,7 +407,7 @@ fun EditProfileScreen(
                 onValueChange = { bio = it.take(120) },
                 placeholder = "Giới thiệu về bạn...",
                 maxLength = 120,
-                minHeight = 82.dp,
+                minHeight = 120.dp,
                 iconInCircle = true
             )
 

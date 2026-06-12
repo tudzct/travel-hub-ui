@@ -18,21 +18,13 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
-import androidx.compose.material3.TabRowDefaults
-import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -51,8 +43,7 @@ fun FollowersFollowingScreen(
     onNavigateToUserProfile: (Long?) -> Unit,
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
-    var selectedTabIndex by remember { mutableIntStateOf(initialTabIndex) }
-    val tabs = listOf("Followers", "Following")
+    val showFollowers = initialTabIndex == 0
     val isViewingOwnProfile = viewingUserId == null
     val currentUserId = viewModel.getCurrentUserId()
     val viewedUserId = viewingUserId ?: viewModel.getCurrentUserId()
@@ -65,21 +56,21 @@ fun FollowersFollowingScreen(
     val followersState by viewModel.followersState.collectAsState()
     val followingState by viewModel.followingState.collectAsState()
 
-    LaunchedEffect(viewedUserId) {
+    LaunchedEffect(viewedUserId, showFollowers) {
         if (isViewingOwnProfile) {
             viewModel.loadUserProfile()
         } else {
             viewModel.loadOtherUserProfile(viewedUserId)
         }
-        viewModel.loadFollowers(viewedUserId)
-        viewModel.loadFollowing(viewedUserId)
+        if (showFollowers) {
+            viewModel.loadFollowers(viewedUserId)
+        } else {
+            viewModel.loadFollowing(viewedUserId)
+        }
     }
 
-    val titleName = if (profileState is UiState.Success) {
-        (profileState as UiState.Success).data.name.uppercase()
-    } else {
-        "LOADING..."
-    }
+    val titleName = stringResource(if (showFollowers) R.string.profile_followers_title else R.string.profile_following_title)
+    val subtitleName = (profileState as? UiState.Success)?.data?.name
 
     Scaffold(
         topBar = {
@@ -97,12 +88,22 @@ fun FollowersFollowingScreen(
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.ui_b52b36b726))
                     }
-                    Text(
-                        text = titleName,
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = 1.sp
-                    )
+                    Column {
+                        Text(
+                            text = titleName,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                        if (!subtitleName.isNullOrBlank()) {
+                            Text(
+                                text = "@$subtitleName",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Medium,
+                                letterSpacing = 1.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -112,36 +113,8 @@ fun FollowersFollowingScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            TabRow(
-                selectedTabIndex = selectedTabIndex,
-                containerColor = MaterialTheme.colorScheme.background,
-                contentColor = MaterialTheme.colorScheme.primary,
-                indicator = { tabPositions ->
-                    TabRowDefaults.SecondaryIndicator(
-                        modifier = Modifier.tabIndicatorOffset(tabPositions[selectedTabIndex]),
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                },
-                divider = {}
-            ) {
-                tabs.forEachIndexed { index, title ->
-                    Tab(
-                        selected = selectedTabIndex == index,
-                        onClick = { selectedTabIndex = index },
-                        text = {
-                            Text(
-                                text = title.uppercase(),
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = if (selectedTabIndex == index) FontWeight.Bold else FontWeight.Normal,
-                                color = if (selectedTabIndex == index) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    )
-                }
-            }
-
             Box(modifier = Modifier.fillMaxSize()) {
-                val currentState = if (selectedTabIndex == 0) followersState else followingState
+                val currentState = if (showFollowers) followersState else followingState
                 
                 when (currentState) {
                     is UiState.Loading -> {

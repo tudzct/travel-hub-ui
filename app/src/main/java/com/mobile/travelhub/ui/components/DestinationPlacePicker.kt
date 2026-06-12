@@ -29,7 +29,6 @@ import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
 import androidx.compose.material.icons.rounded.Place
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -551,17 +550,7 @@ private fun PlaceOptionsList(
         }
         when {
             isLoadingMore -> item(key = "places-loading-more") {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 14.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(24.dp),
-                        strokeWidth = 2.dp
-                    )
-                }
+                PlaceOptionRowSkeleton()
             }
             loadMoreErrorMessage != null -> item(key = "places-load-more-error") {
                 Column(
@@ -583,6 +572,43 @@ private fun PlaceOptionsList(
             else -> item(key = "places-list-bottom") {
                 Spacer(modifier = Modifier.height(20.dp))
             }
+        }
+    }
+}
+
+@Composable
+private fun PlaceOptionRowSkeleton() {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f))
+            .padding(10.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        SkeletonBlock(
+            modifier = Modifier.size(56.dp),
+            shape = RoundedCornerShape(12.dp)
+        )
+
+        Spacer(modifier = Modifier.width(12.dp))
+
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            SkeletonBlock(
+                modifier = Modifier
+                    .fillMaxWidth(0.68f)
+                    .height(18.dp),
+                shape = RoundedCornerShape(6.dp)
+            )
+            SkeletonBlock(
+                modifier = Modifier
+                    .fillMaxWidth(0.42f)
+                    .height(14.dp),
+                shape = RoundedCornerShape(6.dp)
+            )
         }
     }
 }

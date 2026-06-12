@@ -300,72 +300,94 @@ private fun CombinedSearchResults(
     onSaveClick: (Long) -> Unit,
     onCommentClick: (Long) -> Unit
 ) {
+    val showCombinedEmptyState =
+        !isLoadingPlaces &&
+            !isLoadingMorePlaces &&
+            !isLoadingUsers &&
+            !isLoadingPosts &&
+            placesErrorMessage == null &&
+            usersErrorMessage == null &&
+            postsErrorMessage == null &&
+            places.isEmpty() &&
+            users.isEmpty() &&
+            posts.isEmpty()
+
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(top = 12.dp, bottom = 24.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        item(contentType = "places-carousel") {
-            PlaceCarouselSection(
-                query = query,
-                places = places,
-                isLoading = isLoadingPlaces,
-                isLoadingMore = isLoadingMorePlaces,
-                errorMessage = placesErrorMessage,
-                loadMoreErrorMessage = placesLoadMoreErrorMessage,
-                hasMore = hasMorePlaces,
-                onRetry = onRetry,
-                onLoadMore = onLoadMorePlaces,
-                onPlaceClick = onPlaceClick
-            )
-        }
-
-        item(contentType = "users-carousel") {
-            UserCarouselSection(
-                query = query,
-                users = users,
-                followingRequestUserIds = followingRequestUserIds,
-                isLoading = isLoadingUsers,
-                errorMessage = usersErrorMessage,
-                onRetry = onRetry,
-                onToggleFollow = onToggleFollow,
-                onUserClick = onUserClick
-            )
-        }
-
-        item(contentType = "posts-title") {
-            SearchSectionTitle(
-                text = stringResource(R.string.ui_a0ca0c3198),
-                modifier = Modifier.padding(start = 16.dp, top = 6.dp, end = 16.dp)
-            )
-        }
-
-        when {
-            isLoadingPosts -> items(3, contentType = { "post-skeleton" }) { FeedPostCardSkeleton() }
-            postsErrorMessage != null -> item(contentType = "posts-error") {
-                SearchErrorState(message = postsErrorMessage, onRetry = onRetry)
-            }
-            posts.isEmpty() -> item(contentType = "posts-empty") {
+        if (showCombinedEmptyState) {
+            item(contentType = "combined-empty") {
                 EmptySearchState(
                     query = query,
-                    resultType = stringResource(R.string.result_type_posts)
+                    resultType = stringResource(R.string.result_type_combined_search)
                 )
             }
-            else -> items(
-                items = posts,
-                key = { it.id },
-                contentType = { "post" }
-            ) { post ->
-                FeedPostCard(
-                    post = post.toHomePostUiModel(
-                        isLikeLoading = post.id in likingPostIds,
-                        isSaveLoading = post.id in savingPostIds
-                    ),
-                    onLikeClick = { onLikeClick(post.id) },
-                    onSaveClick = { onSaveClick(post.id) },
-                    onCommentClick = { onCommentClick(post.id) },
-                    onAuthorClick = { onUserClick(post.owner.id) }
+        } else {
+            item(contentType = "places-carousel") {
+                PlaceCarouselSection(
+                    query = query,
+                    places = places,
+                    isLoading = isLoadingPlaces,
+                    isLoadingMore = isLoadingMorePlaces,
+                    errorMessage = placesErrorMessage,
+                    loadMoreErrorMessage = placesLoadMoreErrorMessage,
+                    hasMore = hasMorePlaces,
+                    onRetry = onRetry,
+                    onLoadMore = onLoadMorePlaces,
+                    onPlaceClick = onPlaceClick
                 )
+            }
+
+            item(contentType = "users-carousel") {
+                UserCarouselSection(
+                    query = query,
+                    users = users,
+                    followingRequestUserIds = followingRequestUserIds,
+                    isLoading = isLoadingUsers,
+                    errorMessage = usersErrorMessage,
+                    onRetry = onRetry,
+                    onToggleFollow = onToggleFollow,
+                    onUserClick = onUserClick
+                )
+            }
+
+            item(contentType = "posts-title") {
+                SearchSectionTitle(
+                    text = stringResource(R.string.ui_a0ca0c3198),
+                    modifier = Modifier.padding(start = 16.dp, top = 6.dp, end = 16.dp)
+                )
+            }
+
+            when {
+                isLoadingPosts -> items(3, contentType = { "post-skeleton" }) { FeedPostCardSkeleton() }
+                postsErrorMessage != null -> item(contentType = "posts-error") {
+                    SearchErrorState(message = postsErrorMessage, onRetry = onRetry)
+                }
+                posts.isEmpty() -> item(contentType = "posts-empty") {
+                    EmptySearchState(
+                        query = query,
+                        resultType = stringResource(R.string.result_type_posts)
+                    )
+                }
+                else -> items(
+                    items = posts,
+                    key = { it.id },
+                    contentType = { "post" }
+                ) { post ->
+                    FeedPostCard(
+                        post = post.toHomePostUiModel(
+                            isLikeLoading = post.id in likingPostIds,
+                            isSaveLoading = post.id in savingPostIds
+                        ),
+                        onLikeClick = { onLikeClick(post.id) },
+                        onSaveClick = { onSaveClick(post.id) },
+                        onCommentClick = { onCommentClick(post.id) },
+                        onAuthorClick = { onUserClick(post.owner.id) },
+                        showBottomDivider = false
+                    )
+                }
             }
         }
     }

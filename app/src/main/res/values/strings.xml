@@ -239,6 +239,7 @@
     <string name="no_search_results">Không tìm thấy %1$s cho \"%2$s\"</string>
     <string name="result_type_posts">bài viết</string>
     <string name="result_type_users">người dùng</string>
+    <string name="result_type_combined_search">địa điểm, bài viết hoặc người dùng</string>
     <string name="version_format">Phiên bản %1$d</string>
     <string name="avatar_description">Ảnh đại diện của %1$s</string>
     <string name="selected_image_count">ẢNH: %1$d/%2$d</string>
@@ -274,6 +275,8 @@
     <string name="selected_image_read_failed">Không thể đọc ảnh đã chọn</string>
     <string name="profile_save_failed">Lỗi lưu hồ sơ</string>
     <string name="profile_save_failed_with_reason">Lỗi lưu hồ sơ: %1$s</string>
+    <string name="profile_followers_title">Người theo dõi</string>
+    <string name="profile_following_title">Đang theo dõi</string>
     <string name="removed_from_group">Bạn đã bị xóa hoặc không còn là thành viên của nhóm này</string>
     <string name="group_delete_forbidden">Bạn không có quyền xóa nhóm</string>
     <string name="join_code_copied">Đã sao chép mã tham gia</string>

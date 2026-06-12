@@ -26,9 +26,11 @@ class NotificationsViewModel @Inject constructor(
     val uiState: StateFlow<NotificationsUiState> = _uiState.asStateFlow()
 
     fun setFilter(filter: NotificationFilter) {
-        _uiState.update { state ->
-            state.copy(activeFilter = filter)
+        if (_uiState.value.activeFilter == filter) {
+            return
         }
+        _uiState.update { state -> state.copy(activeFilter = filter) }
+        refreshNotifications()
     }
 
     fun markAllRead() {
@@ -63,13 +65,28 @@ class NotificationsViewModel @Inject constructor(
         }
     }
 
-    fun refreshNotifications(pageNumber: Int = 0, pageSize: Int = 10) {
+    fun refreshNotifications(pageNumber: Int = 0, pageSize: Int = NOTIFICATIONS_PAGE_SIZE) {
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+            val activeFilter = _uiState.value.activeFilter
+            _uiState.update {
+                it.copy(
+                    isLoading = true,
+                    isLoadingMore = false,
+                    errorMessage = null,
+                    loadMoreErrorMessage = null,
+                    page = 0,
+                    totalPages = 0,
+                    totalElements = 0L
+                )
+            }
 
-            getNotificationsUseCase(pageNumber = pageNumber, pageSize = pageSize)
-                .onSuccess { items ->
-                    val mapped = items.mapNotNull { response ->
+            getNotificationsUseCase(
+                pageNumber = pageNumber,
+                pageSize = pageSize,
+                unreadOnly = activeFilter == NotificationFilter.Unread
+            )
+                .onSuccess { response ->
+                    val mapped = response.data.mapNotNull { response ->
                         toNotificationModel(response)
                     }
                     val resolved = resolveMissingFollowTargets(mapped)
@@ -77,6 +94,9 @@ class NotificationsViewModel @Inject constructor(
                         it.copy(
                             isLoading = false,
                             notifications = resolved,
+                            page = response.pageNumber,
+                            totalPages = response.totalPages,
+                            totalElements = response.totalElements,
                             errorMessage = null
                         )
                     }
@@ -86,7 +106,60 @@ class NotificationsViewModel @Inject constructor(
                         it.copy(
                             isLoading = false,
                             notifications = emptyList(),
+                            loadMoreErrorMessage = null,
                             errorMessage = throwable.userMessage("Không thể tải thông báo")
+                        )
+                    }
+                }
+        }
+    }
+
+    fun loadMoreNotifications(pageSize: Int = NOTIFICATIONS_PAGE_SIZE) {
+        val state = _uiState.value
+        if (
+            state.isLoading ||
+            state.isLoadingMore ||
+            state.page + 1 >= state.totalPages
+        ) {
+            return
+        }
+
+        val nextPage = state.page + 1
+        val activeFilter = state.activeFilter
+        viewModelScope.launch {
+            _uiState.update {
+                it.copy(
+                    isLoadingMore = true,
+                    loadMoreErrorMessage = null
+                )
+            }
+
+            getNotificationsUseCase(
+                pageNumber = nextPage,
+                pageSize = pageSize,
+                unreadOnly = activeFilter == NotificationFilter.Unread
+            )
+                .onSuccess { response ->
+                    val mapped = response.data.mapNotNull { notification ->
+                        toNotificationModel(notification)
+                    }
+                    val resolved = resolveMissingFollowTargets(mapped)
+                    _uiState.update { current ->
+                        current.copy(
+                            notifications = current.notifications + resolved,
+                            isLoadingMore = false,
+                            loadMoreErrorMessage = null,
+                            page = response.pageNumber,
+                            totalPages = response.totalPages,
+                            totalElements = response.totalElements
+                        )
+                    }
+                }
+                .onFailure { throwable ->
+                    _uiState.update {
+                        it.copy(
+                            isLoadingMore = false,
+                            loadMoreErrorMessage = throwable.userMessage("Không thể tải thêm thông báo")
                         )
                     }
                 }
@@ -122,9 +195,17 @@ data class NotificationsUiState(
     val notifications: List<NotificationModel> = emptyList(),
     val activeFilter: NotificationFilter = NotificationFilter.All,
     val isLoading: Boolean = false,
+    val isLoadingMore: Boolean = false,
     val isMarkingAllRead: Boolean = false,
-    val errorMessage: String? = null
-)
+    val page: Int = 0,
+    val totalPages: Int = 0,
+    val totalElements: Long = 0L,
+    val errorMessage: String? = null,
+    val loadMoreErrorMessage: String? = null
+) {
+    val hasMore: Boolean
+        get() = page + 1 < totalPages
+}
 
 enum class NotificationFilter(val label: String) {
     All("Tất cả"),
@@ -185,3 +266,5 @@ private fun extractFollowerUsername(body: String): String? {
         .trim()
         .takeIf { it.isNotBlank() && it != body }
 }
+
+private const val NOTIFICATIONS_PAGE_SIZE = 10

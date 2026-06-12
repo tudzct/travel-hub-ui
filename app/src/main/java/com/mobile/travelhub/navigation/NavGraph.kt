@@ -287,6 +287,7 @@ fun NavGraph(
     authUiState: AuthUiState,
     homeReloadSignal: Int = 0,
     onExploreSearchActiveChange: (Boolean) -> Unit = {},
+    onProfileAvatarCropActiveChange: (Boolean) -> Unit = {},
     onLogin: (String, String) -> Unit,
     onRegister: (String, String, String, String) -> Unit,
     onClearAuthError: () -> Unit,
@@ -659,6 +660,7 @@ fun NavGraph(
                         null
                     },
                     viewModel = profileViewModel,
+                    onAvatarCropActiveChange = onProfileAvatarCropActiveChange,
                     isDarkThemeEnabled = isDarkThemeEnabled,
                     onDarkThemeChange = onDarkThemeChange
                 )

@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -425,7 +426,7 @@ private fun SelectedImagesSection(
             ) {
                 Box(
                     modifier = Modifier
-                        .size(64.dp)
+                        .size(96.dp)
                         .clip(CircleShape)
                         .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.10f)),
                     contentAlignment = Alignment.Center
@@ -433,13 +434,14 @@ private fun SelectedImagesSection(
                     Icon(
                         imageVector = Icons.Outlined.Image,
                         contentDescription = null,
-                        modifier = Modifier.size(34.dp),
+                        modifier = Modifier.size(54.dp),
                         tint = MaterialTheme.colorScheme.primary
                     )
                     Box(
                         modifier = Modifier
                             .align(Alignment.BottomEnd)
                             .size(24.dp)
+                            .offset(x = (-14).dp, y = (-14).dp)
                             .clip(CircleShape)
                             .background(MaterialTheme.colorScheme.primary),
                         contentAlignment = Alignment.Center
