@@ -13,6 +13,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -26,6 +27,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -70,7 +72,7 @@ fun FollowersFollowingScreen(
     }
 
     val titleName = stringResource(if (showFollowers) R.string.profile_followers_title else R.string.profile_following_title)
-    val subtitleName = (profileState as? UiState.Success)?.data?.name
+    val profileUsername = (profileState as? UiState.Success)?.data?.username?.trim()
 
     Scaffold(
         topBar = {
@@ -94,9 +96,9 @@ fun FollowersFollowingScreen(
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold
                         )
-                        if (!subtitleName.isNullOrBlank()) {
+                        if (!profileUsername.isNullOrBlank()) {
                             Text(
-                                text = "@$subtitleName",
+                                text = "@$profileUsername",
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.Medium,
                                 letterSpacing = 1.sp,
@@ -132,25 +134,34 @@ fun FollowersFollowingScreen(
                     }
                     is UiState.Success -> {
                         val users = currentState.data
-                        LazyColumn(modifier = Modifier.fillMaxSize()) {
-                            items(users) { user ->
-                                UserListItem(
-                                    name = user.name,
-                                    handle = user.username,
-                                    avatarUrl = user.avatarUrl,
-                                    isFollowing = user.isFollowing,
-                                    showFollowButton = user.id != currentUserId,
-                                    onClick = {
-                                        onNavigateToUserProfile(user.id.takeIf { it != currentUserId })
-                                    },
-                                    onFollowToggle = {
-                                        viewModel.toggleFollow(
-                                            targetUserId = user.id,
-                                            isCurrentlyFollowing = user.isFollowing,
-                                            connectionsOwnerUserId = viewedUserId
-                                        )
-                                    }
-                                )
+                        if (users.isEmpty()) {
+                            EmptyConnectionsState(
+                                showFollowers = showFollowers,
+                                isViewingOwnProfile = isViewingOwnProfile,
+                                username = profileUsername,
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        } else {
+                            LazyColumn(modifier = Modifier.fillMaxSize()) {
+                                items(users) { user ->
+                                    UserListItem(
+                                        name = user.name,
+                                        handle = user.username,
+                                        avatarUrl = user.avatarUrl,
+                                        isFollowing = user.isFollowing,
+                                        showFollowButton = user.id != currentUserId,
+                                        onClick = {
+                                            onNavigateToUserProfile(user.id.takeIf { it != currentUserId })
+                                        },
+                                        onFollowToggle = {
+                                            viewModel.toggleFollow(
+                                                targetUserId = user.id,
+                                                isCurrentlyFollowing = user.isFollowing,
+                                                connectionsOwnerUserId = viewedUserId
+                                            )
+                                        }
+                                    )
+                                }
                             }
                         }
                     }
@@ -158,5 +169,53 @@ fun FollowersFollowingScreen(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun EmptyConnectionsState(
+    showFollowers: Boolean,
+    isViewingOwnProfile: Boolean,
+    username: String?,
+    modifier: Modifier = Modifier
+) {
+    val displayUsername = username?.takeIf { it.isNotBlank() }?.let { "@$it" } ?: "Người dùng này"
+    val title = when {
+        showFollowers && isViewingOwnProfile -> "Bạn chưa có người theo dõi"
+        showFollowers -> "$displayUsername chưa có người theo dõi"
+        isViewingOwnProfile -> "Bạn chưa theo dõi ai"
+        else -> "$displayUsername chưa theo dõi ai"
+    }
+    val message = if (showFollowers) {
+        "Khi có người theo dõi, danh sách sẽ xuất hiện tại đây."
+    } else {
+        "Những tài khoản được theo dõi sẽ xuất hiện tại đây."
+    }
+
+    Column(
+        modifier = modifier.padding(horizontal = 32.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Icon(
+            imageVector = Icons.Outlined.Person,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(bottom = 16.dp)
+        )
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface,
+            textAlign = TextAlign.Center
+        )
+        Text(
+            text = message,
+            modifier = Modifier.padding(top = 8.dp),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center
+        )
     }
 }
