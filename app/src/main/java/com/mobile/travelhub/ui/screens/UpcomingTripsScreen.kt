@@ -37,6 +37,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -72,6 +73,10 @@ fun UpcomingTripsScreen(
 ) {
     val state by viewModel.uiState.collectAsState()
     val upcomingTrips = state.upcomingTrips
+
+    LaunchedEffect(Unit) {
+        viewModel.refreshDashboard()
+    }
 
     Scaffold(
         containerColor = SurfaceBg,

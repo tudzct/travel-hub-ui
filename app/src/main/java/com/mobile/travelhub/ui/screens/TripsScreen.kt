@@ -77,7 +77,7 @@ fun TripsScreen(
         val observer = LifecycleEventObserver { _, event ->
             if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
                 if (hasReachedInitialResume) {
-                    viewModel.refreshDashboard()
+                    viewModel.refreshTripsScreen()
                 } else {
                     hasReachedInitialResume = true
                 }
@@ -89,7 +89,7 @@ fun TripsScreen(
         }
     }
     LaunchedEffect(Unit) {
-        viewModel.refreshDashboard(isSilent = false)
+        viewModel.refreshTripsScreen(isSilent = false)
         while (true) {
             kotlinx.coroutines.delay(10000L)
             viewModel.refreshDashboard(isSilent = true)

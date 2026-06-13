@@ -61,8 +61,48 @@ class TripsViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(TripsUiState())
     val uiState: StateFlow<TripsUiState> = _uiState.asStateFlow()
 
-    init {
-        refreshDashboard()
+    fun refreshTripsScreen(isSilent: Boolean = false) {
+        viewModelScope.launch {
+            val hasData = _uiState.value.activeTrip != null ||
+                    _uiState.value.upcomingTrips.isNotEmpty() ||
+                    _uiState.value.pastTrips.isNotEmpty()
+            if (!isSilent) {
+                _uiState.update {
+                    it.copy(
+                        isLoading = !hasData,
+                        pastTrips = emptyList(),
+                        pastTripsPage = 0,
+                        pastTripsHasMore = true,
+                        isPastTripsLoading = true,
+                        isPastTripsLoadingMore = false,
+                        errorMessage = null
+                    )
+                }
+            }
+            tripRepository.getDashboard()
+                .onSuccess { dashboard ->
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            activeTrip = dashboard.activeTrip?.toUiModel(),
+                            upcomingTrips = dashboard.upcomingTrips.map { it.toUiModel() },
+                            errorMessage = null
+                        )
+                    }
+                }
+                .onFailure { throwable ->
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            errorMessage = if (isSilent && hasData) it.errorMessage else throwable.userMessage("Không tải được danh sách chuyến đi")
+                        )
+                    }
+                }
+
+            if (!isSilent) {
+                loadPastTripsPage(page = 0, append = false)
+            }
+        }
     }
 
     fun refreshDashboard(isSilent: Boolean = false) {
