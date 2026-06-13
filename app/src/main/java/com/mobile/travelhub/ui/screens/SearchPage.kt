@@ -582,7 +582,6 @@ private fun SearchCommentsSheet(
                         comment = comment.content,
                         time = comment.timeAgoLabel,
                         avatarUrl = comment.avatarUrl,
-                        avatarRes = R.drawable.female_avatar_maker,
                         onAuthorClick = { onAuthorClick(comment.ownerId) }
                     )
                 }

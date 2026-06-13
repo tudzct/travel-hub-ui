@@ -756,40 +756,14 @@ private fun ReviewAuthorAvatar(
     avatarUrl: String?,
     onClick: () -> Unit
 ) {
-    val initial = name.trim().firstOrNull()?.uppercaseChar()?.toString() ?: "?"
-    val avatarColors = listOf(
-        Color(0xFF9DBBFF),
-        Color(0xFF86DDB8),
-        Color(0xFFA7A0F6),
-        Color(0xFFF0B76D),
-        Color(0xFF7FC6E8)
-    )
-    val backgroundColor = avatarColors[initial.first().code % avatarColors.size]
-
-    Box(
+    TravelHubAvatar(
+        avatarUrl = avatarUrl,
+        contentDescription = name,
+        fallbackName = name,
         modifier = Modifier
             .size(46.dp)
-            .clip(CircleShape)
-            .background(backgroundColor)
-            .clickable(onClick = onClick),
-        contentAlignment = Alignment.Center
-    ) {
-        if (!avatarUrl.isNullOrBlank()) {
-            AsyncImage(
-                model = avatarUrl,
-                contentDescription = name,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop
-            )
-        } else {
-            Text(
-                text = initial,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onPrimary
-            )
-        }
-    }
+            .clickable(onClick = onClick)
+    )
 }
 
 @Composable

@@ -274,29 +274,14 @@ fun JoinRequestActionItem(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Box(
+        TravelHubAvatar(
+            avatarUrl = request.avatarUrl,
+            contentDescription = request.name,
+            fallbackName = request.name,
             modifier = Modifier
                 .size(44.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f))
-                .clickable { onProfileClick(request.userId) },
-            contentAlignment = Alignment.Center
-        ) {
-            if (!request.avatarUrl.isNullOrBlank()) {
-                AsyncImage(
-                    model = request.avatarUrl,
-                    contentDescription = request.name,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop
-                )
-            } else {
-                Text(
-                    text = request.name.firstOrNull()?.uppercaseChar()?.toString().orEmpty(),
-                    fontWeight = FontWeight.Bold,
-                    color = PrimaryBlue
-                )
-            }
-        }
+                .clickable { onProfileClick(request.userId) }
+        )
 
         Column(modifier = Modifier.weight(1f).clickable { onProfileClick(request.userId) }) {
             Text(
@@ -389,28 +374,13 @@ fun MemberAvatarItem(
             .clickable { onClick() },
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Box(
+        TravelHubAvatar(
+            avatarUrl = member.avatarUrl,
+            contentDescription = member.name,
+            fallbackName = member.name,
             modifier = Modifier
                 .size(56.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)),
-            contentAlignment = Alignment.Center
-        ) {
-            if (!member.avatarUrl.isNullOrBlank()) {
-                AsyncImage(
-                    model = member.avatarUrl,
-                    contentDescription = member.name,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop
-                )
-            } else {
-                Text(
-                    text = member.name.firstOrNull()?.uppercaseChar()?.toString() ?: "?",
-                    fontWeight = FontWeight.Bold,
-                    color = PrimaryBlue
-                )
-            }
-        }
+        )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
             text = member.name,
@@ -479,29 +449,14 @@ fun ManageMembersDialog(
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(12.dp)
                             ) {
-                                Box(
+                                TravelHubAvatar(
+                                    avatarUrl = member.avatarUrl,
+                                    contentDescription = member.name,
+                                    fallbackName = member.name,
                                     modifier = Modifier
                                         .size(40.dp)
-                                        .clip(CircleShape)
-                                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f))
-                                        .clickable { onMemberClick(member.userId) },
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    if (!member.avatarUrl.isNullOrBlank()) {
-                                        AsyncImage(
-                                            model = member.avatarUrl,
-                                            contentDescription = member.name,
-                                            modifier = Modifier.fillMaxSize(),
-                                            contentScale = ContentScale.Crop
-                                        )
-                                    } else {
-                                        Text(
-                                            text = member.name.firstOrNull()?.uppercaseChar()?.toString() ?: "?",
-                                            fontWeight = FontWeight.Bold,
-                                            color = PrimaryBlue
-                                        )
-                                    }
-                                }
+                                        .clickable { onMemberClick(member.userId) }
+                                )
 
                                 Column(modifier = Modifier.weight(1f).clickable { onMemberClick(member.userId) }) {
                                     Text(

@@ -350,7 +350,6 @@ fun HomeCommentsBottomSheet(
                         comment = comment.content,
                         time = comment.timeAgoLabel,
                         avatarUrl = comment.avatarUrl,
-                        avatarRes = R.drawable.female_avatar_maker,
                         onAuthorClick = { onAuthorClick(comment.ownerId) }
                     )
                 }
@@ -655,16 +654,11 @@ fun FeedPostCard(
                     ),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                AsyncImage(
-                    model = post.ownerAvatarUrl?.let(::toDisplayUrl),
-                    placeholder = painterResource(R.drawable.female_avatar_maker),
-                    error = painterResource(R.drawable.female_avatar_maker),
-                    fallback = painterResource(R.drawable.female_avatar_maker),
+                TravelHubAvatar(
+                    avatarUrl = post.ownerAvatarUrl?.let(::toDisplayUrl),
                     contentDescription = post.username,
-                    modifier = Modifier
-                        .size(36.dp)
-                        .clip(CircleShape),
-                    contentScale = ContentScale.Crop
+                    fallbackName = post.username,
+                    modifier = Modifier.size(36.dp)
                 )
                 Spacer(modifier = Modifier.width(10.dp))
                 Column(

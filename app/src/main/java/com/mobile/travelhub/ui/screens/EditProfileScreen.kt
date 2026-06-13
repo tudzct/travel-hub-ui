@@ -89,6 +89,7 @@ import com.mobile.travelhub.data.userMessage
 import com.mobile.travelhub.ui.components.DestinationPlacePicker
 import com.mobile.travelhub.ui.components.BankPicker
 import com.mobile.travelhub.ui.components.EditProfileLoadingSkeleton
+import com.mobile.travelhub.ui.components.TravelHubAvatar
 import com.mobile.travelhub.ui.theme.PrimaryBlue
 import com.mobile.travelhub.viewmodels.ProfileViewModel
 import com.mobile.travelhub.viewmodels.UiState
@@ -366,6 +367,9 @@ fun EditProfileScreen(
                     ?.data
                     ?.avatarUrl
                     ?.takeIf { it.isNotBlank() },
+                fallbackName = (profileState as? UiState.Success)
+                    ?.data
+                    ?.let { profile -> profile.name.ifBlank { profile.username } },
                 pendingAvatar = pendingAvatar,
                 onClick = {
                     avatarPickerLauncher.launch(
@@ -762,6 +766,7 @@ private fun AvatarCropperScreen(
 @Composable
 private fun EditProfileAvatarPicker(
     avatarUrl: String?,
+    fallbackName: String?,
     pendingAvatar: PendingAvatar?,
     onClick: () -> Unit
 ) {
@@ -786,30 +791,21 @@ private fun EditProfileAvatarPicker(
                     contentScale = ContentScale.Crop
                 )
             } else if (avatarUrl != null) {
-                AsyncImage(
-                    model = avatarUrl,
+                TravelHubAvatar(
+                    avatarUrl = avatarUrl,
                     contentDescription = stringResource(R.string.ui_4dbfd0986a),
+                    fallbackName = fallbackName,
                     modifier = Modifier
                         .fillMaxSize()
-                        .clip(CircleShape)
-                        .background(EditProfileSoftBlue),
-                    contentScale = ContentScale.Crop
                 )
             } else {
-                Box(
+                TravelHubAvatar(
+                    avatarUrl = null,
+                    contentDescription = stringResource(R.string.ui_4dbfd0986a),
+                    fallbackName = fallbackName,
                     modifier = Modifier
                         .fillMaxSize()
-                        .clip(CircleShape)
-                        .background(EditProfileSoftBlue),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Outlined.Person,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(72.dp)
-                    )
-                }
+                )
             }
 
             Surface(
