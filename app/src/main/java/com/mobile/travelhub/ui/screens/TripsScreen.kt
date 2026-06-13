@@ -451,7 +451,7 @@ fun ActiveJourneyCardV2(
     ElevatedCard(
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.elevatedCardColors(containerColor = primary),
-        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 6.dp),
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 0.dp),
         modifier = Modifier
             .fillMaxWidth()
             .clickable(enabled = trip != null) {
@@ -621,7 +621,7 @@ private fun EmptyTripSectionCard(
         modifier = cardModifier,
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.elevatedCardColors(containerColor = SurfaceContainerLowest),
-        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 6.dp)
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 0.dp)
     ) {
         Row(
             modifier = Modifier
@@ -680,7 +680,7 @@ fun PastMemoryCard(place: String, date: String, imageUrl: String? = null, onClic
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.elevatedCardColors(containerColor = SurfaceContainerLowest),
-        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 6.dp)
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 0.dp)
     ) {
         Box(
             modifier = Modifier
@@ -1024,7 +1024,7 @@ private fun UpcomingTripPreviewList(
     ElevatedCard(
         shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.elevatedCardColors(containerColor = SurfaceContainerLowest),
-        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 4.dp),
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 0.dp),
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
@@ -1144,7 +1144,7 @@ private fun JourneyJournalList(
     ElevatedCard(
         shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.elevatedCardColors(containerColor = SurfaceContainerLowest),
-        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 4.dp),
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 0.dp),
         modifier = modifier.fillMaxWidth()
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
@@ -1261,7 +1261,7 @@ private fun JourneyJournalCardItem(
     ElevatedCard(
         shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.elevatedCardColors(containerColor = SurfaceContainerLowest),
-        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 4.dp),
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 0.dp),
         modifier = modifier.fillMaxWidth()
     ) {
         JourneyJournalItem(
