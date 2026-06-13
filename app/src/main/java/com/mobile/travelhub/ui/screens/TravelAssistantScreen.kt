@@ -298,8 +298,7 @@ private fun PlaceReferenceCard(
     Surface(
         color = SurfaceContainerLowest,
         shape = RoundedCornerShape(24.dp),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-        shadowElevation = 2.dp,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f)),
         modifier = modifier
             .width(200.dp)
             .fillMaxHeight()
