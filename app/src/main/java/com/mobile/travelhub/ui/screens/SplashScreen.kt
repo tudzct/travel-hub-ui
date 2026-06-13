@@ -21,13 +21,19 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mobile.travelhub.R
 import com.mobile.travelhub.ui.components.SkeletonBlock
+import com.mobile.travelhub.ui.theme.DarkSurfaceBg
+import com.mobile.travelhub.ui.theme.LightSurfaceBg
 
 @Composable
-fun SplashScreen() {
+fun SplashScreen(
+    darkThemeEnabled: Boolean = false
+) {
+    val backgroundColor = if (darkThemeEnabled) DarkSurfaceBg else LightSurfaceBg
+
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.surface),
+            .background(backgroundColor),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {

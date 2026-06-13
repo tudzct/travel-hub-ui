@@ -319,10 +319,14 @@ private fun CombinedSearchResults(
     ) {
         if (showCombinedEmptyState) {
             item(contentType = "combined-empty") {
-                EmptySearchState(
-                    query = query,
-                    resultType = stringResource(R.string.result_type_combined_search)
-                )
+                Box(
+                    modifier = Modifier.padding(16.dp)
+                ) {
+                    EmptySearchState(
+                        query = query,
+                        resultType = stringResource(R.string.result_type_combined_search)
+                    )
+                }
             }
         } else {
             item(contentType = "places-carousel") {

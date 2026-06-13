@@ -63,7 +63,7 @@ fun TravelHubScreen(
     }
 
     if (showSplash) {
-        SplashScreen()
+        SplashScreen(darkThemeEnabled = isDarkThemeEnabled)
         return
     }
 

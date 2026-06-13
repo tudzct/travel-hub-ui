@@ -3,9 +3,9 @@
 
     <style name="Theme.TravelHub" parent="android:style/Theme.Material.NoActionBar" />
 
-    <style name="Theme.TravelHub.Starting" parent="Theme.SplashScreen">
-        <item name="windowSplashScreenBackground">@color/splash_screen_background</item>
-        <item name="windowSplashScreenAnimatedIcon">@drawable/travel_hub_splash_art</item>
-        <item name="postSplashScreenTheme">@style/Theme.TravelHub</item>
-    </style>
+<!--    <style name="Theme.TravelHub.Starting" parent="Theme.SplashScreen">-->
+<!--        <item name="windowSplashScreenBackground">@color/splash_screen_background</item>-->
+<!--        <item name="windowSplashScreenAnimatedIcon">@drawable/travel_hub_splash_art</item>-->
+<!--        <item name="postSplashScreenTheme">@style/Theme.TravelHub</item>-->
+<!--    </style>-->
 </resources>
