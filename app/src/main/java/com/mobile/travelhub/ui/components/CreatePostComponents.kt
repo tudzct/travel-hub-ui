@@ -206,36 +206,12 @@ private fun UserHeaderSection(
             .padding(start = 24.dp, end = 18.dp, top = 16.dp, bottom = 18.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Box(
-            modifier = Modifier
-                .size(64.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.surfaceVariant)
-        ) {
-            if (userAvatarUrl != null) {
-                AsyncImage(
-                    model = userAvatarUrl,
-                    contentDescription = stringResource(R.string.ui_900527c977),
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize()
-                )
-            } else {
-                // Placeholder
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = userName.firstOrNull()?.uppercase() ?: "?",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
-            }
-        }
+        TravelHubAvatar(
+            avatarUrl = userAvatarUrl,
+            contentDescription = stringResource(R.string.ui_900527c977),
+            fallbackName = userName,
+            modifier = Modifier.size(64.dp)
+        )
 
         Spacer(modifier = Modifier.width(16.dp))
 
