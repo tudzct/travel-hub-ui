@@ -47,7 +47,7 @@ fun ItineraryOverviewContent(
             .fillMaxSize()
             .background(SurfaceBg)
             .padding(paddingValues),
-        contentPadding = PaddingValues(start = 10.dp, end = 10.dp, top = 4.dp, bottom = 112.dp),
+        contentPadding = PaddingValues(start = 24.dp, end = 24.dp, top = 4.dp, bottom = 112.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         item {
@@ -367,7 +367,7 @@ private fun ItineraryTimelineDay(
                         title = event.title.ifBlank { event.placeName.ifBlank { "Địa điểm ${eventIndex + 1}" } },
                         timeRange = "${event.startTime} - ${event.endTime}",
                         placeName = event.placeName,
-                        badge = eventIndex + 1,
+                        badge = null,
                         onClick = onOpenDayDetail,
                         onLongClick = if (isCompleted) null else { { onEditEvent(event) } }
                     )
@@ -445,7 +445,7 @@ private fun ItineraryTimelineEventCard(
             shadowElevation = 0.dp
         ) {
             Column(
-                modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+                modifier = Modifier.padding(horizontal = 18.dp, vertical = 10.dp),
                 verticalArrangement = Arrangement.spacedBy(3.dp)
             ) {
                 Text(
@@ -496,7 +496,7 @@ fun ItineraryDayDetailContent(
             .background(SurfaceBg)
             .padding(paddingValues),
         state = lazyListState,
-        contentPadding = PaddingValues(start = 10.dp, end = 10.dp, top = 6.dp, bottom = 112.dp),
+        contentPadding = PaddingValues(start = 24.dp, end = 24.dp, top = 6.dp, bottom = 112.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         if (isLoading) {

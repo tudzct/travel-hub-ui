@@ -270,7 +270,9 @@ class GroupDetailViewModel @Inject constructor(
                     )
                 }
             }
-            loadTripPhotos(tripId, isSilent)
+            if (!isSilent) {
+                loadTripPhotos(tripId, isSilent)
+            }
         }
     }
 
@@ -585,7 +587,7 @@ class GroupDetailViewModel @Inject constructor(
         fallbackImages: List<String>
     ): List<String> {
         val sanitizedFallback = fallbackImages.map { it.trim() }.filter { it.isNotBlank() }
-        if (placeId == null) return sanitizedFallback
+        if (placeId == null || sanitizedFallback.isNotEmpty()) return sanitizedFallback
 
         val currentPlaceId = _uiState.value.placeId
         val currentPlaceImages = _uiState.value.placeImages.map { it.trim() }.filter { it.isNotBlank() }

@@ -66,6 +66,11 @@ class PlaceRepository @Inject constructor(
         return placeApiService.getReviewSummary(placeId = placeId)
     }
 
+    suspend fun getMyReview(placeId: Long): TravelPlaceReviewResponse? {
+        val response = placeApiService.getMyReview(placeId = placeId)
+        return if (response.isSuccessful) response.body() else null
+    }
+
     suspend fun upsertReview(
         placeId: Long,
         body: UpsertTravelPlaceReviewRequest

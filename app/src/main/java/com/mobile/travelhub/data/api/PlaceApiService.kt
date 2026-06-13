@@ -7,6 +7,7 @@ import com.mobile.travelhub.data.model.TravelPlaceReviewListSummaryResponse
 import com.mobile.travelhub.data.model.TravelPlaceReviewResponse
 import com.mobile.travelhub.data.model.TravelPlaceViewHistoryResponse
 import com.mobile.travelhub.data.model.UpsertTravelPlaceReviewRequest
+import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
@@ -56,6 +57,11 @@ interface PlaceApiService {
     suspend fun getReviewSummary(
         @Path("placeId") placeId: Long
     ): TravelPlaceReviewListSummaryResponse
+
+    @GET("api/places/{placeId}/review/me")
+    suspend fun getMyReview(
+        @Path("placeId") placeId: Long
+    ): Response<TravelPlaceReviewResponse>
 
     @PUT("api/places/{placeId}/review")
     suspend fun upsertReview(

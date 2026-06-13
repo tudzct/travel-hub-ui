@@ -10,6 +10,8 @@ import com.mobile.travelhub.data.model.TravelPlaceReviewListSummaryResponse
 import com.mobile.travelhub.data.model.TravelPlaceReviewResponse
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -143,24 +145,36 @@ class ReviewListViewModel @Inject constructor(
             _uiState.update { it.copy(isLoading = true, isLoadingMore = false, errorMessage = null) }
             runCatching {
                 retryTransientServerError {
-                    val summary = placeRepository.getReviewSummary(placeId)
-                    val detail = runCatching { placeRepository.getPlaceDetail(placeId) }.getOrNull()
-                    val response = placeRepository.getReviews(
-                        placeId = placeId,
-                        page = 0,
-                        pageSize = pageSize,
-                        rating = _uiState.value.selectedRating,
-                        sort = _uiState.value.sort
-                    )
-                    Triple(summary, detail, response)
+                    coroutineScope {
+                        val selectedRating = _uiState.value.selectedRating
+                        val selectedSort = _uiState.value.sort
+                        val summaryDeferred = async { placeRepository.getReviewSummary(placeId) }
+                        val myReviewDeferred = async {
+                            if (_uiState.value.currentUserId == null) {
+                                null
+                            } else {
+                                placeRepository.getMyReview(placeId)
+                            }
+                        }
+                        val reviewsDeferred = async {
+                            placeRepository.getReviews(
+                                placeId = placeId,
+                                page = 0,
+                                pageSize = pageSize,
+                                rating = selectedRating,
+                                sort = selectedSort
+                            )
+                        }
+                        Triple(summaryDeferred.await(), myReviewDeferred.await(), reviewsDeferred.await())
+                    }
                 }
             }
-                .onSuccess { (summary, detail, response) ->
+                .onSuccess { (summary, myReview, response) ->
                     _uiState.update {
                         it.copy(
                             isLoading = false,
                             summary = summary,
-                            myReview = detail?.myReview,
+                            myReview = myReview,
                             items = response.data,
                             page = response.pageNumber,
                             totalPages = response.totalPages,

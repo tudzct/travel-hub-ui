@@ -145,8 +145,9 @@ fun TripDetailRow(
                 modifier = Modifier
                     .clip(RoundedCornerShape(50))
                     .background(MaterialTheme.colorScheme.primary)
-                    .padding(horizontal = 6.dp, vertical = 1.dp),
+                    .padding(horizontal = 8.dp, vertical = 1.dp),
                 color = MaterialTheme.colorScheme.onPrimary,
+                fontWeight = FontWeight.SemiBold,
                 fontSize = 12.sp
             )
             trailingText?.let {

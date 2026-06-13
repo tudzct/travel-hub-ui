@@ -137,10 +137,6 @@ fun GroupDetailScreen(
 
     LaunchedEffect(tripId, groupName) {
         viewModel.loadGroup(tripId = tripId, groupName = groupName, isSilent = false)
-        while (true) {
-            kotlinx.coroutines.delay(10000L)
-            viewModel.loadGroup(tripId = tripId, groupName = groupName, isSilent = true)
-        }
     }
 
     val lifecycleOwner = LocalLifecycleOwner.current
