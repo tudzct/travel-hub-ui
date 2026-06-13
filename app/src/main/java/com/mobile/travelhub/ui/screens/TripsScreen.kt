@@ -465,14 +465,6 @@ fun ActiveJourneyCardV2(
                 .background(primary)
                 .padding(14.dp)
         ) {
-            Icon(
-                imageVector = Icons.Default.FlightTakeoff,
-                contentDescription = null,
-                tint = Color.White.copy(alpha = 0.16f),
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .size(86.dp)
-            )
             Row(
                 verticalAlignment = Alignment.Top,
                 horizontalArrangement = Arrangement.spacedBy(14.dp)
