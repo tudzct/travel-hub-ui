@@ -451,7 +451,7 @@ fun ActiveJourneyCardV2(
     ElevatedCard(
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.elevatedCardColors(containerColor = primary),
-        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 6.dp),
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 0.dp),
         modifier = Modifier
             .fillMaxWidth()
             .clickable(enabled = trip != null) {
@@ -463,7 +463,7 @@ fun ActiveJourneyCardV2(
                 .fillMaxWidth()
                 .height(170.dp)
                 .background(primary)
-                .padding(18.dp)
+                .padding(14.dp)
         ) {
             Icon(
                 imageVector = Icons.Default.FlightTakeoff,
@@ -570,7 +570,7 @@ fun ActiveJourneyCardV2(
                         color = SurfaceContainerLowest
                     ) {
                         Row(
-                            modifier = Modifier.padding(horizontal = 18.dp),
+                            modifier = Modifier.padding(horizontal = 14.dp),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
@@ -621,12 +621,12 @@ private fun EmptyTripSectionCard(
         modifier = cardModifier,
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.elevatedCardColors(containerColor = SurfaceContainerLowest),
-        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 6.dp)
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 0.dp)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 24.dp),
+                .padding(horizontal = 16.dp, vertical = 18.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
@@ -680,7 +680,7 @@ fun PastMemoryCard(place: String, date: String, imageUrl: String? = null, onClic
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.elevatedCardColors(containerColor = SurfaceContainerLowest),
-        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 6.dp)
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 0.dp)
     ) {
         Box(
             modifier = Modifier
@@ -711,7 +711,7 @@ fun PastMemoryCard(place: String, date: String, imageUrl: String? = null, onClic
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(14.dp),
+                .padding(12.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Text(
@@ -928,7 +928,7 @@ fun TripOptionItem(
             .clip(RoundedCornerShape(20.dp))
             .background(SurfaceContainerLow)
             .clickable(onClick = onClick)
-            .padding(16.dp),
+            .padding(12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(
@@ -959,7 +959,7 @@ fun UpcomingTripItem(
             .clip(RoundedCornerShape(20.dp))
             .background(SurfaceContainerLowest)
             .clickable(onClick = onClick)
-            .padding(horizontal = 14.dp, vertical = 16.dp),
+            .padding(horizontal = 12.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(
@@ -1024,7 +1024,7 @@ private fun UpcomingTripPreviewList(
     ElevatedCard(
         shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.elevatedCardColors(containerColor = SurfaceContainerLowest),
-        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 4.dp),
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 0.dp),
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
@@ -1050,7 +1050,7 @@ private fun UpcomingTripCompactItem(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(horizontal = 14.dp, vertical = 14.dp),
+            .padding(horizontal = 12.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         DateTile(dateText = trip.startDate)
@@ -1144,7 +1144,7 @@ private fun JourneyJournalList(
     ElevatedCard(
         shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.elevatedCardColors(containerColor = SurfaceContainerLowest),
-        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 4.dp),
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 0.dp),
         modifier = modifier.fillMaxWidth()
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
@@ -1177,7 +1177,7 @@ private fun JourneyJournalItem(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(horizontal = 14.dp, vertical = 14.dp),
+            .padding(horizontal = 12.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         val imageUrl = trip.imageUrl
@@ -1261,7 +1261,7 @@ private fun JourneyJournalCardItem(
     ElevatedCard(
         shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.elevatedCardColors(containerColor = SurfaceContainerLowest),
-        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 4.dp),
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 0.dp),
         modifier = modifier.fillMaxWidth()
     ) {
         JourneyJournalItem(

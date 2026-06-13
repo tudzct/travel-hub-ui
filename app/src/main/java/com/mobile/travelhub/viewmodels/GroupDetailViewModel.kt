@@ -3,6 +3,7 @@ package com.mobile.travelhub.viewmodels
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.mobile.travelhub.data.AuthRepository
 import com.mobile.travelhub.data.TripRepository
 import com.mobile.travelhub.data.PostRepository
 import com.mobile.travelhub.data.PlaceRepository
@@ -55,6 +56,7 @@ data class GroupJoinRequestUiModel(
 data class TripPhotoUiModel(
     val id: Long,
     val imageUrl: String,
+    val uploadedByUserId: Long? = null,
     val uploadedByName: String? = null,
     val uploadedAt: String? = null
 )
@@ -102,13 +104,19 @@ data class GroupDetailUiState(
 
 @HiltViewModel
 class GroupDetailViewModel @Inject constructor(
+    private val authRepository: AuthRepository,
     private val tripRepository: TripRepository,
     private val postRepository: PostRepository,
     private val placeRepository: PlaceRepository
 ) : ViewModel() {
 
+    private val sessionUserId: Long
+        get() = authRepository.getSavedSession()?.userId?.toLong() ?: -1L
+
     private val _uiState = MutableStateFlow(GroupDetailUiState())
     val uiState: StateFlow<GroupDetailUiState> = _uiState.asStateFlow()
+
+    fun getCurrentUserId(): Long = sessionUserId
 
     fun loadGroup(tripId: Long, groupName: String, isSilent: Boolean = false) {
         viewModelScope.launch {
@@ -695,6 +703,7 @@ class GroupDetailViewModel @Inject constructor(
         return TripPhotoUiModel(
             id = id,
             imageUrl = imageUrl,
+            uploadedByUserId = uploadedByUserId,
             uploadedByName = uploadedByName,
             uploadedAt = uploadedAt
         )
