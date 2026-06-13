@@ -337,21 +337,6 @@ private fun ItineraryTimelineDay(
                         fontSize = 12.sp
                     )
                 }
-
-                Surface(
-                    modifier = Modifier.clickable(onClick = onOpenDayDetail),
-                    shape = RoundedCornerShape(14.dp),
-                    color = itineraryMapButtonContainerColor()
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Map,
-                        contentDescription = stringResource(R.string.ui_dafc3f8f08),
-                        tint = PrimaryBlue,
-                        modifier = Modifier
-                            .size(34.dp)
-                            .padding(7.dp)
-                    )
-                }
             }
 
             if (day.events.isEmpty()) {

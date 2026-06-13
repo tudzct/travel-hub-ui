@@ -78,7 +78,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import com.mobile.travelhub.R
 import com.mobile.travelhub.data.model.UserProfileResponse
 import com.mobile.travelhub.data.userMessage
-import com.mobile.travelhub.ui.components.AvatarCropperScreen
+import com.mobile.travelhub.ui.components.buildCroppedAvatar
 import com.mobile.travelhub.ui.components.CroppedAvatar
 import com.mobile.travelhub.ui.components.FeedPostCard
 import com.mobile.travelhub.ui.components.FeedPostCardSkeleton
@@ -95,7 +95,9 @@ import com.mobile.travelhub.viewmodels.ProfileViewModel
 import com.mobile.travelhub.viewmodels.ProfilePostsUiState
 import com.mobile.travelhub.viewmodels.ProfilePostsTab
 import com.mobile.travelhub.viewmodels.UiState
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @Composable
 fun ProfileScreen(
@@ -287,11 +289,26 @@ private fun ProfileScreenContent(
     val scrollState = rememberScrollState()
     val activeDrawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val coroutineScope = rememberCoroutineScope()
-    var selectedAvatarUri by remember { mutableStateOf<Uri?>(null) }
+    val context = LocalContext.current
+    val selectedImageReadFailedMessage = stringResource(R.string.selected_image_read_failed)
     val avatarPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia()
     ) { uri: Uri? ->
-        selectedAvatarUri = uri
+        if (uri == null) return@rememberLauncherForActivityResult
+        coroutineScope.launch {
+            try {
+                val avatar = withContext(Dispatchers.IO) {
+                    buildCroppedAvatar(context, uri)
+                }
+                onAvatarCropped(avatar)
+            } catch (e: Exception) {
+                Toast.makeText(
+                    context,
+                    e.userMessage(selectedImageReadFailedMessage),
+                    Toast.LENGTH_LONG
+                ).show()
+            }
+        }
     }
     var showNotifications by remember { mutableStateOf(false) }
     var showChangePasswordDialog by remember { mutableStateOf(false) }
@@ -304,10 +321,6 @@ private fun ProfileScreenContent(
         if (changePasswordState is UiState.Success) {
             showChangePasswordDialog = false
         }
-    }
-
-    LaunchedEffect(selectedAvatarUri) {
-        onAvatarCropActiveChange(selectedAvatarUri != null)
     }
 
     DisposableEffect(Unit) {
@@ -608,16 +621,6 @@ private fun ProfileScreenContent(
                                 onClearChangePasswordState()
                             },
                             onSubmit = onChangePassword
-                        )
-                    }
-                    selectedAvatarUri?.let { imageUri ->
-                        AvatarCropperScreen(
-                            imageUri = imageUri,
-                            onCancel = { selectedAvatarUri = null },
-                            onCropDone = { avatar ->
-                                selectedAvatarUri = null
-                                onAvatarCropped(avatar)
-                            }
                         )
                     }
                 }

@@ -80,6 +80,7 @@ fun ExpandableDescription(
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.primary,
                 fontWeight = FontWeight.SemiBold
+
             )
         }
     }
